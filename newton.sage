@@ -1,5 +1,5 @@
 # Test inputs :)
-x,y,z,a,b,c,d,e,f,g,h,i = var('x,y,z,a,b,c,d,e,f,g,h,i')
+var('x,y,z,a,b,c,d,e,f,g,h,i')
 
 f1 = a*x*y + b
 f2 = c*y*z + d*y*x + e
@@ -42,6 +42,7 @@ def compute_symbolic_delta :
 # via v_new = v + J^*|v * delta
 def newton_step(F, poly_vars, J, v, delta) :
     assert(len(poly_vars) == len(v))
+
     sub_dict = dict(zip(poly_vars,v))
     J_s = mat_s(J).subs(sub_dict)
     v_new = v + J_s*delta
@@ -58,8 +59,13 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=100) :
     J = jacobian(F, poly_vars)
 
     delta = compute_symbolic_delta # TODO
-    
+        
+
     # v^0 = F(0)
     v = F.subst( dict( (v,0) for v in poly_vars )
     
     # TODO: iteration..
+
+
+
+
