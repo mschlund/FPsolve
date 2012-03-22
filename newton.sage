@@ -23,21 +23,24 @@ F = matrix([f1,f2,f3]).transpose()
 # TODO: perhaps add an evaluation function for "s" (so that we have s(0) = 1 etc.)?
 s = function('s', nargs=1)
 
-
 def compute_mat_star(M) :
-#def compute_mat_star(M) :
-    # TODO: implement recursive computation of the Kleene star for matrices 
-    var('a_11 a_12 a_21 a_22 A_11 A_12 A_21 A_22')
-    a_11 = M[:M.nrows()-1,:M.ncols()-1]
-    a_12 = M[:M.nrows()-1,M.ncols()-1]
-    a_21 = M[M.nrows()-1,:M.ncols()-1]
-    a_22 = M[M.nrows()-1,M.ncols()-1]
-    A_11 = (a_11 + a_12 * s(a_22) * a_21)
-    A_22 = (a_22 + a_21 * a_11 * a_12)
-    A_12 = a_11 * a_12 * A_22
-    A_21 = a_22 * a_21 * A_11
-#    if M.ncols() == 2 & M.nrows() == 2:
-    return matrix(SR,[[A_11,A_12],[A_21,A_22]])
+    var('a_11 a_12 a_21 a_22 A_11 A_12 A_21 A_22 as_11 as_22 N')
+    if M.nrows() == 1 and M.ncols() == 1: # just a scalar
+        N = s(M[0,0]) # apply the Kleene star to the only element and return
+    else: # there is a matrix to deconstruct
+        a_11 = M[:M.nrows()-1,:M.ncols()-1]
+        a_12 = M[:M.nrows()-1,M.ncols()-1]
+        a_21 = M[M.nrows()-1,:M.ncols()-1]
+        a_22 = M[M.nrows()-1,M.ncols()-1]
+        as_11 = compute_mat_star(a_11)
+        as_22 = s(a_22)
+        # matrix divided and precalculated, now do the rest
+        A_11 = compute_mat_star(a_11 + a_12 * as_22 * a_21)
+        A_22 = compute_mat_star(a_22 + a_21 * as_11 * a_12)
+        A_12 = as_11 * a_12 * A_22
+        A_21 = as_22 * a_21 * A_11
+        N = block_matrix(SR,[[A_11,A_12],[A_21,A_22]],  subdivide=False)
+    return N
 
 # TODO ... unfold the system of equations into a linear system in variables X_[d],X_(d)
 # and compute delta^(i) symbolically(!) in terms of variables X_[d-1] and X_(d-1)
