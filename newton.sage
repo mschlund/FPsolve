@@ -42,6 +42,15 @@ def compute_mat_star(M) :
         N = block_matrix(SR,[[A_11,A_12],[A_21,A_22]],  subdivide=False)
     return N
 
+# taken from sage/symbolic/expression.pyx
+# modified it to be able to specify the variables
+# should be fixed in lib
+def nhessian(self, variables=None):
+    from sage.matrix.constructor import matrix
+    if variables is None:
+        variables = self.arguments()
+    return matrix([[g.derivative(x) for x in variables] for g in self.gradient(variables)])
+
 # TODO ... unfold the system of equations into a linear system in variables X_[d],X_(d)
 # and compute delta^(i) symbolically(!) in terms of variables X_[d-1] and X_(d-1)
 def compute_symbolic_delta :
