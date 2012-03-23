@@ -6,7 +6,7 @@ f2 = c*y*z + d*y*x + e
 f3 = g*x*h + i
 
 # to compute the termination probability of the above system:
-pobabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
+probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
 
 
 F = vector(SR,[f1,f2,f3]).column()
