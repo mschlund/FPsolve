@@ -32,16 +32,23 @@ F_c = F.subs(probabilistic_subs)
 s = function('s', nargs=1)
 
 def compute_mat_star(M) :
-#    var('a_11 a_12 a_21 a_22 A_11 A_12 A_21 A_22 as_11 as_22 N')
-    if M.nrows() == 1 and M.ncols() == 1: # just a scalar
+    if type(M) == type(var('a')): # TODO: this is an ugly test, if M is a scalar
+        return s(M)
+    if M.nrows() == 1 and M.ncols() == 1: # just a scalar in a matrix
         N = s(M[0,0]) # apply the Kleene star to the only element and return
     else: # there is a matrix to deconstruct
-        a_11 = M[:M.nrows()-1,:M.ncols()-1]
-        a_12 = M[:M.nrows()-1,M.ncols()-1]
-        a_21 = M[M.nrows()-1,:M.ncols()-1]
-        a_22 = M[M.nrows()-1,M.ncols()-1]
+        if M.nrows() % 2 == 0 and M.ncols() % 2: # even number of rows/columns, split in half
+            a_11 = M[:M.nrows()/2,:M.ncols()/2]
+            a_12 = M[:M.nrows()/2,M.ncols()/2:M.ncols()]
+            a_21 = M[M.nrows()/2:M.nrows(),:M.ncols()/2]
+            a_22 = M[M.nrows()/2:M.nrows(),M.ncols()/2:M.ncols()]
+        else:   # odd number of rows/columns, peeling mode
+            a_11 = M[:M.nrows()-1,:M.ncols()-1]
+            a_12 = M[:M.nrows()-1,M.ncols()-1]
+            a_21 = M[M.nrows()-1,:M.ncols()-1]
+            a_22 = M[M.nrows()-1,M.ncols()-1]
         as_11 = compute_mat_star(a_11)
-        as_22 = s(a_22)
+        as_22 = compute_mat_star(a_22)
         # matrix divided and precalculated, now do the rest
         A_11 = compute_mat_star(a_11 + a_12 * as_22 * a_21)
         A_22 = compute_mat_star(a_22 + a_21 * as_11 * a_12)
