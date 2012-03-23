@@ -5,7 +5,7 @@ f1 = a*x*y + b
 f2 = c*y*z + d*y*x + e
 f3 = g*x*h + i
 
-F = vector(SR,[f1,f2,f3])
+F = vector(SR,[f1,f2,f3]).column()
 # J = jacobian(F,[x,y,z])
 
 # n = newton_fixpoint_solve(F, [x,y,z], 10)
@@ -58,22 +58,21 @@ def nhessian(self, variables=None):
 def compute_symbolic_delta(u,F,var):
     d = []
     for i in F: # iterate over equations
-        H = nhessian(i, var)
-        d.append(1/2*u.transpose()*H*u)
+        H = nhessian(i[0], var)
+        d.append((1/2*u.transpose()*H*u)[0,0]) #TODO: make this nice :)
     return vector(SR,d).column()
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
 # a starting value v, and the "update" delta, compute the next iterand
 # via v_new = v + J^*|v * delta
 def newton_step(F, poly_vars, J, v, delta) :
-    assert(len(poly_vars) == len(v))
+#    assert(len(poly_vars) == len(v))
 
-    sub_dict = dict(zip(poly_vars,v))
+#    sub_dict = dict(zip(poly_vars,v))
 
     J_s = compute_mat_star(J)
-    J_s = J_s.subs(sub_dict)
-
-    print delta,J_s
+ #   J_s = J_s.subs(sub_dict)
+    J_s = J_s.subs(x=v[0,0],y=v[1,0], z=v[2,0])
 
     v_new = v + J_s*delta
     return v_new
@@ -97,7 +96,7 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     
     # TODO: iteration..
     for i in range(max_iter) :
-        delta_new = delta.subs(u1=v[0],u2=v[1],u3=v[2])
+        delta_new = delta.subs(u1=v[0,0],u2=v[1,0],u3=v[2,0])
         v_new = newton_step(F,poly_vars,J,v,delta_new)
 
     return v_new
