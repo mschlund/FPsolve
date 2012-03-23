@@ -53,9 +53,15 @@ def nhessian(self, variables=None):
 
 # TODO ... unfold the system of equations into a linear system in variables X_[d],X_(d)
 # and compute delta^(i) symbolically(!) in terms of variables X_[d-1] and X_(d-1)
-def compute_symbolic_delta :
 
-
+# compute symbolic delta with a parameter vector u
+def compute_symbolic_delta(u,F,var):
+    var('d, H')
+    d = []
+    for i in F: # iterate over equations
+        H = nhessian(i, var)
+        d += [1/2*u.transpose()*H*u]
+    return d
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
 # a starting value v, and the "update" delta, compute the next iterand
