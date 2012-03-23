@@ -7,9 +7,13 @@ f3 = g*x*h + i
 
 # to compute the termination probability of the above system:
 probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
-
+probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
 
 F = vector(SR,[f1,f2,f3]).column()
+
+F_c = F.subs(probabilistic_subs)
+
+
 # J = jacobian(F,[x,y,z])
 
 # n = newton_fixpoint_solve(F, [x,y,z], 10)
@@ -95,10 +99,15 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     delta = compute_symbolic_delta(u,F,poly_vars)
     
     # v^0 = F(0)
-    v = F.subs( dict( (v,0) for v in poly_vars )) 
-    
+#    v = F.subs( dict( (v,0) for v in poly_vars )) 
+    v0 = vector(SR,[0,0,0]).column()
+
+    v1 = v0 + J_s.subs(x=v0[0,0],y=v0[1,0], z=v0[2,0])* F.subs( dict( (v,0) for v in poly_vars )) 
+    v=v1
+    v_new = v 
+
     # TODO: iteration..
-    for i in range(max_iter) :
+    for i in range(2,max_iter+1) :
         delta_new = delta.subs(u1=v[0,0],u2=v[1,0],u3=v[2,0])
         v_new = newton_step(F,poly_vars,J_s,v,delta_new)
         v = v_new
