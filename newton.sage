@@ -5,7 +5,7 @@ f1 = a*x*y + b
 f2 = c*y*z + d*y*x + e
 f3 = g*x*h + i
 
-F = matrix([f1,f2,f3]).transpose()
+F = vector(SR,[f1,f2,f3])
 # J = jacobian(F,[x,y,z])
 
 # n = newton_fixpoint_solve(F, [x,y,z], 10)
@@ -24,7 +24,7 @@ F = matrix([f1,f2,f3]).transpose()
 s = function('s', nargs=1)
 
 def compute_mat_star(M) :
-    var('a_11 a_12 a_21 a_22 A_11 A_12 A_21 A_22 as_11 as_22 N')
+#    var('a_11 a_12 a_21 a_22 A_11 A_12 A_21 A_22 as_11 as_22 N')
     if M.nrows() == 1 and M.ncols() == 1: # just a scalar
         N = s(M[0,0]) # apply the Kleene star to the only element and return
     else: # there is a matrix to deconstruct
@@ -52,16 +52,15 @@ def nhessian(self, variables=None):
     return matrix([[g.derivative(x) for x in variables] for g in self.gradient(variables)])
 
 # TODO ... unfold the system of equations into a linear system in variables X_[d],X_(d)
-# and compute delta^(i) symbolically(!) in terms of variables X_[d-1] and X_(d-1)
+# and compute delta^(i) symbolically
 
 # compute symbolic delta with a parameter vector u
 def compute_symbolic_delta(u,F,var):
-    var('d, H')
     d = []
     for i in F: # iterate over equations
         H = nhessian(i, var)
-        d += [1/2*u.transpose()*H*u]
-    return d
+        d.append(1/2*u.transpose()*H*u)
+    return vector(SR,d).column()
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
 # a starting value v, and the "update" delta, compute the next iterand
@@ -72,10 +71,11 @@ def newton_step(F, poly_vars, J, v, delta) :
     sub_dict = dict(zip(poly_vars,v))
 
     J_s = compute_mat_star(J)
-
     J_s = J_s.subs(sub_dict)
-    v_new = v + J_s*delta
 
+    print delta,J_s
+
+    v_new = v + J_s*delta
     return v_new
 
 
@@ -84,16 +84,27 @@ def newton_step(F, poly_vars, J, v, delta) :
 # 1) compute the concrete delta (from the precomputed symbolic expression)
 # 2) execute a newton_step
 
-def newton_fixpoint_solve(F, poly_vars, max_iter=100) :
+def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
-
-    delta = compute_symbolic_delta # TODO
-        
-
+    
+    var('u1,u2,u3')
+    u = vector(SR,[u1,u2,u3]).column()
+    
+    delta = compute_symbolic_delta(u,F,poly_vars)
+    
     # v^0 = F(0)
-    v = F.subst( dict( (v,0) for v in poly_vars )
+    v = F.subs( dict( (v,0) for v in poly_vars )) 
     
     # TODO: iteration..
+    for i in range(max_iter) :
+        delta_new = delta.subs(u1=v[0],u2=v[1],u3=v[2])
+        v_new = newton_step(F,poly_vars,J,v,delta_new)
+
+    return v_new
+
+
+
+
 
 
 
