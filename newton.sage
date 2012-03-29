@@ -1,3 +1,5 @@
+from sage.symbolic.ring import SR
+
 # Test inputs :)
 var('x,y,z,a,b,c,d,e,f,g,h,i')
 
@@ -29,24 +31,23 @@ F_c = F.subs(probabilistic_subs)
 
 # symbolic functions for the Kleene star of elements
 # TODO: perhaps add an evaluation function for "s" (so that we have s(0) = 1 etc.)?
+from sage.symbolic.function_factory import function
 s = function('s', nargs=1)
 
+from sage.matrix.constructor import block_matrix
 def compute_mat_star(M) :
-    if type(M) == type(var('a')): # TODO: this is an ugly test, if M is a scalar
-        return s(M)
     if M.nrows() == 1 and M.ncols() == 1: # just a scalar in a matrix
-        N = s(M[0,0]) # apply the Kleene star to the only element and return
+        return s(M[0,0]) # apply the Kleene star to the only element and return
     else: # there is a matrix to deconstruct
+        M = copy(M)
         if M.nrows() % 2 == 0 and M.ncols() % 2: # even number of rows/columns, split in half
-            a_11 = M[:M.nrows()/2,:M.ncols()/2]
-            a_12 = M[:M.nrows()/2,M.ncols()/2:M.ncols()]
-            a_21 = M[M.nrows()/2:M.nrows(),:M.ncols()/2]
-            a_22 = M[M.nrows()/2:M.nrows(),M.ncols()/2:M.ncols()]
+            M.subdivide(M.nrows()/2,M.ncols()/2)
         else:   # odd number of rows/columns, peeling mode
-            a_11 = M[:M.nrows()-1,:M.ncols()-1]
-            a_12 = M[:M.nrows()-1,M.ncols()-1]
-            a_21 = M[M.nrows()-1,:M.ncols()-1]
-            a_22 = M[M.nrows()-1,M.ncols()-1]
+            M.subdivide(M.nrows()-1,M.ncols()-1)
+        a_11 = M.subdivision(0,0)
+        a_12 = M.subdivision(0,1)
+        a_21 = M.subdivision(1,0)
+        a_22 = M.subdivision(1,1)
         as_11 = compute_mat_star(a_11)
         as_22 = compute_mat_star(a_22)
         # matrix divided and precalculated, now do the rest
@@ -54,8 +55,7 @@ def compute_mat_star(M) :
         A_22 = compute_mat_star(a_22 + a_21 * as_11 * a_12)
         A_12 = as_11 * a_12 * A_22
         A_21 = as_22 * a_21 * A_11
-        N = block_matrix(SR,[[A_11,A_12],[A_21,A_22]],  subdivide=False)
-    return N
+        return block_matrix(SR,[[A_11,A_12],[A_21,A_22]],  subdivide=False)
 
 # taken from sage/symbolic/expression.pyx
 # modified it to be able to specify the variables
@@ -96,11 +96,12 @@ def newton_step(F, poly_vars, J_s, v, delta) :
 # 1) compute the concrete delta (from the precomputed symbolic expression)
 # 2) execute a newton_step
 
+from sage.calculus.functions import jacobian 
 def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
     J_s = compute_mat_star(J) #only compute matrix star once
 
-    var('u1,u2,u3')
+    u1,u2,u3 = var('u1,u2,u3')
     u = vector(SR,[u1,u2,u3]).column()
     
     delta = compute_symbolic_delta(u,F,poly_vars)
