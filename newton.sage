@@ -81,13 +81,12 @@ def compute_symbolic_delta(u,F,var):
 # a starting value v, and the "update" delta, compute the next iterand
 # via v_new = v + J^*|v * delta
 def newton_step(F, poly_vars, J_s, v, delta) :
-#    assert(len(poly_vars) == len(v))
+    assert(len(poly_vars) == len(v.list()))
 
-#    sub_dict = dict(zip(poly_vars,v))
-#   J_s = J_s.subs(sub_dict)
-    J_sub = J_s.subs(x=v[0,0],y=v[1,0], z=v[2,0])
+    sub_dict = dict(zip(poly_vars,v.list()))
+    J_s = J_s.subs(sub_dict)
 
-    v_new = v + J_sub*delta
+    v_new = v + J_s*delta
     return v_new
 
 
@@ -101,22 +100,21 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
     J_s = compute_mat_star(J) #only compute matrix star once
 
-    u1,u2,u3 = var('u1,u2,u3')
-    u = vector(SR,[u1,u2,u3]).column()
+    u = var(join(['u%d' %i for i in range(J.ncols())]))
     
-    delta = compute_symbolic_delta(u,F,poly_vars)
+    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     
     # v^0 = F(0)
 #    v = F.subs( dict( (v,0) for v in poly_vars )) 
-    v0 = vector(SR,[0,0,0]).column()
-
-    v1 = v0 + J_s.subs(x=v0[0,0],y=v0[1,0], z=v0[2,0])* F.subs( dict( (v,0) for v in poly_vars )) 
+    v0 = matrix(SR,F.nrows(),1)
+    s = dict(zip(poly_vars,v0.list()))
+    v1 = v0 + J_s.subs(s)* F.subs( dict( (v,0) for v in poly_vars ))
     v=v1
     v_new = v 
 
     # TODO: iteration..
     for i in range(2,max_iter+1) :
-        delta_new = delta.subs(u1=v[0,0],u2=v[1,0],u3=v[2,0])
+        delta_new = delta.subs( dict( zip(u,v.list()) ) )
         v_new = newton_step(F,poly_vars,J_s,v,delta_new)
         v = v_new
 
