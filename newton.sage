@@ -9,11 +9,13 @@ f3 = g*x*h + i
 
 # to compute the termination probability of the above system:
 probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
-probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
+#probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
 
 F = vector(SR,[f1,f2,f3]).column()
 
 F_c = F.subs(probabilistic_subs)
+
+F_diff = F_c - vector(SR,[x,y,z]).column()
 
 
 # J = jacobian(F,[x,y,z])
@@ -32,7 +34,8 @@ F_c = F.subs(probabilistic_subs)
 # symbolic functions for the Kleene star of elements
 # TODO: perhaps add an evaluation function for "s" (so that we have s(0) = 1 etc.)?
 from sage.symbolic.function_factory import function
-s = function('s', nargs=1)
+#s = function('s', nargs=1)
+s = 1/(1-x)
 
 from sage.matrix.constructor import block_matrix
 def compute_mat_star(M) :
@@ -109,8 +112,8 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     # v^0 = F(0)
 #    v = F.subs( dict( (v,0) for v in poly_vars )) 
     v0 = matrix(SR,F.nrows(),1)
-    s = dict(zip(poly_vars,v0.list()))
-    v_upd1 = J_s.subs(s)* F.subs( dict( (v,0) for v in poly_vars ))
+    sub = dict(zip(poly_vars,v0.list()))
+    v_upd1 = J_s.subs(sub)* F.subs( dict( (v,0) for v in poly_vars ))
     v1 = v0 + v_upd1
     
     v_upd = v_upd1
@@ -123,6 +126,31 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
         v = v + v_upd
 
     return v
+
+
+
+# Newton's method as a textbook-implementation
+# find a zero of the multivariate polynomial (vector) F starting with v_0
+# TODO: nicefy... or rather throw away and write new :)
+from numpy import linalg
+import numpy
+from sage.symbolic.ring import NumpyToSRMorphism
+
+def newton_numerical(F, poly_vars, v_0 = numpy.array([0,0,0]), max_iter=10) :
+    np_to_SR = NumpyToSRMorphism(numpy.float64, SR)
+    J = jacobian(F,poly_vars)
+    
+    v = vector(map(np_to_SR,v_0)).column()
+    for i in range(1,max_iter+1) :
+        v = vector(map(np_to_SR,v)).column()
+        sub = dict(zip(poly_vars,v.list()))
+        A = J.subs(sub)
+        b = F.subs(sub)
+        x = linalg.solve(A,b)
+        v = v - x
+
+    return v
+
 
 
 
