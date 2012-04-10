@@ -78,17 +78,19 @@ def compute_symbolic_delta(u,F,var):
     return vector(SR,d).column()
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
-# a starting value v, and the "update" delta, compute the next iterand
-# via v_new = v + J^*|v * delta
+# a starting value v, and the "update" delta, compute the update
+# v_update = J^*|v * delta
+# such that v_new = v + v_update
+
 def newton_step(F, poly_vars, J_s, v, delta) :
     assert(len(poly_vars) == len(v.list()))
 
     sub_dict = dict(zip(poly_vars,v.list()))
     J_s = J_s.subs(sub_dict)
 
-    v_new = v + J_s*delta
-    return v_new
-
+#    v_new = v + J_s*delta
+    v_upd = J_s*delta
+    return v_upd
 
 
 # TODO: iterate until convergence, but for at most max_iter iterations
@@ -108,17 +110,19 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 #    v = F.subs( dict( (v,0) for v in poly_vars )) 
     v0 = matrix(SR,F.nrows(),1)
     s = dict(zip(poly_vars,v0.list()))
-    v1 = v0 + J_s.subs(s)* F.subs( dict( (v,0) for v in poly_vars ))
+    v_upd1 = J_s.subs(s)* F.subs( dict( (v,0) for v in poly_vars ))
+    v1 = v0 + v_upd1
+    
+    v_upd = v_upd1
     v=v1
-    v_new = v 
 
     # TODO: iteration..
     for i in range(2,max_iter+1) :
-        delta_new = delta.subs( dict( zip(u,v.list()) ) )
-        v_new = newton_step(F,poly_vars,J_s,v,delta_new)
-        v = v_new
+        delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
+        v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+        v = v + v_upd
 
-    return v_new
+    return v
 
 
 
