@@ -142,11 +142,11 @@ def newton_numerical(F, poly_vars, v_0 = numpy.array([0,0,0]), max_iter=10) :
     
     v = vector(map(np_to_SR,v_0)).column()
     for i in range(1,max_iter+1) :
-        v = vector(map(np_to_SR,v)).column()
-        sub = dict(zip(poly_vars,v.list()))
+        v = map(np_to_SR,v)
+        sub = dict(zip(poly_vars,v))
         A = J.subs(sub)
         b = F.subs(sub)
-        x = linalg.solve(A,b)
+        x = linalg.solve(A,b) #TODO: andere Funktion... Gleichungssystem in Software lösen?
         v = v - x
 
     return v
