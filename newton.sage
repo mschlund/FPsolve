@@ -69,16 +69,19 @@ def nhessian(self, variables=None):
         variables = self.arguments()
     return matrix([[g.derivative(x) for x in variables] for g in self.gradient(variables)])
 
-# TODO ... unfold the system of equations into a linear system in variables X_[d],X_(d)
-# and compute delta^(i) symbolically
 
 # compute symbolic delta with a parameter vector u
-def compute_symbolic_delta(u,F,var):
+def compute_symbolic_delta(u,F,var) :
     d = []
     for i in F: # iterate over equations
         H = nhessian(i[0], var)
         d.append((1/2*u.transpose()*H*u)[0,0]) #TODO: make this nice :)
     return vector(SR,d).column()
+
+# symbolic delta computation also for non-quadratic polynomials F
+#def compute_symbolic_delta_general (u,F,var) :
+    
+
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
 # a starting value v, and the "update" delta, compute the update
@@ -136,14 +139,17 @@ from numpy import linalg
 import numpy
 from sage.symbolic.ring import NumpyToSRMorphism
 
+# x = newton_numerical(F_diff, [x,y,z])
+# vgl. mit x_sym = newton_fixpoint_solve(F_c, [x,y,z])
+
 def newton_numerical(F, poly_vars, v_0 = numpy.array([0,0,0]), max_iter=10) :
     np_to_SR = NumpyToSRMorphism(numpy.float64, SR)
     J = jacobian(F,poly_vars)
     
     v = vector(map(np_to_SR,v_0)).column()
     for i in range(1,max_iter+1) :
-        v = map(np_to_SR,v)
-        sub = dict(zip(poly_vars,v))
+        v = vector(map(np_to_SR,v)).column()
+        sub = dict(zip(poly_vars,v.list()))
         A = J.subs(sub)
         b = F.subs(sub)
         x = linalg.solve(A,b) #TODO: andere Funktion... Gleichungssystem in Software lösen?
