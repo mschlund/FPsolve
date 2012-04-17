@@ -1,25 +1,5 @@
 from sage.symbolic.ring import SR
 
-# Test inputs :)
-var('x,y,z,a,b,c,d,e,f,g,h,i')
-
-f1 = a*x*y + b
-f2 = c*y*z + d*y*x + e
-f3 = g*x*h + i
-
-# to compute the termination probability of the above system:
-probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
-#probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
-
-F = vector(SR,[f1,f2,f3]).column()
-
-F_c = F.subs(probabilistic_subs)
-
-F_diff = F_c - vector(SR,[x,y,z]).column()
-
-
-# J = jacobian(F,[x,y,z])
-
 # n = newton_fixpoint_solve(F, [x,y,z], 10)
 # n.subs( a=0.5, b=0.3 )
 # TODO (plan, long run):
@@ -142,10 +122,11 @@ from sage.symbolic.ring import NumpyToSRMorphism
 # x = newton_numerical(F_diff, [x,y,z])
 # vgl. mit x_sym = newton_fixpoint_solve(F_c, [x,y,z])
 
-def newton_numerical(F, poly_vars, v_0 = numpy.array([0,0,0]), max_iter=10) :
+def newton_numerical(F, poly_vars, max_iter=10) :
     np_to_SR = NumpyToSRMorphism(numpy.float64, SR)
     J = jacobian(F,poly_vars)
     
+    v_0 = numpy.array([0,0,0])
     v = vector(map(np_to_SR,v_0)).column()
     for i in range(1,max_iter+1) :
         v = vector(map(np_to_SR,v)).column()
