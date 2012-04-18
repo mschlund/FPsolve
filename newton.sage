@@ -20,7 +20,10 @@ s = 1/(1-x)
 from sage.matrix.constructor import block_matrix
 def compute_mat_star(M) :
     if M.nrows() == 1 and M.ncols() == 1: # just a scalar in a matrix
-        return s(M[0,0]) # apply the Kleene star to the only element and return
+        if M[0,0] == 0 :
+            return 1
+        else:
+            return s(M[0,0]) # apply the Kleene star to the only element and return
     else: # there is a matrix to deconstruct
         M = copy(M)
         if M.nrows() % 2 == 0 and M.ncols() % 2: # even number of rows/columns, split in half
