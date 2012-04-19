@@ -10,12 +10,12 @@ f3 = g*x*h + i
 probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
 #probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
 
-F = vector(SR,[f1,f2,f3]).transpose()
+F = vector(SR,[f1,f2,f3]).column()
 
 F_c = F.subs(probabilistic_subs)
 
 variables = [x,y,z]
-F_diff = F_c - vector(SR,variables).transpose()
+F_diff = F_c - vector(SR,variables).column()
 
 
 # test functions
