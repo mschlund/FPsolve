@@ -12,18 +12,14 @@ from sage.symbolic.ring import SR
 
 
 # symbolic functions for the Kleene star of elements
-# TODO: perhaps add an evaluation function for "s" (so that we have s(0) = 1 etc.)?
 from sage.symbolic.function_factory import function
-#s = function('s', nargs=1)
-s = 1/(1-x)
+s = function('s', nargs=1, eval_func=lambda self, x: 1 if x == 0 else s(x,hold=True))
+#s = 1/(1-x)
 
 from sage.matrix.constructor import block_matrix
 def compute_mat_star(M) :
     if M.nrows() == 1 and M.ncols() == 1: # just a scalar in a matrix
-        if M[0,0] == 0 :
-            return 1
-        else:
-            return s(M[0,0]) # apply the Kleene star to the only element and return
+        return s(M[0,0]) # apply the Kleene star to the only element and return
     else: # there is a matrix to deconstruct
         M = copy(M)
         if M.nrows() % 2 == 0 and M.ncols() % 2: # even number of rows/columns, split in half
