@@ -59,7 +59,7 @@ def compute_symbolic_delta(u,F,var) :
 
 # symbolic delta computation also for non-quadratic polynomials F
 #def compute_symbolic_delta_general (u,F,var) :
-    
+# TODO....
 
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,

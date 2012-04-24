@@ -40,3 +40,17 @@ def test_newton(max_iter=20) :
         error = newton_error_at(i)
         print "Step ", i, ": error (min,max) = ", error.min(), error.max()
 
+# generate a (sparse) system of n quadratic equations in n variables with real coefficients in (0,1)
+# return the system (as a vector of symbolic expressions) as well as its variables
+# eps is the "density", i.e. eps*n of the coefficients will be non-zero
+def gen_random_quadratic_eqns(n, eps)
+    poly_vars = list( var(join(['x%d' %i for i in range(n)])) )
+
+    # n variables ==> n choose 2 monomials, select eps*n of those which will be non-zero
+    monomials = [ combinations(poly_vars,2)]
+
+    k = eps*n #TODO: make integer
+    non_zero = sample(monomials, k)
+    #TODO: for the non-zero monomials choose random coefficients from (0,1) that add up to 1
+
+    return 0,poly_vars #F,poly_vars
