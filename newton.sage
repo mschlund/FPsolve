@@ -111,11 +111,10 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     
     delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     
-    # v^0 = F(0)
-#    v = F.subs( dict( (v,0) for v in poly_vars )) 
-    v = matrix(SR,F.nrows(),1)
-    sub = dict(zip(poly_vars,v.list()))
-    v_upd = J_s.subs(sub)* F.subs( dict( (v,0) for v in poly_vars ))
+    v = matrix(SR,F.nrows(),1) # v^0 = 0
+
+    delta_new = F.subs( dict( (v,0) for v in poly_vars ))
+    v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
     v = v + v_upd
     
     # TODO: iteration..
