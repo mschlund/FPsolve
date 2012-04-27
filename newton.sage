@@ -113,14 +113,11 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     
     # v^0 = F(0)
 #    v = F.subs( dict( (v,0) for v in poly_vars )) 
-    v0 = matrix(SR,F.nrows(),1)
-    sub = dict(zip(poly_vars,v0.list()))
-    v_upd1 = J_s.subs(sub)* F.subs( dict( (v,0) for v in poly_vars ))
-    v1 = v0 + v_upd1
+    v = matrix(SR,F.nrows(),1)
+    sub = dict(zip(poly_vars,v.list()))
+    v_upd = J_s.subs(sub)* F.subs( dict( (v,0) for v in poly_vars ))
+    v = v + v_upd
     
-    v_upd = v_upd1
-    v=v1
-
     # TODO: iteration..
     for i in range(2,max_iter+1) :
         delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
