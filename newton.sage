@@ -75,7 +75,8 @@ def compute_degree(f,var) :
 import itertools as it
 # symbolic delta computation also for non-quadratic polynomials F
 # parameter vectors are v and v_upd (which may also be concrete values if wanted :))
-def compute_symbolic_delta_general (v, v_upd, F, var) :
+# v should be the (d-1)-st newton iterand and v_upd should be the (d)-th newton-update
+def compute_symbolic_delta_general(v, v_upd, F, var) :
     n = v.nrows()
     assert(len(var) == n)
     delta = vector(SR,n)
@@ -117,23 +118,27 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
     J_s = compute_mat_star(J) #only compute matrix star once
 
-    u = var(join(['u%d' %i for i in range(J.ncols())]))
+    u = vector(var(join(['u%d' %i for i in range(J.ncols())]))).column()
+    u_upd = vector(var(join(['u_upd%d' %i for i in range(J.ncols())]))).column()
     
-    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
+    #delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
+    delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
     
     v = matrix(SR,F.nrows(),1) # v^0 = 0
-
     delta_new = F.subs( dict( (v,0) for v in poly_vars ))
-    v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
-    v = v + v_upd
-    
-    # TODO: iteration..
-    for i in range(2,max_iter+1) :
-        delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
-        v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
-        v = v + v_upd
 
-    return v
+    v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+#    v = v + v_upd
+    
+    # newton-iteration..
+    for i in range(2,max_iter+1) :
+        # delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
+        
+        delta_new = delta.subs(dict( zip(u_upd,v_upd.list()) + zip(u, v)) )
+        v = v + v_upd
+        v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+
+    return (v + v_upd)
 
 # Newton's method as a textbook-implementation
 # find a zero of the multivariate polynomial (vector) F starting with v_0
@@ -156,7 +161,7 @@ def newton_numerical(F, poly_vars, max_iter=10) :
         sub = dict(zip(poly_vars,v.list()))
         A = J.subs(sub)
         b = F.subs(sub)
-        x = linalg.solve(A,b) #TODO: andere Funktion... Gleichungssystem in Software lösen?
+        x = linalg.solve(A,b) #TODO: solve system in software rather than with numpy (finite precision!)??
         v = v - x
 
     return v
