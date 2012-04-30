@@ -59,8 +59,8 @@ def compute_symbolic_delta(u,F,var) :
 
 # compute the degree of f when viewed as a polynomial in the variables v
 # (necessary since some "symbolic variables" may actually be symbolic constants for us
-def compute_degree(f,v) :
-    variables = v[:]
+def compute_degree(f,var) :
+    variables = var[:]
     maxdeg = sum([f.degree(t) for t in variables])
     deg = 0
     while deg < maxdeg :
@@ -72,14 +72,24 @@ def compute_degree(f,v) :
             break
     return deg
 
-
+import itertools as it
 # symbolic delta computation also for non-quadratic polynomials F
-def compute_symbolic_delta_general (u,F,var) :
-    
-    # delta(i) = 
-    
-    return 0
+# parameter vectors are v and v_upd (which may also be concrete values if wanted :))
+def compute_symbolic_delta_general (v, v_upd, F, var) :
+    n = v.nrows()
+    assert(len(var) == n)
+    delta = vector(SR,n)
+    for i in range(n) :
+        deg = compute_degree(F[i], var)
 
+        for idx in it.product(range(0,deg), repeat=n) :
+            if sum(idx) <=deg and sum(idx) >= 2 :
+                dx = reduce(lambda x,y : x.append([y[0]]*y[1]), zip(var,idx), [])
+                prod = reduce(lambda p,x : p*(x[0]**x[1]), zip(v_upd,idx), 1)
+
+                sub_dict = dict(zip(var,v.list()))
+                delta[i] = diff(F[i],dx).subs(sub_dict) * prod
+    return delta
 
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
@@ -124,7 +134,6 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
         v = v + v_upd
 
     return v
-
 
 # Newton's method as a textbook-implementation
 # find a zero of the multivariate polynomial (vector) F starting with v_0
