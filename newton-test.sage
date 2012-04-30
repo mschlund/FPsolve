@@ -14,8 +14,8 @@ F = vector(SR,[f1,f2,f3]).column()
 
 F_c = F.subs(probabilistic_subs)
 
-v = [x,y,z]
-F_diff = F_c - vector(SR,v).column()
+variables = [x,y,z]
+F_diff = F_c - vector(SR,variables).column()
 
 
 # test functions

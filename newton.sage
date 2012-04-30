@@ -42,28 +42,28 @@ def compute_mat_star(M) :
 # taken from sage/symbolic/expression.pyx
 # modified it to be able to specify the variables
 # should be fixed in lib
-def nhessian(self, variables=None):
+def nhessian(self, poly_vars=None):
     from sage.matrix.constructor import matrix
-    if variables is None:
-        variables = self.arguments()
-    return matrix([[g.derivative(x) for x in variables] for g in self.gradient(variables)])
+    if poly_vars is None:
+        poly_vars = self.arguments()
+    return matrix([[g.derivative(x) for x in poly_vars] for g in self.gradient(poly_vars)])
 
 
 # compute symbolic delta with a parameter vector u
-def compute_symbolic_delta(u,F,var) :
+def compute_symbolic_delta(u,F,v) :
     d = []
     for i in F: # iterate over equations
-        H = nhessian(i[0], var)
+        H = nhessian(i[0], v)
         d.append((1/2*u.transpose()*H*u)[0,0]) #TODO: make this nice :)
     return vector(SR,d).column()
 
 # compute the degree of f when viewed as a polynomial in the variables v
 # (necessary since some "symbolic variables" may actually be symbolic constants for us
-def compute_degree(f,var) :
-    variables = var[:]
+def compute_degree(f,poly_vars) :
+    variables = poly_vars[:]
     maxdeg = sum([f.degree(t) for t in variables])
     deg = 0
-    while deg < maxdeg :
+    while deg < maxdeg and len(variables) > 0:
         x = variables.pop()
         degx = f.degree(x)
         deg += degx
@@ -73,24 +73,27 @@ def compute_degree(f,var) :
     return deg
 
 import itertools as it
+import sys
 # symbolic delta computation also for non-quadratic polynomials F
 # parameter vectors are v and v_upd (which may also be concrete values if wanted :))
 # v should be the (d-1)-st newton iterand and v_upd should be the (d)-th newton-update
-def compute_symbolic_delta_general(v, v_upd, F, var) :
-    n = v.nrows()
-    assert(len(var) == n)
+def compute_symbolic_delta_general(v, v_upd, F, poly_vars) :
+    n = len(v)
+    assert(len(poly_vars) == n)
     delta = vector(SR,n)
     for i in range(n) :
-        deg = compute_degree(F[i], var)
+        f = F[i][0]
+        deg = compute_degree(f, poly_vars)
 
-        for idx in it.product(range(0,deg), repeat=n) :
+        for idx in it.product(range(0,deg+1), repeat=n) :
             if sum(idx) <=deg and sum(idx) >= 2 :
-                dx = reduce(lambda x,y : x.append([y[0]]*y[1]), zip(var,idx), [])
+#                print str(idx)
+                dx = reduce(lambda x,y : x + ([y[0]]*y[1]), zip(poly_vars,idx), [])
                 prod = reduce(lambda p,x : p*(x[0]**x[1]), zip(v_upd,idx), 1)
 
-                sub_dict = dict(zip(var,v.list()))
-                delta[i] = diff(F[i],dx).subs(sub_dict) * prod
-    return delta
+                sub_dict = dict(zip(poly_vars,v))
+                delta[i] = delta[i] + diff(f,dx).subs(sub_dict) * prod
+    return delta.column()
 
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
@@ -99,9 +102,9 @@ def compute_symbolic_delta_general(v, v_upd, F, var) :
 # such that v_new = v + v_update
 
 def newton_step(F, poly_vars, J_s, v, delta) :
-    assert(len(poly_vars) == len(v.list()))
+    assert(len(poly_vars) == v.nrows())
 
-    sub_dict = dict(zip(poly_vars,v.list()))
+    sub_dict = dict(zip(poly_vars,v.list()) )
     J_s = J_s.subs(sub_dict)
 
 #    v_new = v + J_s*delta
@@ -118,12 +121,12 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
     J_s = compute_mat_star(J) #only compute matrix star once
 
-    u = vector(var(join(['u%d' %i for i in range(J.ncols())]))).column()
-    u_upd = vector(var(join(['u_upd%d' %i for i in range(J.ncols())]))).column()
-    
-    #delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
+    u = var(join(['u%d' %i for i in range(J.ncols())]))
+    u_upd = var(join(['u_upd%d' %i for i in range(J.ncols())]))
+
+#    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
-    
+
     v = matrix(SR,F.nrows(),1) # v^0 = 0
     delta_new = F.subs( dict( (v,0) for v in poly_vars ))
 
@@ -132,9 +135,9 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     
     # newton-iteration..
     for i in range(2,max_iter+1) :
-        # delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
-        
-        delta_new = delta.subs(dict( zip(u_upd,v_upd.list()) + zip(u, v)) )
+ #       delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
+        delta_new = delta.subs(dict( zip(u_upd,v_upd.list()) + zip(u, v.list())) )
+
         v = v + v_upd
         v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
 
