@@ -50,6 +50,7 @@ def nhessian(self, poly_vars=None):
 
 
 # compute symbolic delta with a parameter vector u
+# NOTE: this is for quadratic polynomials only!!
 def compute_symbolic_delta(u,F,v) :
     d = []
     for i in F: # iterate over equations
@@ -73,7 +74,6 @@ def compute_degree(f,poly_vars) :
     return deg
 
 import itertools as it
-import sys
 # symbolic delta computation also for non-quadratic polynomials F
 # parameter vectors are v and v_upd (which may also be concrete values if wanted :))
 # v should be the (d-1)-st newton iterand and v_upd should be the (d)-th newton-update
