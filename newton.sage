@@ -133,15 +133,53 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
 #    v = v + v_upd
     
+    # define symbolic variables for v^[i] and v^(i)
+    v_s = matrix(var(join(['vs%d_%d' %(1,j) for j in range(v.nrows())]))).transpose()
+    vu_s = matrix(var(join(['vus%d_%d' %(1,j) for j in range(v_upd.nrows())]))).transpose()
+    # save the current values
+    v_list = zip(v_s.list(), v.list())
+    vu_list = zip(vu_s.list(), v_upd.list())
+
     # newton-iteration..
     for i in range(2,max_iter+1) :
  #       delta_new = delta.subs( dict( zip(u,v_upd.list()) ) )
-        delta_new = delta.subs(dict( zip(u_upd,v_upd.list()) + zip(u, v.list())) )
+        delta_new = delta.subs(dict( zip(u_upd,vu_s.list()) + zip(u, v_s.list())) )
 
-        v = v + v_upd
-        v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+        v = v_s + vu_s
+        v_upd = newton_step(F,poly_vars,J_s,v_s,delta_new)
 
-    return (v + v_upd)
+        v_s = matrix(var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))).transpose()
+        vu_s = matrix(var(join(['vus%d_%d' %(i,j) for j in range(v_upd.nrows())]))).transpose()
+        v_list += zip(v_s.list(), v.list())
+        vu_list += zip(vu_s.list(), v_upd.list())
+
+    v_dict = dict(v_list)
+    vu_dict = dict(vu_list)
+    # try intelligent backsubstitution
+    # but this is an ugly implementation
+    # this evaluates the symbolic variables bottom up
+    for i in range(1,max_iter):
+        v_var = var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))
+        vu_var = var(join(['vus%d_%d' %(i,j) for j in range(v.nrows())]))
+        for j in range(F.nrows()):
+            v_new_var = var('vs%d_%d' %(i+1,j))
+            vu_new_var = var('vus%d_%d' %(i+1,j))
+            # substitute all occurrences 
+            for variable in v_var:
+                # replace each dictionary key with a new one where the symbolic variables are
+                # substituted with the previous iteration
+                v_dict[v_new_var] = v_dict[v_new_var].subs(dict([(variable,v_dict[variable])]))
+                vu_dict[vu_new_var] = vu_dict[vu_new_var].subs(dict([(variable,v_dict[variable])]))
+            for variable in vu_var:
+                v_dict[v_new_var] = v_dict[v_new_var].subs(dict([(variable,vu_dict[variable])]))
+                vu_dict[vu_new_var] = vu_dict[vu_new_var].subs(dict([(variable,vu_dict[variable])]))
+
+    # last step
+    v = v + v_upd
+    v = v.subs(v_dict)
+    v = v.subs(vu_dict)
+
+    return v
 
 # Newton's method as a textbook-implementation
 # find a zero of the multivariate polynomial (vector) F starting with v_0
