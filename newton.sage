@@ -132,7 +132,7 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 
     v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
 #    v = v + v_upd
-    
+ 
     # define symbolic variables for v^[i] and v^(i)
     v_s = matrix(var(join(['vs%d_%d' %(1,j) for j in range(v.nrows())]))).transpose()
     vu_s = matrix(var(join(['vus%d_%d' %(1,j) for j in range(v_upd.nrows())]))).transpose()
@@ -146,11 +146,13 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
         delta_new = delta.subs(dict( zip(u_upd,vu_s.list()) + zip(u, v_s.list())) )
 
         v = v_s + vu_s
-        v_upd = newton_step(F,poly_vars,J_s,v_s,delta_new)
 
         v_s = matrix(var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))).transpose()
-        vu_s = matrix(var(join(['vus%d_%d' %(i,j) for j in range(v_upd.nrows())]))).transpose()
         v_list += zip(v_s.list(), v.list())
+
+        v_upd = newton_step(F,poly_vars,J_s,v_s,delta_new)
+
+        vu_s = matrix(var(join(['vus%d_%d' %(i,j) for j in range(v_upd.nrows())]))).transpose()
         vu_list += zip(vu_s.list(), v_upd.list())
 
     v_dict = dict(v_list)
@@ -173,6 +175,12 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
             for variable in vu_var:
                 v_dict[v_new_var] = v_dict[v_new_var].subs(dict([(variable,vu_dict[variable])]))
                 vu_dict[vu_new_var] = vu_dict[vu_new_var].subs(dict([(variable,vu_dict[variable])]))
+        # the i-th iteration is almost done except the occurence of vs_n in vus_n
+        for j in range(F.nrows()):
+            v_var = var(join(['vs%d_%d' %(i+1,l) for l in range(v.nrows())]))
+            vu_new_var = var('vus%d_%d' %(i+1,j))
+            for variable in v_var:
+                vu_dict[vu_new_var] = vu_dict[vu_new_var].subs(dict([(variable,v_dict[variable])]))
 
     # last step
     v = v + v_upd
