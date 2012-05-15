@@ -10,13 +10,13 @@ private:
 protected:
 	Semiring() {};
 public:
-	virtual SR operator * (const SR& elem) = 0;
-	virtual SR operator + (const SR& elem) = 0;
-	virtual SR star () = 0;
-	virtual bool is_idempotent() = 0;
-	virtual bool is_commutative() = 0;
-	SR null() { return -1; }; // TODO: make this pure virtual
-	virtual std::string string() = 0;
+	virtual SR operator * (const SR& elem) const = 0;
+	virtual SR operator + (const SR& elem) const = 0;
+	virtual SR star () const = 0;
+	virtual bool is_idempotent() const = 0;
+	virtual bool is_commutative() const = 0;
+	SR null() const { return -1; }; // TODO: make this pure virtual
+	virtual std::string string() const = 0;
 };
 
 template <typename SR>

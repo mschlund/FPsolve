@@ -9,15 +9,16 @@ class FloatSemiring : public Semiring<FloatSemiring>
 private:
 	float val;
 public:
+	FloatSemiring();
 	FloatSemiring(const float val);
 	~FloatSemiring();
-	FloatSemiring operator + (const FloatSemiring& elem);
-	FloatSemiring operator * (const FloatSemiring& elem);
-	FloatSemiring star ();
+	FloatSemiring operator + (const FloatSemiring& elem) const;
+	FloatSemiring operator * (const FloatSemiring& elem) const;
+	FloatSemiring star () const;
 	static FloatSemiring null();
-	std::string string();
-	bool is_idempotent();
-	bool is_commutative();
+	std::string string() const;
+	bool is_idempotent() const ;
+	bool is_commutative() const;
 };
 
 #endif
