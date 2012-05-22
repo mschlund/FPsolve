@@ -52,5 +52,5 @@ bool FloatSemiring::is_idempotent() const
 
 bool FloatSemiring::is_commutative() const
 {
-	return 0;
+	return 1;
 }
