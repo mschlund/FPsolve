@@ -12,10 +12,12 @@ template <typename SR>
 class Polynome
 {
 private:
+	int degree;
 	std::set<char> variables;
 	typedef std::map<std::string, SR> Tcoeff;
 	Tcoeff coeff;
 public:
+
 	// empty polynome
 	Polynome()
 	{
@@ -25,6 +27,13 @@ public:
 	{
 		this->variables = variables;
 		this->coeff = coeff;
+		// calculate the degree. will not change because polynome is read only
+		this->degree = 0;
+		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
+		{
+			this->degree = it->first.length() > this->degree ? it->first.length() : this->degree;
+		}
+
 	};
 
 	Polynome<SR> operator+(const Polynome<SR>& poly) const
@@ -67,6 +76,11 @@ public:
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
 		return Polynome(new_vars, ret);
+	}
+
+	int get_degree()
+	{
+		return this->degree;
 	}
 
 	std::string string() const
