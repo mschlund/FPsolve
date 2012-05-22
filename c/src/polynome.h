@@ -29,7 +29,7 @@ public:
 
 	Polynome<SR> operator+(const Polynome<SR>& poly) const
 	{
-		Tcoeff ret;
+		Tcoeff ret = poly.coeff; // fill coefficients with all elements of the second operand
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
 			typename Tcoeff::const_iterator elem = poly.coeff.find(it->first);
@@ -41,17 +41,8 @@ public:
 			{
 				ret[it->first] = it->second;
 			}
-		} // ret now contains all elements of this polynome excluding exclusive elements of the second operand
-
-		// include them as well
-		for (typename Tcoeff::const_iterator it = poly.coeff.begin(); it != poly.coeff.end(); ++it)
-		{
-			if(this->coeff.find(it->first) == this->coeff.end()) // this "poly.coeff" element is not in "this->coeff"
-			{
-				ret[it->first] = it->second;
-			}
 		}
-		
+
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
 		return Polynome(new_vars, ret);
@@ -67,7 +58,10 @@ public:
 				std::stringstream ss;
 				ss << it1->first << it2->first; // non commutative multiplication of variables
 				std::string tmp = ss.str();
+				typename Tcoeff::const_iterator elem = ret.find(tmp);
 				ret[tmp] = it1->second * it2->second; // semiring multiplication
+				if(elem != ret.end())
+					ret[tmp] = elem->second + ret[tmp]; // ret already had this variable, add its coefficient
 			}
 		}
 		std::set<char> new_vars = this->variables;
