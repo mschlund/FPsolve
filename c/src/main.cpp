@@ -42,6 +42,9 @@ int main(int argc, char* argv[])
 	tmpPoly = poly2 * poly2;
 	std::cout << "(" << poly2 << ")^2 = " << tmpPoly << std::endl;
 
+	std::cout << "d/dx(" << tmpPoly << ") = ";
+	tmpPoly = tmpPoly.derivative('x');
+	std::cout << tmpPoly << std::endl;
 
 	return 0;
 }

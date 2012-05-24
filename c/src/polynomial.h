@@ -5,6 +5,7 @@
 #include <set>
 #include <iostream>
 #include <string>
+#include <list>
 #include <sstream>
 #include <assert.h>
 
@@ -16,6 +17,35 @@ private:
 	std::set<char> variables;
 	typedef std::map<std::string, SR> Tcoeff;
 	Tcoeff coeff;
+
+	// non-commutative version
+	std::list<std::string> monomialDerivative(const char& var, const std::string& vars) const
+	{
+		std::list<std::string> ret;
+		// (uvwx) = u'vwx + uv'wx + uvw'x + uvwx'
+		// but uv'wx = 0 for v != var because uv'wx = u0wx = 0
+		// so just use all terms uv'wx for v = var -> uv'wx = uwx
+		for (int pos = 0; pos < vars.length(); ++pos)
+		{
+			if(vars[pos] == var)
+			{
+				std::string tmp = vars;
+				tmp.erase(pos,1); // uv'wx -> uwx
+				ret.push_back(tmp);
+			}
+		}
+		return ret;
+	};
+
+	// insert a monomial into coeffs
+	static void insertMonomial(const std::string& vars, const SR& coeff, Tcoeff* coeffs)
+	{
+		typename Tcoeff::const_iterator elem = coeffs->find(vars);
+		if(elem == coeffs->end()) // not in the map yet
+			(*coeffs)[vars] = coeff;
+		else // there is already a coefficient
+			(*coeffs)[vars] = (*coeffs)[vars] + coeff;
+	};
 public:
 
 	// empty polynomial
@@ -76,6 +106,24 @@ public:
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
 		return Polynomial(new_vars, ret);
+	}
+
+	Polynomial<SR> derivative(const char& var) const
+	{
+		Tcoeff ret;
+		// derivative of a polynomial is the sum of all derivated monomials
+		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
+		{
+			// naive use of product rule in monomialDerivative
+			std::string vars = it->first;
+			std::list<std::string> derivs = monomialDerivative(var, vars);
+			for(std::list<std::string>::const_iterator deriv = derivs.begin(); deriv != derivs.end(); ++deriv)
+			{
+				insertMonomial(*deriv, it->second, &ret);
+			}
+		}
+
+		return Polynomial(this->variables, ret);
 	}
 
 	int get_degree()
