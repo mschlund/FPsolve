@@ -68,9 +68,9 @@ public:
 
 	Polynomial<SR> operator+(const Polynomial<SR>& poly) const
 	{
-		Tcoeff ret = poly.coeff; // fill coefficients with all elements of the second operand
-		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
-			insertMonomial(it->first, it->second, &ret);
+		Tcoeff ret = this->coeff; // fill coefficients with all elements of the first operand
+		for (typename Tcoeff::const_iterator it = poly.coeff.begin(); it != poly.coeff.end(); ++it)
+			insertMonomial(it->first, it->second, &ret); // add all elements of the second operand
 
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
