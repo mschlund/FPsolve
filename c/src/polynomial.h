@@ -70,17 +70,7 @@ public:
 	{
 		Tcoeff ret = poly.coeff; // fill coefficients with all elements of the second operand
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
-		{
-			typename Tcoeff::const_iterator elem = poly.coeff.find(it->first);
-			if(elem != poly.coeff.end()) // element found
-			{
-				ret[it->first] = it->second + elem->second;
-			}
-			else
-			{
-				ret[it->first] = it->second;
-			}
-		}
+			insertMonomial(it->first, it->second, &ret);
 
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
@@ -97,10 +87,7 @@ public:
 				std::stringstream ss;
 				ss << it1->first << it2->first; // non commutative multiplication of variables
 				std::string tmp = ss.str();
-				typename Tcoeff::const_iterator elem = ret.find(tmp);
-				ret[tmp] = it1->second * it2->second; // semiring multiplication
-				if(elem != ret.end())
-					ret[tmp] = elem->second + ret[tmp]; // ret already had this variable, add its coefficient
+				insertMonomial(tmp, it1->second * it2->second, &ret); // use semiring multiplication
 			}
 		}
 		std::set<char> new_vars = this->variables;
