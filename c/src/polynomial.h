@@ -1,5 +1,5 @@
-#ifndef POLYNOME_H
-#define POLYNOME_H
+#ifndef POLYNOMIAL_H
+#define POLYNOMIAL_H
 
 #include <map>
 #include <set>
@@ -9,7 +9,7 @@
 #include <assert.h>
 
 template <typename SR>
-class Polynome
+class Polynomial
 {
 private:
 	int degree;
@@ -18,16 +18,16 @@ private:
 	Tcoeff coeff;
 public:
 
-	// empty polynome
-	Polynome()
+	// empty polynomial
+	Polynomial()
 	{
 	};
 
-	Polynome(std::set<char> variables, Tcoeff coeff)
+	Polynomial(std::set<char> variables, Tcoeff coeff)
 	{
 		this->variables = variables;
 		this->coeff = coeff;
-		// calculate the degree. will not change because polynome is read only
+		// calculate the degree. will not change because polynomial is read only
 		this->degree = 0;
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
@@ -36,7 +36,7 @@ public:
 
 	};
 
-	Polynome<SR> operator+(const Polynome<SR>& poly) const
+	Polynomial<SR> operator+(const Polynomial<SR>& poly) const
 	{
 		Tcoeff ret = poly.coeff; // fill coefficients with all elements of the second operand
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
@@ -54,10 +54,10 @@ public:
 
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
-		return Polynome(new_vars, ret);
+		return Polynomial(new_vars, ret);
 	}
 	
-	Polynome<SR> operator*(const Polynome<SR>& poly) const
+	Polynomial<SR> operator*(const Polynomial<SR>& poly) const
 	{
 		Tcoeff ret;
 		for (typename Tcoeff::const_iterator it1 = this->coeff.begin(); it1 != this->coeff.end(); ++it1)
@@ -75,7 +75,7 @@ public:
 		}
 		std::set<char> new_vars = this->variables;
 		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
-		return Polynome(new_vars, ret);
+		return Polynomial(new_vars, ret);
 	}
 
 	int get_degree()
@@ -97,7 +97,7 @@ public:
 };
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, Polynome<SR>& poly)
+std::ostream& operator<<(std::ostream& os, Polynomial<SR>& poly)
 {
 	return os << poly.string();
 }

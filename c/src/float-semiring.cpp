@@ -2,7 +2,7 @@
 #include <sstream>
 #include "float-semiring.h"
 
-// std::map in polynome.h wants this constructor...
+// std::map in polynomial.h wants this constructor...
 FloatSemiring::FloatSemiring()
 {
 	this->val = 0;
