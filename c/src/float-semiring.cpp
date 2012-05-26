@@ -30,7 +30,8 @@ FloatSemiring FloatSemiring::operator*(const FloatSemiring& elem) const
 
 FloatSemiring FloatSemiring::star() const
 {
-	return *this;
+	// beware of the 1-Element (TODO: inf-Element?)
+	return FloatSemiring(1/(1-this->val));
 }
 
 FloatSemiring FloatSemiring::null()
