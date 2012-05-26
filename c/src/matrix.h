@@ -14,6 +14,21 @@ private:
 	int columns;
 	int rows;
 public:
+	Matrix(const Matrix& matrix)
+	{
+		this->columns = matrix.columns;
+		this->rows = matrix.rows;
+		this->elements = matrix.elements;
+	}
+
+	Matrix& operator=(const Matrix& matrix)
+	{
+		this->columns = matrix.columns;
+		this->rows = matrix.rows;
+		this->elements = matrix.elements;
+		return (*this);
+	};
+
 	 // initialize c x r matrix with the null element
 	Matrix(int c, int r){
 		this->columns = c;
@@ -62,7 +77,7 @@ public:
 				ret.at(r*mat.columns+c) = tmp;
 			}
 		}
-		return Matrix(this->rows, mat.columns, ret);
+		return Matrix(mat.columns, this->rows, ret);
 	};
 	Matrix star ()
 	{return *this;};
