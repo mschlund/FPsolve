@@ -72,8 +72,11 @@ public:
 				SR tmp = SR::null();
 				for(i = 0; i<this->columns; i++)
 				{
-					tmp = tmp + this->elements.at(r*this->columns+i) * mat.elements.at(i*mat.rows+c);
+					assert(i*mat.columns+c < mat.elements.size());
+					assert(r*this->columns+i < this->elements.size());
+					tmp = tmp + this->elements.at(r*this->columns+i) * mat.elements.at(i*mat.columns+c);
 				}
+				assert(r*mat.columns+c < ret.size());
 				ret.at(r*mat.columns+c) = tmp;
 			}
 		}
