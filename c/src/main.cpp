@@ -11,12 +11,25 @@ int main(int argc, char* argv[])
 	Matrix<FloatSemiring> bazinga(3,3,FloatSemiring(0.6));
 	bazinga = bazinga + bazinga;
 
-	FloatSemiring elems[] = {
+/*	FloatSemiring elems[] = {
 		FloatSemiring(0.5), FloatSemiring(0.9),
 		FloatSemiring(0.2), FloatSemiring(0.1)};
 	Matrix<FloatSemiring> foobar(2,2,std::vector<FloatSemiring>(elems, elems+4));
 	foobar = foobar * foobar;
+*/
 
+	FloatSemiring elems[] = {
+		FloatSemiring(0.5), FloatSemiring(0.4), FloatSemiring(0.3),
+		FloatSemiring(0.2), FloatSemiring(0.1), FloatSemiring(0.4),
+		FloatSemiring(0.3), FloatSemiring(0.2), FloatSemiring(0.2)};
+	Matrix<FloatSemiring> foobar2(3,3,std::vector<FloatSemiring>(elems, elems+9));
+
+	std::cout << foobar2 << std::endl;
+	Matrix<FloatSemiring> res = foobar2.star();
+	std::cout << "star of this:" << std::endl;
+	std::cout << res << std::endl;
+
+/*
 	// define new polynomial 2xx+7y
 	std::map<std::string, FloatSemiring> coeff;
 	coeff["xx"] = FloatSemiring(2);
@@ -45,6 +58,6 @@ int main(int argc, char* argv[])
 	std::cout << "d/dx(" << tmpPoly << ") = ";
 	tmpPoly = tmpPoly.derivative('x');
 	std::cout << tmpPoly << std::endl;
-
+*/
 	return 0;
 }
