@@ -98,6 +98,17 @@ public:
 	}
 };
 
+// friend method of Matrix
+template <typename SR>
+Matrix<SR> operator * (SR elem, const Matrix<SR>& mat)
+{
+	std::vector<SR> ret;
+	for(int i=0; i<mat.rows*mat.columns; i++)
+	{
+		ret.push_back(elem*mat[i]); // semiring multiplication
+	}
+}
+
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, Matrix<SR>& matrix)
 {
