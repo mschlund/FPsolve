@@ -1,5 +1,5 @@
 #ifndef MATRIX_H
-#define MATRIX
+#define MATRIX_H
 
 #include <string>
 #include <sstream>

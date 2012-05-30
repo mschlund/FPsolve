@@ -9,6 +9,7 @@
 #include <sstream>
 #include <assert.h>
 #include "semiring.h"
+#include "matrix.h"
 
 template <typename SR>
 class Polynomial : public Semiring<Polynomial<SR> >
@@ -137,6 +138,33 @@ public:
 			ret = ret.derivative(vars[pos]);
 		}
 		return ret;
+	}
+
+	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::vector<char>& variables)
+	{
+		std::vector<Polynomial<SR> > ret;
+		for(typename std::vector<Polynomial<SR> >::const_iterator poly = polynomials.begin(); poly != polynomials.end(); poly++)
+		{
+			for(std::vector<char>::const_iterator var = variables.begin(); var != variables.end(); var++)
+			{
+				ret.push_back(poly->derivative(*var));
+			}
+		}
+		return Matrix<Polynomial<SR> >(variables.size(), polynomials.size(), ret);
+	};
+
+	Matrix<Polynomial<SR> > hessian() const
+	{
+		std::vector<Polynomial<SR> > ret;
+		for(std::set<char>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); var2++)
+		{
+			Polynomial<SR> tmp = this->derivative(*var2);
+			for(std::set<char>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); var1++)
+			{
+				ret.push_back(tmp.derivative(*var1));
+			}
+		}
+		return Matrix<Polynomial<SR> >(this->variables.size(), this->variables.size(), ret);
 	}
 
 	int get_degree()
