@@ -8,9 +8,10 @@
 #include <list>
 #include <sstream>
 #include <assert.h>
+#include "semiring.h"
 
 template <typename SR>
-class Polynomial
+class Polynomial : public Semiring<Polynomial<SR> >
 {
 private:
 	int degree;
@@ -143,6 +144,28 @@ public:
 		return this->degree;
 	}
 
+	// some semiring functions
+	Polynomial<SR> star() const
+	{
+		// TODO?
+		return (*this);
+	}
+
+	static Polynomial<SR> null()
+	{
+		return Polynomial();
+	}
+
+	bool is_idempotent() const
+	{
+		return 0;
+	}
+
+	bool is_commutative() const
+	{
+		return 0;
+	}
+
 	std::string string() const
 	{
 		std::stringstream ss;
@@ -155,11 +178,5 @@ public:
 		return ss.str();
 	}
 };
-
-template <typename SR>
-std::ostream& operator<<(std::ostream& os, Polynomial<SR>& poly)
-{
-	return os << poly.string();
-}
 
 #endif
