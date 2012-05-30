@@ -53,6 +53,21 @@ public:
 	{
 	};
 
+	Polynomial(const Polynomial& polynomial)
+	{
+		this->variables = polynomial.variables;
+		this->coeff = polynomial.coeff;
+		this->degree = polynomial.degree;
+	}
+
+	Polynomial& operator=(const Polynomial& polynomial)
+	{
+		this->variables = polynomial.variables;
+		this->coeff = polynomial.coeff;
+		this->degree = polynomial.degree;
+		return (*this);
+	}
+
 	Polynomial(std::set<char> variables, Tcoeff coeff)
 	{
 		this->variables = variables;
@@ -111,6 +126,16 @@ public:
 		}
 
 		return Polynomial(this->variables, ret);
+	}
+
+	Polynomial<SR> derivative(const std::string& vars) const
+	{
+		Polynomial<SR> ret = *this;
+		for(int pos = 0; pos < vars.length(); pos++)
+		{
+			ret = ret.derivative(vars[pos]);
+		}
+		return ret;
 	}
 
 	int get_degree()
