@@ -167,6 +167,23 @@ public:
 		return Matrix<Polynomial<SR> >(this->variables.size(), this->variables.size(), ret);
 	}
 
+	SR eval(std::map<char,SR>& vars) const
+	{
+		SR ret = SR::null();
+		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
+		{
+			std::string variables = it->first;
+			SR elem = it->second;
+			for(int pos = 0; pos < variables.length(); pos++)
+			{
+				elem = elem * vars[variables[pos]];
+			}
+			ret = ret + elem;
+		}
+
+		return ret;
+	}
+
 	int get_degree()
 	{
 		return this->degree;
