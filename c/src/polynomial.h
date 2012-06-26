@@ -53,6 +53,8 @@ public:
 	// empty polynomial
 	Polynomial()
 	{
+		this->degree = 0;
+		this->coeff[""] = SR::null();
 	};
 
 	Polynomial(const Polynomial& polynomial)
@@ -126,6 +128,10 @@ public:
 				insertMonomial(*deriv, it->second, &ret);
 			}
 		}
+
+		// if var was not in the polynomial return the null polynomial
+		if(ret.size() == 0)
+			ret[""] = SR::null();
 
 		return Polynomial(this->variables, ret);
 	}
