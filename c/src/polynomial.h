@@ -190,6 +190,17 @@ public:
 		return ret;
 	}
 
+	static Matrix<SR> eval(Matrix<Polynomial<SR> > polys, std::map<char,SR> vars)
+	{
+		std::vector<Polynomial<SR> > polynomials = polys.getElements();
+		std::vector<SR> ret;
+		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
+		{
+			ret.push_back(polynomials[i].eval(vars));
+		}
+		return Matrix<SR>(polys.getColumns(), polys.getRows(), ret);
+	}
+
 	int get_degree()
 	{
 		return this->degree;

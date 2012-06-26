@@ -161,6 +161,23 @@ public:
 		Matrix ret(*this);
 		return recursive_star(ret);
 	};
+
+	int getRows() const
+	{
+		return this->rows;
+	};
+
+	int getColumns() const
+	{
+		return this->columns;
+	};
+
+	std::vector<SR> getElements() const
+	{
+		std::vector<SR> ret = this->elements;
+		return ret;
+	};
+
 	std::string string()
 	{
 		std::stringstream ss;
