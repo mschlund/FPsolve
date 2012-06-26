@@ -2,6 +2,7 @@
 #include "float-semiring.h"
 #include "matrix.h"
 #include "polynomial.h"
+#include "newton.h"
 
 void test_addition()
 {
@@ -162,6 +163,57 @@ void test_polynomial_matrix_evaluation()
 	std::cout << polynomial_matrix << " at {x=5, y=4, z=0} = " << std::endl << result;
 }
 
+std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
+{
+	std::vector<Polynomial<FloatSemiring> > polynomials;
+
+	// define new polynomial 0.4xy+0.6
+	std::map<std::string, FloatSemiring> coeff;
+	coeff["xy"] = FloatSemiring(0.4);
+	coeff[""] = FloatSemiring(0.6);
+	std::set<char> variables;
+	variables.insert('x');
+	variables.insert('z');
+	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>(variables,coeff);
+
+	// define new polynomial 0.3yz+0.4yx+0.3
+	coeff.clear();
+	coeff["yz"] = FloatSemiring(0.3);
+	coeff["yx"] = FloatSemiring(0.4);
+	coeff[""] = FloatSemiring(0.3);
+	variables.clear();
+	variables.insert('x');
+	variables.insert('z');
+	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>(variables,coeff);
+
+	// define new polynomial 0.3x+0.7
+	coeff.clear();
+	coeff["x"] = FloatSemiring(0.3);
+	coeff[""] = FloatSemiring(0.7);
+	variables.clear();
+	variables.insert('x');
+	variables.insert('z');
+	Polynomial<FloatSemiring> f3 = Polynomial<FloatSemiring>(variables,coeff);
+
+	polynomials.push_back(f1);
+	polynomials.push_back(f2);
+	polynomials.push_back(f3);
+
+	return polynomials;
+}
+
+void test_newton()
+{
+	Newton<FloatSemiring> newton;
+	std::vector<char> variables;
+	variables.push_back('x');
+	variables.push_back('y');
+	variables.push_back('z');
+	std::cout << "- newton:" << std::endl;
+	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
+	Matrix<Polynomial<FloatSemiring> > result = newton.solve_fixpoint(polynomials, variables, 10);
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -176,7 +228,8 @@ int main(int argc, char* argv[])
 //	test_matrix_transpose();
 //	test_matrix_star();
 //	test_jacobian();
-	test_polynomial_matrix_evaluation();
+//	test_polynomial_matrix_evaluation();
+//	test_newton();
 
 	return 0;
 }
