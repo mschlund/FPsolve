@@ -42,6 +42,8 @@ private:
 	// insert a monomial into coeffs
 	static void insertMonomial(const std::string& vars, const SR& coeff, Tcoeff* coeffs)
 	{
+		if(coeff == SR::null())
+			return; // do not save 0 coefficients
 		typename Tcoeff::const_iterator elem = coeffs->find(vars);
 		if(elem == coeffs->end()) // not in the map yet
 			(*coeffs)[vars] = coeff;

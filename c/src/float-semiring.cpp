@@ -28,6 +28,11 @@ FloatSemiring FloatSemiring::operator*(const FloatSemiring& elem) const
 	return FloatSemiring(this->val * elem.val);
 }
 
+bool FloatSemiring::operator==(const FloatSemiring elem) const
+{
+	return this->val == elem.val;
+}
+
 FloatSemiring FloatSemiring::star() const
 {
 	// beware of the 1-Element (TODO: inf-Element?)
