@@ -116,6 +116,14 @@ void test_matrix_multiplication()
 	std::cout << first << " * " << std::endl << second << " = " << std::endl << result;
 }
 
+void test_matrix_transpose()
+{
+	Matrix<FloatSemiring> matrix = get_first_matrix();
+	Matrix<FloatSemiring> result = matrix.transpose();
+	std::cout << "- matrix transpose:" << std::endl;
+	std::cout << matrix << " transposed " << std::endl << result;
+}
+
 void test_matrix_star()
 {
 	Matrix<FloatSemiring> matrix = get_first_matrix();
@@ -165,6 +173,7 @@ int main(int argc, char* argv[])
 //	test_polynomial_evaluation();
 //	test_matrix_addition();
 //	test_matrix_multiplication();
+//	test_matrix_transpose();
 //	test_matrix_star();
 //	test_jacobian();
 	test_polynomial_matrix_evaluation();

@@ -162,6 +162,19 @@ public:
 		return recursive_star(ret);
 	};
 
+	Matrix transpose()
+	{
+		std::vector<SR> ret;
+		for(int r = 0; r<this->rows; r++)
+		{
+			for(int c = 0; c<this->columns; c++)
+			{
+				ret.push_back(this->elements.at(c*this->columns+r));
+			}
+		}
+		return Matrix(this->rows, this->columns, ret);
+	};
+
 	int getRows() const
 	{
 		return this->rows;
