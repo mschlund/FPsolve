@@ -66,6 +66,13 @@ public:
 		this->degree = polynomial.degree;
 	}
 
+	// create a 'constant' polynomial
+	Polynomial(const SR& elem)
+	{
+		this->degree = 0;
+		this->coeff[""] = elem;
+	}
+
 	Polynomial& operator=(const Polynomial& polynomial)
 	{
 		this->variables = polynomial.variables;
@@ -124,6 +131,19 @@ public:
 			insertMonomial(it->first, elem * it->second, &ret);
 		}
 		return Polynomial(polynomial.vars, ret);
+	}
+
+	// convert the given matrix to a matrix containing polynomials
+	static Matrix<Polynomial<SR> > convert(const Matrix<SR>& mat)
+	{
+		std::vector<Polynomial<SR> > ret;
+		for(int i=0; i<mat.getColumns() * mat.getRows(); ++i)
+		{
+			// create constant polynomials
+			ret.push_back(Polynomial(mat.getElements().at(i)));
+		}
+
+		return Matrix<Polynomial<SR> >(mat.getColumns(), mat.getRows(), ret);
 	}
 
 	Polynomial<SR> derivative(const char& var) const
