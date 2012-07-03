@@ -167,13 +167,15 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 {
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 
+	std::set<char> variables;
+	variables.insert('x');
+	variables.insert('y');
+	variables.insert('z');
+
 	// define new polynomial 0.4xy+0.6
 	std::map<std::string, FloatSemiring> coeff;
 	coeff["xy"] = FloatSemiring(0.4);
 	coeff[""] = FloatSemiring(0.6);
-	std::set<char> variables;
-	variables.insert('x');
-	variables.insert('z');
 	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>(variables,coeff);
 
 	// define new polynomial 0.3yz+0.4yx+0.3
@@ -181,18 +183,12 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 	coeff["yz"] = FloatSemiring(0.3);
 	coeff["yx"] = FloatSemiring(0.4);
 	coeff[""] = FloatSemiring(0.3);
-	variables.clear();
-	variables.insert('x');
-	variables.insert('z');
 	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>(variables,coeff);
 
 	// define new polynomial 0.3x+0.7
 	coeff.clear();
 	coeff["x"] = FloatSemiring(0.3);
 	coeff[""] = FloatSemiring(0.7);
-	variables.clear();
-	variables.insert('x');
-	variables.insert('z');
 	Polynomial<FloatSemiring> f3 = Polynomial<FloatSemiring>(variables,coeff);
 
 	polynomials.push_back(f1);
@@ -229,7 +225,7 @@ int main(int argc, char* argv[])
 //	test_matrix_star();
 //	test_jacobian();
 //	test_polynomial_matrix_evaluation();
-//	test_newton();
+	test_newton();
 
 	return 0;
 }
