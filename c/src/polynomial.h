@@ -116,6 +116,16 @@ public:
 		return Polynomial(new_vars, ret);
 	}
 
+	friend Polynomial<SR> operator*(const SR& elem, const Polynomial<SR>& polynomial)
+	{
+		Tcoeff ret;
+		for (typename Tcoeff::const_iterator it = polynomial.coeff.begin(); it != polynomial.coeff.end(); ++it)
+		{
+			insertMonomial(it->first, elem * it->second, &ret);
+		}
+		return Polynomial(polynomial.vars, ret);
+	}
+
 	Polynomial<SR> derivative(const char& var) const
 	{
 		Tcoeff ret;
@@ -132,7 +142,7 @@ public:
 		}
 
 		// if var was not in the polynomial return the null polynomial
-		if(ret.size() == 0)
+		if(ret.empty())
 			ret[""] = SR::null();
 
 		return Polynomial(this->variables, ret);
@@ -151,9 +161,9 @@ public:
 	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::vector<char>& variables)
 	{
 		std::vector<Polynomial<SR> > ret;
-		for(typename std::vector<Polynomial<SR> >::const_iterator poly = polynomials.begin(); poly != polynomials.end(); poly++)
+		for(typename std::vector<Polynomial<SR> >::const_iterator poly = polynomials.begin(); poly != polynomials.end(); ++poly)
 		{
-			for(std::vector<char>::const_iterator var = variables.begin(); var != variables.end(); var++)
+			for(std::vector<char>::const_iterator var = variables.begin(); var != variables.end(); ++var)
 			{
 				ret.push_back(poly->derivative(*var));
 			}
@@ -164,10 +174,10 @@ public:
 	Matrix<Polynomial<SR> > hessian() const
 	{
 		std::vector<Polynomial<SR> > ret;
-		for(std::set<char>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); var2++)
+		for(std::set<char>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
 		{
 			Polynomial<SR> tmp = this->derivative(*var2);
-			for(std::set<char>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); var1++)
+			for(std::set<char>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
 			{
 				ret.push_back(tmp.derivative(*var1));
 			}
@@ -237,7 +247,10 @@ public:
 			if(it != coeff.begin())
 				ss << " + ";
 			SR tmp = it->second;
-			ss << tmp << it->first;
+			ss << tmp;
+			if(it->first != "")
+				ss << "*";
+			ss << it->first;
 		}
 		return ss.str();
 	}

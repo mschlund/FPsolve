@@ -88,7 +88,7 @@ public:
 		this->rows = r;
 		elements.assign(this->rows*this->columns,SR::null());
 	}
-	Matrix(int c, int r, SR elem){ // initialize c x r matrix with elem
+	Matrix(int c, int r, const SR& elem){ // initialize c x r matrix with elem
 		this->columns = c;
 		this->rows = r;
 		elements.assign(this->rows*this->columns,elem);

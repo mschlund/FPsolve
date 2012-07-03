@@ -28,7 +28,7 @@ FloatSemiring FloatSemiring::operator*(const FloatSemiring& elem) const
 	return FloatSemiring(this->val * elem.val);
 }
 
-bool FloatSemiring::operator==(const FloatSemiring elem) const
+bool FloatSemiring::operator==(const FloatSemiring& elem) const
 {
 	return this->val == elem.val;
 }

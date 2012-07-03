@@ -14,7 +14,7 @@ public:
 	~FloatSemiring();
 	FloatSemiring operator + (const FloatSemiring& elem) const;
 	FloatSemiring operator * (const FloatSemiring& elem) const;
-	bool operator == (const FloatSemiring elem) const;
+	bool operator == (const FloatSemiring& elem) const;
 	FloatSemiring star () const;
 	static FloatSemiring null();
 	static FloatSemiring one();

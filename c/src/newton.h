@@ -9,7 +9,7 @@ template <typename SR>
 class Newton
 {
 private:
-	Matrix<Polynomial<SR> > compute_symbolic_delta(Matrix<Polynomial<SR> > u, std::vector<Polynomial<SR> > F)
+	Matrix<Polynomial<SR> > compute_symbolic_delta(const Matrix<Polynomial<SR> >& u, const std::vector<Polynomial<SR> >& F)
 	{
 		std::vector<Polynomial<SR> > ret;
 		for(int i = 0; i<F.size(); i++)
@@ -33,9 +33,10 @@ public:
 		std::map<std::string, FloatSemiring> coeff;
 		std::set<char> variables;
 		char var[] = "0"; // initialize char*
-		for(int i=0; i<F.size(); i++)
+		for(int i=0; i<poly_vars.size(); i++)
 		{
 			coeff.clear();
+			variables.clear();
 			sprintf(var,"%d",i);
 			coeff[var] = SR::one(); // variable "1", "2",...
 			variables.insert(var[0]);
