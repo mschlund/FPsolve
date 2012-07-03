@@ -20,7 +20,7 @@ public:
 };
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, Semiring<SR>& elem)
+std::ostream& operator<<(std::ostream& os, const Semiring<SR>& elem)
 {
 	return os << elem.string();
 }

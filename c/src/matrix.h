@@ -191,7 +191,7 @@ public:
 		return ret;
 	};
 
-	std::string string()
+	std::string string() const
 	{
 		std::stringstream ss;
 		int r;
@@ -220,7 +220,7 @@ Matrix<SR> operator * (SR elem, const Matrix<SR>& mat)
 }
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, Matrix<SR>& matrix)
+std::ostream& operator<<(std::ostream& os, const Matrix<SR>& matrix)
 {
 	return os << matrix.string();
 }
