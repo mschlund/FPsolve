@@ -222,6 +222,23 @@ public:
 		return ret;
 	}
 
+	Polynomial<SR> eval(std::map<char,Polynomial<SR> >& vars) const
+	{
+		Polynomial<SR> ret = Polynomial<SR>::null();
+		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
+		{
+			std::string variables = it->first;
+			Polynomial<SR> elem = it->second;
+			for(int pos = 0; pos < variables.length(); pos++)
+			{
+				elem = elem * vars[variables[pos]];
+			}
+			ret = ret + elem;
+		}
+
+		return ret;
+	}
+
 	static Matrix<SR> eval(Matrix<Polynomial<SR> > polys, std::map<char,SR> vars)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
@@ -231,6 +248,17 @@ public:
 			ret.push_back(polynomials[i].eval(vars));
 		}
 		return Matrix<SR>(polys.getColumns(), polys.getRows(), ret);
+	}
+
+	static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > polys, std::map<char,Polynomial<SR> > vars)
+	{
+		std::vector<Polynomial<SR> > polynomials = polys.getElements();
+		std::vector<Polynomial<SR> > ret;
+		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
+		{
+			ret.push_back(polynomials[i].eval(vars));
+		}
+		return Matrix<Polynomial<SR> >(polys.getColumns(), polys.getRows(), ret);
 	}
 
 	int get_degree()
