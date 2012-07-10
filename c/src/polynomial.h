@@ -278,6 +278,11 @@ public:
 		return Polynomial();
 	}
 
+	static Polynomial<SR> one()
+	{
+		return Polynomial(SR::one());
+	}
+
 	bool is_idempotent() const
 	{
 		return 0;
