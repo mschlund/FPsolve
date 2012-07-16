@@ -78,7 +78,7 @@ import itertools as it
 # parameter vectors are v and v_upd (which may also be concrete values if wanted :))
 # v should be the (d-1)-st newton iterand and v_upd should be the (d)-th newton-update
 def compute_symbolic_delta_general(v, v_upd, F, poly_vars) :
-    n = len(v)
+    n = len(v) # FIXME: buggy if v is a SINGLE VARIABLE (i.e. for a single equation)!!
     assert(len(poly_vars) == n)
     delta = vector(SR,n)
     for i in range(n) :
@@ -203,7 +203,7 @@ def newton_numerical(F, poly_vars, max_iter=10) :
     np_to_SR = NumpyToSRMorphism(numpy.float64, SR)
     J = jacobian(F,poly_vars)
     
-    v_0 = numpy.array([0,0,0])
+    v_0 = numpy.array([0]*len(poly_vars))
     v = vector(map(np_to_SR,v_0)).column()
     for i in range(1,max_iter+1) :
         v = vector(map(np_to_SR,v)).column()

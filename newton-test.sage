@@ -2,19 +2,26 @@
 var('x,y,z')
 var('a,b,c,d,e,f,g,h,i')
 
-f1 = a*x*y + b
-f2 = c*y*z + d*y*x + e
-f3 = g*x*h + i
+#f1 = a*x*y + b
+#f2 = c*y*z + d*y*x + e
+#f3 = g*x*h + i
+
+f4 = a*x*x*x + b*x + c
 
 # to compute the termination probability of the above system:
-probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
+#probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
 #probabilistic_subs = dict( [(a,2/5),(b,3/5),(c,3/10),(d,2/5),(e,3/10),(g,3/10),(h,1),(i,7/10) ] )
 
-F = vector(SR,[f1,f2,f3]).column()
+probabilistic_subs = dict( [(a,1/16),(b,1/2),(c,1/2)] ) #not a probability distribution :)
+s = 1/(1-x)
+
+#F = vector(SR,[f1,f2,f3]).column()
+F = vector(SR,[f4]).column()
 
 F_c = F.subs(probabilistic_subs)
 
-variables = [x,y,z]
+#variables = [x,y,z]
+variables = [x]
 F_diff = F_c - vector(SR,variables).column()
 
 
