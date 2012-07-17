@@ -76,7 +76,7 @@ public:
 	{
 		this->degree = 0;
 		std::multiset<Var> vars = {Var("")};
-		this->coeff.at(vars) = elem;
+		this->coeff[vars] = elem;
 	}
 
 	Polynomial& operator=(const Polynomial& polynomial)
@@ -87,7 +87,7 @@ public:
 		return (*this);
 	}
 
-	Polynomial(std::multiset<Var> variables, Tcoeff coeff)
+	Polynomial(const std::multiset<Var> variables, const Tcoeff coeff)
 	{
 		this->variables = variables;
 		this->coeff = coeff;
@@ -210,7 +210,7 @@ public:
 		return Matrix<Polynomial<SR> >(this->variables.size(), this->variables.size(), ret);
 	}
 
-	SR eval(std::map<Var,SR>& vars) const
+	SR eval(const std::map<Var,SR>& vars) const
 	{
 		SR ret = SR::null();
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
@@ -228,7 +228,7 @@ public:
 		return ret;
 	}
 
-	Polynomial<SR> eval(std::map<Var,Polynomial<SR> >& vars) const
+	Polynomial<SR> eval(const std::map<Var,Polynomial<SR> >& vars) const
 	{
 		Polynomial<SR> ret = Polynomial<SR>::null();
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
@@ -246,7 +246,7 @@ public:
 		return ret;
 	}
 
-	static Matrix<SR> eval(Matrix<Polynomial<SR> > polys, std::map<Var,SR> vars)
+	static Matrix<SR> eval(const Matrix<Polynomial<SR> > polys, const std::map<Var,SR> vars)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<SR> ret;
