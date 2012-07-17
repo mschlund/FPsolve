@@ -75,7 +75,15 @@ private:
 			//iterate over (x,y,...,z) with x,y,...,z \in [0,deg+1]
 			for(std::vector<std::vector<int>* >::const_iterator it = p.begin(); it != p.end(); ++it)
 			{
-				// TODO: sum over p must be 2 <= p <= deg
+				int sum_p=0;
+				for(std::vector<int>::iterator it2=(*it)->begin();it2!=(*it)->end();++it2)
+				    sum_p += *it2;
+				// sum over p must be 2 <= p <= deg
+				if(sum_p < 2 || sum_p > deg)
+				{
+					continue;
+				}
+
 				std::multiset<Var> dx;
 				Polynomial<SR> prod = Polynomial<SR>::one();
 
