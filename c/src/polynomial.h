@@ -21,20 +21,23 @@ private:
 	typedef std::map<std::multiset<Var>, SR> Tcoeff;
 	Tcoeff coeff;
 
-	// non-commutative version
+	// commutative version
 	std::list<std::multiset<Var> > monomialDerivative(const Var& var, const std::multiset<Var>& vars) const
 	{
+		std::vector<Var> tmp(vars.begin(),vars.end()); // copy variables to temporary vector
 		std::list<std::multiset<Var> > ret;
 		// (uvwx) = u'vwx + uv'wx + uvw'x + uvwx'
 		// but uv'wx = 0 for v != var because uv'wx = u0wx = 0
 		// so just use all terms uv'wx for v = var -> uv'wx = uwx
-		for (std::multiset<Var>::iterator v = vars.begin(); v != vars.end(); ++v)
+		int i = 0;
+		for (std::vector<Var>::iterator v = tmp.begin(); v != tmp.end(); ++v)
 		{
 			if( (*v) == var)
 			{
-				std::multiset<Var> tmp = vars;
-				tmp.erase(v); // uv'wx -> uwx
-				ret.push_back(tmp);
+				std::vector<Var> foo = tmp;
+				foo.erase(foo.begin()+i); // uv'wx -> uwx
+				ret.push_back(std::multiset<Var>(foo.begin(), foo.end())); // push a new multiset into ret
+				i++;
 			}
 		}
 
