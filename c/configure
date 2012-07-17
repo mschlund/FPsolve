@@ -2959,6 +2959,7 @@ else
 fi
 
 
+CXXFLAGS="$CXXFLAGS -std=c++0x"
 ac_config_headers="$ac_config_headers config.h"
 
 ac_config_files="$ac_config_files Makefile src/Makefile"

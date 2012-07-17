@@ -22,28 +22,41 @@ void test_multiplication()
 	std::cout << first << " * " << second << " = " << result << std::endl;
 }
 
+void test_variables()
+{
+	Var var1;
+	Var var2;
+	std::cout << "- variables:" << std::endl;
+	std::cout << var1 << "," << var2 << std::endl;
+}
+
 Polynomial<FloatSemiring> get_first_polynomial()
 {
 	// define new polynomial 2xx+7y
-	std::map<std::string, FloatSemiring> coeff;
-	coeff["xx"] = FloatSemiring(2);
-	coeff["z"] = FloatSemiring(7);
-	std::set<char> variables;
-	variables.insert('x');
-	variables.insert('z');
+	std::map<std::multiset<Var>, FloatSemiring> coeff;
+	std::multiset<Var> vars = {Var("x"),Var("x")};
+	coeff[vars] = FloatSemiring(2);
+	vars = {Var("z")};
+	coeff[vars] = FloatSemiring(7);
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("z"));
 	return Polynomial<FloatSemiring>(variables,coeff);
 }
 
 Polynomial<FloatSemiring> get_second_polynomial()
 {
 	// define new polynomial 5xx+3xy+6yy
-	std::map<std::string, FloatSemiring> coeff;
-	coeff["xx"] = FloatSemiring(5);
-	coeff["xy"] = FloatSemiring(3);
-	coeff["yy"] = FloatSemiring(6);
-	std::set<char> variables;
-	variables.insert('x');
-	variables.insert('y');
+	std::map<std::multiset<Var>, FloatSemiring> coeff;
+	std::multiset<Var> vars = {Var("x"),Var("x")};
+	coeff[vars] = FloatSemiring(5);
+	vars = {Var("x"),Var("y")};
+	coeff[vars] = FloatSemiring(3);
+	vars = {Var("y"),Var("y")};
+	coeff[vars] = FloatSemiring(6);
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("y"));
 	return Polynomial<FloatSemiring>(variables,coeff);
 }
 
@@ -65,19 +78,19 @@ void test_polynomial_multiplication()
 	std::cout << first << " * " << second << " = " << result << std::endl;
 }
 
-std::map<char,FloatSemiring> get_variable_values()
+std::map<Var,FloatSemiring> get_variable_values()
 {
-	std::map<char,FloatSemiring> values;
-	values.insert(values.begin(), std::pair<char,FloatSemiring>('x',FloatSemiring(5)));
-	values.insert(values.begin(), std::pair<char,FloatSemiring>('y',FloatSemiring(4)));
-	values.insert(values.begin(), std::pair<char,FloatSemiring>('z',FloatSemiring(0)));
+	std::map<Var,FloatSemiring> values;
+	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("x"),FloatSemiring(5)));
+	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("y"),FloatSemiring(4)));
+	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("z"),FloatSemiring(0)));
 	return values;
 }
 
 void test_polynomial_evaluation()
 {
 	Polynomial<FloatSemiring> polynomial = get_second_polynomial();
-	std::map<char,FloatSemiring> values = get_variable_values();
+	std::map<Var,FloatSemiring> values = get_variable_values();
 	FloatSemiring result = polynomial.eval(values);
 	std::cout << "- polynomial evaluation:" << std::endl;
 	std::cout << polynomial << " at {x=5, y=4, z=0} = " << result << std::endl;
@@ -135,10 +148,10 @@ void test_matrix_star()
 
 void test_jacobian()
 {
-	std::vector<char> variables;
-	variables.push_back('x');
-	variables.push_back('y');
-	variables.push_back('z');
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("y"));
+	variables.insert(Var("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
@@ -149,15 +162,15 @@ void test_jacobian()
 
 void test_polynomial_matrix_evaluation()
 {
-	std::vector<char> variables;
-	variables.push_back('x');
-	variables.push_back('y');
-	variables.push_back('z');
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("y"));
+	variables.insert(Var("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
 	Matrix<Polynomial<FloatSemiring> > polynomial_matrix = Polynomial<FloatSemiring>::jacobian(polynomials, variables);
-	std::map<char,FloatSemiring> values = get_variable_values();
+	std::map<Var,FloatSemiring> values = get_variable_values();
 	Matrix<FloatSemiring> result = Polynomial<FloatSemiring>::eval(polynomial_matrix, values);
 	std::cout << "- polynomial matrix evaluation" << std::endl;
 	std::cout << polynomial_matrix << " at {x=5, y=4, z=0} = " << std::endl << result;
@@ -167,28 +180,35 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 {
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 
-	std::set<char> variables;
-	variables.insert('x');
-	variables.insert('y');
-	variables.insert('z');
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("y"));
+	variables.insert(Var("z"));
 
 	// define new polynomial 0.4xy+0.6
-	std::map<std::string, FloatSemiring> coeff;
-	coeff["xy"] = FloatSemiring(0.4);
-	coeff[""] = FloatSemiring(0.6);
+	std::map<std::multiset<Var>, FloatSemiring> coeff;
+	std::multiset<Var> vars = {Var("x"),Var("y")};
+	coeff[vars] = FloatSemiring(0.4);
+	vars = {Var("")};
+	coeff[vars] = FloatSemiring(0.6);
 	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>(variables,coeff);
 
 	// define new polynomial 0.3yz+0.4yx+0.3
 	coeff.clear();
-	coeff["yz"] = FloatSemiring(0.3);
-	coeff["yx"] = FloatSemiring(0.4);
-	coeff[""] = FloatSemiring(0.3);
+	vars = {Var("y"),Var("z")};
+	coeff[vars] = FloatSemiring(0.3);
+	vars = {Var("y"),Var("x")};
+	coeff[vars] = FloatSemiring(0.4);
+	vars = {Var("")};
+	coeff[vars] = FloatSemiring(0.3);
 	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>(variables,coeff);
 
 	// define new polynomial 0.3x+0.7
 	coeff.clear();
-	coeff["x"] = FloatSemiring(0.3);
-	coeff[""] = FloatSemiring(0.7);
+	vars = {Var("x")};
+	coeff[vars] = FloatSemiring(0.3);
+	vars = {Var("")};
+	coeff[vars] = FloatSemiring(0.7);
 	Polynomial<FloatSemiring> f3 = Polynomial<FloatSemiring>(variables,coeff);
 
 	polynomials.push_back(f1);
@@ -201,10 +221,10 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 void test_newton()
 {
 	Newton<FloatSemiring> newton;
-	std::vector<char> variables;
-	variables.push_back('x');
-	variables.push_back('y');
-	variables.push_back('z');
+	std::multiset<Var> variables;
+	variables.insert(Var("x"));
+	variables.insert(Var("y"));
+	variables.insert(Var("z"));
 	std::cout << "- newton:" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
 	Matrix<Polynomial<FloatSemiring> > result = newton.solve_fixpoint(polynomials, variables, 10);

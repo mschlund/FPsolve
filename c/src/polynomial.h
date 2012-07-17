@@ -8,6 +8,7 @@
 #include <list>
 #include <sstream>
 #include <assert.h>
+#include "var.h"
 #include "semiring.h"
 #include "matrix.h"
 
@@ -16,31 +17,32 @@ class Polynomial : public Semiring<Polynomial<SR> >
 {
 private:
 	int degree;
-	std::set<char> variables;
-	typedef std::map<std::string, SR> Tcoeff;
+	std::multiset<Var> variables;
+	typedef std::map<std::multiset<Var>, SR> Tcoeff;
 	Tcoeff coeff;
 
 	// non-commutative version
-	std::list<std::string> monomialDerivative(const char& var, const std::string& vars) const
+	std::list<std::multiset<Var> > monomialDerivative(const Var& var, const std::multiset<Var>& vars) const
 	{
-		std::list<std::string> ret;
+		std::list<std::multiset<Var> > ret;
 		// (uvwx) = u'vwx + uv'wx + uvw'x + uvwx'
 		// but uv'wx = 0 for v != var because uv'wx = u0wx = 0
 		// so just use all terms uv'wx for v = var -> uv'wx = uwx
-		for (int pos = 0; pos < vars.length(); ++pos)
+		for (std::multiset<Var>::iterator v = vars.begin(); v != vars.end(); ++v)
 		{
-			if(vars[pos] == var)
+			if( (*v) == var)
 			{
-				std::string tmp = vars;
-				tmp.erase(pos,1); // uv'wx -> uwx
+				std::multiset<Var> tmp = vars;
+				tmp.erase(v); // uv'wx -> uwx
 				ret.push_back(tmp);
 			}
 		}
+
 		return ret;
 	};
 
 	// insert a monomial into coeffs
-	static void insertMonomial(const std::string& vars, const SR& coeff, Tcoeff* coeffs)
+	static void insertMonomial(const std::multiset<Var>& vars, const SR& coeff, Tcoeff* coeffs)
 	{
 		if(coeff == SR::null())
 			return; // do not save 0 coefficients
@@ -48,15 +50,15 @@ private:
 		if(elem == coeffs->end()) // not in the map yet
 			(*coeffs)[vars] = coeff;
 		else // there is already a coefficient
-			(*coeffs)[vars] = (*coeffs)[vars] + coeff;
+			(*coeffs)[vars] = coeffs->at(vars) + coeff;
 	};
 public:
-
 	// empty polynomial
 	Polynomial()
 	{
 		this->degree = 0;
-		this->coeff[""] = SR::null();
+		std::multiset<Var> vars = {Var("")};
+		this->coeff[vars] = SR::null();
 	};
 
 	Polynomial(const Polynomial& polynomial)
@@ -70,7 +72,8 @@ public:
 	Polynomial(const SR& elem)
 	{
 		this->degree = 0;
-		this->coeff[""] = elem;
+		std::multiset<Var> vars = {Var("")};
+		this->coeff.at(vars) = elem;
 	}
 
 	Polynomial& operator=(const Polynomial& polynomial)
@@ -81,7 +84,7 @@ public:
 		return (*this);
 	}
 
-	Polynomial(std::set<char> variables, Tcoeff coeff)
+	Polynomial(std::multiset<Var> variables, Tcoeff coeff)
 	{
 		this->variables = variables;
 		this->coeff = coeff;
@@ -89,7 +92,7 @@ public:
 		this->degree = 0;
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
-			this->degree = it->first.length() > this->degree ? it->first.length() : this->degree;
+			this->degree = it->first.size() > this->degree ? it->first.size() : this->degree;
 		}
 
 	};
@@ -100,8 +103,8 @@ public:
 		for (typename Tcoeff::const_iterator it = poly.coeff.begin(); it != poly.coeff.end(); ++it)
 			insertMonomial(it->first, it->second, &ret); // add all elements of the second operand
 
-		std::set<char> new_vars = this->variables;
-		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
+		std::multiset<Var> new_vars = this->variables;
+		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable multiset
 		return Polynomial(new_vars, ret);
 	}
 	
@@ -112,14 +115,13 @@ public:
 		{
 			for (typename Tcoeff::const_iterator it2 = poly.coeff.begin(); it2 != poly.coeff.end(); ++it2)
 			{
-				std::stringstream ss;
-				ss << it1->first << it2->first; // non commutative multiplication of variables
-				std::string tmp = ss.str();
+				std::multiset<Var> tmp = it1->first;
+				tmp.insert(it2->first.begin(), it2->first.end()); // commutative multiplication of variables
 				insertMonomial(tmp, it1->second * it2->second, &ret); // use semiring multiplication
 			}
 		}
-		std::set<char> new_vars = this->variables;
-		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable set
+		std::multiset<Var> new_vars = this->variables;
+		new_vars.insert(poly.variables.begin(), poly.variables.end()); // concat variable multiset
 		return Polynomial(new_vars, ret);
 	}
 
@@ -146,16 +148,16 @@ public:
 		return Matrix<Polynomial<SR> >(mat.getColumns(), mat.getRows(), ret);
 	}
 
-	Polynomial<SR> derivative(const char& var) const
+	Polynomial<SR> derivative(const Var& var) const
 	{
 		Tcoeff ret;
 		// derivative of a polynomial is the sum of all derivated monomials
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
 			// naive use of product rule in monomialDerivative
-			std::string vars = it->first;
-			std::list<std::string> derivs = monomialDerivative(var, vars);
-			for(std::list<std::string>::const_iterator deriv = derivs.begin(); deriv != derivs.end(); ++deriv)
+			std::multiset<Var> vars = it->first;
+			std::list<std::multiset<Var> > derivs = monomialDerivative(var, vars);
+			for(std::list<std::multiset<Var> >::const_iterator deriv = derivs.begin(); deriv != derivs.end(); ++deriv)
 			{
 				insertMonomial(*deriv, it->second, &ret);
 			}
@@ -163,27 +165,27 @@ public:
 
 		// if var was not in the polynomial return the null polynomial
 		if(ret.empty())
-			ret[""] = SR::null();
+			return Polynomial();
 
 		return Polynomial(this->variables, ret);
 	}
 
-	Polynomial<SR> derivative(const std::string& vars) const
+	Polynomial<SR> derivative(const std::multiset<Var>& vars) const
 	{
 		Polynomial<SR> ret = *this;
-		for(int pos = 0; pos < vars.length(); pos++)
+		for(std::multiset<Var>::const_iterator var = vars.begin(); var != vars.end(); ++var)
 		{
-			ret = ret.derivative(vars[pos]);
+			ret = ret.derivative(*var);
 		}
 		return ret;
 	}
 
-	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::vector<char>& variables)
+	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::multiset<Var>& variables)
 	{
 		std::vector<Polynomial<SR> > ret;
 		for(typename std::vector<Polynomial<SR> >::const_iterator poly = polynomials.begin(); poly != polynomials.end(); ++poly)
 		{
-			for(std::vector<char>::const_iterator var = variables.begin(); var != variables.end(); ++var)
+			for(std::multiset<Var>::const_iterator var = variables.begin(); var != variables.end(); ++var)
 			{
 				ret.push_back(poly->derivative(*var));
 			}
@@ -194,10 +196,10 @@ public:
 	Matrix<Polynomial<SR> > hessian() const
 	{
 		std::vector<Polynomial<SR> > ret;
-		for(std::set<char>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
+		for(std::multiset<Var>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
 		{
 			Polynomial<SR> tmp = this->derivative(*var2);
-			for(std::set<char>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
+			for(std::multiset<Var>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
 			{
 				ret.push_back(tmp.derivative(*var1));
 			}
@@ -205,16 +207,17 @@ public:
 		return Matrix<Polynomial<SR> >(this->variables.size(), this->variables.size(), ret);
 	}
 
-	SR eval(std::map<char,SR>& vars) const
+	SR eval(std::map<Var,SR>& vars) const
 	{
 		SR ret = SR::null();
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
-			std::string variables = it->first;
+			std::multiset<Var> variables = it->first;
 			SR elem = it->second;
-			for(int pos = 0; pos < variables.length(); pos++)
+			for(std::multiset<Var>::const_iterator var = variables.begin(); var != variables.end(); ++var)
 			{
-				elem = elem * vars[variables[pos]];
+				SR foo = vars.find((*var))->second;
+				elem = elem * foo;
 			}
 			ret = ret + elem;
 		}
@@ -222,16 +225,17 @@ public:
 		return ret;
 	}
 
-	Polynomial<SR> eval(std::map<char,Polynomial<SR> >& vars) const
+	Polynomial<SR> eval(std::map<Var,Polynomial<SR> >& vars) const
 	{
 		Polynomial<SR> ret = Polynomial<SR>::null();
 		for (typename Tcoeff::const_iterator it = this->coeff.begin(); it != this->coeff.end(); ++it)
 		{
-			std::string variables = it->first;
+			std::multiset<Var> variables = it->first;
 			Polynomial<SR> elem = it->second;
-			for(int pos = 0; pos < variables.length(); pos++)
+			for(std::multiset<Var>::const_iterator var = variables.begin(); var != variables.end(); ++var)
 			{
-				elem = elem * vars[variables[pos]];
+				Polynomial<SR> foo = vars.find((*var))->second;
+				elem = elem * foo;
 			}
 			ret = ret + elem;
 		}
@@ -239,7 +243,7 @@ public:
 		return ret;
 	}
 
-	static Matrix<SR> eval(Matrix<Polynomial<SR> > polys, std::map<char,SR> vars)
+	static Matrix<SR> eval(Matrix<Polynomial<SR> > polys, std::map<Var,SR> vars)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<SR> ret;
@@ -250,7 +254,7 @@ public:
 		return Matrix<SR>(polys.getColumns(), polys.getRows(), ret);
 	}
 
-	static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > polys, std::map<char,Polynomial<SR> > vars)
+	static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > polys, std::map<Var,Polynomial<SR> > vars)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<Polynomial<SR> > ret;
@@ -301,12 +305,22 @@ public:
 				ss << " + ";
 			SR tmp = it->second;
 			ss << tmp;
-			if(it->first != "")
-				ss << "*";
+			//if(it->first != "")
+			//	ss << "*";
 			ss << it->first;
 		}
 		return ss.str();
 	}
 };
+
+template <typename SR>
+std::ostream& operator<<(std::ostream& os, const std::map<std::multiset<Var>, SR>& values)
+{
+	for(typename std::map<std::multiset<Var>, SR >::const_iterator value = values.begin(); value != values.end(); ++value)
+	{
+		os << value->first << "→" << value->second << ";";
+	}
+	return os;
+}
 
 #endif
