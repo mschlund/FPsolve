@@ -30,6 +30,18 @@ void test_variables()
 	std::cout << var1 << "," << var2 << std::endl;
 }
 
+void test_monomials()
+{
+	std::cout << "- monomials:" << std::endl;
+	Monomial<FloatSemiring> mon1(FloatSemiring(5),{Var("x"),Var("x"),Var("y")});
+	Monomial<FloatSemiring> mon2(FloatSemiring(2),{Var("y"), Var("x")});
+	Monomial<FloatSemiring> res1 = mon1 + mon1;
+	Monomial<FloatSemiring> res2 = mon1 * mon2;
+	std::cout << mon1 << " + " << mon1 << " = " << res1 << std::endl;
+	std::cout << mon1 << " * " << mon2 << " = " << res2 << std::endl;
+	std::cout << "derivative of " << mon1 << " = " << mon1.derivative(Var("x")) << std::endl;
+}
+
 Polynomial<FloatSemiring> get_first_polynomial()
 {
 	// define new polynomial 2xx+7y

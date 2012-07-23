@@ -7,10 +7,102 @@
 #include <string>
 #include <list>
 #include <sstream>
+#include <initializer_list>
 #include <assert.h>
 #include "var.h"
 #include "semiring.h"
 #include "matrix.h"
+
+template <typename SR>
+class Monomial
+{
+private:
+	std::multiset<Var> variables;
+	SR coeff;
+
+	// private constructor to not leak the internal data structure
+	Monomial(SR coeff, std::multiset<Var> variables)
+	{
+		this->coeff = coeff;
+		this->variables = variables;
+	}
+public:
+	// constant monomial coeff
+	Monomial(SR coeff)
+	{
+		this->coeff = coeff;
+	}
+
+	Monomial(SR coeff, std::initializer_list<Var> variables)
+	{
+		this->variables = variables;
+		this->coeff = coeff;
+	}
+
+	// add the coefficients of two monomials if there variables are equal
+	Monomial operator+(const Monomial& monomial)
+	{
+		assert(this->variables == monomial.variables);
+		return Monomial(this->coeff + monomial.coeff, this->variables);
+	}
+
+	// multiply two monomials
+	Monomial operator*(const Monomial& monomial)
+	{
+		std::multiset<Var> variables = this->variables;
+		variables.insert(monomial.variables.begin(), monomial.variables.end());
+		return Monomial(this->coeff * monomial.coeff, variables);
+	}
+
+	// commutative version of derivative
+	Monomial derivative(const Var& var)
+	{
+		// count number of occurences of var in variables
+		int count = this->variables.count(var);
+
+		// variable is not in variables, derivative is null
+		if(count == 0)
+			return Monomial(SR::null());
+
+		// remove one of these by removing the first of them and then "multiply"
+		// the coefficient with count
+		std::vector<Var> variables(this->variables.begin(), this->variables.end());
+		SR coeff = this->coeff;
+		for(int i=0; i<variables.size(); ++i)
+		{
+			if(variables[i] == var)
+			{
+				variables.erase(variables.begin()+i);
+				for(int j = 0; j<count-1; ++j)
+					coeff = coeff + this->coeff;
+				break;
+			}
+		}
+		std::multiset<Var> result(variables.begin(), variables.end());
+		return Monomial(coeff, result);
+	}
+
+
+	// a monomial is smaller than another monomial if the variables are smaller
+	bool operator<(const Monomial& monomial)
+	{
+		return this->variables < monomial.variables;
+	}
+
+	// a monomial is equal to another monomial if the variables are equal
+	// warning: the coefficient will not be regarded
+	bool operator==(const Monomial& monomial)
+	{
+		return this->variables == this->variables;
+	}
+
+	std::string string() const
+	{
+		std::stringstream ss;
+		ss << coeff << "*" << variables;
+		return ss.str();
+	}
+};
 
 template <typename SR>
 class Polynomial : public Semiring<Polynomial<SR> >
