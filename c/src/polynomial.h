@@ -24,7 +24,8 @@ private:
 	Monomial(SR coeff, std::multiset<Var> variables)
 	{
 		this->coeff = coeff;
-		this->variables = variables;
+		if( !(coeff == SR::null)) // we only need to save the variables in this case
+					this->variables = variables;
 	}
 public:
 	// constant monomial coeff
@@ -35,8 +36,9 @@ public:
 
 	Monomial(SR coeff, std::initializer_list<Var> variables)
 	{
-		this->variables = variables;
 		this->coeff = coeff;
+		if( !(coeff == SR::null)) // we only need to save the variables in this case
+			this->variables = variables;
 	}
 
 	// add the coefficients of two monomials if there variables are equal
@@ -119,7 +121,7 @@ public:
 	{
 		std::stringstream ss;
 		ss << this->coeff;
-		if(!this->variables.empty())
+		if( !(this->coeff == SR::null || this->variables.empty()))
 		{
 			ss << "*" << this->variables;
 		}
