@@ -148,6 +148,7 @@ public:
 	// empty polynomial
 	Polynomial()
 	{
+		this->degree = 0;
 	};
 
 	Polynomial(std::initializer_list<Monomial<SR> > monomials)
@@ -249,9 +250,14 @@ public:
 				Monomial<SR> derivative = (*m_it).derivative(var);
 				typename std::set<Monomial<SR> >::const_iterator monomial = monomials.find(derivative);
 				if(monomial == monomials.end()) // TODO: think about this and remove if not needed
+				{
 					monomials.insert(derivative);
+				}
 				else
-					monomials.insert((*monomial) + derivative);
+				{
+					monomials.erase(monomial); // remove
+					monomials.insert((*monomial) + derivative); // and insert the updated version
+				}
 			}
 			else // non-commutative case
 			{
