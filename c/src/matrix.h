@@ -86,7 +86,7 @@ public:
 	Matrix(int c, int r){
 		this->columns = c;
 		this->rows = r;
-		elements.assign(this->rows*this->columns,SR::null());
+		elements.assign(this->rows*this->columns,SR::null);
 	}
 	Matrix(int c, int r, const SR& elem){ // initialize c x r matrix with elem
 		this->columns = c;
@@ -135,13 +135,13 @@ public:
 		assert(this->columns == mat.rows);
 		// TODO: naive implementation, tune this
 		std::vector<SR> ret;
-		ret.assign(this->rows*mat.columns,SR::null());
+		ret.assign(this->rows*mat.columns,SR::null);
 		int i,r,c;
 		for(r = 0; r<this->rows; r++)
 		{
 			for(c = 0; c<mat.columns; c++)
 			{
-				SR tmp = SR::null();
+				SR tmp = SR::null;
 				for(i = 0; i<this->columns; i++)
 				{
 					assert(i*mat.columns+c < mat.elements.size());

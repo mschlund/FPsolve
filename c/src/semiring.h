@@ -13,8 +13,8 @@ public:
 	virtual SR operator * (const SR& elem) const = 0;
 	virtual SR operator + (const SR& elem) const = 0;
 	virtual SR star () const = 0;
-	virtual bool is_idempotent() const = 0;
-	virtual bool is_commutative() const = 0;
+	static bool is_idempotent;
+	static bool is_commutative;
 	SR null() { return SR::null(); }; // TODO: make this pure virtual
 	SR one() { return SR::one(); };
 	virtual std::string string() const = 0;

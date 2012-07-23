@@ -39,15 +39,8 @@ FloatSemiring FloatSemiring::star() const
 	return FloatSemiring(1/(1-this->val));
 }
 
-FloatSemiring FloatSemiring::null()
-{
-	return FloatSemiring(0);
-}
-
-FloatSemiring FloatSemiring::one()
-{
-	return FloatSemiring(1);
-}
+FloatSemiring FloatSemiring::null = FloatSemiring(0);
+FloatSemiring FloatSemiring::one = FloatSemiring(1);
 
 std::string FloatSemiring::string() const
 {
@@ -56,12 +49,5 @@ std::string FloatSemiring::string() const
 	return ss.str();
 }
 
-bool FloatSemiring::is_idempotent() const
-{
-	return 0;
-}
-
-bool FloatSemiring::is_commutative() const
-{
-	return 1;
-}
+bool FloatSemiring::is_idempotent = false;
+bool FloatSemiring::is_commutative = true;

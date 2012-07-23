@@ -45,31 +45,18 @@ void test_monomials()
 Polynomial<FloatSemiring> get_first_polynomial()
 {
 	// define new polynomial 2xx+7y
-	std::map<std::multiset<Var>, FloatSemiring> coeff;
-	std::multiset<Var> vars = {Var("x"),Var("x")};
-	coeff[vars] = FloatSemiring(2);
-	vars = {Var("z")};
-	coeff[vars] = FloatSemiring(7);
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("z"));
-	return Polynomial<FloatSemiring>(variables,coeff);
+	return Polynomial<FloatSemiring>(
+			{	Monomial<FloatSemiring>(FloatSemiring(2),{Var("x"),Var("x")}),
+				Monomial<FloatSemiring>(FloatSemiring(7),{Var("z")}) });
 }
 
 Polynomial<FloatSemiring> get_second_polynomial()
 {
 	// define new polynomial 5xx+3xy+6yy
-	std::map<std::multiset<Var>, FloatSemiring> coeff;
-	std::multiset<Var> vars = {Var("x"),Var("x")};
-	coeff[vars] = FloatSemiring(5);
-	vars = {Var("x"),Var("y")};
-	coeff[vars] = FloatSemiring(3);
-	vars = {Var("y"),Var("y")};
-	coeff[vars] = FloatSemiring(6);
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("y"));
-	return Polynomial<FloatSemiring>(variables,coeff);
+	return Polynomial<FloatSemiring>(
+			{	Monomial<FloatSemiring>(FloatSemiring(5),{Var("x"),Var("x")}),
+				Monomial<FloatSemiring>(FloatSemiring(3),{Var("x"),Var("y")}),
+				Monomial<FloatSemiring>(FloatSemiring(6),{Var("y"),Var("y")})});
 }
 
 void test_polynomial_addition()
@@ -160,10 +147,10 @@ void test_matrix_star()
 
 void test_jacobian()
 {
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("y"));
-	variables.insert(Var("z"));
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	variables.push_back(Var("y"));
+	variables.push_back(Var("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
@@ -174,10 +161,10 @@ void test_jacobian()
 
 void test_polynomial_matrix_evaluation()
 {
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("y"));
-	variables.insert(Var("z"));
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	variables.push_back(Var("y"));
+	variables.push_back(Var("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
@@ -192,37 +179,21 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 {
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("y"));
-	variables.insert(Var("z"));
-
 	// define new polynomial 0.4xy+0.6
-	std::map<std::multiset<Var>, FloatSemiring> coeff;
-	std::multiset<Var> vars = {Var("x"),Var("y")};
-	coeff[vars] = FloatSemiring(0.4);
-	vars = {Var("")};
-	coeff[vars] = FloatSemiring(0.6);
-	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>(variables,coeff);
+	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>({
+		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var("x"),Var("y")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.6), {}) });
 
 	// define new polynomial 0.3yz+0.4yx+0.3
-	coeff.clear();
-	vars = {Var("y"),Var("z")};
-	coeff[vars] = FloatSemiring(0.3);
-	vars = {Var("y"),Var("x")};
-	coeff[vars] = FloatSemiring(0.4);
-	vars = {Var("")};
-	coeff[vars] = FloatSemiring(0.3);
-	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>(variables,coeff);
+	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>({
+		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var("y"),Var("z")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var("y"),Var("x")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.3), {}) });
 
 	// define new polynomial 0.3x+0.7
-	coeff.clear();
-	vars = {Var("x")};
-	coeff[vars] = FloatSemiring(0.3);
-	vars = {Var("")};
-	coeff[vars] = FloatSemiring(0.7);
-	Polynomial<FloatSemiring> f3 = Polynomial<FloatSemiring>(variables,coeff);
-
+	Polynomial<FloatSemiring> f3 =  Polynomial<FloatSemiring>({
+		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var("x")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.7), {}) });
 	polynomials.push_back(f1);
 	polynomials.push_back(f2);
 	polynomials.push_back(f3);
@@ -233,10 +204,10 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 void test_newton()
 {
 	Newton<FloatSemiring> newton;
-	std::multiset<Var> variables;
-	variables.insert(Var("x"));
-	variables.insert(Var("y"));
-	variables.insert(Var("z"));
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	variables.push_back(Var("y"));
+	variables.push_back(Var("z"));
 	std::cout << "- newton:" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
 	Matrix<Polynomial<FloatSemiring> > result = newton.solve_fixpoint(polynomials, variables, 10);
@@ -246,18 +217,20 @@ void test_newton()
 int main(int argc, char* argv[])
 {
 	std::cout << "testing..." << std::endl;
-//	test_addition();
-//	test_multiplication();
-//	test_polynomial_addition();
-//	test_polynomial_multiplication();
-//	test_polynomial_evaluation();
-//	test_matrix_addition();
-//	test_matrix_multiplication();
-//	test_matrix_transpose();
-//	test_matrix_star();
-//	test_jacobian();
-//	test_polynomial_matrix_evaluation();
-	test_newton();
+	test_addition();
+	test_multiplication();
+	test_variables();
+	test_monomials();
+	test_polynomial_addition();
+	test_polynomial_multiplication();
+	test_polynomial_evaluation();
+	test_matrix_addition();
+	test_matrix_multiplication();
+	test_matrix_transpose();
+	test_matrix_star();
+	test_jacobian();
+	test_polynomial_matrix_evaluation();
+//	test_newton();
 
 	return 0;
 }

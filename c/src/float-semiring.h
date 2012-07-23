@@ -16,11 +16,11 @@ public:
 	FloatSemiring operator * (const FloatSemiring& elem) const;
 	bool operator == (const FloatSemiring& elem) const;
 	FloatSemiring star () const;
-	static FloatSemiring null();
-	static FloatSemiring one();
+	static FloatSemiring null;
+	static FloatSemiring one;
 	std::string string() const;
-	bool is_idempotent() const ;
-	bool is_commutative() const;
+	static bool is_idempotent;
+	static bool is_commutative;
 };
 
 #endif
