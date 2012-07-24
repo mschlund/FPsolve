@@ -85,7 +85,7 @@ private:
 				}
 
 				std::vector<Var> dx;
-				Polynomial<SR> prod = Polynomial<SR>::one;
+				Polynomial<SR> prod = Polynomial<SR>(SR::one);
 
 				std::vector<Var>::const_iterator var = poly_vars.begin();
 				std::vector<Var>::const_iterator elem = v_upd.begin();
@@ -154,8 +154,6 @@ public:
 		Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
 		Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
 		Matrix<Polynomial<SR> > J_s = J.star();
-
-		std::cout << J_s;
 
 		// define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
 		std::vector<Var> u = this->get_symbolic_vector(poly_vars.size(), "u");
