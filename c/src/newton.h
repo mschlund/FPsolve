@@ -45,8 +45,8 @@ private:
 		delete rslts;
 	}
 
-	Matrix<Polynomial<SR> > compute_symbolic_delta(const std::vector<Polynomial<SR> >& v,
-							const std::vector<Polynomial<SR> >& v_upd,
+	Matrix<Polynomial<SR> > compute_symbolic_delta(const std::vector<Var>& v,
+							const std::vector<Var>& v_upd,
 							const std::vector<Polynomial<SR> >& F,
 							const std::vector<Var>& poly_vars)
 	{
@@ -88,29 +88,28 @@ private:
 				Polynomial<SR> prod = Polynomial<SR>::one;
 
 				std::vector<Var>::const_iterator var = poly_vars.begin();
-				typename std::vector<Polynomial<SR> >::const_iterator elem = v_upd.begin();
+				std::vector<Var>::const_iterator elem = v_upd.begin();
 				for(std::vector<int>::const_iterator z = (*it)->begin(); z != (*it)->end(); ++z)
 				{
 					for(int j=0; j<(*z); ++j)
 					{
 						dx.push_back(*var); // generate a multiset of variables like "xxxyyzzzz";
-						prod = prod * (*elem);	// prod = prod * elem^z ...
+						prod = prod * (*elem);	// prod = prod * elem^z ... (elem is a variable)
 					}
 					++var; // next variable
 					++elem; // next element of vector v_upd
 				}
 
 				// eval f.derivative(dx) at v
-				std::map<Var,Polynomial<SR> > values;
+				std::map<Var,Var> values;
 				int i = 0;
 				for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 				{
-					values.insert(values.begin(), std::pair<Var,Polynomial<SR> >((*poly_var),v.at(i++)));
+					values.insert(values.begin(), std::pair<Var,Var>((*poly_var),v.at(i++)));
 				}
-				Polynomial<SR> f_eval = f.derivative(dx).eval(values);
+				Polynomial<SR> f_eval = f.derivative(dx).subst(values);
 
 				delta_i = delta_i + f_eval * prod;
-				//std::cout << delta_i << std::endl;
 			}
 
 			delta.push_back(delta_i);
@@ -119,40 +118,38 @@ private:
 		return Matrix<Polynomial<SR> >(1, delta.size(), delta);
 	}
 
-	std::vector<Polynomial<SR> > get_symbolic_vector(int size, std::string prefix)
+	std::vector<Var> get_symbolic_vector(int size, std::string prefix)
 	{
 		// define new symbolic vector [u1,u2,...,un] TODO: this is ugly...
-		std::vector<Polynomial<SR> > ret;
-		std::map<std::multiset<Var>, FloatSemiring> coeff;
+		std::vector<Var> ret;
 		for(int i=0; i<size; i++)
 		{
 			std::stringstream ss;
 			ss << prefix << "_" << i;
-			Polynomial<SR> f = Polynomial<SR>({Monomial<SR>(SR::one,{Var(ss.str())})});
-			ret.push_back(f);
+			ret.push_back(Var(ss.str()));
 		}
 		return ret;
 	}
 
 public:
 	// calculate the next newton iterand
-	Matrix<Polynomial<SR> > step(const std::vector<Var>& poly_vars, const Matrix<Polynomial<SR> >& J_s,
-			const Matrix<Polynomial<SR> >& v, const Matrix<Polynomial<SR> >& delta)
+	Matrix<SR> step(const std::vector<Var>& poly_vars, const Matrix<Polynomial<SR> >& J_s,
+			const Matrix<SR>& v, const Matrix<SR>& delta)
 	{
 		assert(poly_vars.size() == v.getRows());
-		std::map<Var,Polynomial<SR> > values;
+		std::map<Var,SR> values;
 		int i=0;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			values.insert(values.begin(), std::pair<Var,Polynomial<SR> >((*poly_var),v.getElements().at(i++)));
+			values.insert(values.begin(), std::pair<Var,SR>((*poly_var),v.getElements().at(i++)));
 		}
-		Matrix<Polynomial<SR> > J_s_new = Polynomial<SR>::eval(J_s, values);
-		Matrix<Polynomial<SR> > result = J_s_new * delta;
+		Matrix<SR> J_s_new = Polynomial<SR>::eval(J_s, values);
+		Matrix<SR> result = J_s_new * delta;
 		return result;
 	}
 
 	// iterate until convergence
-	Matrix<Polynomial<SR> > solve_fixpoint(const std::vector<Polynomial<SR> >& F, const std::vector<Var>& poly_vars, int max_iter)
+	Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F, const std::vector<Var>& poly_vars, int max_iter)
 	{
 		Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
 		Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
@@ -161,39 +158,37 @@ public:
 		std::cout << J_s;
 
 		// define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
-		std::vector<Polynomial<SR> > u = this->get_symbolic_vector(poly_vars.size(), "u");
-		std::vector<Polynomial<SR> > u_upd = this->get_symbolic_vector(poly_vars.size(), "u_upd");
+		std::vector<Var> u = this->get_symbolic_vector(poly_vars.size(), "u");
+		std::vector<Var> u_upd = this->get_symbolic_vector(poly_vars.size(), "u_upd");
 
-		//Matrix<Polynomial<SR> > delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
-		Matrix<Polynomial<SR> > v = Matrix<Polynomial<SR> >(1,(int)F.size()); // v^0 = 0
+		Matrix<Polynomial<SR> > delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
+		Matrix<SR> v = Matrix<SR>(1,(int)F.size()); // v^0 = 0
 
 		// d^0 = F(0)
-		std::map<Var,Polynomial<SR> > values;
-		Polynomial<SR> null = Polynomial<SR>::null;
+		std::map<Var,SR> values;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			values.insert(values.begin(), std::pair<Var,Polynomial<SR> >(*poly_var, null));
+			values.insert(values.begin(), std::pair<Var,SR>(*poly_var, SR::null));
 		}
-		//Matrix<Polynomial<SR> > delta_new = Polynomial<SR>::eval(F_mat, values);
+		Matrix<SR> delta_new = Polynomial<SR>::eval(F_mat, values);
 
-		//Matrix<Polynomial<SR> > v_upd = step(poly_vars, J_s, v, delta);
+		Matrix<SR> v_upd = step(poly_vars, J_s, v, delta_new);
 
-		for(int i=0; i<max_iter; ++i)
+		for(int i=2; i<max_iter; ++i)
 		{
-
-			/*values.clear();
+			values.clear();
 			for(int i = 0; i<u.size(); i++)
 			{
-				values.insert(values.begin(), std::pair<Var,Polynomial<SR> >(u_upd.at(i), v_upd.getElements().at(i)));
-				values.insert(values.begin(), std::pair<Var,Polynomial<SR> >(u.at(i), v.getElements().at(i)));
+				values.insert(values.begin(), std::pair<Var,SR>(u_upd.at(i), v_upd.getElements().at(i)));
+				values.insert(values.begin(), std::pair<Var,SR>(u.at(i), v.getElements().at(i)));
 			}
 			delta_new = Polynomial<SR>::eval(delta,values);
-*/
-			//v = v + v_upd;
-			//v_upd = step(poly_vars, J_s, v, delta_new);
+
+			v = v + v_upd;
+			v_upd = step(poly_vars, J_s, v, delta_new);
 		}
 
-		return F_mat;
+		return v;
 	}
 };
 

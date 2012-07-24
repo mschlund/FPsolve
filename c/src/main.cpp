@@ -210,27 +210,28 @@ void test_newton()
 	variables.push_back(Var("z"));
 	std::cout << "- newton:" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
-	Matrix<Polynomial<FloatSemiring> > result = newton.solve_fixpoint(polynomials, variables, 10);
+	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 10);
+	std::cout << result << std::endl;
 }
 
 
 int main(int argc, char* argv[])
 {
 	std::cout << "testing..." << std::endl;
-	test_addition();
-	test_multiplication();
-	test_variables();
-	test_monomials();
-	test_polynomial_addition();
-	test_polynomial_multiplication();
-	test_polynomial_evaluation();
-	test_matrix_addition();
-	test_matrix_multiplication();
-	test_matrix_transpose();
-	test_matrix_star();
-	test_jacobian();
-	test_polynomial_matrix_evaluation();
-//	test_newton();
+	//test_addition();
+	//test_multiplication();
+	//test_variables();
+	//test_monomials();
+	//test_polynomial_addition();
+	//test_polynomial_multiplication();
+	//test_polynomial_evaluation();
+	//test_matrix_addition();
+	//test_matrix_multiplication();
+	//test_matrix_transpose();
+	//test_matrix_star();
+	//test_jacobian();
+	//test_polynomial_matrix_evaluation();
+	test_newton();
 
 	return 0;
 }
