@@ -111,6 +111,14 @@ Matrix<FloatSemiring> get_second_matrix()
 	return Matrix<FloatSemiring>(2,2,std::vector<FloatSemiring>(elems, elems+4));
 }
 
+Matrix<FloatSemiring> get_star_test_matrix()
+{
+	FloatSemiring elems[] = {
+		FloatSemiring(0.6), FloatSemiring(0.1), FloatSemiring(0.1),
+		FloatSemiring(0.1), FloatSemiring(0.4), FloatSemiring(0.1),
+		FloatSemiring(0.1), FloatSemiring(0.1), FloatSemiring(0.3)};
+	return Matrix<FloatSemiring>(3,3,std::vector<FloatSemiring>(elems, elems+9));
+}
 void test_matrix_addition()
 {
 	Matrix<FloatSemiring> first = get_first_matrix();
@@ -139,7 +147,7 @@ void test_matrix_transpose()
 
 void test_matrix_star()
 {
-	Matrix<FloatSemiring> matrix = get_first_matrix();
+	Matrix<FloatSemiring> matrix = get_star_test_matrix();
 	Matrix<FloatSemiring> result = matrix.star();
 	std::cout << "- matrix star:" << std::endl;
 	std::cout << matrix << " the matrix star of this is: " << std::endl << result;
