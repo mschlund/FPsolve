@@ -25,7 +25,7 @@ private:
 	{
 		this->coeff = coeff;
 		if( !(coeff == SR::null)) // we only need to save the variables in this case
-					this->variables = variables;
+			this->variables = variables;
 	}
 public:
 	// constant monomial coeff
@@ -97,6 +97,23 @@ public:
 		}
 
 		return elem;
+	}
+
+	// substitute variables with other variables
+	Monomial<SR> subst(const std::map<Var, Var>& mapping) const
+	{
+		SR coeff = this->coeff;
+		std::multiset<Var> variables = this->variables;
+
+		for(std::map<Var, Var>::const_iterator m_it = mapping.begin(); m_it != mapping.end(); ++m_it)
+		{
+			int count = variables.count(m_it->first);
+			variables.erase( (*m_it).first ); // erase all occurences
+			for(int i = 0; i < count; ++i)
+				variables.insert( (*m_it).second ); // and "replace" them
+		}
+
+		return Monomial(coeff, variables);
 	}
 
 	// a monomial is smaller than another monomial if the variables are smaller
@@ -321,6 +338,17 @@ public:
 			result = result + elem;
 		}
 		return result;
+	}
+
+	// substitute variables with other variables
+	Polynomial<SR> subst(const std::map<Var, Var>& mapping) const
+	{
+		std::set<Monomial<SR> > monomials;
+
+		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+			monomials.insert((*m_it).subst(mapping));
+
+		return Polynomial<SR>(monomials);
 	}
 
 	// TODO: is this method really needed?
