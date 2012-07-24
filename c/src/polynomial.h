@@ -92,7 +92,7 @@ public:
 
 		for(std::multiset<Var>::const_iterator v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
 		{
-			SR foo = values.find(*v_it)->second;
+			SR foo = values.find(*v_it)->second; //TODO: check if *v_it is really present in values!
 			elem = elem * foo;
 		}
 
