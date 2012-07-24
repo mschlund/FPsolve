@@ -386,7 +386,7 @@ public:
 		return result;
 	}*/
 
-	static Matrix<SR> eval(const Matrix<Polynomial<SR> > polys, const std::map<Var,SR> values)
+	static Matrix<SR> eval(const Matrix<Polynomial<SR> >& polys, const std::map<Var,SR>& values)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<SR> ret;
