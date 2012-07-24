@@ -57,6 +57,15 @@ public:
 		return Monomial(this->coeff * monomial.coeff, variables);
 	}
 
+	// multiply a monomial with a variable
+	Monomial operator*(const Var& var) const
+	{
+		std::multiset<Var> variables = this->variables;
+		// "add" the variables from one to the other monomial
+		variables.insert(var);
+		return Monomial(this->coeff, variables);
+	}
+
 	// commutative version of derivative
 	Monomial derivative(const Var& var) const
 	{
@@ -226,6 +235,18 @@ public:
 			{
 				monomials.insert( (*m_it1) * (*m_it2) ); // multiply them and insert them to the result set
 			}
+		}
+
+		return Polynomial(monomials);
+	}
+
+	// multiplying a polynomial with a variable
+	Polynomial<SR> operator*(const Var& var) const
+	{
+		std::set<Monomial<SR> > monomials;
+		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		{
+			monomials.insert( (*m_it) * var );
 		}
 
 		return Polynomial(monomials);
