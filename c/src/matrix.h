@@ -128,7 +128,7 @@ public:
 			ret.push_back(this->elements.at(i)+mat.elements.at(i));
 		}
 
-		return Matrix(this->rows, this->columns, ret);
+		return Matrix(this->columns, this->rows, ret);
 	};
 	Matrix operator * (const Matrix& mat)
 	{
