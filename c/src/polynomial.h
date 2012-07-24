@@ -135,7 +135,7 @@ public:
 	// warning: the coefficient will not be regarded
 	bool operator==(const Monomial& monomial) const
 	{
-		return this->variables == this->variables;
+		return this->variables == monomial.variables;
 	}
 
 	int get_degree() const
