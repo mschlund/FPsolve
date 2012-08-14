@@ -11,7 +11,7 @@ private:
 public:
 	FloatSemiring();
 	FloatSemiring(const float val);
-	~FloatSemiring();
+	virtual ~FloatSemiring();
 	FloatSemiring operator + (const FloatSemiring& elem) const;
 	FloatSemiring operator * (const FloatSemiring& elem) const;
 	bool operator == (const FloatSemiring& elem) const;

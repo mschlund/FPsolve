@@ -1,5 +1,6 @@
 #include <iostream>
 #include "float-semiring.h"
+#include "free-semiring.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
@@ -183,6 +184,17 @@ void test_polynomial_matrix_evaluation()
 	std::cout << polynomial_matrix << " at {x=5, y=4, z=0} = " << std::endl << result;
 }
 
+void test_freesemiring()
+{
+	std::cout << "- free semiring" << std::endl;
+	FreeSemiring term1 = FreeSemiring(Var("a"));
+	FreeSemiring term2 = FreeSemiring(Var("b"));
+	std::cout << "some terms: " <<  term1 << " and " << term2 << std::endl;
+	FreeSemiring termAdd = term1 + term2;
+	FreeSemiring termMul = term1 * term2;
+	std::cout << "addition&multiplication&star: " << (termAdd*termMul.star()) << std::endl;
+}
+
 std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 {
 	std::vector<Polynomial<FloatSemiring> > polynomials;
@@ -239,7 +251,8 @@ int main(int argc, char* argv[])
 	//test_matrix_star();
 	//test_jacobian();
 	//test_polynomial_matrix_evaluation();
-	test_newton();
+	test_freesemiring();
+	//test_newton();
 
 	return 0;
 }
