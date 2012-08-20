@@ -78,7 +78,7 @@ import itertools as it
 # parameter vectors are v and v_upd (which may also be concrete values if wanted :))
 # v should be the (d-1)-st newton iterand and v_upd should be the (d)-th newton-update
 def compute_symbolic_delta_general(v, v_upd, F, poly_vars) :
-    n = len(v) # FIXME: buggy if v is a SINGLE VARIABLE (i.e. for a single equation)!!
+    n = len(v)
     assert(len(poly_vars) == n)
     delta = vector(SR,n)
     for i in range(n) :
@@ -112,7 +112,7 @@ def newton_step(F, poly_vars, J_s, v, delta) :
     return v_upd
 
 
-# TODO: iterate until convergence, but for at most max_iter iterations
+# iterate until convergence, but for at most max_iter iterations
 # 1) compute the concrete delta (from the precomputed symbolic expression)
 # 2) execute a newton_step
 
@@ -123,6 +123,10 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 
     u = var(join(['u%d' %i for i in range(J.ncols())]))
     u_upd = var(join(['u_upd%d' %i for i in range(J.ncols())]))
+    
+    if(J.ncols() == 1) :
+        u = (u,)
+        u_upd = (u_upd,)
 
 #    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
@@ -132,10 +136,17 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 
     v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
 #    v = v + v_upd
- 
+
     # define symbolic variables for v^[i] and v^(i)
-    v_s = matrix(var(join(['vs%d_%d' %(1,j) for j in range(v.nrows())]))).transpose()
-    vu_s = matrix(var(join(['vus%d_%d' %(1,j) for j in range(v_upd.nrows())]))).transpose()
+    tmp_var = var(join(['vs%d_%d' %(1,j) for j in range(v.nrows())]))
+    if (v.nrows() == 1) :
+        tmp_var = (tmp_var,)
+    v_s = matrix(tmp_var).transpose()
+
+    tmp_var = var(join(['vus%d_%d' %(1,j) for j in range(v_upd.nrows())]))
+    if (v_upd.nrows() == 1) :
+        tmp_var = (tmp_var,)
+    vu_s = matrix(tmp_var).transpose()
     # save the current values
     v_list = zip(v_s.list(), v.list())
     vu_list = zip(vu_s.list(), v_upd.list())
@@ -147,22 +158,34 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 
         v = v_s + vu_s
 
-        v_s = matrix(var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))).transpose()
+        tmp_var = var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))
+        if (v.nrows() == 1) :
+            tmp_var = (tmp_var,)
+        v_s = matrix(tmp_var).transpose()
         v_list += zip(v_s.list(), v.list())
 
         v_upd = newton_step(F,poly_vars,J_s,v_s,delta_new)
+        tmp_var = var(join(['vus%d_%d' %(i,j) for j in range(v_upd.nrows())]))
+        if (v_upd.nrows() == 1) :
+            tmp_var = (tmp_var,)
+        vu_s = matrix(tmp_var).transpose()
 
-        vu_s = matrix(var(join(['vus%d_%d' %(i,j) for j in range(v_upd.nrows())]))).transpose()
         vu_list += zip(vu_s.list(), v_upd.list())
 
     v_dict = dict(v_list)
     vu_dict = dict(vu_list)
+
     # try intelligent backsubstitution
     # but this is an ugly implementation
     # this evaluates the symbolic variables bottom up
     for i in range(1,max_iter):
         v_var = var(join(['vs%d_%d' %(i,j) for j in range(v.nrows())]))
         vu_var = var(join(['vus%d_%d' %(i,j) for j in range(v.nrows())]))
+        
+        if(v.nrows() == 1) :
+            v_var = (v_var,)
+            vu_var = (vu_var,)
+
         for j in range(F.nrows()):
             v_new_var = var('vs%d_%d' %(i+1,j))
             vu_new_var = var('vus%d_%d' %(i+1,j))
@@ -178,6 +201,8 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
         # the i-th iteration is almost done except the occurence of vs_n in vus_n
         for j in range(F.nrows()):
             v_var = var(join(['vs%d_%d' %(i+1,l) for l in range(v.nrows())]))
+            if(v.nrows() == 1) :
+                v_var = (v_var,)
             vu_new_var = var('vus%d_%d' %(i+1,j))
             for variable in v_var:
                 vu_dict[vu_new_var] = vu_dict[vu_new_var].subs(dict([(variable,v_dict[variable])]))
