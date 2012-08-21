@@ -68,6 +68,7 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 		case Star:
 			return (this->type == term.type && this->left_ptr == term.left_ptr);
 	}
+	return false;
 }
 
 FreeSemiring FreeSemiring::star() const

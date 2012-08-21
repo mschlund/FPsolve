@@ -126,7 +126,7 @@ public:
 	Matrix<SR> step(const std::vector<Var>& poly_vars, const Matrix<Polynomial<SR> >& J_s,
 			const Matrix<SR>& v, const Matrix<SR>& delta)
 	{
-		assert(poly_vars.size() == v.getRows());
+		assert(poly_vars.size() == (unsigned int)v.getRows());
 		std::map<Var,SR> values;
 		int i=0;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
@@ -165,7 +165,7 @@ public:
 		for(int i=2; i<max_iter; ++i)
 		{
 			values.clear();
-			for(int i = 0; i<u.size(); i++)
+			for(unsigned int i = 0; i<u.size(); i++)
 			{
 				values.insert(values.begin(), std::pair<Var,SR>(u_upd.at(i), v_upd.getElements().at(i)));
 				values.insert(values.begin(), std::pair<Var,SR>(u.at(i), v.getElements().at(i)));

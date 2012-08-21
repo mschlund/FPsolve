@@ -93,7 +93,7 @@ public:
 		this->rows = r;
 		elements.assign(this->rows*this->columns,elem);
 	}
-	Matrix(int c, int r, const std::vector<SR>& elements)
+	Matrix(unsigned int c, unsigned int r, const std::vector<SR>& elements)
 	{
 		assert(c*r == elements.size());
 		this->columns = c;
@@ -144,11 +144,11 @@ public:
 				SR tmp = SR::null();
 				for(i = 0; i<this->columns; i++)
 				{
-					assert(i*mat.columns+c < mat.elements.size());
-					assert(r*this->columns+i < this->elements.size());
+					assert((unsigned int)i*mat.columns+c < mat.elements.size());
+					assert((unsigned int)r*this->columns+i < this->elements.size());
 					tmp = tmp + this->elements.at(r*this->columns+i) * mat.elements.at(i*mat.columns+c);
 				}
-				assert(r*mat.columns+c < ret.size());
+				assert((unsigned int)r*mat.columns+c < ret.size());
 				ret.at(r*mat.columns+c) = tmp;
 			}
 		}

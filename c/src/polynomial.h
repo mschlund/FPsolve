@@ -80,7 +80,7 @@ public:
 		// the coefficient with count
 		std::vector<Var> variables(this->variables.begin(), this->variables.end());
 		SR coeff = this->coeff;
-		for(int i=0; i<variables.size(); ++i)
+		for(unsigned int i=0; i<variables.size(); ++i)
 		{
 			if(variables[i] == var)
 			{

@@ -16,7 +16,7 @@ Var::Var()
 Var::Var(std::string name)
 {
 	if(!Var::vars)
-			Var::vars = new std::map<std::string, int>();
+		Var::vars = new std::map<std::string, int>();
 	std::map<std::string, int>::const_iterator v = Var::vars->find(name);
 	this->name = name;
 	if(v != Var::vars->end()) // variable already exists
