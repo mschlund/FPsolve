@@ -8,6 +8,8 @@ class FloatSemiring : public Semiring<FloatSemiring>
 {
 private:
 	float val;
+	static FloatSemiring* elem_null;
+	static FloatSemiring* elem_one;
 public:
 	FloatSemiring();
 	FloatSemiring(const float val);
@@ -16,8 +18,8 @@ public:
 	FloatSemiring operator * (const FloatSemiring& elem) const;
 	bool operator == (const FloatSemiring& elem) const;
 	FloatSemiring star () const;
-	static FloatSemiring null;
-	static FloatSemiring one;
+	static FloatSemiring null();
+	static FloatSemiring one();
 	std::string string() const;
 	static bool is_idempotent;
 	static bool is_commutative;

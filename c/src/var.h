@@ -13,7 +13,7 @@ private:
 	int id;
 	std::string name;
 	static int max_id;
-	static std::map<std::string, int> vars; // name → id
+	static std::map<std::string, int>* vars; // name → id
 public:
 	Var();
 	// if there is already a variable with this name, return a reference to this variable

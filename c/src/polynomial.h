@@ -24,7 +24,7 @@ private:
 	Monomial(SR coeff, std::multiset<Var> variables)
 	{
 		this->coeff = coeff;
-		if( !(coeff == SR::null)) // we only need to save the variables in this case
+		if( !(coeff == SR::null())) // we only need to save the variables in this case
 			this->variables = variables;
 	}
 public:
@@ -37,7 +37,7 @@ public:
 	Monomial(SR coeff, std::initializer_list<Var> variables)
 	{
 		this->coeff = coeff;
-		if( !(coeff == SR::null)) // we only need to save the variables in this case
+		if( !(coeff == SR::null())) // we only need to save the variables in this case
 			this->variables = variables;
 	}
 
@@ -74,7 +74,7 @@ public:
 
 		// variable is not in variables, derivative is null
 		if(count == 0)
-			return Monomial(SR::null);
+			return Monomial(SR::null());
 
 		// remove one of these by removing the first of them and then "multiply"
 		// the coefficient with count
@@ -147,7 +147,7 @@ public:
 	{
 		std::stringstream ss;
 		ss << this->coeff;
-		if( !(this->coeff == SR::null || this->variables.empty()))
+		if( !(this->coeff == SR::null() || this->variables.empty()))
 		{
 			ss << "*" << this->variables;
 		}
@@ -172,6 +172,9 @@ private:
 			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
 		}
 	}
+
+	static Polynomial<SR>* elem_null;
+	static Polynomial<SR>* elem_one;
 public:
 	// empty polynomial
 	Polynomial()
@@ -352,7 +355,7 @@ public:
 
 	SR eval(const std::map<Var,SR>& values) const
 	{
-		SR result = SR::null;
+		SR result = SR::null();
 		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			Monomial<SR> foo = (*m_it); // TODO: collapse the lines
@@ -421,8 +424,19 @@ public:
 		return (*this);
 	}
 
-	static Polynomial<SR> null;
-	static Polynomial<SR> one;
+	static Polynomial<SR> const null()
+	{
+		if(!Polynomial::elem_null)
+			Polynomial::elem_null = new Polynomial(SR::null());
+		return *Polynomial::elem_null;
+	}
+
+	static Polynomial<SR> const one()
+	{
+		if(!Polynomial::elem_one)
+			Polynomial::elem_one = new Polynomial(SR::one());
+		return *Polynomial::elem_one;
+	}
 
 	bool is_idempotent() const
 	{
@@ -448,11 +462,9 @@ public:
 	}
 };
 
-template<typename SR>
-Polynomial<SR> Polynomial<SR>::null = Polynomial(SR::null);
-template<typename SR>
-Polynomial<SR> Polynomial<SR>::one = Polynomial(SR::one);
-
+// initialize pointers
+template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_null = 0;
+template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_one = 0;
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const Monomial<SR>& monomial)

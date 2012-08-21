@@ -98,8 +98,20 @@ std::string FreeSemiring::string() const
 	return ss.str();
 }
 
-FreeSemiring FreeSemiring::null = FreeSemiring(Var("0"));
-FreeSemiring FreeSemiring::one = FreeSemiring(Var("1"));
+FreeSemiring FreeSemiring::null()
+{
+	if(!FreeSemiring::elem_null)
+		FreeSemiring::elem_null = new FreeSemiring(Var("0"));
+	return *FreeSemiring::elem_null;
+}
+FreeSemiring FreeSemiring::one()
+{
+	if(!FreeSemiring::elem_one)
+		FreeSemiring::elem_one = new FreeSemiring(Var("1"));
+	return *FreeSemiring::elem_one;
+}
 
 bool FreeSemiring::is_idempotent = false;
 bool FreeSemiring::is_commutative = false;
+FreeSemiring* FreeSemiring::elem_null = 0;
+FreeSemiring* FreeSemiring::elem_one = 0;

@@ -55,7 +55,7 @@ private:
 
 		for(int i=0; i<n; ++i)
 		{
-			Polynomial<SR> delta_i = Polynomial<SR>::null;
+			Polynomial<SR> delta_i = Polynomial<SR>::null();
 			Polynomial<SR> f = F.at(i);
 			int deg = f.get_degree();
 
@@ -85,7 +85,7 @@ private:
 				}
 
 				std::vector<Var> dx;
-				Polynomial<SR> prod = Polynomial<SR>(SR::one);
+				Polynomial<SR> prod = Polynomial<SR>(SR::one());
 
 				std::vector<Var>::const_iterator var = poly_vars.begin();
 				std::vector<Var>::const_iterator elem = v_upd.begin();
@@ -166,7 +166,7 @@ public:
 		std::map<Var,SR> values;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			values.insert(values.begin(), std::pair<Var,SR>(*poly_var, SR::null));
+			values.insert(values.begin(), std::pair<Var,SR>(*poly_var, SR::null()));
 		}
 		Matrix<SR> delta_new = Polynomial<SR>::eval(F_mat, values);
 

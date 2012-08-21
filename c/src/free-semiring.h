@@ -14,6 +14,8 @@ private:
 	std::shared_ptr<FreeSemiring> left_ptr;
 	std::shared_ptr<FreeSemiring> right_ptr;
 	enum optype type;
+	static FreeSemiring* elem_null;
+	static FreeSemiring* elem_one;
 public:
 	FreeSemiring(Var var);
 	FreeSemiring(const FreeSemiring& term);
@@ -24,8 +26,8 @@ public:
 	FreeSemiring operator * (const FreeSemiring& term) const;
 	bool operator == (const FreeSemiring& term) const;
 	FreeSemiring star () const;
-	static FreeSemiring null;
-	static FreeSemiring one;
+	static FreeSemiring null();
+	static FreeSemiring one();
 	std::string string() const;
 	static bool is_idempotent;
 	static bool is_commutative;

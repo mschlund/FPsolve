@@ -7,15 +7,19 @@ Var::Var()
 	ss << max_id;
 	this->name = ss.str();
 	Var::max_id++;
-	Var::vars.insert(Var::vars.begin(), std::pair<std::string,int>(this->name, this->id));
+	if(!Var::vars)
+		Var::vars = new std::map<std::string, int>();
+	Var::vars->insert(Var::vars->begin(), std::pair<std::string,int>(this->name, this->id));
 }
 
-	// if there is already a variable with this name, return a reference to this variable
+// if there is already a variable with this name, return a reference to this variable
 Var::Var(std::string name)
 {
-	std::map<std::string, int>::const_iterator v = Var::vars.find(name);
+	if(!Var::vars)
+			Var::vars = new std::map<std::string, int>();
+	std::map<std::string, int>::const_iterator v = Var::vars->find(name);
 	this->name = name;
-	if(v != Var::vars.end()) // variable already exists
+	if(v != Var::vars->end()) // variable already exists
 	{
 		this->id = v->second;
 	}
@@ -23,7 +27,8 @@ Var::Var(std::string name)
 	{
 		this->id = max_id;
 		Var::max_id++;
-		Var::vars.insert(Var::vars.begin(), std::pair<std::string,int>(this->name, this->id));
+
+		Var::vars->insert(Var::vars->begin(), std::pair<std::string,int>(this->name, this->id));
 	}
 }
 
@@ -50,7 +55,7 @@ std::string Var::string() const
 }
 
 int Var::max_id = 0;
-std::map<std::string, int> Var::vars = {};
+std::map<std::string, int>* Var::vars = 0;
 
 std::ostream& operator<<(std::ostream& os, const Var var)
 {
