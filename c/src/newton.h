@@ -9,40 +9,49 @@ template <typename SR>
 class Newton
 {
 private:
-	void xp(const std::vector<std::vector<int>*>& vecs,
-			std::vector<std::vector<int>*> *result) {
-		std::vector<std::vector<int>*>* rslts;
-		for (int ii = 0; ii < vecs.size(); ++ii) {
-			const std::vector<int>& vec = *vecs[ii];
-			if (ii == 0) {
-				// vecs=[[1,2],...] ==> rslts=[[1],[2]]
-				rslts = new std::vector<std::vector<int>*>;
-				for (int jj = 0; jj < vec.size(); ++jj) {
-					std::vector<int>* v = new std::vector<int>;
-					v->push_back(vec[jj]);
-					rslts->push_back(v);
+	int sum(int* array, int n)
+	{
+		int s = 0;
+		for(int i=0; i<=n; i++)
+		{
+			s += array[i];
+		}
+		return s;
+	};
+
+	// generate vectors of vectors [[x0,x1,...xn,]] such that each possible permutation
+	// of integers with 0 <= xi <max is in the result. also each permutation has a sum with
+	// min_sum <= sum <= max_sum
+	std::vector<std::vector<int> > genIdx(int max, int n, int min_sum, int max_sum)
+		{
+		std::vector<std::vector<int> > result;
+
+		// initialize base array
+		int* base = new int[n+1];
+
+		while(base[n] < max)
+		{
+			int k = 0;
+			base[k]++;
+			if(base[k]>=max)
+			{
+				while(k<n)
+				{
+					base[k] = 0;
+					k++;
+					base[k]++;
 				}
-			} else {
-				// vecs=[[1,2],[3,4],...] ==> rslts=[[1,3],[1,4],[2,3],[2,4]]
-				std::vector<std::vector<int>*>* tmp = new std::vector<
-						std::vector<int>*>;
-				for (int jj = 0; jj < vec.size(); ++jj) { // vec[jj]=3 (first iter jj=0)
-					for (std::vector<std::vector<int>*>::const_iterator it =
-							rslts->begin(); it != rslts->end(); ++it) {
-						std::vector<int>* v = new std::vector<int>(**it); // v=[1]
-						v->push_back(vec[jj]);                        // v=[1,3]
-						tmp->push_back(v);                        // tmp=[[1,3]]
-					}
-				}
-				for (int kk = 0; kk < rslts->size(); ++kk) {
-					delete (*rslts)[kk];
-				}
-				delete rslts;
-				rslts = tmp;
+			}
+			int s = sum(base, n);
+			if(min_sum <= s && s <= max_sum)
+			{
+				std::vector<int> tmp(base,base+n);
+				result.push_back(tmp);
 			}
 		}
-		result->insert(result->end(), rslts->begin(), rslts->end());
-		delete rslts;
+
+		delete[] base;
+		return result;
 	}
 
 	Matrix<Polynomial<SR> > compute_symbolic_delta(const std::vector<Var>& v,
@@ -59,37 +68,18 @@ private:
 			Polynomial<SR> f = F.at(i);
 			int deg = f.get_degree();
 
-			std::vector<int> list; // holds [0,1,...,deg]
-			for(int j=0; j<deg+1; ++j)
-			{
-				list.push_back(j);
-			}
-			std::vector<std::vector<int>* > tmplist; // holds n-times $list
-			for(int j=0; j<n; ++j)
-			{
-				tmplist.push_back(&list);
-			}
-			std::vector<std::vector<int>* > p; // n-ary cartesian product
-			xp(tmplist,&p); // generate n-ary cartesian product
+			// create [[0,...,0],[0,...,deg],[deg,...,deg]]
+			std::vector<std::vector<int> > p = genIdx(deg,n,2,deg);
 
 			//iterate over (x,y,...,z) with x,y,...,z \in [0,deg+1]
-			for(std::vector<std::vector<int>* >::const_iterator it = p.begin(); it != p.end(); ++it)
+			for(std::vector<std::vector<int> >::const_iterator it = p.begin(); it != p.end(); ++it)
 			{
-				int sum_p=0;
-				for(std::vector<int>::iterator it2=(*it)->begin();it2!=(*it)->end();++it2)
-				    sum_p += *it2;
-				// sum over p must be 2 <= p <= deg
-				if(sum_p < 2 || sum_p > deg)
-				{
-					continue;
-				}
-
 				std::vector<Var> dx;
 				Polynomial<SR> prod = Polynomial<SR>(SR::one());
 
 				std::vector<Var>::const_iterator var = poly_vars.begin();
 				std::vector<Var>::const_iterator elem = v_upd.begin();
-				for(std::vector<int>::const_iterator z = (*it)->begin(); z != (*it)->end(); ++z)
+				for(std::vector<int>::const_iterator z = it->begin(); z != it->end(); ++z)
 				{
 					for(int j=0; j<(*z); ++j)
 					{
