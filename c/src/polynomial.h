@@ -438,15 +438,8 @@ public:
 		return *Polynomial::elem_one;
 	}
 
-	bool is_idempotent() const
-	{
-		return 0;
-	}
-
-	bool is_commutative() const
-	{
-		return 0;
-	}
+	static bool is_idempotent;
+	static bool is_commutative;
 
 	std::string string() const
 	{
@@ -462,6 +455,8 @@ public:
 	}
 };
 
+template <typename SR> bool Polynomial<SR>::is_commutative = false;
+template <typename SR> bool Polynomial<SR>::is_idempotent = false;
 // initialize pointers
 template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_null = 0;
 template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_one = 0;
