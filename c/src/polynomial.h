@@ -295,8 +295,9 @@ public:
 				}
 				else
 				{
+					Monomial<SR> tmp = (*monomial) + derivative;
 					monomials.erase(monomial); // remove
-					monomials.insert((*monomial) + derivative); // and insert the updated version
+					monomials.insert(tmp); // and insert the updated version
 				}
 			}
 			else // non-commutative case

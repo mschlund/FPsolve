@@ -73,7 +73,7 @@ std::ostream& operator<<(std::ostream& os, const std::multiset<Var> vars)
 	return os << ss.str();
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<Var> vars)
+std::ostream& operator<<(std::ostream& os, const std::vector<Var>& vars)
 {
 	std::stringstream ss;
 	ss << "{";
