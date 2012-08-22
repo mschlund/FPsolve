@@ -45,12 +45,26 @@ FreeSemiring::~FreeSemiring()
 
 FreeSemiring FreeSemiring::operator +(const FreeSemiring& term) const
 {
-	return FreeSemiring(Addition, *this, term);
+	if(*this == FreeSemiring::null())
+		return term;
+	else if(term == FreeSemiring::null())
+		return *this;
+	else
+		return FreeSemiring(Addition, *this, term);
 }
 
 FreeSemiring FreeSemiring::operator *(const FreeSemiring& term) const
 {
-	return FreeSemiring(Multiplication, *this, term);
+	if(*this == FreeSemiring::one())
+		return term;
+	else if(term == FreeSemiring::one())
+		return *this;
+	else if(*this == FreeSemiring::null())
+		return *this;
+	else if(term == FreeSemiring::null())
+		return term;
+	else
+		return FreeSemiring(Multiplication, *this, term);
 }
 
 bool FreeSemiring::operator ==(const FreeSemiring& term) const
@@ -73,6 +87,8 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 
 FreeSemiring FreeSemiring::star() const
 {
+	if(*this == FreeSemiring::null())
+		return FreeSemiring::one();
 	return FreeSemiring(Star, *this);
 }
 
@@ -102,13 +118,13 @@ std::string FreeSemiring::string() const
 FreeSemiring FreeSemiring::null()
 {
 	if(!FreeSemiring::elem_null)
-		FreeSemiring::elem_null = new FreeSemiring(Var("0"));
+		FreeSemiring::elem_null = new FreeSemiring(Var("Null"));
 	return *FreeSemiring::elem_null;
 }
 FreeSemiring FreeSemiring::one()
 {
 	if(!FreeSemiring::elem_one)
-		FreeSemiring::elem_one = new FreeSemiring(Var("1"));
+		FreeSemiring::elem_one = new FreeSemiring(Var("One"));
 	return *FreeSemiring::elem_one;
 }
 

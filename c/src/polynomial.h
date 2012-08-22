@@ -140,10 +140,24 @@ public:
 		typename std::unordered_map<SR,FreeSemiring>::const_iterator elem = valuation->find(this->coeff);
 		if(elem == valuation->end()) // this is a new SR element
 		{
-			// use a fresh constant - the constructor of Var() will do this
-			Var tmp;
-			valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,tmp));
-			result = FreeSemiring(tmp) * result;
+			// map 'zero' and 'one' element to respective free semiring element
+			if(this->coeff == SR::null())
+			{
+				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::null()));
+				result = FreeSemiring::null() * result;
+			}
+			else if(this->coeff == SR::one())
+			{
+				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::one()));
+				result = FreeSemiring::one() * result;
+			}
+			else
+			{
+				// use a fresh constant - the constructor of Var() will do this
+				Var tmp;
+				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,tmp));
+				result = FreeSemiring(tmp) * result;
+			}
 		}
 		else // this is an already known element
 		{
