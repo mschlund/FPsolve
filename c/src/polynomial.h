@@ -154,9 +154,10 @@ public:
 			else
 			{
 				// use a fresh constant - the constructor of Var() will do this
-				Var tmp;
+				Var tmp_var;
+				FreeSemiring tmp(tmp_var);
 				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,tmp));
-				result = FreeSemiring(tmp) * result;
+				result = tmp * result;
 			}
 		}
 		else // this is an already known element
@@ -472,12 +473,12 @@ public:
 	}
 
 	// convert this matrix of polynomials to a matrix with elements of the free semiring
-	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::map<SR, FreeSemiring, SR>* valuation)
+	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::unordered_map<SR, FreeSemiring, SR>* valuation)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<FreeSemiring> ret;
 		if(!valuation)
-			valuation = new std::map<SR, FreeSemiring, SR>();
+			valuation = new std::unordered_map<SR, FreeSemiring, SR>();
 
 		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
 		{

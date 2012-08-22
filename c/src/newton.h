@@ -4,6 +4,7 @@
 #include <cstdio>
 #include "matrix.h"
 #include "polynomial.h"
+#include "free-semiring.h"
 
 template <typename SR>
 class Newton
@@ -123,17 +124,18 @@ private:
 
 public:
 	// calculate the next newton iterand
-	Matrix<SR> step(const std::vector<Var>& poly_vars, const Matrix<Polynomial<SR> >& J_s,
+	Matrix<SR> step(const std::vector<Var>& poly_vars, const Matrix<FreeSemiring>& J_s,
+			std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation,
 			const Matrix<SR>& v, const Matrix<SR>& delta)
 	{
 		assert(poly_vars.size() == (unsigned int)v.getRows());
-		std::map<Var,SR> values;
 		int i=0;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			values.insert(values.begin(), std::pair<Var,SR>((*poly_var),v.getElements().at(i++)));
+			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring(*poly_var),v.getElements().at(i++)));
 		}
-		Matrix<SR> J_s_new = Polynomial<SR>::eval(J_s, values);
+
+		Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
 		Matrix<SR> result = J_s_new * delta;
 		return result;
 	}
@@ -143,7 +145,16 @@ public:
 	{
 		Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
 		Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
-		Matrix<Polynomial<SR> > J_s = J.star();
+		auto valuation_tmp = new std::unordered_map<SR,FreeSemiring,SR>();
+		Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
+
+		auto valuation = new std::unordered_map<FreeSemiring,SR,FreeSemiring>();
+		for(auto v_it = valuation_tmp->begin(); v_it != valuation_tmp->end(); ++v_it)
+		{
+			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(v_it->second, v_it->first));
+		}
+
+		Matrix<FreeSemiring> J_s = J_free.star();
 
 		// define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
 		std::vector<Var> u = this->get_symbolic_vector(poly_vars.size(), "u");
@@ -160,7 +171,7 @@ public:
 		}
 		Matrix<SR> delta_new = Polynomial<SR>::eval(F_mat, values);
 
-		Matrix<SR> v_upd = step(poly_vars, J_s, v, delta_new);
+		Matrix<SR> v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 
 		for(int i=2; i<max_iter; ++i)
 		{
@@ -173,7 +184,7 @@ public:
 			delta_new = Polynomial<SR>::eval(delta,values);
 
 			v = v + v_upd;
-			v_upd = step(poly_vars, J_s, v, delta_new);
+			v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 		}
 
 		return v;

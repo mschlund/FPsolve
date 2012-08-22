@@ -267,7 +267,7 @@ int main(int argc, char* argv[])
 	//test_jacobian();
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
-	test_polynomial_to_freesemiring();
+	//test_polynomial_to_freesemiring();
 	test_newton();
 
 	return 0;
