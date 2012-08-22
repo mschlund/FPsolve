@@ -195,6 +195,21 @@ void test_freesemiring()
 	std::cout << "addition&multiplication&star: " << (termAdd*termMul.star()) << std::endl;
 }
 
+void test_polynomial_to_freesemiring()
+{
+	std::cout << "- polynomial to free semiring conversion" <<std::endl;
+	Polynomial<FloatSemiring> poly = get_first_polynomial();
+	auto valuation = new std::unordered_map<FloatSemiring, FreeSemiring, FloatSemiring>();
+	FreeSemiring elem = poly.make_free(valuation);
+	for(auto v_it = valuation->begin(); v_it != valuation->end(); ++v_it)
+	{
+		std::cout << "valuation: " << v_it->first << " → " << v_it->second << std::endl;
+	}
+	std::cout << "polynomial: " << poly << std::endl;
+	std::cout << "free semiring: " << elem << std::endl;
+}
+
+
 std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 {
 	std::vector<Polynomial<FloatSemiring> > polynomials;
@@ -251,8 +266,9 @@ int main(int argc, char* argv[])
 	//test_matrix_star();
 	//test_jacobian();
 	//test_polynomial_matrix_evaluation();
-	test_freesemiring();
-	//test_newton();
+	//test_freesemiring();
+	test_polynomial_to_freesemiring();
+	test_newton();
 
 	return 0;
 }

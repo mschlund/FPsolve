@@ -39,8 +39,8 @@ FreeSemiring::FreeSemiring(optype type, FreeSemiring left)
 
 FreeSemiring::~FreeSemiring()
 {
-	if(this->type == Element)
-		delete this->elem;
+	//if(this->type == Element)
+	//	delete this->elem;
 }
 
 FreeSemiring FreeSemiring::operator +(const FreeSemiring& term) const

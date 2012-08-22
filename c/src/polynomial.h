@@ -2,6 +2,7 @@
 #define POLYNOMIAL_H
 
 #include <map>
+#include <unordered_map>
 #include <set>
 #include <iostream>
 #include <string>
@@ -12,6 +13,7 @@
 #include "var.h"
 #include "semiring.h"
 #include "matrix.h"
+#include "free-semiring.h"
 
 template <typename SR>
 class Monomial
@@ -123,6 +125,31 @@ public:
 		}
 
 		return Monomial(coeff, variables);
+	}
+
+	// convert this monomial to an element of the free semiring
+	FreeSemiring make_free(std::unordered_map<SR,FreeSemiring,SR>* valuation) const
+	{
+		FreeSemiring result = FreeSemiring::one();
+		for(std::multiset<Var>::const_iterator v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
+		{
+			result = result * FreeSemiring(*v_it);
+		}
+
+		// change the SR element to a constant in the free semiring
+		typename std::unordered_map<SR,FreeSemiring>::const_iterator elem = valuation->find(this->coeff);
+		if(elem == valuation->end()) // this is a new SR element
+		{
+			// use a fresh constant - the constructor of Var() will do this
+			Var tmp;
+			valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,tmp));
+			result = FreeSemiring(tmp) * result;
+		}
+		else // this is an already known element
+		{
+			result = (elem->second) * result;
+		}
+		return result;
 	}
 
 	// a monomial is smaller than another monomial if the variables are smaller
@@ -410,6 +437,39 @@ public:
 			ret.push_back(polynomials[i].eval(values));
 		}
 		return Matrix<Polynomial<SR> >(polys.getColumns(), polys.getRows(), ret);
+	}
+
+	// convert this polynomial to an element of the free semiring. regard the valuation map
+	// which can already define a conversion from the SR element to a free SR constant
+	// the valuation map is extended in this function
+	FreeSemiring make_free(std::unordered_map<SR,FreeSemiring, SR>* valuation)
+	{
+		if(!valuation)
+			valuation = new std::unordered_map<SR, FreeSemiring, SR>();
+
+		FreeSemiring result = FreeSemiring::null();
+		// convert this polynomial by adding all converted monomials
+		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		{
+			result = result + m_it->make_free(valuation);
+		}
+
+		return result;
+	}
+
+	// convert this matrix of polynomials to a matrix with elements of the free semiring
+	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::map<SR, FreeSemiring, SR>* valuation)
+	{
+		std::vector<Polynomial<SR> > polynomials = polys.getElements();
+		std::vector<FreeSemiring> ret;
+		if(!valuation)
+			valuation = new std::map<SR, FreeSemiring, SR>();
+
+		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
+		{
+			ret.push_back(polynomials[i].make_free(valuation));
+		}
+		return Matrix<FreeSemiring>(polys.getColumns(), polys.getRows(), ret);
 	}
 
 	int get_degree()

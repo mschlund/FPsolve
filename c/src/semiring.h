@@ -2,6 +2,7 @@
 #define SEMIRING_H
 #include <iostream>
 #include <string>
+#include <functional> // for std::hash
 
 
 template <typename SR>
@@ -15,6 +16,10 @@ public:
 	static SR null();
 	static SR one();
 	virtual std::string string() const = 0;
+	size_t operator()(const SR& sr) const
+	{
+		return std::hash<std::string>()(sr.string());
+	}
 };
 
 template <typename SR>
