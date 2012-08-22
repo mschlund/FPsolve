@@ -1,9 +1,11 @@
+#include <assert.h>
 #include "var.h"
 
 Var::Var()
 {
 	this->id = max_id;
 	std::stringstream ss;
+	ss << "_"; // prefix for auto-generated variables
 	ss << max_id;
 	this->name = ss.str();
 	Var::max_id++;
@@ -15,6 +17,7 @@ Var::Var()
 // if there is already a variable with this name, return a reference to this variable
 Var::Var(std::string name)
 {
+	assert(name[0] != '_'); // name must not begin with underscore
 	if(!Var::vars)
 		Var::vars = new std::map<std::string, int>();
 	std::map<std::string, int>::const_iterator v = Var::vars->find(name);
