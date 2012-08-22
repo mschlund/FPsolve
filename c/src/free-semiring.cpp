@@ -1,6 +1,11 @@
 #include <sstream>
 #include "free-semiring.h"
 
+FreeSemiring::FreeSemiring()
+{
+	// Do not use this constructor. It is needed for a std::unordered_map...
+}
+
 FreeSemiring::FreeSemiring(Var var)
 {
 	this->type = Element;
@@ -75,7 +80,7 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 			if(term.type != Element)
 				return false;
 			else
-				return this->elem == term.elem;
+				return (*this->elem) == (*term.elem);
 		case Addition:
 		case Multiplication:
 			return (this->type == term.type && this->left_ptr == term.left_ptr && this->right_ptr == term.right_ptr);
