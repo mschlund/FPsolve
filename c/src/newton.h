@@ -16,7 +16,7 @@ private:
 	int sum(int* array, int n)
 	{
 		int s = 0;
-		for(int i=0; i<=n; i++)
+		for(int i=0; i<n; i++)
 		{
 			s += array[i];
 		}
@@ -27,19 +27,18 @@ private:
 	// of integers with 0 <= xi <max is in the result. also each permutation has a sum with
 	// min_sum <= sum <= max_sum
 	std::vector<std::vector<int> > genIdx(int max, int n, int min_sum, int max_sum)
-		{
+	{
 		std::vector<std::vector<int> > result;
-
 		// initialize base array
-		int* base = new int[n+1];
+		int* base = new int[n];
 
-		while(base[n] < max)
+		while(base[n-1] <= max)
 		{
 			int k = 0;
 			base[k]++;
-			if(base[k]>=max)
+			if(base[k]>max)
 			{
-				while(k<n)
+				while(k<n && base[k]>max && base[n-1] <= max)
 				{
 					base[k] = 0;
 					k++;
@@ -96,10 +95,10 @@ private:
 
 				// eval f.derivative(dx) at v
 				std::map<Var,Var> values;
-				int i = 0;
+				int j = 0;
 				for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 				{
-					values.insert(values.begin(), std::pair<Var,Var>((*poly_var),v.at(i++)));
+					values.insert(values.begin(), std::pair<Var,Var>((*poly_var),v.at(j++)));
 				}
 				Polynomial<SR> f_eval = f.derivative(dx).subst(values);
 
