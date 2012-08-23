@@ -134,7 +134,10 @@ public:
 		int i=0;
 		for(std::vector<Var>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring(*poly_var),v.getElements().at(i++)));
+			FreeSemiring free_elem = FreeSemiring(*poly_var);
+			SR sr_elem = v.getElements().at(i++);
+			valuation->erase(free_elem); // clean the old variables from the map
+			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(free_elem,sr_elem));
 		}
 
 		Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);

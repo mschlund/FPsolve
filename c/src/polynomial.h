@@ -106,7 +106,9 @@ public:
 
 		for(std::multiset<Var>::const_iterator v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
 		{
-			SR foo = values.find(*v_it)->second; //TODO: check if *v_it is really present in values!
+			auto e = values.find(*v_it);
+			assert(e != values.end()); // all variables should be in values
+			SR foo = e->second;
 			elem = elem * foo;
 		}
 
@@ -246,7 +248,7 @@ public:
 	// create a 'constant' polynomial
 	Polynomial(const SR& elem)
 	{
-		this->monomials = {Monomial<SR>(elem,{Var("")})};
+		this->monomials = {Monomial<SR>(elem,{})};
 		this->degree = 0;
 	}
 
