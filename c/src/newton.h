@@ -6,6 +6,9 @@
 #include "polynomial.h"
 #include "free-semiring.h"
 
+// FIXME: do not return values ...inefficent... e.g. supply result as argument in a reference :)
+
+
 template <typename SR>
 class Newton
 {
@@ -186,6 +189,8 @@ public:
 			v = v + v_upd;
 			v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 		}
+		delete valuation_tmp;
+		delete valuation;
 
 		return v;
 	}

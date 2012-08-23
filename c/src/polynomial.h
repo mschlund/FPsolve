@@ -15,6 +15,9 @@
 #include "matrix.h"
 #include "free-semiring.h"
 
+//FIXME: do not generate and return new objects when performing operations like +,* ... inefficient :)
+
+
 template <typename SR>
 class Monomial
 {

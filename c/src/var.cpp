@@ -53,7 +53,8 @@ bool Var::operator<(const Var& var) const
 std::string Var::string() const
 {
 	std::stringstream ss;
-	ss << "Var(" << this->name << ")";
+	//ss << "Var(" << this->name << ")";
+	ss << this->name;
 	return ss.str();
 }
 

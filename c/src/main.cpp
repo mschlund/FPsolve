@@ -112,14 +112,22 @@ Matrix<FloatSemiring> get_second_matrix()
 	return Matrix<FloatSemiring>(2,2,std::vector<FloatSemiring>(elems, elems+4));
 }
 
-Matrix<FloatSemiring> get_star_test_matrix()
+Matrix<FreeSemiring> get_star_test_matrix()
 {
-	FloatSemiring elems[] = {
+/*	FloatSemiring elems[] = {
 		FloatSemiring(0.6), FloatSemiring(0.1), FloatSemiring(0.1),
 		FloatSemiring(0.1), FloatSemiring(0.4), FloatSemiring(0.1),
 		FloatSemiring(0.1), FloatSemiring(0.1), FloatSemiring(0.3)};
 	return Matrix<FloatSemiring>(3,3,std::vector<FloatSemiring>(elems, elems+9));
+*/
+	FreeSemiring elems[]  = {
+		FreeSemiring(Var("a")),
+		FreeSemiring(Var("b")),
+		FreeSemiring(Var("c")),
+		FreeSemiring(Var("d")) };
+	return Matrix<FreeSemiring>(2,2,std::vector<FreeSemiring>(elems, elems+4));
 }
+
 void test_matrix_addition()
 {
 	Matrix<FloatSemiring> first = get_first_matrix();
@@ -148,8 +156,8 @@ void test_matrix_transpose()
 
 void test_matrix_star()
 {
-	Matrix<FloatSemiring> matrix = get_star_test_matrix();
-	Matrix<FloatSemiring> result = matrix.star();
+	auto matrix = get_star_test_matrix();
+	auto result = matrix.star();
 	std::cout << "- matrix star:" << std::endl;
 	std::cout << matrix << " the matrix star of this is: " << std::endl << result;
 }
@@ -245,7 +253,7 @@ void test_newton()
 	variables.push_back(Var("z"));
 	std::cout << "- newton:" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
-	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 10);
+	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 3);
 	std::cout << result << std::endl;
 }
 
@@ -263,7 +271,7 @@ int main(int argc, char* argv[])
 	//test_matrix_addition();
 	//test_matrix_multiplication();
 	//test_matrix_transpose();
-	//test_matrix_star();
+	test_matrix_star();
 	//test_jacobian();
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();

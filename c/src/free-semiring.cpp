@@ -100,23 +100,30 @@ FreeSemiring FreeSemiring::star() const
 std::string FreeSemiring::string() const
 {
 	std::stringstream ss;
-	ss << "(";
+
 	switch(this->type)
 	{
 	case Element:
 		ss << this->elem->string();
 		break;
 	case Addition:
+		ss << "(";
 		ss << this->left_ptr->string() << " + " << this->right_ptr->string();
+		ss << ")";
 		break;
 	case Multiplication:
-		ss << this->left_ptr->string() << " * " << this->right_ptr->string();
+		ss << "(";
+		ss << this->left_ptr->string() << " . " << this->right_ptr->string();
+		ss << ")";
 		break;
 	case Star:
-		ss << "s(" << this->left_ptr->string() << ")";
+		//ss << "s(" << this->left_ptr->string() << ")";
+		ss << "(";
+		ss << this->left_ptr->string() << "*";
+		ss << ")";
 		break;
 	}
-	ss << ")";
+
 	return ss.str();
 }
 
