@@ -1,0 +1,81 @@
+# just a braindump... reference for us..
+# easy things on top of each list :)
+
+#---------------
+# More Semirings
+#--------------- 
+- Product-Semiring-Construction
+- "Exotic" Semirings (tropical, arctic)
+- Viterbi-Semiring
+- ...
+- Arbitrary-precision Real-Semiring
+- Finite Semirings (finite Lattices) <--> specification (see UI)
+- Counting-Semiring (representation of Semiliniear-Sets)
+  - As Presburger-Formulae --> Automata (Mona)
+  - As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
+  - As (short!) rational Generating Functions (using Barvinok's algorithm)
+
+
+
+#-----------------------
+# Non-commutative Newton
+#-----------------------
+- Semiring of Contexts (over some alphabet)
+- non-commutative Polynomials (non-comm. derivative, Jacobian can produce a matrix over the SR of Contexts)
+
+
+
+#-------------------------------------------------------------
+# Newton as Grammar/Equation-Unfolding over the SR of formal Power Series (in commuting variables!)
+#-------------------------------------------------------------
+- Define the SR (perhaps Vaucanson can help?)
+- Unfold eqn-system up to depth d into a linear system
+- solve the resulting linear system
+- application to average-case analysis
+
+
+
+#---------------------
+# Efficient Algorithms
+#---------------------
+- simplified Newton-Iteration for idempotent Semirings
+- efficient Algorithm for computing Mat-Star (Bandwidth-reduction for systems of (right-)linear fixpoint equations)
+- decomposed Newton-Method (split into SCCs and solve bottom-up)
+
+
+
+#----------------
+# UI/Usability
+#----------------
+- Easy building/specification of Semirings (input-language/config-file/GUI)
+- Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
+
+
+
+#----------------------
+# Tools/Libs to help us
+#----------------------
+- Vaucanson (automata, wrexp, semirings, series+polynomials)
+- Mona (automata, regexp, MSO/Presburger)
+
+
+
+#---------------------------------
+# Applications to Program Analysis
+#---------------------------------
+Tools:
+  - jMoped
+  - goblInt
+  - MaLiJAn
+Analyses:
+  - Average-case runtime analysis
+  - May-alias analysis
+  - ... (think about how to use the above SR for analyses!)
+  - Memory-usage (worst/average-case) --- is this even possible in our framework??
+  - Runtime-Analysis of Parallel-programs (possibly also with procedure calls?) --- again: is this even possible??
+
+
+
+
+
+

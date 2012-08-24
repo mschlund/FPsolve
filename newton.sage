@@ -120,6 +120,7 @@ from sage.calculus.functions import jacobian
 def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
     J = jacobian(F, poly_vars)
     J_s = compute_mat_star(J) #only compute matrix star once
+#    print J_s
 
     u = var(join(['u%d' %i for i in range(J.ncols())]))
     u_upd = var(join(['u_upd%d' %i for i in range(J.ncols())]))
@@ -130,6 +131,8 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 
 #    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
+    
+#    print delta
 
     v = matrix(SR,F.nrows(),1) # v^0 = 0
     delta_new = F.subs( dict( (v,0) for v in poly_vars ))
