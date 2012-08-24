@@ -253,7 +253,7 @@ void test_newton()
 	variables.push_back(Var("z"));
 	std::cout << "- newton:" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
-	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 3);
+	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
 }
 

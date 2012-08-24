@@ -146,6 +146,7 @@ public:
 	}
 
 	// iterate until convergence
+	// TODO: seems to be 2 iterations off compared to sage-impl..
 	Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F, const std::vector<Var>& poly_vars, int max_iter)
 	{
 		Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
@@ -166,6 +167,7 @@ public:
 		std::vector<Var> u_upd = this->get_symbolic_vector(poly_vars.size(), "u_upd");
 
 		Matrix<Polynomial<SR> > delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
+
 		Matrix<SR> v = Matrix<SR>(1,(int)F.size()); // v^0 = 0
 
 		// d^0 = F(0)
@@ -178,7 +180,7 @@ public:
 
 		Matrix<SR> v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 
-		for(int i=2; i<max_iter; ++i)
+		for(int i=1; i<max_iter; ++i) //start with 1 as we have already done one iteration explicitly
 		{
 			values.clear();
 			for(unsigned int i = 0; i<u.size(); i++)
@@ -191,6 +193,9 @@ public:
 			v = v + v_upd;
 			v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 		}
+
+		v = v+v_upd;
+
 		delete valuation_tmp;
 		delete valuation;
 
