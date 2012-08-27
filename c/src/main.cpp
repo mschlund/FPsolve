@@ -246,15 +246,35 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 
 void test_newton()
 {
+	/*
 	Newton<FloatSemiring> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
 	variables.push_back(Var("y"));
 	variables.push_back(Var("z"));
-	std::cout << "- newton:" << std::endl;
+	std::cout << "- newton (float):" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
 	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
+
+*/
+
+	Newton<FreeSemiring> newton;
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	std::cout << "- newton (free-SR):" << std::endl;
+
+	std::vector<Polynomial<FreeSemiring> > polynomials;
+	Polynomial<FreeSemiring> f1 = Polynomial<FreeSemiring>({
+		Monomial<FreeSemiring>(FreeSemiring(Var("a")), {Var("x"),Var("x")}),
+		Monomial<FreeSemiring>(FreeSemiring(Var("c")), {}) });
+
+	polynomials.push_back(f1);
+
+	Matrix<FreeSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
+	std::cout << result << std::endl;
+
+
 }
 
 
@@ -271,7 +291,7 @@ int main(int argc, char* argv[])
 	//test_matrix_addition();
 	//test_matrix_multiplication();
 	//test_matrix_transpose();
-	test_matrix_star();
+	//test_matrix_star();
 	//test_jacobian();
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
