@@ -1,19 +1,44 @@
 # just a braindump... reference for us..
 # easy things on top of each list :)
 
+
+#--------------------
+# Design & Engineering :)
+#--------------------
+- Unit-Tests (possibly test-generation? large instances for performance-testing, also: over the free-semiring)
+- Output?
+
 #---------------
 # More Semirings
-#--------------- 
-- Product-Semiring-Construction
+#---------------
+- Product-Semiring-Construction (simple: (iterated) pair)
 - "Exotic" Semirings (tropical, arctic)
 - Viterbi-Semiring
-- ...
-- Arbitrary-precision Real-Semiring
-- Finite Semirings (finite Lattices) <--> specification (see UI)
+- ... (see: "Semirings for Breakfast"-presentation ---only the starable ones! additional element "infty" needed sometimes :)) use GMP for arbitrary precision ints/floats/...
+- Arbitrary-precision Real-Semiring (in fact: this is Q, elements are p/q with p,q integers)
+
+- Finite Semirings (e.g. finite Lattices) <--> specification (see UI)
+
 - Counting-Semiring (representation of Semiliniear-Sets)
   - As Presburger-Formulae --> Automata (Mona)
   - As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
-  - As (short!) rational Generating Functions (using Barvinok's algorithm)
+  - As (short!) rational Generating Functions (same as second one???)
+
+
+#---------------------
+# Efficient Algorithms
+#---------------------
+- simplified Newton-Iteration for (commutative) idempotent Semirings
+- efficient Algorithm for computing Mat-Star (Bandwidth-reduction for systems of (right-)linear fixpoint equations)
+- decomposed Newton-Method (split into SCCs and solve bottom-up)
+
+
+
+#----------------
+# UI/Usability
+#----------------
+- Easy building/specification of Semirings (input-language/config-file/GUI)
+- Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
 
 
 
@@ -32,23 +57,6 @@
 - Unfold eqn-system up to depth d into a linear system
 - solve the resulting linear system
 - application to average-case analysis
-
-
-
-#---------------------
-# Efficient Algorithms
-#---------------------
-- simplified Newton-Iteration for idempotent Semirings
-- efficient Algorithm for computing Mat-Star (Bandwidth-reduction for systems of (right-)linear fixpoint equations)
-- decomposed Newton-Method (split into SCCs and solve bottom-up)
-
-
-
-#----------------
-# UI/Usability
-#----------------
-- Easy building/specification of Semirings (input-language/config-file/GUI)
-- Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
 
 
 
