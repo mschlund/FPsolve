@@ -38,7 +38,7 @@ bool FloatSemiring::operator==(const FloatSemiring& elem) const
 
 FloatSemiring FloatSemiring::star() const
 {
-	// beware of the 1-Element (TODO: inf-Element?)
+	// beware of the 1-Element (TODO: inf-Element!)
 	return FloatSemiring(1/(1-this->val));
 }
 

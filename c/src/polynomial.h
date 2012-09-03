@@ -17,6 +17,7 @@
 
 //FIXME: do not generate and return new objects when performing operations like +,* ... inefficient :)
 
+//FIXME: Polynomials are no semiring in our definition (not starable)
 
 template <typename SR>
 class Monomial
@@ -398,7 +399,8 @@ public:
 
 		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
-			if(SR::is_commutative) // TODO: check if compiler is optimizing this out
+			//if(SR::is_commutative) // TODO: check if compiler is optimizing this out
+			if(true)
 			{
 				// take the derivative of m_it and add it to the result set
 				Monomial<SR> derivative = (*m_it).derivative(var);
