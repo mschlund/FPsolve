@@ -76,4 +76,24 @@ Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix, std::unordered_map<Fre
 	return Matrix<SR>(matrix.getRows(), matrix.getColumns(), ret);
 };
 
+// returns a pointer to a map which changes the access direction
+// you have to delete the map by yourself!
+template <typename SR>
+std::unordered_map<FreeSemiring, SR, FreeSemiring>* reverse_map(const std::unordered_map<SR, FreeSemiring, SR>& valuation)
+{
+	auto result = new std::unordered_map<FreeSemiring,SR,FreeSemiring>();
+	for(auto v_it = valuation.begin(); v_it != valuation.end(); ++v_it)
+	{
+		result->insert(result->begin(), std::pair<FreeSemiring,SR>(v_it->second, v_it->first));
+	}
+	return result;
+}
+
+// add an FreeSemiring → SR pair to the map. Delete an existing mapping from free_elem to some old sr_elem
+template <typename SR>
+void add_valuation(FreeSemiring free_elem, SR sr_elem, std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation)
+{
+	valuation->erase(free_elem);
+	valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(free_elem,sr_elem));
+}
 #endif

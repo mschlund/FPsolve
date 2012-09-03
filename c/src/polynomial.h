@@ -24,26 +24,40 @@ class Monomial
 private:
 	std::multiset<Var> variables;
 	SR coeff;
+	bool null;
 
 	// private constructor to not leak the internal data structure
 	Monomial(SR coeff, std::multiset<Var> variables)
 	{
 		this->coeff = coeff;
 		if( !(coeff == SR::null())) // we only need to save the variables in this case
+		{
+			this->null = false;
 			this->variables = variables;
+		}
+		else
+			this->null = true;
 	}
 public:
 	// constant monomial coeff
 	Monomial(SR coeff)
 	{
 		this->coeff = coeff;
+		if(this->coeff == SR::null())
+			this->null = true;
+		else
+			this->null = false;
 	}
 
 	Monomial(SR coeff, std::initializer_list<Var> variables)
 	{
 		this->coeff = coeff;
 		if( !(coeff == SR::null())) // we only need to save the variables in this case
+		{
 			this->variables = variables;
+			this->null = false;
+		}
+		this->null = true;
 	}
 
 	// add the coefficients of two monomials if there variables are equal
@@ -185,9 +199,20 @@ public:
 		return this->variables == monomial.variables;
 	}
 
+	// both monomials are equal if they have the same variables and the same coefficient
+	bool equal(const Monomial& monomial) const
+	{
+		return this->variables == monomial.variables && this->coeff == monomial.coeff;
+	}
+
 	int get_degree() const
 	{
 		return this->variables.size();
+	}
+
+	bool is_null() const
+	{
+		return this->null;
 	}
 
 	std::string string() const
@@ -217,6 +242,13 @@ private:
 		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
+		}
+
+		// If there is a null-monomial, it should be at the front.
+		// If the polynomial has more than one element, delete the null element
+		if(this->monomials.size() > 1 && this->monomials.begin()->is_null())
+		{
+			this->monomials.erase(this->monomials.begin());
 		}
 	}
 
@@ -261,7 +293,6 @@ public:
 
 	Polynomial<SR> operator+(const Polynomial<SR>& poly) const
 	{
-		// TODO: check this!
 		std::set<Monomial<SR> > monomials = this->monomials;
 		for(typename std::set<Monomial<SR> >::const_iterator m_it = poly.monomials.begin(); m_it != poly.monomials.end(); ++m_it)
 		{
@@ -270,7 +301,11 @@ public:
 			if(mon == monomials.end()) // this is not the case
 				monomials.insert(*m_it); // just insert it
 			else // monomial with the same variables found
-				monomials.insert( (*mon) + (*m_it) ); // then add both of them and overwrite the old one
+			{
+				Monomial<SR> tmp = *mon;
+				monomials.erase(*mon);
+				monomials.insert( tmp + (*m_it) ); // then add both of them and overwrite the old one
+			}
 		}
 		return Polynomial(monomials);
 	}
@@ -283,7 +318,16 @@ public:
 		{
 			for(typename std::set<Monomial<SR> >::const_iterator m_it2 = poly.monomials.begin(); m_it2 != poly.monomials.end(); ++m_it2)
 			{
-				monomials.insert( (*m_it1) * (*m_it2) ); // multiply them and insert them to the result set
+				Monomial<SR> tmp = (*m_it1) * (*m_it2);
+				auto tmp2 = monomials.find(tmp);
+				if(tmp2 == monomials.end())
+					monomials.insert(tmp); // multiply them and insert them to the result set
+				else // the monomial was already in the list. Add them.
+				{
+					tmp = tmp + *tmp2;
+					monomials.erase(*tmp2);
+					monomials.insert(tmp);
+				}
 			}
 		}
 
@@ -312,6 +356,26 @@ public:
 		}
 
 		return Polynomial(monomials);
+	}
+
+	bool operator==(const Polynomial<SR>& polynomial) const
+	{
+		if(this->monomials.size() != polynomial.monomials.size())
+			return false;
+
+		for(typename std::set<Monomial<SR> >::const_iterator m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
+		{
+			auto monomial = this->monomials.find(*m_it); // search with variables
+			if(monomial == this->monomials.end())
+				return false; // could not find this monomial
+			else
+			{
+				if(!monomial->equal(*m_it)) // check if the monomial has the same coefficient
+					return false;
+			}
+
+		}
+		return true;
 	}
 
 	// convert the given matrix to a matrix containing polynomials

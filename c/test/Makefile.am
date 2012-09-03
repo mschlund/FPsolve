@@ -7,6 +7,7 @@ newton_SOURCES = tests.cpp \
 		 test-float-semiring.cpp test-float-semiring.h \
 		 test-free-semiring.cpp test-free-semiring.h \
 		 test-var.cpp test-var.h \
-		 test-matrix.cpp test-matrix.h
+		 test-matrix.cpp test-matrix.h \
+		 test-polynomial.cpp test-polynomial.h
 newton_CXXFLAGS = $(CPPUNIT_CFLAGS)
 newton_LDFLAGS = $(CPPUNIT_LIBS)
