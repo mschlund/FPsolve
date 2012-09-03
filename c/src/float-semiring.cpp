@@ -1,5 +1,7 @@
 #include <assert.h>
 #include <sstream>
+#include <limits> // for epsilon
+#include <cmath> // for fabs
 #include "float-semiring.h"
 
 // std::map in polynomial.h wants this constructor...
@@ -30,7 +32,8 @@ FloatSemiring FloatSemiring::operator*(const FloatSemiring& elem) const
 
 bool FloatSemiring::operator==(const FloatSemiring& elem) const
 {
-	return this->val == elem.val;
+	// comparing floating point has to be done like this. (see Knuth TAoCP Vol.2 p. 233)
+	return std::fabs(this->val - elem.val) <= std::numeric_limits<float>::epsilon() * std::min(std::fabs(this->val), std::fabs(elem.val));
 }
 
 FloatSemiring FloatSemiring::star() const
