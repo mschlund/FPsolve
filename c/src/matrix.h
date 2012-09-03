@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <assert.h>
+#include <initializer_list>
 
 template <typename SR>
 class Matrix
@@ -72,6 +73,13 @@ public:
 		this->columns = matrix.columns;
 		this->rows = matrix.rows;
 		this->elements = matrix.elements;
+	}
+
+	Matrix(int c, int r, std::initializer_list<SR> elements)
+	{
+		this->columns = c;
+		this->rows = r;
+		this->elements = elements;
 	}
 
 	Matrix& operator=(const Matrix& matrix)
@@ -154,6 +162,19 @@ public:
 		}
 		return Matrix(mat.columns, this->rows, ret);
 	};
+
+	bool operator== (const Matrix& mat)
+	{
+		assert(this->rows == mat.rows && this->columns == mat.columns);
+
+		bool result = true;
+		for(int i=0; i<this->columns * this->rows; i++)
+		{
+			if( !(this->elements[i] == mat.elements[i]) )
+				result = false;
+		}
+		return result;
+	}
 
 	Matrix star ()
 	{
