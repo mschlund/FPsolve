@@ -72,6 +72,8 @@ FreeSemiring FreeSemiring::operator *(const FreeSemiring& term) const
 		return FreeSemiring(Multiplication, *this, term);
 }
 
+// TODO: at the moment == returns true iff the whole structure is identical
+// it does not respect associativity
 bool FreeSemiring::operator ==(const FreeSemiring& term) const
 {
 	switch(this->type)
@@ -83,9 +85,9 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 				return (*this->elem) == (*term.elem);
 		case Addition:
 		case Multiplication:
-			return (this->type == term.type && this->left_ptr == term.left_ptr && this->right_ptr == term.right_ptr);
+			return (this->type == term.type && *this->left_ptr == *term.left_ptr && *this->right_ptr == *term.right_ptr);
 		case Star:
-			return (this->type == term.type && this->left_ptr == term.left_ptr);
+			return (this->type == term.type && *this->left_ptr == *term.left_ptr);
 	}
 	return false;
 }
