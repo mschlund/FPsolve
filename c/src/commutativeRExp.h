@@ -21,7 +21,7 @@
 // use distributive law when multiplying
 
 
-class CommutativeRExp : public Semiring<CommutativeRExp>
+class CommutativeRExp : public CountingSemiring
 {
 
 };

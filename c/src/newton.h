@@ -139,7 +139,6 @@ public:
 			valuation->erase(free_elem); // clean the old variables from the map
 			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(free_elem,sr_elem));
 		}
-
 		Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
 		Matrix<SR> result = J_s_new * delta;
 		return result;
@@ -166,8 +165,6 @@ public:
 		std::vector<Var> u = this->get_symbolic_vector(poly_vars.size(), "u");
 		std::vector<Var> u_upd = this->get_symbolic_vector(poly_vars.size(), "u_upd");
 
-		Matrix<Polynomial<SR> > delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
-
 		Matrix<SR> v = Matrix<SR>(1,(int)F.size()); // v^0 = 0
 
 		// d^0 = F(0)
@@ -180,21 +177,37 @@ public:
 
 		Matrix<SR> v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 
-		for(int i=1; i<max_iter; ++i) //start with 1 as we have already done one iteration explicitly
-		{
-			values.clear();
-			for(unsigned int i = 0; i<u.size(); i++)
-			{
-				values.insert(values.begin(), std::pair<Var,SR>(u_upd.at(i), v_upd.getElements().at(i)));
-				values.insert(values.begin(), std::pair<Var,SR>(u.at(i), v.getElements().at(i)));
-			}
-			delta_new = Polynomial<SR>::eval(delta,values);
+		//FIXME: ugly since we do not have a simple standard Matrix-Constructor without any arguments
+		Matrix<Polynomial<SR> > delta = Matrix<Polynomial<SR> >(1,1);
 
-			v = v + v_upd;
+		if(!SR::is_idempotent)
+			delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
+
+		//start with i=1 as we have already done one iteration explicitly
+		for(int i=1; i<max_iter; ++i)
+		{
+			if(!SR::is_idempotent) {
+				values.clear();
+				for(unsigned int i = 0; i<u.size(); i++)
+				{
+					values.insert(values.begin(), std::pair<Var,SR>(u_upd.at(i), v_upd.getElements().at(i)));
+					values.insert(values.begin(), std::pair<Var,SR>(u.at(i), v.getElements().at(i)));
+				}
+				delta_new = Polynomial<SR>::eval(delta,values);
+			}
+
+			if(SR::is_idempotent)
+				v = v_upd; //for idempotent SRs we do not have do perform the addition (terms are already accounted for in u_upd)!
+			else
+				v = v + v_upd;
+
 			v_upd = step(poly_vars, J_s, valuation, v, delta_new);
 		}
 
-		v = v+v_upd;
+		if(SR::is_idempotent)
+			v = v_upd;
+		else
+			v = v + v_upd;
 
 		delete valuation_tmp;
 		delete valuation;
