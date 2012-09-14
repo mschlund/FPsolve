@@ -1,2 +1,10 @@
 bin_PROGRAMS = newton
-newton_SOURCES = main.cpp semiring.h float-semiring.cpp float-semiring.h matrix.h polynomial.h newton.h var.h free-semiring.h free-semiring.cpp var.cpp
+newton_SOURCES = main.cpp\
+	semiring.h\
+	float-semiring.cpp float-semiring.h\
+	matrix.h\
+	polynomial.h\
+	newton.h\
+	var.cpp var.h\
+	free-semiring.h free-semiring.cpp\
+	commutativeRExp.cpp commutativeRExp.h

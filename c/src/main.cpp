@@ -4,6 +4,7 @@
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
+#include "commutativeRExp.h"
 
 void test_addition()
 {
@@ -296,7 +297,15 @@ int main(int argc, char* argv[])
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
 	//test_polynomial_to_freesemiring();
-	test_newton();
+	//test_newton();
+
+	CommutativeRExp a(Var("a"));
+	CommutativeRExp b(Var("b"));
+	CommutativeRExp a_b = a + b;
+	CommutativeRExp ab = a * b;
+	CommutativeRExp tmp = a_b * ab.star();
+
+	std::cout << "(" << a_b << "." << ab.star() << " = " << tmp << std::endl;
 
 	return 0;
 }

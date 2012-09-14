@@ -8,14 +8,17 @@
 #ifndef COUNTING_SEMIRING_H_
 #define COUNTING_SEMIRING_H_
 
+#include "semiring.h"
+
 class CountingSemiring : public Semiring<CountingSemiring>
 {
 
 public:
-	static bool is_idempotent = true;
-	static bool is_commutative = true;
+	static bool is_idempotent;
+	static bool is_commutative;
 };
 
-
+//CountingSemiring::is_idempotent = true;
+//ConutingSemiring::is_commutative = true
 
 #endif /* COUNTING_SEMIRING_H_ */
