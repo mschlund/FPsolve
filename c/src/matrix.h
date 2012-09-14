@@ -7,6 +7,8 @@
 #include <assert.h>
 #include <initializer_list>
 
+//FIXME: null/one-function!
+
 template <typename SR>
 class Matrix
 {

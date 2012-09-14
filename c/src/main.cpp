@@ -278,7 +278,6 @@ void test_newton()
 
 }
 
-
 int main(int argc, char* argv[])
 {
 	std::cout << "testing..." << std::endl;

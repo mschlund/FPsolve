@@ -16,6 +16,7 @@ class CountingSemiring : public Semiring<CountingSemiring>
 public:
 	static bool is_idempotent;
 	static bool is_commutative;
+	virtual std::string string() const = 0;
 };
 
 //CountingSemiring::is_idempotent = true;

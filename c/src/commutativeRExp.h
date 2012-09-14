@@ -12,17 +12,23 @@
 #include "counting-semiring.h"
 #include "var.h"
 
-// Stores commutative regular expressions fully expanded as a list (or set?) (->finite union) of linear sets
-// each linear set is just a pair of a set (offset) and a set (->idempotent sum) of multisets (-> commutative products) of variables (generators)
+/* commutative RegExp (commutative, associative, idempotent (CAI) addition and CA multiplication)
+ storing them fully expanded might be a really bad idea (??) (huge blowup expected just because of applying the distributive law..?)
+ thus we will store them non-expanded but we will (try) to use idempotence to reduce their size
+ Examples:
+	(a+(b.c+c.b).(a.b + c + b.a)*) = a + (b.c).(ab + c)*
+	(a.b+c) + (c + b.a) = (a.b + c)
+	(c + b.a) . (a.b + c) = (a.b+c).(a.b+c)
+	(c + b.a) + (a.b + c) = (a.b + c)
+	(a.b + a.c) + (a . (c+b)) = (a.b + a.c) +  (a . (b+c))
 
-// Ok... storing them fully expanded might be a really bad idea (??) (huge blowup expected just because of applying the distributive law..?)
-// we will worry about that later :)
+	so:
+	- "sort" every expression (inductively) e.g. lexicographically
+ 	- apply idempotence, if sorted expressions are syntactically equal
+ 	- do not apply the distributive-law
+ 	- no semantic equivalence check which is hard (NP-hard, in fact even Pi_2-complete or something)
 
-// use the identities
-// (1) (x*)* = x*
-// (2) (x+y)* = x*y*
-// (3) (xy*)* = 1 + xx*y*   to push stars inwards
-// use distributive law when multiplying
+*/
 
 
 class CommutativeRExp : public Semiring<CommutativeRExp>

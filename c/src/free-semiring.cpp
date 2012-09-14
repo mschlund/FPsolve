@@ -142,7 +142,7 @@ FreeSemiring FreeSemiring::one()
 	return *FreeSemiring::elem_one;
 }
 
-bool FreeSemiring::is_idempotent = false;
-bool FreeSemiring::is_commutative = false;
+bool FreeSemiring::is_idempotent = true;
+bool FreeSemiring::is_commutative = true;
 FreeSemiring* FreeSemiring::elem_null = 0;
 FreeSemiring* FreeSemiring::elem_one = 0;
