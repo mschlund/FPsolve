@@ -15,8 +15,6 @@
 #include "matrix.h"
 #include "free-semiring.h"
 
-//FIXME: do not generate and return new objects when performing operations like +,* ... inefficient :)
-
 //FIXME: Polynomials are no semiring in our definition (not starable)
 
 template <typename SR>

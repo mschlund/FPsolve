@@ -10,7 +10,6 @@
 
 #include "var.h"
 
-typedef std::pair<std::vector<unsigned int>, std::set<std::vector<unsigned int> > > LinSet;
 
 // TODO: bigints instead of finite width ints ?
 
@@ -30,10 +29,31 @@ typedef std::pair<std::vector<unsigned int>, std::set<std::vector<unsigned int> 
 // {(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})} * {(w_00,{w_10,...,w_n0}),..., (w_0q,{w_1q,...,w_nq})} =
 // {(v_0i+w_0j,{v_1i,...,v_ni}\cup{w_1j,...,w_nj} ) | i=0..p, j=0..q}
 
-// star{(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})} =
+// star{(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})} = complicated...
+// star(l_1,l_2,...,l_n) = \prod_{i=1}^n star(l_i)
+// where star(l_i) gives a semilinear set
 
-class SemilinSetExp : public CountingSemiring
+typedef std::pair<std::vector<unsigned int>, std::set<std::vector<unsigned int> > > LinSet;
+
+//TODO: nothing is tested, nothing is done yet...
+
+
+// adding two vectors componentwise... could be put in a util-class ?
+template <typename T>
+std::vector<T> operator+(const std::vector<T>& a, const std::vector<T>& b)
 {
+    assert(a.size() == b.size());
+
+    std::vector<T> result;
+    result.reserve(a.size());
+
+    std::transform(a.begin(), a.end(), b.begin(),
+                   std::back_inserter(result), std::plus<T>());
+    return result;
+}
+
+
+class SemilinSetExp : public CountingSemiring {
 private:
 	std::set<LinSet> Val;
 	unsigned int alphabetSize;
@@ -81,7 +101,29 @@ public:
 
 	};
 
+	SemilinSetExp star(const LinSet& ls)
+	{
+		// star of a linear set is a semilinear set:
+		// (w_0.w_1*.w_2*...w_n*)* = 1 + \sum_{i=1}^{n-1} w_0^i.w_1*.w_2*...w_n* + w_0^n.w_0*.w_1*...w_n*
+
+	};
+
+	static LinSet operator * (const LinSet& ls1, const LinSet& ls2)
+	{
+		std::set<std::vector<unsigned int> > generators();
+		std::set_union(ls1.second.begin(),ls1.second.end(),ls2.second.begin(),ls2.second.end(), generators.begin());
+		// add the offsets, union on the generators
+		return std::make_pair(ls1.first+ls2.first, generators);
+	};
+
+
+
 
 };
+
+
+
+
+
 
 #endif /* SEMILINSETEXP_H_ */
