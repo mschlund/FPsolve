@@ -1,6 +1,7 @@
 #include <iostream>
 #include "float-semiring.h"
 #include "free-semiring.h"
+#include "semilinSetExp.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
@@ -260,6 +261,7 @@ void test_newton()
 
 */
 
+/*
 	Newton<FreeSemiring> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
@@ -273,6 +275,22 @@ void test_newton()
 	polynomials.push_back(f1);
 
 	Matrix<FreeSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
+	std::cout << result << std::endl;
+	*/
+
+	Newton<SemilinSetExp> newton;
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	std::cout << "- newton (counting-SR):" << std::endl;
+
+	std::vector<Polynomial<SemilinSetExp> > polynomials;
+	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
+
+	polynomials.push_back(f1);
+
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
 
 
@@ -296,15 +314,7 @@ int main(int argc, char* argv[])
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
 	//test_polynomial_to_freesemiring();
-	//test_newton();
-
-	CommutativeRExp a(Var("a"));
-	CommutativeRExp b(Var("b"));
-	CommutativeRExp a_b = a + b;
-	CommutativeRExp ab = a * b;
-	CommutativeRExp tmp = a_b * ab.star();
-
-	std::cout << "(" << a_b << "." << ab.star() << " = " << tmp << std::endl;
+	test_newton();
 
 	return 0;
 }
