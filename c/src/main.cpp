@@ -1,7 +1,7 @@
 #include <iostream>
 #include "float-semiring.h"
 #include "free-semiring.h"
-#include "semilinSetExp.h"
+//#include "semilinSetExp.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
@@ -278,19 +278,34 @@ void test_newton()
 	std::cout << result << std::endl;
 	*/
 
-	Newton<SemilinSetExp> newton;
+	Newton<CommutativeRExp> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
+	variables.push_back(Var("y"));
+	variables.push_back(Var("z"));
 	std::cout << "- newton (counting-SR):" << std::endl;
 
-	std::vector<Polynomial<SemilinSetExp> > polynomials;
-	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
+	std::vector<Polynomial<CommutativeRExp> > polynomials;
+	// define new polynomial axy+b
+	Polynomial<CommutativeRExp> f1 = Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("a")), {Var("x"),Var("y")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("b")), {}) });
 
+	// define new polynomial cyz+dyx+e
+	Polynomial<CommutativeRExp> f2 = Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("c")), {Var("y"),Var("z")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("d")), {Var("y"),Var("x")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("e")), {}) });
+
+	// define new polynomial fx+g
+	Polynomial<CommutativeRExp> f3 =  Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("f")), {Var("x")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var("g")), {}) });
 	polynomials.push_back(f1);
+	polynomials.push_back(f2);
+	polynomials.push_back(f3);
 
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
+	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 3);
 	std::cout << result << std::endl;
 
 
@@ -314,7 +329,7 @@ int main(int argc, char* argv[])
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
 	//test_polynomial_to_freesemiring();
-	//test_newton();
+	test_newton();
 
 	return 0;
 }
