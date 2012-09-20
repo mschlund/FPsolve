@@ -10,6 +10,7 @@ class CommutativeRExpTest : public CppUnit::TestFixture
 	CPPUNIT_TEST(testAddition);
 	CPPUNIT_TEST(testMultiplication);
 	CPPUNIT_TEST(testStar);
+	CPPUNIT_TEST(testTerms);
 	CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -20,6 +21,7 @@ protected:
 	void testAddition();
 	void testMultiplication();
 	void testStar();
+	void testTerms();
 
 private:
 	CommutativeRExp *a, *b, *c;

@@ -16,6 +16,25 @@ void CommutativeRExpTest::tearDown()
 	delete c;
 }
 
+void CommutativeRExpTest::testTerms()
+{
+/*	(a+(b.c+c.b).(a.b + c + b.a)*) = a + (b.c).(ab + c)*
+	(a.b+c) + (c + b.a) = (a.b + c)
+	(c + b.a) . (a.b + c) = (a.b+c).(a.b+c)
+	(c + b.a) + (a.b + c) = (a.b + c)
+	(a.b + a.c) + (a . (c+b)) = (a.b + a.c) +  (a . (b+c))*/
+
+	CommutativeRExp a = *this->a;
+	CommutativeRExp b = *this->b;
+	CommutativeRExp c = *this->c;
+
+	CPPUNIT_ASSERT( ((a+(b*c+c*b)*(a*b + c + b*a).star())) == ( a + (b*c)*(a*b + c).star() ) );
+	CPPUNIT_ASSERT( ((a*b+c) + (c + b*a)) == ( (a*b + c) ) );
+	CPPUNIT_ASSERT( ((c + b*a) * (a*b + c)) == ( (a*b+c)*(a*b+c) ) );
+	CPPUNIT_ASSERT( ((c + b*a) + (a*b + c) ) == ( (a*b + c) ) );
+	CPPUNIT_ASSERT( ((a*b + a*c) + (a * (c+b)) ) == ( (a*b + a*c) +  (a * (b+c))) );
+}
+
 void CommutativeRExpTest::testAddition()
 {
 	// a + 0 = a
@@ -24,7 +43,7 @@ void CommutativeRExpTest::testAddition()
 	CPPUNIT_ASSERT( CommutativeRExp::null() + (*a) == (*a) );
 
 	// associative (a + b) + c == a + (b + c)
-	// CPPUNIT_ASSERT( ((*a) + (*b)) + (*c) == (*a) + ((*b) + (*c)) );
+	CPPUNIT_ASSERT( ((*a) + (*b)) + (*c) == (*a) + ((*b) + (*c)) );
 }
 
 void CommutativeRExpTest::testMultiplication()
@@ -39,7 +58,7 @@ void CommutativeRExpTest::testMultiplication()
 	CPPUNIT_ASSERT( CommutativeRExp::null() * (*a) == CommutativeRExp::null() );
 
 	// associative (a * b) * c == a * (b * c)
-	// CPPUNIT_ASSERT( ((*a) * (*b)) * (*c) == (*a) * ((*b) * (*c)) );
+	CPPUNIT_ASSERT( ((*a) * (*b)) * (*c) == (*a) * ((*b) * (*c)) );
 }
 
 void CommutativeRExpTest::testStar()
@@ -47,5 +66,5 @@ void CommutativeRExpTest::testStar()
 	// 0* = 1
 	CPPUNIT_ASSERT( CommutativeRExp::null().star() == CommutativeRExp::one() );
 
-	//CPPUNIT_ASSERT( a->star() == CommutativeRExp(CommutativeRExp::Star, *a));
+	CPPUNIT_ASSERT( a->star() == CommutativeRExp(CommutativeRExp::Star, *a));
 }

@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
 	//test_polynomial_to_freesemiring();
-	test_newton();
+	//test_newton();
 
 	return 0;
 }

@@ -7,8 +7,8 @@
 
 #ifndef COMMUTATIVEREXP_H_
 #define COMMUTATIVEREXP_H_
-#include <initializer_list>
 #include <set>
+#include <string>
 #include "counting-semiring.h"
 #include "var.h"
 
@@ -34,16 +34,15 @@
 class CommutativeRExp : public Semiring<CommutativeRExp>
 {
 public:
-	typedef std::pair<std::multiset<Var>, std::set<Var> > linset;
+	enum optype {Empty, Element, Addition, Multiplication, Star};
+	enum optype type;
 private:
-	std::set<linset> sets;
-	static linset *elem_epsilon;
-	CommutativeRExp(std::set<linset> sets);
-	static std::set<linset> ExpUnion(std::set<linset> e1, std::set<linset> e2);
-	static linset ExpConcat(linset e1, linset e2);
-	static std::set<linset> ExpConcat(std::set<linset> e1, std::set<linset> e2);
-	static std::set<linset> ExpStar(linset e);
-	static linset epsilon();
+	Var* elem;
+	std::set<CommutativeRExp>* seta;
+	std::multiset<CommutativeRExp>* setm;
+	CommutativeRExp* rexp;
+	std::string str;
+	std::string generateString() const;
 
 public:
 	static CommutativeRExp *elem_null;
@@ -51,10 +50,14 @@ public:
 
 	CommutativeRExp();
 	CommutativeRExp(Var var);
+	CommutativeRExp(enum optype type, std::set<CommutativeRExp>* seta);
+	CommutativeRExp(enum optype type, std::multiset<CommutativeRExp>* setm);
+	CommutativeRExp(enum optype type, const CommutativeRExp& term);
 	CommutativeRExp(const CommutativeRExp& expr);
 	virtual ~CommutativeRExp();
 	CommutativeRExp operator + (const CommutativeRExp& term) const;
 	CommutativeRExp operator * (const CommutativeRExp& term) const;
+	bool operator < (const CommutativeRExp& term) const;
 	bool operator == (const CommutativeRExp& term) const;
 	CommutativeRExp star () const;
 	static CommutativeRExp null();

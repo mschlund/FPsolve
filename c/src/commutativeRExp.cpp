@@ -1,178 +1,192 @@
 #include <assert.h>
 #include <string>
 #include "commutativeRExp.h"
-#include <iostream>
 
 // this creates the empty set
 CommutativeRExp::CommutativeRExp()
 {
+	this->type = Empty;
 }
 
 CommutativeRExp::CommutativeRExp(Var var)
 {
-	this->sets = {std::make_pair<std::multiset<Var>, std::set<Var> >({var},{})};
+	this->type = Element;
+	this->elem = new Var(var);
+	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(std::set<linset> sets)
+CommutativeRExp::CommutativeRExp(enum optype type, std::set<CommutativeRExp>* seta)
 {
-	this->sets = sets;
+	this->type = type;
+	if(this->type == Addition)
+		this->seta = seta;
+	else
+		assert(false); // should not be called with this constructor...
+	this->str = generateString();
+}
+
+CommutativeRExp::CommutativeRExp(enum optype type, std::multiset<CommutativeRExp>* setm)
+{
+	this->type = type;
+	if(this->type == Multiplication)
+		this->setm = setm;
+	else
+		assert(false); // should not be called with this constructor...
+	this->str = generateString();
+}
+
+CommutativeRExp::CommutativeRExp(enum optype type, const CommutativeRExp& rexp)
+{
+	this->type = type;
+	if(this->type == Star)
+		this->rexp = new CommutativeRExp(rexp);
+	else
+		assert(false); // should not be called with this constructor...
+	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 {
-	this->sets = expr.sets;
+	this->type = expr.type;
+	if(this->type == Element)
+		this->elem = expr.elem;
+	else if(this->type == Addition)
+		this->seta = expr.seta;
+	else if(this->type == Multiplication)
+		this->setm = expr.setm;
+	else if(this->type == Star)
+		this->rexp = expr.rexp;
+	else if(this->type == Empty)
+		;// Do nothing
+	else
+		assert(false);
+	this->str = generateString();
 }
 
 CommutativeRExp::~CommutativeRExp()
 {
-	if(elem_epsilon != 0)
-	{
-		delete elem_epsilon;
-		elem_epsilon = 0;
-	}
-	/* this segfaults?!
-	if(elem_null != 0)
+/*	if(elem_null != 0)
 	{
 		delete elem_null;
 		elem_null = 0;
-	}*/
+	}
 	if(elem_one != 0)
 	{
 		delete elem_one;
 		elem_one = 0;
 	}
+	if(this->type == Element)
+	{
+		delete elem;
+	}
+	if(this->type == Addition )
+	{
+		delete seta;
+	}
+	if(this->type == Multiplication)
+	{
+		delete setm;
+	}
+	if(this->type == Star)
+	{
+		delete rexp;
+	}
+*/
 }
 
 // union operator
 CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 {
-	return CommutativeRExp(ExpUnion(this->sets, expr.sets));
+	std::set<CommutativeRExp>* retset= new std::set<CommutativeRExp>();
+
+	if(this->type == Element || this->type == Multiplication || this->type == Star)
+		retset->insert(*this);
+	else if(this->type == Addition)
+		retset->insert(this->seta->begin(), this->seta->end());
+	else if(this->type == Empty)
+		return expr; // {} + x = x
+	else
+		assert(false); // this should not happen
+
+	if(expr.type == Element || expr.type == Multiplication || expr.type == Star)
+		retset->insert(expr);
+	else if(expr.type == Addition)
+		retset->insert(expr.seta->begin(), expr.seta->end());
+	else if(expr.type == Empty)
+		return *this; // x + {} = x
+	else
+		assert(false); // this should not happen
+
+	// degenerated case, both sets have been equal
+	if(retset->size() == 1)
+		return *this; // so we can just return one of the elements // TODO: check this! quick test shows this is right
+	return CommutativeRExp(Addition, retset);
 }
 
 // concatenate all expressions from first set with all expressions of the second set
 CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 {
-	return CommutativeRExp(ExpConcat(this->sets,expr.sets));
+	std::multiset<CommutativeRExp>* retset= new std::multiset<CommutativeRExp>();
+
+	if(this->type == Element || this->type == Addition || this->type == Star)
+	{
+		if(this->type == Element && *this == one())
+			return expr; // 1 * x = x
+		retset->insert(*this);
+	}
+	else if(this->type == Multiplication)
+		retset->insert(this->setm->begin(), this->setm->end());
+	else if(this->type == Empty)
+		return *this; // {} * x = {}
+	else
+		assert(false); // this should not happen
+
+	if(expr.type == Element || expr.type == Addition || expr.type == Star)
+	{
+		if(expr.type == Element && expr == one())
+			return *this; // x * 1 = x
+		retset->insert(expr);
+	}
+	else if(expr.type == Multiplication)
+		retset->insert(expr.setm->begin(), expr.setm->end());
+	else if(expr.type == Empty)
+		return expr; // x * {} = {}
+	else
+		assert(false); // this should not happen
+
+	return CommutativeRExp(Multiplication, retset);
 }
 
-
-// create a union of two expression-sets
-std::set<CommutativeRExp::linset> CommutativeRExp::ExpUnion(std::set<linset> e1, std::set<linset> e2)
+//bool operator <(const CommutativeRExp& lhs, const CommutativeRExp& rhs)
+bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 {
-	std::set<linset> ret = e1;
-	ret.insert(e2.begin(),e2.end());
-	return ret;
+	if(this->type < rhs.type)
+		return true;
+	else if(this->type > rhs.type)
+		return false;
+	else // same type
+	{
+		if(this->type == Element)
+			return (*this->elem < *rhs.elem);
+		else
+			return this->str.compare(rhs.str) < 0;
+	}
 }
 
-// concatenate two expressions
-CommutativeRExp::linset CommutativeRExp::ExpConcat(linset e1, linset e2)
-{
-	linset ret;
-	if( (e1.first.empty() && e1.second.empty()) || (e2.first.empty() && e2.second.empty()) ) // one of the expressions is {}
-	{
-		return ret; // return {}
-	}
-
-	if(e1 == epsilon()) // ε*x = x
-	{
-		ret = e2;
-	}
-	else if(e2 == epsilon()) // x*ε = x
-	{
-		ret = e1;
-	}
-	else // x*y = xy
-	{
-		ret = std::make_pair(e1.first,e1.second);
-		ret.first.insert(e2.first.begin(),e2.first.end());
-		ret.second.insert(e2.second.begin(),e2.second.end());
-	}
-
-	return ret;
-}
-
-// concatenate two expression sets
-std::set<CommutativeRExp::linset> CommutativeRExp::ExpConcat(std::set<linset> e1, std::set<linset> e2)
-{
-	std::set<linset> ret;
-	for(std::set<linset>::const_iterator set1 = e1.begin(); set1 != e1.end(); ++set1)
-	{
-		for(std::set<linset>::const_iterator set2 = e2.begin(); set2 != e2.end(); ++set2)
-		{
-			ret.insert(CommutativeRExp::ExpConcat(*set1,*set2));
-		}
-	}
-	return ret;
-}
-
-// handles the starring of one regexp
-std::set<CommutativeRExp::linset> CommutativeRExp::ExpStar(linset exp)
-{
-	// identities:
-	// (1) (x*)* = x*
-	// (2) (x+y)* = x*y* (not covered in this method)
-	// (3) (xy*)* = ε + xx*y*
-
-	std::set<linset> ret;
-	if(exp == linset({},{})) // {}* = ε
-	{
-		ret.insert(epsilon());
-		return ret;
-	}
-
-	if(exp.first.empty()) // (x*)* = x* (id)
-	{
-		ret.insert(exp);
-		return ret;
-	}
-
-	if(exp.second.empty()) // (x)* = x*
-	{
-		std::set<Var> tmp(exp.first.begin(),exp.first.end());
-		ret.insert(linset({},tmp));
-		return ret;
-	}
-
-	// (xy*)* = ε + xx*y*
-	ret.insert(epsilon());
-	std::set<Var> tmp(exp.first.begin(),exp.first.end()); // x -> x*
-	tmp.insert(exp.second.begin(),exp.second.end()); // concatenate x* with y* -> x*y*
-	ret.insert(linset(exp.first,tmp)); // xx*y*;
-	return ret;
-}
-
-// TODO
 bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 {
-	return this->sets == expr.sets;
+	return this->str.compare(expr.str) == 0;
 }
 
 // star the whole RExp
 CommutativeRExp CommutativeRExp::star() const
 {
-	// (1) (x*)* = x*
-	// (2) (x+y)* = x*y*
-	// (3) (xy*)* = 1 + xx*y*
-	// (?) (x+yz*)* = x*(yz*)* = x*(1+yy*z*) = x*+yx*y*z
-
-	// {}* = ε ?
-	if(*this == CommutativeRExp::null())
-		return CommutativeRExp::one();
-
-	std::set<linset> ret = {epsilon()};
-	for(std::set<linset>::const_iterator set1 = this->sets.begin(); set1 != this->sets.end(); ++set1)
-	{
-		ret = ExpConcat(ret, ExpStar(*set1));
-	}
-
-	return CommutativeRExp(ret);
-}
-
-CommutativeRExp::linset CommutativeRExp::epsilon()
-{
-	if(!CommutativeRExp::elem_epsilon)
-		CommutativeRExp::elem_epsilon = new linset(std::multiset<Var>({Var("ε")}),{});
-	return *CommutativeRExp::elem_epsilon;
+	if(this->type == Star)
+		return *this; // absorb the star
+	else if (this->type == Empty)
+		return one(); // {}* = ε
+	else
+		return CommutativeRExp(Star, *this); // star the element
 }
 
 CommutativeRExp CommutativeRExp::null()
@@ -189,25 +203,47 @@ CommutativeRExp CommutativeRExp::one()
 	return *CommutativeRExp::elem_one;
 }
 
-std::string CommutativeRExp::string() const
+std::ostream& operator<<(std::ostream& os, const std::set<CommutativeRExp>& set)
+{
+	for(std::set<CommutativeRExp>::const_iterator s = set.begin(); s != set.end(); ++s)
+	{
+		if(s != set.begin())
+			os << "+";
+		os << *s;
+	}
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const std::multiset<CommutativeRExp>& set)
+{
+	for(std::multiset<CommutativeRExp>::const_iterator s = set.begin(); s != set.end(); ++s)
+	{
+		if(s != set.begin())
+			os << ".";
+		os << *s;
+	}
+	return os;
+}
+
+std::string CommutativeRExp::generateString() const
 {
 	std::stringstream ss;
-	ss << "(";
-	for(std::set<linset>::const_iterator set = this->sets.begin(); set != this->sets.end(); ++set)
-	{
-		if(set != this->sets.begin())
-			ss << "+";
-		for(std::multiset<Var>::const_iterator var = set->first.begin(); var != set->first.end(); ++var)
-			ss << (*var);
-		for(std::multiset<Var>::const_iterator var = set->second.begin(); var != set->second.end(); ++var)
-			ss << (*var) << "*";
-	}
-	ss << ")";
+	if(this->type == Element)
+		ss << *this->elem;
+	else if(this->type == Addition)
+		ss << "(" << *this->seta << ")";
+	else if(this->type == Multiplication)
+		ss << "(" << *this->setm << ")";
+	else if(this->type == Star)
+		ss << "(" << *this->rexp << ")*";
 	return ss.str();
+}
+
+std::string CommutativeRExp::string() const
+{
+	return this->str;
 }
 
 bool CommutativeRExp::is_idempotent = true;
 bool CommutativeRExp::is_commutative = true;
-CommutativeRExp::linset* CommutativeRExp::elem_epsilon = 0;
 CommutativeRExp* CommutativeRExp::elem_null = 0;
 CommutativeRExp* CommutativeRExp::elem_one = 0;
