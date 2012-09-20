@@ -9,9 +9,13 @@
 #define SEMILINSETEXP_H_
 
 #include "var.h"
-#include <algorithm>
+#include "counting-semiring.h"
 
-// TODO: bigints instead of finite width ints ?
+#include <algorithm>
+#include <set>
+#include <map>
+
+// TODO: bigints instead of finite precision ints ?
 
 // use the identities
 // (1) (x*)* = x*
@@ -33,159 +37,40 @@
 // star(l_1,l_2,...,l_n) = \prod_{i=1}^n star(l_i)
 // where star(l_i) gives a semilinear set
 
-
-typedef std::pair<std::map<Var,unsigned int>, std::set<std::map<Var,unsigned int> > > LinSet;
+typedef std::map<Var,unsigned int> VecSparse;
+typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
 
 // TODO: nothing is tested, nothing is done yet...
 // FIXME: avoid deep-copying (+,*,..)
-// TODO: refactoring needed!!...decouple semirings and semiring-elements! ???
-
-
-// adding two maps componentwise... could be put in a util-class ?
-std::map<Var,unsigned int> operator+(const std::map<Var, unsigned int>& a, const std::map<Var, unsigned int>& b)
-{
-	std::map<Var,unsigned int> result = a;
-	for(std::map<Var, unsigned int>::const_iterator it = b.begin(); it!=b.end(); ++it) {
-		if(result.find(it->first) != 0)
-			result[it->first] += it->second;
-		else
-			result[it->first] = it->second;
-	}
-
-    return result;
-}
-
-std::ostream& operator<<(std::ostream& os, const std::map<Var, unsigned int>& v)
-{
-	os << "<";
-    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
-    {
-        os << " " << it->second;
-    }
-    os << ">";
-    return os;
-}
+// TODO: refactoring ?? ... decouple semirings and semiring-elements! ???
 
 // TODO: replace fixed-length vectors by a map: Var->int (multiplicity) ...
 
-class SemilinSetExp : public CountingSemiring {
+class SemilinSetExp : public Semiring<SemilinSetExp> {
 private:
 	std::set<LinSet> val;
-	static unsigned int alphabetSize;
-	static std::map<Var, unsigned int> variables; //maps a variable to an index
-	static unsigned int num_variables = 0;
-	static std::set<LinSet>* elem_null = 0; // null = {} (empty set)
-	static std::set<LinSet>* elem_one = 0; // one = {(0,0,...0)}
-
 
 public:
+	static SemilinSetExp* elem_null; // null = {} (empty set)
+	static SemilinSetExp* elem_one; // one = {(0,0,...0)}
 
-	SemilinSetExp() {
-		// not used normally :)
-	}
+	SemilinSetExp();
+	SemilinSetExp(std::set<LinSet> val);
+	SemilinSetExp(Var v);
+	virtual ~SemilinSetExp();
+	static SemilinSetExp null();
+	static SemilinSetExp one();
+	SemilinSetExp operator + (const SemilinSetExp& sl) const;
+	SemilinSetExp operator * (const SemilinSetExp& sl) const;
+	static SemilinSetExp star(LinSet ls);
+	SemilinSetExp star() const;
+	std::string string() const;
+	bool operator == (const SemilinSetExp& sl) const;
+	std::set<LinSet> getVal() const;
+	std::ostream& operator<<(std::ostream& os) const;
 
-	SemilinSetExp(const Var& var, int k) {
-		if(variables.count(var) == 0) {
-			variables.insert(std::make_pair(var,num_variables));
-			num_variables++;
-		}
-		std::vector<unsigned int> offset = std::vector<unsigned int>();
-	}
-
-	SemilinSetExp(std::set<LinSet> val) {
-		this->val = val;
-	}
-
-	static SemilinSetExp null() {
-		if(!elem_null) {
-			elem_null = new std::set<LinSet>();
-		}
-		return *elem_null;
-	}
-
-	static SemilinSetExp one() {
-		if(!elem_one) {
-			elem_one = new std::set<LinSet>();
-			zeros = std::vector<unsigned int>(alphabetSize, 0);
-			std::set<std::vector<unsigned int> > emptyset();
-			elem_one->insert(std::make_pair(zeros, emptyset));
-		}
-		return *elem_one;
-	}
-
-	SemilinSetExp operator + (const SemilinSetExp& sl) {
-		std::set<LinSet> result();
-		std::set_union(this->val.begin(),this->val.end(),sl.val.begin(),sl.val.end(),result.begin());
-		return SemilinSetExp(result);
-	};
-
-	SemilinSetExp operator * (const SemilinSetExp& sl) {
-		std::set<LinSet> result;
-		for(std::set<LinSet>::const_iterator it_arg = sl.val.begin(); it_arg != sl.val.end(); ++it_arg) {
-			for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
-						result.insert((*it_arg) * (*it_m));
-			}
-		}
-	};
-
-	SemilinSetExp star() {
-		std::set<LinSet> result;
-		for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
-								result.insert(star(*it));
-		}
-		return SemilinearSetExp(result);
-	};
-
-	std::string string() const {
-		std::stringstream ss;
-		ss << "[" << std::endl;
-		for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
-			ss << it_m->first << " + ";
-			for(std::set<std::vector<unsigned int> >::const_iterator it_gen = it_m->second.begin(); it_gen != it_m->second.end(); ++it_gen) {
-				ss << *it_gen << " , ";
-			}
-
-			ss << std::endl;
-		}
-		ss << "]" << std::endl;
-		return ss.str();
-	};
-
-	std::ostream& operator<<(std::ostream& os, const SemilinSetExp& slSet) {
-		return os << slSet.string();
-	}
-
-
-	SemilinSetExp star(const LinSet& ls) {
-		std::set<LinSet> result;
-		// star of a linear set is a semilinear set:
-		// (w_0.w_1*.w_2*...w_n*)* = 1 + \sum_{i=1}^{n-1} w_0^i.w_1*.w_2*...w_n* + w_0^n.w_0*.w_1*...w_n*
-		result.insert(this->one());
-		gens = ls.second;
-		std::vector<unsigned int> tmp_offset = ls.first;
-
-		int n = ls.second.size();
-		for(int k=1; k<n; ++k) {
-			result.insert(std::make_pair(tmp_offset,gens));
-			for(int i =0; i<offset.size(); ++i) {
-				tmp_offset[i] = tmp_offset[i] + ls.first[i];
-			}
-		}
-		gens.insert(ls.first);
-		result.insert(std::make_pair(tmp_offset,gens));
-
-		return SemilinearSetExp(result);
-	};
-
-	static LinSet operator * (const LinSet& ls1, const LinSet& ls2) {
-		std::set<std::vector<unsigned int> > generators();
-		std::set_union(ls1.second.begin(),ls1.second.end(),ls2.second.begin(),ls2.second.end(), generators.begin());
-		// add the offsets, union on the generators
-		return std::make_pair(ls1.first+ls2.first, generators);
-	};
-
-
-
+	static bool is_idempotent;
+	static bool is_commutative;
 };
 
 

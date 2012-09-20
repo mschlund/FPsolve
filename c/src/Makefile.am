@@ -7,4 +7,5 @@ newton_SOURCES = main.cpp\
 	newton.h\
 	var.cpp var.h\
 	free-semiring.h free-semiring.cpp\
-	commutativeRExp.cpp commutativeRExp.h
+	commutativeRExp.cpp commutativeRExp.h\
+	semilinSetExp.cpp semilinSetExp.h

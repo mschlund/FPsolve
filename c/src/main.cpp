@@ -1,7 +1,7 @@
 #include <iostream>
 #include "float-semiring.h"
 #include "free-semiring.h"
-//#include "semilinSetExp.h"
+#include "semilinSetExp.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
@@ -278,7 +278,7 @@ void test_newton()
 	std::cout << result << std::endl;
 	*/
 
-	Newton<CommutativeRExp> newton;
+/*	Newton<CommutativeRExp> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
 	variables.push_back(Var("y"));
@@ -304,8 +304,21 @@ void test_newton()
 	polynomials.push_back(f1);
 	polynomials.push_back(f2);
 	polynomials.push_back(f3);
+*/
 
-	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 3);
+	Newton<SemilinSetExp> newton;
+	std::vector<Var> variables;
+	variables.push_back(Var("x"));
+	std::cout << "- newton (cnt-SR):" << std::endl;
+
+	std::vector<Polynomial<SemilinSetExp> > polynomials;
+	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
+
+	polynomials.push_back(f1);
+
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 1);
 	std::cout << result << std::endl;
 
 

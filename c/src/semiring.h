@@ -11,6 +11,7 @@ public:
 	virtual SR operator * (const SR& elem) const = 0;
 	virtual SR operator + (const SR& elem) const = 0;
 	virtual SR star () const = 0;
+	virtual bool operator ==(const SR& elem) const = 0;
 	static bool is_idempotent;
 	static bool is_commutative;
 	static SR null();
