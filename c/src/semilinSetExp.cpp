@@ -64,7 +64,7 @@ SemilinSetExp::SemilinSetExp(Var var) {
 }
 
 SemilinSetExp::SemilinSetExp(std::set<LinSet> val) {
-	this->val = val;
+	this->val = std::set<LinSet>(val.begin(),val.end());
 }
 
 SemilinSetExp::~SemilinSetExp() {
@@ -83,10 +83,8 @@ SemilinSetExp SemilinSetExp::null() {
 
 SemilinSetExp SemilinSetExp::one() {
 	if(!SemilinSetExp::elem_one) {
-		std::set<LinSet> elone;
-		VecSparse zeros;
-		std::set<VecSparse> emptyset;
-		elone.insert(std::make_pair(zeros, emptyset));
+		std::set<LinSet> elone = std::set<LinSet>();
+		elone.insert(std::make_pair(VecSparse(), std::set<VecSparse>()));
 		SemilinSetExp::elem_one = new SemilinSetExp(elone);
 	}
 	return *SemilinSetExp::elem_one;
@@ -95,11 +93,11 @@ SemilinSetExp SemilinSetExp::one() {
 SemilinSetExp SemilinSetExp::operator + (const SemilinSetExp& sl) const {
 	std::set<LinSet> result;
 
-	for(std::set<LinSet>::const_iterator it_arg = sl.getVal().begin(); it_arg != sl.val.end(); ++it_arg) {
-			result.insert(*it_arg);
+	for(std::set<LinSet>::const_iterator it_arg = sl.val.begin(); it_arg != sl.val.end(); ++it_arg) {
+		result.insert(*it_arg);
 	}
 	for(std::set<LinSet>::const_iterator it_this = val.begin(); it_this != val.end(); ++it_this) {
-			result.insert(*it_this);
+		result.insert(*it_this);
 	}
 
 	//std::set_union(this->val.begin(),this->val.end(),sl.getVal().begin(),sl.getVal().end(),result.begin());
@@ -109,7 +107,7 @@ SemilinSetExp SemilinSetExp::operator + (const SemilinSetExp& sl) const {
 
 SemilinSetExp SemilinSetExp::operator * (const SemilinSetExp& sl) const {
 	std::set<LinSet> result;
-	for(std::set<LinSet>::const_iterator it_arg = sl.getVal().begin(); it_arg != sl.val.end(); ++it_arg) {
+	for(std::set<LinSet>::const_iterator it_arg = sl.val.begin(); it_arg != sl.val.end(); ++it_arg) {
 		for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
 					result.insert((*it_arg) * (*it_m));
 		}
@@ -126,7 +124,10 @@ bool SemilinSetExp::operator == (const SemilinSetExp& sl) const {
 }
 
 SemilinSetExp SemilinSetExp::star(LinSet ls) {
-	std::set<LinSet> result = one().getVal();
+	SemilinSetExp tmp_one = one();
+	std::set<LinSet> v = tmp_one.getVal();
+	std::set<LinSet> result = std::set<LinSet>(v.begin(),v.end());
+
 	// star of a linear set is a semilinear set:
 	// (w_0.w_1*.w_2*...w_n*)* = 1 + \sum_{i=1}^{n-1} w_0^i.w_1*.w_2*...w_n* + w_0^n.w_0*.w_1*...w_n*
 	std::set<VecSparse> gens = ls.second;
@@ -148,13 +149,26 @@ SemilinSetExp SemilinSetExp::star(LinSet ls) {
 	gens.insert(ls.first);
 	result.insert(std::make_pair(tmp_offset,gens));
 
+	std::cout << SemilinSetExp(result) << std::endl;
+
 	return SemilinSetExp(result);
 }
 
 SemilinSetExp SemilinSetExp::star() const {
 	std::set<LinSet> result;
-	for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
-		std::set<LinSet> star_linset = star(*it_m).getVal();
+	std::cout << "this: " <<*this;
+	for(std::set<LinSet>::const_iterator it_m = val.begin(); it_m != val.end(); ++it_m) {
+		std::cout << "BLA1"<<std::endl;
+		SemilinSetExp star_ls = star(*it_m);
+		std::cout << "BLA2"<<std::endl;
+		std::cout.flush();
+		std::cout << star_ls;
+		std::set<LinSet> star_linset = star_ls.getVal();
+
+		SemilinSetExp blubb = SemilinSetExp(star_linset);
+		std::cout << "BLA3"<<std::endl;
+		std::cout << blubb;
+		std::cout.flush();
 		result.insert(star_linset.begin(), star_linset.end());
 	}
 	return SemilinSetExp(result);
