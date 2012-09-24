@@ -65,6 +65,7 @@ CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 
 CommutativeRExp::~CommutativeRExp()
 {
+	// do not delete static pointers!!!
 /*	if(elem_null != 0)
 	{
 		delete elem_null;

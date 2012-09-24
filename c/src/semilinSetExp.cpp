@@ -68,10 +68,7 @@ SemilinSetExp::SemilinSetExp(std::set<LinSet> val) {
 }
 
 SemilinSetExp::~SemilinSetExp() {
-	if(SemilinSetExp::elem_null)
-		delete SemilinSetExp::elem_null;
-	if(SemilinSetExp::elem_one)
-		delete SemilinSetExp::elem_one;
+	// do NOT delete static pointers!!!
 }
 
 
@@ -84,7 +81,9 @@ SemilinSetExp SemilinSetExp::null() {
 SemilinSetExp SemilinSetExp::one() {
 	if(!SemilinSetExp::elem_one) {
 		std::set<LinSet> elone = std::set<LinSet>();
-		elone.insert(std::make_pair(VecSparse(), std::set<VecSparse>()));
+		std::set<VecSparse> gens = std::set<VecSparse>();
+		gens.insert(VecSparse());
+		elone.insert(std::make_pair(VecSparse(), gens));
 		SemilinSetExp::elem_one = new SemilinSetExp(elone);
 	}
 	return *SemilinSetExp::elem_one;
@@ -123,7 +122,7 @@ bool SemilinSetExp::operator == (const SemilinSetExp& sl) const {
 	return (this->val == sl.getVal());
 }
 
-SemilinSetExp SemilinSetExp::star(LinSet ls) {
+std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 	SemilinSetExp tmp_one = one();
 	std::set<LinSet> v = tmp_one.getVal();
 	std::set<LinSet> result = std::set<LinSet>(v.begin(),v.end());
@@ -149,27 +148,14 @@ SemilinSetExp SemilinSetExp::star(LinSet ls) {
 	gens.insert(ls.first);
 	result.insert(std::make_pair(tmp_offset,gens));
 
-	std::cout << SemilinSetExp(result) << std::endl;
-
-	return SemilinSetExp(result);
+	return result;
 }
 
 SemilinSetExp SemilinSetExp::star() const {
-	std::set<LinSet> result;
-	std::cout << "this: " <<*this;
+	std::set<LinSet> result = std::set<LinSet>();
 	for(std::set<LinSet>::const_iterator it_m = val.begin(); it_m != val.end(); ++it_m) {
-		std::cout << "BLA1"<<std::endl;
-		SemilinSetExp star_ls = star(*it_m);
-		std::cout << "BLA2"<<std::endl;
-		std::cout.flush();
-		std::cout << star_ls;
-		std::set<LinSet> star_linset = star_ls.getVal();
-
-		SemilinSetExp blubb = SemilinSetExp(star_linset);
-		std::cout << "BLA3"<<std::endl;
-		std::cout << blubb;
-		std::cout.flush();
-		result.insert(star_linset.begin(), star_linset.end());
+		std::set<LinSet> star_ls = star(*it_m);
+		result.insert(star_ls.begin(), star_ls.end());
 	}
 	return SemilinSetExp(result);
 }

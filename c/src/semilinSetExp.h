@@ -14,6 +14,7 @@
 #include <algorithm>
 #include <set>
 #include <map>
+//#include <list>
 
 // TODO: bigints instead of finite precision ints ?
 
@@ -39,12 +40,10 @@
 
 typedef std::map<Var,unsigned int> VecSparse;
 typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
+//typedef std::list<VecSparse> LinSet; // new implementation... to come
 
-// TODO: nothing is tested, nothing is done yet...
 // FIXME: avoid deep-copying (+,*,..)
 // TODO: refactoring ?? ... decouple semirings and semiring-elements! ???
-
-// TODO: replace fixed-length vectors by a map: Var->int (multiplicity) ...
 
 class SemilinSetExp : public Semiring<SemilinSetExp> {
 private:
@@ -62,7 +61,7 @@ public:
 	static SemilinSetExp one();
 	SemilinSetExp operator + (const SemilinSetExp& sl) const;
 	SemilinSetExp operator * (const SemilinSetExp& sl) const;
-	static SemilinSetExp star(LinSet ls);
+	static std::set<LinSet> star(LinSet ls);
 	SemilinSetExp star() const;
 	std::string string() const;
 	bool operator == (const SemilinSetExp& sl) const;
