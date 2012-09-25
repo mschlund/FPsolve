@@ -11,10 +11,12 @@
 #include "var.h"
 #include "counting-semiring.h"
 
+#include <cassert>
+
 #include <algorithm>
 #include <set>
 #include <map>
-//#include <list>
+#include <list>
 
 // TODO: bigints instead of finite precision ints ?
 
@@ -39,8 +41,8 @@
 // where star(l_i) gives a semilinear set
 
 typedef std::map<Var,unsigned int> VecSparse;
-typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
-//typedef std::list<VecSparse> LinSet; // new implementation... to come
+//typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
+typedef std::list<VecSparse> LinSet; // new implementation..
 
 // FIXME: avoid deep-copying (+,*,..)
 // TODO: refactoring ?? ... decouple semirings and semiring-elements! ???

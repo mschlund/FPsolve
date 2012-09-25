@@ -10,9 +10,9 @@
 
 
 // adding two Var-maps componentwise... could be put in a util-class ?
-std::map<Var,unsigned int> operator+(const std::map<Var, unsigned int>& a, const std::map<Var, unsigned int>& b)
+VecSparse operator+(const VecSparse& a, const VecSparse& b)
 {
-	std::map<Var,unsigned int> result = a;
+	VecSparse result = a;
 	for(VecSparse::const_iterator it = b.begin(); it!=b.end(); ++it) {
 		if(result.count(it->first) > 0)
 			result[it->first] += it->second;
@@ -23,31 +23,37 @@ std::map<Var,unsigned int> operator+(const std::map<Var, unsigned int>& a, const
     return result;
 }
 
-LinSet operator * (LinSet ls1, LinSet ls2) {
-	std::set<VecSparse> generators;
+LinSet operator * (const LinSet& ls1, const LinSet& ls2) {
+	assert(!ls1.empty() && !ls2.empty());
 
-	//std::set_union(ls1.second.begin(),ls1.second.end(),ls2.second.begin(),ls2.second.end(), generators.begin());
-	for(std::set<VecSparse>::const_iterator it_1=ls1.second.begin(); it_1 != ls1.second.end(); ++it_1) {
-		generators.insert(*it_1);
-	}
-	for(std::set<VecSparse>::const_iterator it_2=ls2.second.begin(); it_2 != ls2.second.end(); ++it_2) {
-		generators.insert(*it_2);
-	}
 
-	// add the offsets, union on the generators
-	return std::make_pair(ls1.first+ls2.first, generators);
+
+	std::list<VecSparse>::const_iterator gen_1 = ls1.begin();
+	++gen_1; //gen_1 points now to the generators of ls1
+
+	std::list<VecSparse>::const_iterator gen_2 = ls2.begin();
+	++gen_2; //gen_2 points now to the generators of ls2
+
+	//union on the generators
+	std::list<VecSparse> g1 = ls1;
+	std::list<VecSparse> g2 = ls2;
+
+	//remove the offsets
+	g1.pop_front();
+	g2.pop_front();
+
+	g1.sort();
+	g2.sort();
+
+	std::list<VecSparse> result;
+	std::insert_iterator<std::list<VecSparse> > it(result, result.begin());
+	set_union(g1.begin(), g1.end(), g2.begin(), g2.end(), it);
+
+	//add the offsets
+	result.push_front(ls1.front()+ls2.front());
+	return result;
+
 }
-
-std::ostream& operator<<(std::ostream& os, const VecSparse& v) {
-	os << "<";
-    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
-    {
-        os << it->first.string() << ":" << it->second << ", ";
-    }
-    os << ">";
-    return os;
-}
-
 
 
 SemilinSetExp::SemilinSetExp() {
@@ -56,11 +62,11 @@ SemilinSetExp::SemilinSetExp() {
 
 SemilinSetExp::SemilinSetExp(Var var) {
 	this->val = std::set<LinSet>();
-	std::map<Var,unsigned int> offset;
+	LinSet ls = LinSet();
+	VecSparse offset;
 	offset.insert(std::make_pair(var, 1));
-	std::set<std::map<Var,unsigned int> > gens;
-	LinSet l = std::make_pair(offset,gens);
-	this->val.insert(l);
+	ls.push_front(offset);
+	this->val.insert(ls);
 }
 
 SemilinSetExp::SemilinSetExp(std::set<LinSet> val) {
@@ -81,9 +87,9 @@ SemilinSetExp SemilinSetExp::null() {
 SemilinSetExp SemilinSetExp::one() {
 	if(!SemilinSetExp::elem_one) {
 		std::set<LinSet> elone = std::set<LinSet>();
-		std::set<VecSparse> gens = std::set<VecSparse>();
-		gens.insert(VecSparse());
-		elone.insert(std::make_pair(VecSparse(), gens));
+		LinSet ls = LinSet();
+		ls.push_front(VecSparse());
+		elone.insert(ls);
 		SemilinSetExp::elem_one = new SemilinSetExp(elone);
 	}
 	return *SemilinSetExp::elem_one;
@@ -122,58 +128,87 @@ bool SemilinSetExp::operator == (const SemilinSetExp& sl) const {
 	return (this->val == sl.getVal());
 }
 
+// TODO: multiple points of return might kill RVO ... try returning a pointer instead!
 std::set<LinSet> SemilinSetExp::star(LinSet ls) {
+
+	// if we do not have generators, i.e. ls = w for some word w, just return w* (instead of 1 + ww*)
+	if(ls.size() == 1) {
+		LinSet r = ls;
+		r.push_front(VecSparse());
+
+		std::set<LinSet> res;
+		res.insert(r);
+		return res;
+	}
+
 	SemilinSetExp tmp_one = one();
 	std::set<LinSet> v = tmp_one.getVal();
 	std::set<LinSet> result = std::set<LinSet>(v.begin(),v.end());
 
 	// star of a linear set is a semilinear set:
 	// (w_0.w_1*.w_2*...w_n*)* = 1 + \sum_{i=1}^{n-1} w_0^i.w_1*.w_2*...w_n* + w_0^n.w_0*.w_1*...w_n*
-	std::set<VecSparse> gens = ls.second;
-	VecSparse tmp_offset = ls.first;
+//	std::list<VecSparse> gens = ;
+
 
 	//int n = ls.second.size();
 
 	// for all elements of gens:
 	//   for all keys of tmp_offset
 	//      tmp_offset[key] = tmp_offset[key] + ls.first[key]
-	for(std::set<VecSparse>::const_iterator it_gen = gens.begin(); it_gen!=gens.end(); ++it_gen) {
-		result.insert(std::make_pair(tmp_offset,gens));
+
+	LinSet ls_tmp = ls;
+	VecSparse& tmp_offset = ls_tmp.front();
+
+	std::list<VecSparse>::iterator gen_ls = ls.begin();
+	++gen_ls;
+
+	for(std::list<VecSparse>::iterator it_gens = gen_ls; it_gens!=ls.end(); ++it_gens) {
+		result.insert(ls_tmp);;
 		// calculate w_0^i
 		for(VecSparse::iterator it_tmp_offset = tmp_offset.begin(); it_tmp_offset != tmp_offset.end(); ++it_tmp_offset) {
-			it_tmp_offset->second = it_tmp_offset->second + ls.first[it_tmp_offset->first];
+			it_tmp_offset->second = it_tmp_offset->second + ls.front()[it_tmp_offset->first];
 		}
 	}
 	//the last summand is w_0^n.w_0*.w_1*...w_n*
-	gens.insert(ls.first);
-	result.insert(std::make_pair(tmp_offset,gens));
+	ls_tmp.insert(gen_ls, ls.front());
+	result.insert(ls_tmp);
 
 	return result;
 }
 
 SemilinSetExp SemilinSetExp::star() const {
-	std::set<LinSet> result = std::set<LinSet>();
+	SemilinSetExp result = SemilinSetExp::one();
 	for(std::set<LinSet>::const_iterator it_m = val.begin(); it_m != val.end(); ++it_m) {
 		std::set<LinSet> star_ls = star(*it_m);
-		result.insert(star_ls.begin(), star_ls.end());
+		result = result * SemilinSetExp(star_ls);
 	}
-	return SemilinSetExp(result);
+	return result;
+}
+
+std::ostream& operator<<(std::ostream& os, const VecSparse& v) {
+	os << "<";
+    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
+    {
+        os << it->first.string() << ":" << it->second << ", ";
+    }
+    os << ">";
+    return os;
 }
 
 std::string SemilinSetExp::string() const {
 	std::stringstream ss;
-	ss << "[" << std::endl;
-	for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
-		ss << it_m->first << " + ";
-		for(std::set<std::map<Var, unsigned int> >::const_iterator it_gen = it_m->second.begin(); it_gen != it_m->second.end(); ++it_gen) {
-			ss << *it_gen << " , ";
+	ss << "[" << '\n';
+	for(std::set<LinSet>::const_iterator it_ls = this->val.begin(); it_ls != this->val.end(); ++it_ls) {
+		for(std::list<VecSparse>::const_iterator it_veclist = it_ls->begin(); it_veclist != it_ls->end(); ++it_veclist) {
+			ss << *it_veclist << " + ";
 		}
 
-		ss << std::endl;
+		ss << '\n';
 	}
-	ss << "]" << std::endl;
+	ss << "]" << '\n';
 	return ss.str();
 };
+
 
 std::ostream& SemilinSetExp::operator<<(std::ostream& os) const {
 	return os << this->string();

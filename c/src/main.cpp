@@ -306,7 +306,7 @@ void test_newton()
 	polynomials.push_back(f3);
 */
 
-/*	Newton<SemilinSetExp> newton;
+	Newton<SemilinSetExp> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
 	std::cout << "- newton (cnt-SR):" << std::endl;
@@ -314,17 +314,20 @@ void test_newton()
 	std::vector<Polynomial<SemilinSetExp> > polynomials;
 	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
 		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
+		//Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {Var("x")}),
 		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
 
 	polynomials.push_back(f1);
 
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 1);
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
-*/
+
+/*
 	SemilinSetExp x = SemilinSetExp(Var("a"));
-	SemilinSetExp y = SemilinSetExp(Var("a"));
-	SemilinSetExp z = x.star();
+	SemilinSetExp y = SemilinSetExp(Var("b"));
+	SemilinSetExp z = (x*x*x+y*y*y).star();
 	std::cout << z << std::endl;
+*/
 
 }
 

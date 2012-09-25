@@ -9,7 +9,7 @@
 #include <list>
 #include <sstream>
 #include <initializer_list>
-#include <assert.h>
+#include <cassert>
 #include "var.h"
 #include "semiring.h"
 #include "matrix.h"
