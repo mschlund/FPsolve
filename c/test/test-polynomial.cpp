@@ -20,6 +20,10 @@ void PolynomialTest::setUp()
 			Monomial<FreeSemiring>(*c,{Var("x"),Var("x")}),
 			Monomial<FreeSemiring>(*d,{Var("x"),Var("y")}),
 			Monomial<FreeSemiring>(*e,{Var("y"),Var("y")})}); // c*xx+d*xy+e*yy
+	p1 = new Polynomial<FreeSemiring>({
+		Monomial<FreeSemiring>(*a,{Var("x")}),
+		Monomial<FreeSemiring>(*b,{Var("x")})}); // a*x+b*x
+
 }
 
 void PolynomialTest::tearDown()
@@ -28,6 +32,7 @@ void PolynomialTest::tearDown()
 	delete one;
 	delete first;
 	delete second;
+	delete p1;
 	delete a; delete b; delete c; delete d; delete e;
 }
 
@@ -91,6 +96,15 @@ void PolynomialTest::testJacobian()
 	Matrix<Polynomial<FreeSemiring> > result = Matrix<Polynomial<FreeSemiring> >(3,2,polys2);
 
 	CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
+
+	polys = {*p1};
+	vars = {Var("x")};
+	polys2 = {
+			Polynomial<FreeSemiring>({
+				Monomial<FreeSemiring>(*a+*b,{})}) };
+	result = Matrix<Polynomial<FreeSemiring> >(1,1,polys2);
+	CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
+
 }
 
 void PolynomialTest::testEvaluation()

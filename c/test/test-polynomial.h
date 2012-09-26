@@ -13,7 +13,7 @@ class PolynomialTest : public CppUnit::TestFixture
 	CPPUNIT_TEST(testJacobian);
 	CPPUNIT_TEST(testEvaluation);
 	CPPUNIT_TEST(testMatrixEvaluation);
-	CPPUNIT_TEST(testPolynomialToFreeSemiring);
+//	CPPUNIT_TEST(testPolynomialToFreeSemiring);
 	CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -30,7 +30,7 @@ protected:
 
 private:
 	FreeSemiring *a, *b, *c, *d, *e;
-	Polynomial<FreeSemiring> *null, *one, *first, *second;
+	Polynomial<FreeSemiring> *null, *one, *first, *second, *p1;
 };
 
 #endif
