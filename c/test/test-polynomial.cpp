@@ -22,8 +22,7 @@ void PolynomialTest::setUp()
 			Monomial<FreeSemiring>(*e,{Var("y"),Var("y")})}); // c*xx+d*xy+e*yy
 	p1 = new Polynomial<FreeSemiring>({
 		Monomial<FreeSemiring>(*a,{Var("x")}),
-		Monomial<FreeSemiring>(*b,{Var("x")})}); // a*x+b*x
-
+		Monomial<FreeSemiring>(*b,{Var("x")})}); // should be a*x+b*x
 }
 
 void PolynomialTest::tearDown()

@@ -278,49 +278,90 @@ void test_newton()
 	std::cout << result << std::endl;
 	*/
 
-/*	Newton<CommutativeRExp> newton;
+	/*
+	Newton<SemilinSetExp> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
 	variables.push_back(Var("y"));
 	variables.push_back(Var("z"));
 	std::cout << "- newton (counting-SR):" << std::endl;
 
-	std::vector<Polynomial<CommutativeRExp> > polynomials;
+	std::vector<Polynomial<SemilinSetExp> > polynomials;
 	// define new polynomial axy+b
-	Polynomial<CommutativeRExp> f1 = Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("a")), {Var("x"),Var("y")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("b")), {}) });
+	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("y")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {}) });
 
 	// define new polynomial cyz+dyx+e
-	Polynomial<CommutativeRExp> f2 = Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("c")), {Var("y"),Var("z")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("d")), {Var("y"),Var("x")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("e")), {}) });
+	Polynomial<SemilinSetExp> f2 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {Var("y"),Var("z")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("d")), {Var("y"),Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("e")), {}) });
 
 	// define new polynomial fx+g
-	Polynomial<CommutativeRExp> f3 =  Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("f")), {Var("x")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var("g")), {}) });
+	Polynomial<SemilinSetExp> f3 =  Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("f")), {Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("g")), {}) });
 	polynomials.push_back(f1);
 	polynomials.push_back(f2);
 	polynomials.push_back(f3);
-*/
-
-	Newton<SemilinSetExp> newton;
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
-	std::cout << "- newton (cnt-SR):" << std::endl;
-
-	std::vector<Polynomial<SemilinSetExp> > polynomials;
-	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
-		//Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
-
-	polynomials.push_back(f1);
 
 	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
+*/
+
+/*	Newton<SemilinSetExp> newton;
+	std::vector<Var> v;
+	v.push_back(Var("x"));
+	std::cout << "- newton (cnt-SR):" << std::endl;
+
+	std::vector<Polynomial<SemilinSetExp> > polys;
+	Polynomial<SemilinSetExp> f0 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("s")), {Var("x"),Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("s")), {}) });
+
+	polys.push_back(f0);
+	Matrix<SemilinSetExp> r = newton.solve_fixpoint(polys, v, 2);
+	std::vector<SemilinSetExp> sol1 = r.getElements();
+
+	std::cout << sol1[0] << std::endl;
+
+	std::cout << SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0] << std::endl;
+
+	std::vector<Var> variables;
+	variables.push_back(Var("e"));
+	std::vector<Polynomial<SemilinSetExp> > polynomials;
+	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("l"))*SemilinSetExp(Var("s")), {Var("e")}),
+		//Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0], {Var("e")}) });
+
+	polynomials.push_back(f1);
+
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 3);
+	std::cout << result << std::endl;
+*/
+	Newton<SemilinSetExp> newton;
+		std::vector<Var> v;
+		v.push_back(Var("x"));
+		std::cout << "- newton (cnt-SR):" << std::endl;
+
+		std::vector<Polynomial<SemilinSetExp> > polys;
+		Polynomial<SemilinSetExp> f0 = Polynomial<SemilinSetExp>({
+			Monomial<SemilinSetExp>(SemilinSetExp::one(), {}),
+			Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x")}),
+			Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {Var("x")})
+		});
+
+		std::cout << f0 << std::endl;
+
+		polys.push_back(f0);
+		Matrix<SemilinSetExp> r = newton.solve_fixpoint(polys, v, 2);
+		std::vector<SemilinSetExp> sol1 = r.getElements();
+
+		std::cout << sol1[0] << std::endl;
+
 
 /*
 	SemilinSetExp x = SemilinSetExp(Var("a"));

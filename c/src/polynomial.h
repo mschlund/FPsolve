@@ -192,7 +192,7 @@ public:
 	}
 
 	// a monomial is equal to another monomial if the variables are equal
-	// warning: the coefficient will not be regarded
+	// warning: the coefficient will not be regarded --- FIXME:this is extremly dangerous (regarding set-implementation of polynomial)!
 	bool operator==(const Monomial& monomial) const
 	{
 		return this->variables == monomial.variables;
@@ -209,9 +209,21 @@ public:
 		return this->variables.size();
 	}
 
+	SR get_coeff() const {
+		return this->coeff;
+	}
+
 	bool is_null() const
 	{
 		return this->null;
+	}
+
+	void set_coeff(SR coeff) {
+		this->coeff = coeff;
+	}
+
+	void add_to_coeff(const SR coeff) {
+		this->coeff = this->coeff + coeff;
 	}
 
 	std::string string() const
@@ -262,11 +274,28 @@ public:
 
 	Polynomial(std::initializer_list<Monomial<SR> > monomials)
 	{
-		this->monomials = monomials;
-		this->degree = 0;
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
+		if(monomials.size() == 0) {
+			this->monomials = {Monomial<SR>(SR::null(),{})};
+			this->degree = 0;
+		}
+		else {
+			this->monomials = std::set<Monomial<SR> >();
+			this->degree = 0;
+
+			for(typename std::initializer_list<Monomial<SR> >::const_iterator m_it = monomials.begin(); m_it != monomials.end(); ++m_it)
+			{
+				typename std::set<Monomial<SR> >::const_iterator mon = this->monomials.find(*m_it);
+
+				if(mon == this->monomials.end()) // not yet present as a monomial
+					this->monomials.insert(*m_it); // just insert it
+				else {
+					//monomial already present in this polynomial---add the coefficients (note that c++ containers cannot be modified in-place!)
+					Monomial<SR> tmp = *mon;
+					this->monomials.erase(mon);
+					this->monomials.insert( tmp + (*m_it) );
+				}
+				this->degree = m_it->get_degree() > this->degree ? m_it->get_degree() : this->degree;
+			}
 		}
 	}
 
@@ -302,7 +331,7 @@ public:
 			else // monomial with the same variables found
 			{
 				Monomial<SR> tmp = *mon;
-				monomials.erase(*mon);
+				monomials.erase(mon);
 				monomials.insert( tmp + (*m_it) ); // then add both of them and overwrite the old one
 			}
 		}
@@ -469,8 +498,7 @@ public:
 		SR result = SR::null();
 		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
-			Monomial<SR> foo = (*m_it); // TODO: collapse the lines
-			SR elem = foo.eval(values);
+			SR elem = m_it->eval(values);
 			result = result + elem;
 		}
 		return result;
@@ -564,7 +592,7 @@ public:
 	// some semiring functions
 	Polynomial<SR> star() const
 	{
-		// TODO?
+		// TODO: we cannot star polynomials!
 		return (*this);
 	}
 
