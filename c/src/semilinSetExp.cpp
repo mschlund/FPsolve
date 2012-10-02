@@ -26,14 +26,6 @@ VecSparse operator+(const VecSparse& a, const VecSparse& b)
 LinSet operator * (const LinSet& ls1, const LinSet& ls2) {
 	assert(!ls1.empty() && !ls2.empty());
 
-
-
-	std::list<VecSparse>::const_iterator gen_1 = ls1.begin();
-	++gen_1; //gen_1 points now to the generators of ls1
-
-	std::list<VecSparse>::const_iterator gen_2 = ls2.begin();
-	++gen_2; //gen_2 points now to the generators of ls2
-
 	//union on the generators
 	std::list<VecSparse> g1 = ls1;
 	std::list<VecSparse> g2 = ls2;
@@ -55,6 +47,22 @@ LinSet operator * (const LinSet& ls1, const LinSet& ls2) {
 
 }
 
+std::ostream& operator<<(std::ostream& os, const VecSparse& v) {
+	os << "<";
+    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
+    {
+        os << it->first.string() << ":" << it->second << ", ";
+    }
+    os << ">";
+    return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const LinSet& ls) {
+	for(std::list<VecSparse>::const_iterator it_veclist = ls.begin(); it_veclist != ls.end(); ++it_veclist) {
+		os << *it_veclist << " + ";
+	}
+    return os;
+}
 
 SemilinSetExp::SemilinSetExp() {
 	this->val = std::set<LinSet>();
@@ -147,10 +155,7 @@ std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 
 	// star of a linear set is a semilinear set:
 	// (w_0.w_1*.w_2*...w_n*)* = 1 + \sum_{i=1}^{n-1} w_0^i.w_1*.w_2*...w_n* + w_0^n.w_0*.w_1*...w_n*
-//	std::list<VecSparse> gens = ;
 
-
-	//int n = ls.second.size();
 
 	// for all elements of gens:
 	//   for all keys of tmp_offset
@@ -159,18 +164,23 @@ std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 	LinSet ls_tmp = ls;
 	VecSparse& tmp_offset = ls_tmp.front();
 
-	std::list<VecSparse>::iterator gen_ls = ls.begin();
-	++gen_ls;
 
-	for(std::list<VecSparse>::iterator it_gens = gen_ls; it_gens!=ls.end(); ++it_gens) {
-		result.insert(ls_tmp);;
+	int n = ls.size() - 1;
+
+	//for(std::list<VecSparse>::iterator it_gens = gen_ls; it_gens!=ls.end(); ++it_gens) {
+	for(int i=1; i<n; i++) {
+		result.insert(ls_tmp);
 		// calculate w_0^i
 		for(VecSparse::iterator it_tmp_offset = tmp_offset.begin(); it_tmp_offset != tmp_offset.end(); ++it_tmp_offset) {
 			it_tmp_offset->second = it_tmp_offset->second + ls.front()[it_tmp_offset->first];
 		}
 	}
+
 	//the last summand is w_0^n.w_0*.w_1*...w_n*
-	ls_tmp.insert(gen_ls, ls.front());
+	VecSparse new_gen = ls.front();
+	std::list<VecSparse>::iterator gen_ls = ls_tmp.begin();
+	++gen_ls;
+	ls_tmp.insert(gen_ls, new_gen);
 	result.insert(ls_tmp);
 
 	return result;
@@ -185,24 +195,13 @@ SemilinSetExp SemilinSetExp::star() const {
 	return result;
 }
 
-std::ostream& operator<<(std::ostream& os, const VecSparse& v) {
-	os << "<";
-    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
-    {
-        os << it->first.string() << ":" << it->second << ", ";
-    }
-    os << ">";
-    return os;
-}
+
 
 std::string SemilinSetExp::string() const {
 	std::stringstream ss;
 	ss << "[" << '\n';
 	for(std::set<LinSet>::const_iterator it_ls = this->val.begin(); it_ls != this->val.end(); ++it_ls) {
-		for(std::list<VecSparse>::const_iterator it_veclist = it_ls->begin(); it_veclist != it_ls->end(); ++it_veclist) {
-			ss << *it_veclist << " + ";
-		}
-
+		ss << *it_ls;
 		ss << '\n';
 	}
 	ss << "]" << '\n';
