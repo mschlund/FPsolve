@@ -132,6 +132,7 @@ std::set<LinSet> SemilinSetExp::getVal() const {
 	return val;
 }
 
+//TODO: semantic equivalence check or at least some more sophisticated check
 bool SemilinSetExp::operator == (const SemilinSetExp& sl) const {
 	return (this->val == sl.getVal());
 }
@@ -139,11 +140,13 @@ bool SemilinSetExp::operator == (const SemilinSetExp& sl) const {
 // TODO: multiple points of return might kill RVO ... try returning a pointer instead!
 std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 
-	// if we do not have generators, i.e. ls = w for some word w, just return w* (instead of 1 + ww*)
+	// if we do not have any generators, i.e. ls = w for some word w, just return w* (instead of 1 + ww*)
 	if(ls.size() == 1) {
 		LinSet r = ls;
-		r.push_front(VecSparse());
-
+		// if w is not the one-element then move w to the generators
+		if(ls.front() != VecSparse()) {
+			r.push_front(VecSparse());
+		}
 		std::set<LinSet> res;
 		res.insert(r);
 		return res;
@@ -164,7 +167,6 @@ std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 	LinSet ls_tmp = ls;
 	VecSparse& tmp_offset = ls_tmp.front();
 
-
 	int n = ls.size() - 1;
 
 	//for(std::list<VecSparse>::iterator it_gens = gen_ls; it_gens!=ls.end(); ++it_gens) {
@@ -176,11 +178,14 @@ std::set<LinSet> SemilinSetExp::star(LinSet ls) {
 		}
 	}
 
-	//the last summand is w_0^n.w_0*.w_1*...w_n*
+	//the last summand is w_0^n.w_0*.w_1*...w_n*, so we have to add w_0 to the generators
 	VecSparse new_gen = ls.front();
 	std::list<VecSparse>::iterator gen_ls = ls_tmp.begin();
 	++gen_ls;
-	ls_tmp.insert(gen_ls, new_gen);
+	// only add generator, if it is not yet present in the list
+	if( find(gen_ls, ls_tmp.end(), new_gen) == ls_tmp.end() ) {
+		ls_tmp.insert(gen_ls, new_gen);
+	}
 	result.insert(ls_tmp);
 
 	return result;

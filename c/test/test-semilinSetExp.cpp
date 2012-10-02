@@ -73,4 +73,8 @@ void SemilinSetExpTest::testStar()
 	// 0* = 1
 	CPPUNIT_ASSERT( SemilinSetExp::null().star() == SemilinSetExp::one() );
 
+	//1* = 1
+	CPPUNIT_ASSERT( SemilinSetExp::one().star() == SemilinSetExp::one() );
+
+
 }

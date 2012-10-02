@@ -261,22 +261,21 @@ void test_newton()
 
 */
 
-/*
-	Newton<FreeSemiring> newton;
+
+	Newton<SemilinSetExp> newton;
 	std::vector<Var> variables;
 	variables.push_back(Var("x"));
-	std::cout << "- newton (free-SR):" << std::endl;
+	std::cout << "- newton (cnt-SR):" << std::endl;
 
-	std::vector<Polynomial<FreeSemiring> > polynomials;
-	Polynomial<FreeSemiring> f1 = Polynomial<FreeSemiring>({
-		Monomial<FreeSemiring>(FreeSemiring(Var("a")), {Var("x"),Var("x")}),
-		Monomial<FreeSemiring>(FreeSemiring(Var("c")), {}) });
+	std::vector<Polynomial<SemilinSetExp> > polynomials;
+	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
 
 	polynomials.push_back(f1);
 
-	Matrix<FreeSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 6);
 	std::cout << result << std::endl;
-	*/
 
 	/*
 	Newton<SemilinSetExp> newton;
@@ -310,7 +309,7 @@ void test_newton()
 	std::cout << result << std::endl;
 */
 
-	Newton<SemilinSetExp> newton;
+/*	Newton<SemilinSetExp> newton;
 	std::vector<Var> v;
 	v.push_back(Var("x"));
 	std::cout << "- newton (cnt-SR):" << std::endl;
@@ -341,7 +340,7 @@ void test_newton()
 	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 1);
 	std::cout << result << std::endl;
 	std::cout << (SemilinSetExp(Var("l"))*SemilinSetExp(Var("s")) + SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0]).star() << std::endl;
-
+*/
 
 /*
 	SemilinSetExp x = SemilinSetExp(Var("a"));
