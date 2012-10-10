@@ -235,7 +235,7 @@ std::string CommutativeRExp::generateString() const
 	else if(this->type == Multiplication)
 		ss << "(" << *this->setm << ")";
 	else if(this->type == Star)
-		ss << "(" << *this->rexp << ")*";
+		ss << *this->rexp << "*";
 	return ss.str();
 }
 
