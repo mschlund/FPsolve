@@ -11,7 +11,7 @@
 class FreeSemiring : public Semiring<FreeSemiring>
 {
 public:
-	Var* elem;
+	VarPtr elem;
 	std::shared_ptr<FreeSemiring> left_ptr;
 	std::shared_ptr<FreeSemiring> right_ptr;
 	enum optype {Element, Addition, Multiplication, Star};
@@ -20,7 +20,7 @@ public:
 	static FreeSemiring* elem_one;
 
 	FreeSemiring();
-	FreeSemiring(Var var);
+	FreeSemiring(VarPtr var);
 	FreeSemiring(const FreeSemiring& term);
 	FreeSemiring(optype type, FreeSemiring left);
 	FreeSemiring(optype type, FreeSemiring left, FreeSemiring right);

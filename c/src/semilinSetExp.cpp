@@ -49,9 +49,9 @@ LinSet operator * (const LinSet& ls1, const LinSet& ls2) {
 
 std::ostream& operator<<(std::ostream& os, const VecSparse& v) {
 	os << "<";
-    for (typename std::map<Var, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
+    for (typename std::map<VarPtr, unsigned int>::const_iterator it = v.begin(); it != v.end(); ++it)
     {
-        os << it->first.string() << ":" << it->second << ", ";
+        os << it->first << ":" << it->second << ", ";
     }
     os << ">";
     return os;
@@ -68,7 +68,7 @@ SemilinSetExp::SemilinSetExp() {
 	this->val = std::set<LinSet>();
 }
 
-SemilinSetExp::SemilinSetExp(Var var) {
+SemilinSetExp::SemilinSetExp(VarPtr var) {
 	this->val = std::set<LinSet>();
 	LinSet ls = LinSet();
 	VecSparse offset;

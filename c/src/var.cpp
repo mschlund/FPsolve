@@ -9,45 +9,60 @@ Var::Var()
 	ss << max_id;
 	this->name = ss.str();
 	Var::max_id++;
-	if(!Var::vars)
-		Var::vars = new std::map<std::string, int>();
-	Var::vars->insert(Var::vars->begin(), std::pair<std::string,int>(this->name, this->id));
 }
 
-// if there is already a variable with this name, return a reference to this variable
 Var::Var(std::string name)
 {
 	assert(name[0] != '_'); // name must not begin with underscore
-	if(!Var::vars)
-		Var::vars = new std::map<std::string, int>();
-	std::map<std::string, int>::const_iterator v = Var::vars->find(name);
+	this->id = max_id++;
 	this->name = name;
-	if(v != Var::vars->end()) // variable already exists
+}
+
+std::string Var::getName()
+{
+	return this->name;
+}
+
+// generates a new unnamed var
+VarPtr Var::getVar()
+{
+	VarPtr var(new Var());
+	Var::vars.insert(Var::vars.begin(), std::pair<std::string,VarPtr>(var->getName(), var));
+	return var;
+}
+
+// returns a reference to 
+VarPtr Var::getVar(std::string name)
+{
+	auto v_it = Var::vars.find(name);
+	if(v_it != Var::vars.end()) // var exists, return reference to it
+		return v_it->second;
+	else // create a new one
 	{
-		this->id = v->second;
-	}
-	else
-	{
-		this->id = max_id;
-		Var::max_id++;
-
-		Var::vars->insert(Var::vars->begin(), std::pair<std::string,int>(this->name, this->id));
+		VarPtr var(new Var(name));
+		Var::vars.insert(Var::vars.begin(), std::pair<std::string,VarPtr>(name, var));
+		return var;
 	}
 }
 
-bool Var::operator==(const Var& var) const
+VarPtr Var::getVar(VarPtr var)
 {
-	return this->id == var.id;
+	return var;
 }
 
-bool Var::operator!=(const Var& var) const
+bool operator==(const VarPtr& l, const VarPtr& r)
 {
-	return this->id != var.id;
+	return l->id == r->id;
 }
 
-bool Var::operator<(const Var& var) const
+bool operator!=(const VarPtr& l, const VarPtr& r)
 {
-	return this->id<var.id;
+	return l->id != r->id;
+}
+
+bool operator<(const VarPtr& l, const VarPtr& r)
+{
+	return l->id < r->id;
 }
 
 std::string Var::string() const
@@ -59,40 +74,40 @@ std::string Var::string() const
 }
 
 int Var::max_id = 0;
-std::map<std::string, int>* Var::vars = 0;
+std::map<std::string, VarPtr> Var::vars;
 
-std::ostream& operator<<(std::ostream& os, const Var var)
+std::ostream& operator<<(std::ostream& os, const VarPtr var)
 {
-	return os << var.string();
+	return os << var->string();
 }
 
-std::ostream& operator<<(std::ostream& os, const std::multiset<Var> vars)
+std::ostream& operator<<(std::ostream& os, const std::multiset<VarPtr> vars)
 {
 	std::stringstream ss;
 	ss << "{";
-	for(std::multiset<Var>::const_iterator var = vars.begin(); var != vars.end(); ++var)
+	for(std::multiset<VarPtr>::const_iterator var = vars.begin(); var != vars.end(); ++var)
 	{
-		if(var != vars.begin())
+		if(var != vars.begin() )
 		{
 			ss << ",";
 		}
-		ss << (*var).string();
+		ss << (*var)->string();
 	}
 	ss << "}";
 	return os << ss.str();
 }
 
-std::ostream& operator<<(std::ostream& os, const std::vector<Var>& vars)
+std::ostream& operator<<(std::ostream& os, const std::vector<VarPtr>& vars)
 {
 	std::stringstream ss;
 	ss << "{";
-	for(std::vector<Var>::const_iterator var = vars.begin(); var != vars.end(); ++var)
+	for(std::vector<VarPtr>::const_iterator var = vars.begin(); var != vars.end(); ++var)
 	{
 		if(var != vars.begin())
 		{
 			ss << ",";
 		}
-		ss << (*var).string();
+		ss << (*var)->string();
 	}
 	ss << "}";
 	return os << ss.str();

@@ -12,9 +12,9 @@ void VarTest::tearDown()
 
 void VarTest::testIdentity()
 {
-	Var a = Var("a");
-	Var b = Var("b");
-	Var newA = Var("a");
+	VarPtr a = Var::getVar("a");
+	VarPtr b = Var::getVar("b");
+	VarPtr newA = Var::getVar("a");
 	
 	CPPUNIT_ASSERT( a == newA );
 	CPPUNIT_ASSERT( a != b );

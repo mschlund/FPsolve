@@ -8,21 +8,21 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
 void PolynomialTest::setUp()
 {
-	a = new FreeSemiring(Var("a"));b = new FreeSemiring(Var("b"));
-	c = new FreeSemiring(Var("c"));d = new FreeSemiring(Var("d"));
-	e = new FreeSemiring(Var("e"));
+	a = new FreeSemiring(Var::getVar("a"));b = new FreeSemiring(Var::getVar("b"));
+	c = new FreeSemiring(Var::getVar("c"));d = new FreeSemiring(Var::getVar("d"));
+	e = new FreeSemiring(Var::getVar("e"));
 	null = new Polynomial<FreeSemiring>(FreeSemiring::null());
 	one = new Polynomial<FreeSemiring>(FreeSemiring::one());
 	first = new Polynomial<FreeSemiring>({
-			Monomial<FreeSemiring>(*a,{Var("x"),Var("x")}),
-			Monomial<FreeSemiring>(*b,{Var("z")})}); // a*xx+b*z
+			Monomial<FreeSemiring>(*a,{Var::getVar("x"),Var::getVar("x")}),
+			Monomial<FreeSemiring>(*b,{Var::getVar("z")})}); // a*xx+b*z
 	second = new Polynomial<FreeSemiring>({
-			Monomial<FreeSemiring>(*c,{Var("x"),Var("x")}),
-			Monomial<FreeSemiring>(*d,{Var("x"),Var("y")}),
-			Monomial<FreeSemiring>(*e,{Var("y"),Var("y")})}); // c*xx+d*xy+e*yy
+			Monomial<FreeSemiring>(*c,{Var::getVar("x"),Var::getVar("x")}),
+			Monomial<FreeSemiring>(*d,{Var::getVar("x"),Var::getVar("y")}),
+			Monomial<FreeSemiring>(*e,{Var::getVar("y"),Var::getVar("y")})}); // c*xx+d*xy+e*yy
 	p1 = new Polynomial<FreeSemiring>({
-		Monomial<FreeSemiring>(*a,{Var("x")}),
-		Monomial<FreeSemiring>(*b,{Var("x")})}); // should be a*x+b*x
+		Monomial<FreeSemiring>(*a,{Var::getVar("x")}),
+		Monomial<FreeSemiring>(*b,{Var::getVar("x")})}); // should be a*x+b*x
 }
 
 void PolynomialTest::tearDown()
@@ -43,10 +43,10 @@ void PolynomialTest::testAddition()
 	CPPUNIT_ASSERT( *first + *null == *first);
 
 	Polynomial<FreeSemiring> result({
-		Monomial<FreeSemiring>(*a + *c,{Var("x"),Var("x")}),
-		Monomial<FreeSemiring>(*b,{Var("z")}),
-		Monomial<FreeSemiring>(*d,{Var("x"),Var("y")}),
-		Monomial<FreeSemiring>(*e,{Var("y"),Var("y")})});
+		Monomial<FreeSemiring>(*a + *c,{Var::getVar("x"),Var::getVar("x")}),
+		Monomial<FreeSemiring>(*b,{Var::getVar("z")}),
+		Monomial<FreeSemiring>(*d,{Var::getVar("x"),Var::getVar("y")}),
+		Monomial<FreeSemiring>(*e,{Var::getVar("y"),Var::getVar("y")})});
 	CPPUNIT_ASSERT( (*first) + (*second) == result );
 }
 
@@ -62,33 +62,33 @@ void PolynomialTest::testMultiplication()
 	CPPUNIT_ASSERT( *first * *null == *null);
 
 	Polynomial<FreeSemiring> result({
-		Monomial<FreeSemiring>(*a * *c,{Var("x"),Var("x"),Var("x"),Var("x")}),
-		Monomial<FreeSemiring>(*a * *d,{Var("x"),Var("x"),Var("x"),Var("y")}),
-		Monomial<FreeSemiring>(*b * *c,{Var("x"),Var("x"),Var("z")}),
-		Monomial<FreeSemiring>(*a * *e,{Var("x"),Var("x"),Var("y"),Var("y")}),
-		Monomial<FreeSemiring>(*b * *d,{Var("x"),Var("z"),Var("y")}),
-		Monomial<FreeSemiring>(*b * *e,{Var("z"),Var("y"),Var("y")})});
+		Monomial<FreeSemiring>(*a * *c,{Var::getVar("x"),Var::getVar("x"),Var::getVar("x"),Var::getVar("x")}),
+		Monomial<FreeSemiring>(*a * *d,{Var::getVar("x"),Var::getVar("x"),Var::getVar("x"),Var::getVar("y")}),
+		Monomial<FreeSemiring>(*b * *c,{Var::getVar("x"),Var::getVar("x"),Var::getVar("z")}),
+		Monomial<FreeSemiring>(*a * *e,{Var::getVar("x"),Var::getVar("x"),Var::getVar("y"),Var::getVar("y")}),
+		Monomial<FreeSemiring>(*b * *d,{Var::getVar("x"),Var::getVar("z"),Var::getVar("y")}),
+		Monomial<FreeSemiring>(*b * *e,{Var::getVar("z"),Var::getVar("y"),Var::getVar("y")})});
 	CPPUNIT_ASSERT( (*first) * (*second) == result );
 }
 
 void PolynomialTest::testJacobian()
 {
 	std::vector<Polynomial<FreeSemiring> > polys = {*first, *second};
-	std::vector<Var> vars = {Var("x"),Var("y"),Var("z")};
+	std::vector<VarPtr> vars = {Var::getVar("x"),Var::getVar("y"),Var::getVar("z")};
 	
 	std::vector<Polynomial<FreeSemiring> > polys2 = {
 		Polynomial<FreeSemiring>({
-			Monomial<FreeSemiring>(*a+*a,{Var("x")})}),
+			Monomial<FreeSemiring>(*a+*a,{Var::getVar("x")})}),
 		Polynomial<FreeSemiring>({
 			Monomial<FreeSemiring>(FreeSemiring::null(),{})}),
 		Polynomial<FreeSemiring>({
 			Monomial<FreeSemiring>(*b,{})}),
 		Polynomial<FreeSemiring>({
-			Monomial<FreeSemiring>(*c+*c,{Var("x")}),
-			Monomial<FreeSemiring>(*d,{Var("y")})}),
+			Monomial<FreeSemiring>(*c+*c,{Var::getVar("x")}),
+			Monomial<FreeSemiring>(*d,{Var::getVar("y")})}),
 		Polynomial<FreeSemiring>({
-			Monomial<FreeSemiring>(*d,{Var("x")}),
-			Monomial<FreeSemiring>(*e+*e,{Var("y")})}),
+			Monomial<FreeSemiring>(*d,{Var::getVar("x")}),
+			Monomial<FreeSemiring>(*e+*e,{Var::getVar("y")})}),
 		Polynomial<FreeSemiring>({
 			Monomial<FreeSemiring>(FreeSemiring::null(),{})})};
 
@@ -97,7 +97,7 @@ void PolynomialTest::testJacobian()
 	CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
 
 	polys = {*p1};
-	vars = {Var("x")};
+	vars = {Var::getVar("x")};
 	polys2 = {
 			Polynomial<FreeSemiring>({
 				Monomial<FreeSemiring>(*a+*b,{})}) };
@@ -108,10 +108,10 @@ void PolynomialTest::testJacobian()
 
 void PolynomialTest::testEvaluation()
 {
-	std::map<Var,FreeSemiring> values = {
-		std::pair<Var,FreeSemiring>(Var("x"),FreeSemiring(Var("a"))),
-		std::pair<Var,FreeSemiring>(Var("y"),FreeSemiring(Var("b"))),
-		std::pair<Var,FreeSemiring>(Var("z"),FreeSemiring(Var("c")))};
+	std::map<VarPtr,FreeSemiring> values = {
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("x"),FreeSemiring(Var::getVar("a"))),
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("y"),FreeSemiring(Var::getVar("b"))),
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("z"),FreeSemiring(Var::getVar("c")))};
 	FreeSemiring result = ((*c)*(*a)*(*a))+((*d)*(*a)*(*b))+((*e)*(*b)*(*b));
 	CPPUNIT_ASSERT( second->eval(values) == result );
 }
@@ -130,16 +130,16 @@ void PolynomialTest::testPolynomialToFreeSemiring()
 	{
 		std::cout << "valuation: " << v_it->first << " → " << v_it->second << std::endl;
 	}*/
-	add_valuation(Var("x"), *a, r_valuation);
-	add_valuation(Var("y"), *b, r_valuation);
-	add_valuation(Var("z"), *c, r_valuation);
+	add_valuation(Var::getVar("x"), *a, r_valuation);
+	add_valuation(Var::getVar("y"), *b, r_valuation);
+	add_valuation(Var::getVar("z"), *c, r_valuation);
 
 	FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, r_valuation);
 
-	std::map<Var,FreeSemiring> values = {
-		std::pair<Var,FreeSemiring>(Var("x"),FreeSemiring(Var("a"))),
-		std::pair<Var,FreeSemiring>(Var("y"),FreeSemiring(Var("b"))),
-		std::pair<Var,FreeSemiring>(Var("z"),FreeSemiring(Var("c")))};
+	std::map<VarPtr,FreeSemiring> values = {
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("x"),FreeSemiring(Var::getVar("a"))),
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("y"),FreeSemiring(Var::getVar("b"))),
+		std::pair<VarPtr,FreeSemiring>(Var::getVar("z"),FreeSemiring(Var::getVar("c")))};
 	FreeSemiring eval_elem2 = second->eval(values);
 	//std::cout << "evaluated: " << eval_elem << " vs. " << eval_elem2 << std::endl;
 

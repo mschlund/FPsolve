@@ -4,9 +4,9 @@ CPPUNIT_TEST_SUITE_REGISTRATION(FreeSemiringTest);
 
 void FreeSemiringTest::setUp()
 {
-	a = new FreeSemiring(Var("a"));
-	b = new FreeSemiring(Var("b"));
-	c = new FreeSemiring(Var("c"));
+	a = new FreeSemiring(Var::getVar("a"));
+	b = new FreeSemiring(Var::getVar("b"));
+	c = new FreeSemiring(Var::getVar("c"));
 }
 
 void FreeSemiringTest::tearDown()

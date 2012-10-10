@@ -11,9 +11,9 @@ CPPUNIT_TEST_SUITE_REGISTRATION(SemilinSetExpTest);
 
 void SemilinSetExpTest::setUp()
 {
-	a = new SemilinSetExp(Var("a"));
-	b = new SemilinSetExp(Var("b"));
-	c = new SemilinSetExp(Var("c"));
+	a = new SemilinSetExp(Var::getVar("a"));
+	b = new SemilinSetExp(Var::getVar("b"));
+	c = new SemilinSetExp(Var::getVar("c"));
 }
 
 void SemilinSetExpTest::tearDown()

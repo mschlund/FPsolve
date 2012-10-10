@@ -6,10 +6,10 @@ FreeSemiring::FreeSemiring()
 	// Do not use this constructor. It is needed for a std::unordered_map...
 }
 
-FreeSemiring::FreeSemiring(Var var)
+FreeSemiring::FreeSemiring(VarPtr var)
 {
 	this->type = Element;
-	this->elem = new Var(var);
+	this->elem = Var::getVar(var);
 }
 
 FreeSemiring::FreeSemiring(const FreeSemiring& term)
@@ -82,7 +82,7 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 			if(term.type != Element)
 				return false;
 			else
-				return (*this->elem) == (*term.elem);
+				return this->elem == term.elem;
 		case Addition:
 		case Multiplication:
 			return (this->type == term.type && *this->left_ptr == *term.left_ptr && *this->right_ptr == *term.right_ptr);
@@ -132,13 +132,13 @@ std::string FreeSemiring::string() const
 FreeSemiring FreeSemiring::null()
 {
 	if(!FreeSemiring::elem_null)
-		FreeSemiring::elem_null = new FreeSemiring(Var("Null"));
+		FreeSemiring::elem_null = new FreeSemiring(Var::getVar("Null"));
 	return *FreeSemiring::elem_null;
 }
 FreeSemiring FreeSemiring::one()
 {
 	if(!FreeSemiring::elem_one)
-		FreeSemiring::elem_one = new FreeSemiring(Var("One"));
+		FreeSemiring::elem_one = new FreeSemiring(Var::getVar("One"));
 	return *FreeSemiring::elem_one;
 }
 

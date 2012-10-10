@@ -40,7 +40,7 @@
 // star(l_1,l_2,...,l_n) = \prod_{i=1}^n star(l_i)
 // where star(l_i) gives a semilinear set
 
-typedef std::map<Var,unsigned int> VecSparse;
+typedef std::map<VarPtr,unsigned int> VecSparse;
 //typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
 typedef std::list<VecSparse> LinSet; // new implementation..
 
@@ -57,7 +57,7 @@ public:
 
 	SemilinSetExp();
 	SemilinSetExp(std::set<LinSet> val);
-	SemilinSetExp(Var v);
+	SemilinSetExp(VarPtr v);
 	virtual ~SemilinSetExp();
 	static SemilinSetExp null();
 	static SemilinSetExp one();

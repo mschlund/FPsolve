@@ -4,9 +4,9 @@ CPPUNIT_TEST_SUITE_REGISTRATION(CommutativeRExpTest);
 
 void CommutativeRExpTest::setUp()
 {
-	a = new CommutativeRExp(Var("a"));
-	b = new CommutativeRExp(Var("b"));
-	c = new CommutativeRExp(Var("c"));
+	a = new CommutativeRExp(Var::getVar("a"));
+	b = new CommutativeRExp(Var::getVar("b"));
+	c = new CommutativeRExp(Var::getVar("c"));
 }
 
 void CommutativeRExpTest::tearDown()

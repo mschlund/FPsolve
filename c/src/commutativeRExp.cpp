@@ -8,10 +8,10 @@ CommutativeRExp::CommutativeRExp()
 	this->type = Empty;
 }
 
-CommutativeRExp::CommutativeRExp(Var var)
+CommutativeRExp::CommutativeRExp(VarPtr var)
 {
 	this->type = Element;
-	this->elem = new Var(var);
+	this->elem = Var::getVar(var);
 	this->str = generateString();
 }
 
@@ -168,7 +168,7 @@ bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 	else // same type
 	{
 		if(this->type == Element)
-			return (*this->elem < *rhs.elem);
+			return this->elem < rhs.elem;
 		else
 			return this->str.compare(rhs.str) < 0;
 	}
@@ -200,7 +200,7 @@ CommutativeRExp CommutativeRExp::null()
 CommutativeRExp CommutativeRExp::one()
 {
 	if(!CommutativeRExp::elem_one)
-		CommutativeRExp::elem_one = new CommutativeRExp(Var("ε"));
+		CommutativeRExp::elem_one = new CommutativeRExp(Var::getVar("ε"));
 	return *CommutativeRExp::elem_one;
 }
 
@@ -229,7 +229,7 @@ std::string CommutativeRExp::generateString() const
 {
 	std::stringstream ss;
 	if(this->type == Element)
-		ss << *this->elem;
+		ss << this->elem;
 	else if(this->type == Addition)
 		ss << "(" << *this->seta << ")";
 	else if(this->type == Multiplication)

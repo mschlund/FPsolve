@@ -27,8 +27,8 @@ void test_multiplication()
 
 void test_variables()
 {
-	Var var1;
-	Var var2;
+	VarPtr var1 = Var::getVar();
+	VarPtr var2 = Var::getVar();
 	std::cout << "- variables:" << std::endl;
 	std::cout << var1 << "," << var2 << std::endl;
 }
@@ -36,30 +36,30 @@ void test_variables()
 void test_monomials()
 {
 	std::cout << "- monomials:" << std::endl;
-	Monomial<FloatSemiring> mon1(FloatSemiring(5),{Var("x"),Var("x"),Var("y")});
-	Monomial<FloatSemiring> mon2(FloatSemiring(2),{Var("y"), Var("x")});
+	Monomial<FloatSemiring> mon1(FloatSemiring(5),{Var::getVar("x"),Var::getVar("x"),Var::getVar("y")});
+	Monomial<FloatSemiring> mon2(FloatSemiring(2),{Var::getVar("y"), Var::getVar("x")});
 	Monomial<FloatSemiring> res1 = mon1 + mon1;
 	Monomial<FloatSemiring> res2 = mon1 * mon2;
 	std::cout << mon1 << " + " << mon1 << " = " << res1 << std::endl;
 	std::cout << mon1 << " * " << mon2 << " = " << res2 << std::endl;
-	std::cout << "derivative of " << mon1 << " = " << mon1.derivative(Var("x")) << std::endl;
+	std::cout << "derivative of " << mon1 << " = " << mon1.derivative(Var::getVar("x")) << std::endl;
 }
 
 Polynomial<FloatSemiring> get_first_polynomial()
 {
 	// define new polynomial 2xx+7y
 	return Polynomial<FloatSemiring>(
-			{	Monomial<FloatSemiring>(FloatSemiring(2),{Var("x"),Var("x")}),
-				Monomial<FloatSemiring>(FloatSemiring(7),{Var("z")}) });
+			{	Monomial<FloatSemiring>(FloatSemiring(2),{Var::getVar("x"),Var::getVar("x")}),
+				Monomial<FloatSemiring>(FloatSemiring(7),{Var::getVar("z")}) });
 }
 
 Polynomial<FloatSemiring> get_second_polynomial()
 {
 	// define new polynomial 5xx+3xy+6yy
 	return Polynomial<FloatSemiring>(
-			{	Monomial<FloatSemiring>(FloatSemiring(5),{Var("x"),Var("x")}),
-				Monomial<FloatSemiring>(FloatSemiring(3),{Var("x"),Var("y")}),
-				Monomial<FloatSemiring>(FloatSemiring(6),{Var("y"),Var("y")})});
+			{	Monomial<FloatSemiring>(FloatSemiring(5),{Var::getVar("x"),Var::getVar("x")}),
+				Monomial<FloatSemiring>(FloatSemiring(3),{Var::getVar("x"),Var::getVar("y")}),
+				Monomial<FloatSemiring>(FloatSemiring(6),{Var::getVar("y"),Var::getVar("y")})});
 }
 
 void test_polynomial_addition()
@@ -80,19 +80,19 @@ void test_polynomial_multiplication()
 	std::cout << first << " * " << second << " = " << result << std::endl;
 }
 
-std::map<Var,FloatSemiring> get_variable_values()
+std::map<VarPtr,FloatSemiring> get_variable_values()
 {
-	std::map<Var,FloatSemiring> values;
-	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("x"),FloatSemiring(5)));
-	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("y"),FloatSemiring(4)));
-	values.insert(values.begin(), std::pair<Var,FloatSemiring>(Var("z"),FloatSemiring(0)));
+	std::map<VarPtr,FloatSemiring> values;
+	values.insert(values.begin(), std::pair<VarPtr,FloatSemiring>(Var::getVar("x"),FloatSemiring(5)));
+	values.insert(values.begin(), std::pair<VarPtr,FloatSemiring>(Var::getVar("y"),FloatSemiring(4)));
+	values.insert(values.begin(), std::pair<VarPtr,FloatSemiring>(Var::getVar("z"),FloatSemiring(0)));
 	return values;
 }
 
 void test_polynomial_evaluation()
 {
 	Polynomial<FloatSemiring> polynomial = get_second_polynomial();
-	std::map<Var,FloatSemiring> values = get_variable_values();
+	std::map<VarPtr,FloatSemiring> values = get_variable_values();
 	FloatSemiring result = polynomial.eval(values);
 	std::cout << "- polynomial evaluation:" << std::endl;
 	std::cout << polynomial << " at {x=5, y=4, z=0} = " << result << std::endl;
@@ -123,10 +123,10 @@ Matrix<FreeSemiring> get_star_test_matrix()
 	return Matrix<FloatSemiring>(3,3,std::vector<FloatSemiring>(elems, elems+9));
 */
 	FreeSemiring elems[]  = {
-		FreeSemiring(Var("a")),
-		FreeSemiring(Var("b")),
-		FreeSemiring(Var("c")),
-		FreeSemiring(Var("d")) };
+		FreeSemiring(Var::getVar("a")),
+		FreeSemiring(Var::getVar("b")),
+		FreeSemiring(Var::getVar("c")),
+		FreeSemiring(Var::getVar("d")) };
 	return Matrix<FreeSemiring>(2,2,std::vector<FreeSemiring>(elems, elems+4));
 }
 
@@ -166,10 +166,10 @@ void test_matrix_star()
 
 void test_jacobian()
 {
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
-	variables.push_back(Var("y"));
-	variables.push_back(Var("z"));
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("x"));
+	variables.push_back(Var::getVar("y"));
+	variables.push_back(Var::getVar("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
@@ -180,15 +180,15 @@ void test_jacobian()
 
 void test_polynomial_matrix_evaluation()
 {
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
-	variables.push_back(Var("y"));
-	variables.push_back(Var("z"));
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("x"));
+	variables.push_back(Var::getVar("y"));
+	variables.push_back(Var::getVar("z"));
 	std::vector<Polynomial<FloatSemiring> > polynomials;
 	polynomials.push_back(get_first_polynomial());
 	polynomials.push_back(get_second_polynomial());
 	Matrix<Polynomial<FloatSemiring> > polynomial_matrix = Polynomial<FloatSemiring>::jacobian(polynomials, variables);
-	std::map<Var,FloatSemiring> values = get_variable_values();
+	std::map<VarPtr,FloatSemiring> values = get_variable_values();
 	Matrix<FloatSemiring> result = Polynomial<FloatSemiring>::eval(polynomial_matrix, values);
 	std::cout << "- polynomial matrix evaluation" << std::endl;
 	std::cout << polynomial_matrix << " at {x=5, y=4, z=0} = " << std::endl << result;
@@ -197,8 +197,8 @@ void test_polynomial_matrix_evaluation()
 void test_freesemiring()
 {
 	std::cout << "- free semiring" << std::endl;
-	FreeSemiring term1 = FreeSemiring(Var("a"));
-	FreeSemiring term2 = FreeSemiring(Var("b"));
+	FreeSemiring term1 = FreeSemiring(Var::getVar("a"));
+	FreeSemiring term2 = FreeSemiring(Var::getVar("b"));
 	std::cout << "some terms: " <<  term1 << " and " << term2 << std::endl;
 	FreeSemiring termAdd = term1 + term2;
 	FreeSemiring termMul = term1 * term2;
@@ -226,18 +226,18 @@ std::vector<Polynomial<FloatSemiring> > get_newton_test_polynomials()
 
 	// define new polynomial 0.4xy+0.6
 	Polynomial<FloatSemiring> f1 = Polynomial<FloatSemiring>({
-		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var("x"),Var("y")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var::getVar("x"),Var::getVar("y")}),
 		Monomial<FloatSemiring>(FloatSemiring(0.6), {}) });
 
 	// define new polynomial 0.3yz+0.4yx+0.3
 	Polynomial<FloatSemiring> f2 = Polynomial<FloatSemiring>({
-		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var("y"),Var("z")}),
-		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var("y"),Var("x")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var::getVar("y"),Var::getVar("z")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.4), {Var::getVar("y"),Var::getVar("x")}),
 		Monomial<FloatSemiring>(FloatSemiring(0.3), {}) });
 
 	// define new polynomial 0.3x+0.7
 	Polynomial<FloatSemiring> f3 =  Polynomial<FloatSemiring>({
-		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var("x")}),
+		Monomial<FloatSemiring>(FloatSemiring(0.3), {Var::getVar("x")}),
 		Monomial<FloatSemiring>(FloatSemiring(0.7), {}) });
 	polynomials.push_back(f1);
 	polynomials.push_back(f2);
@@ -250,10 +250,10 @@ void test_newton()
 {
 	/*
 	Newton<FloatSemiring> newton;
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
-	variables.push_back(Var("y"));
-	variables.push_back(Var("z"));
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("x"));
+	variables.push_back(Var::getVar("y"));
+	variables.push_back(Var::getVar("z"));
 	std::cout << "- newton (float):" << std::endl;
 	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
 	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
@@ -261,63 +261,63 @@ void test_newton()
 
 */
 
-
+/*
 	Newton<SemilinSetExp> newton;
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("x"));
 	std::cout << "- newton (cnt-SR):" << std::endl;
 
 	std::vector<Polynomial<SemilinSetExp> > polynomials;
 	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {}) });
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("c")), {}) });
 
 	polynomials.push_back(f1);
 
 	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 6);
 	std::cout << result << std::endl;
+*/
 
-	/*
-	Newton<SemilinSetExp> newton;
-	std::vector<Var> variables;
-	variables.push_back(Var("x"));
-	variables.push_back(Var("y"));
-	variables.push_back(Var("z"));
+	Newton<CommutativeRExp> newton;
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("x"));
+	variables.push_back(Var::getVar("y"));
+	variables.push_back(Var::getVar("z"));
 	std::cout << "- newton (counting-SR):" << std::endl;
 
-	std::vector<Polynomial<SemilinSetExp> > polynomials;
+	std::vector<Polynomial<CommutativeRExp> > polynomials;
 	// define new polynomial axy+b
-	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("a")), {Var("x"),Var("y")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("b")), {}) });
+	Polynomial<CommutativeRExp> f1 = Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("y")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("b")), {}) });
 
 	// define new polynomial cyz+dyx+e
-	Polynomial<SemilinSetExp> f2 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("c")), {Var("y"),Var("z")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("d")), {Var("y"),Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("e")), {}) });
+	Polynomial<CommutativeRExp> f2 = Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("c")), {Var::getVar("y"),Var::getVar("z")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("d")), {Var::getVar("y"),Var::getVar("x")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("e")), {}) });
 
 	// define new polynomial fx+g
-	Polynomial<SemilinSetExp> f3 =  Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("f")), {Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("g")), {}) });
+	Polynomial<CommutativeRExp> f3 =  Polynomial<CommutativeRExp>({
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("f")), {Var::getVar("x")}),
+		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("g")), {}) });
 	polynomials.push_back(f1);
 	polynomials.push_back(f2);
 	polynomials.push_back(f3);
 
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
+	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
-*/
+
 
 /*	Newton<SemilinSetExp> newton;
-	std::vector<Var> v;
-	v.push_back(Var("x"));
+	std::vector<VarPtr> v;
+	v.push_back(Var::getVar("x"));
 	std::cout << "- newton (cnt-SR):" << std::endl;
 
 	std::vector<Polynomial<SemilinSetExp> > polys;
 	Polynomial<SemilinSetExp> f0 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("s")), {Var("x"),Var("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("s")), {}) });
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("s")), {Var::getVar("x"),Var::getVar("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("s")), {}) });
 
 	polys.push_back(f0);
 	Matrix<SemilinSetExp> r = newton.solve_fixpoint(polys, v, 2);
@@ -325,26 +325,26 @@ void test_newton()
 
 	std::cout << sol1[0] << std::endl;
 
-//	std::cout << (SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0])<< std::endl;
+//	std::cout << (SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0])<< std::endl;
 
-	std::vector<Var> variables;
-	variables.push_back(Var("e"));
+	std::vector<VarPtr> variables;
+	variables.push_back(Var::getVar("e"));
 	std::vector<Polynomial<SemilinSetExp> > polynomials;
 	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
 		Monomial<SemilinSetExp>(SemilinSetExp::one(), {}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("l"))*SemilinSetExp(Var("s")), {Var("e")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0], {Var("e")}) });
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("l"))*SemilinSetExp(Var::getVar("s")), {Var::getVar("e")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0], {Var::getVar("e")}) });
 
 	polynomials.push_back(f1);
 
 	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 1);
 	std::cout << result << std::endl;
-	std::cout << (SemilinSetExp(Var("l"))*SemilinSetExp(Var("s")) + SemilinSetExp(Var("r"))*SemilinSetExp(Var("s"))*sol1[0]).star() << std::endl;
+	std::cout << (SemilinSetExp(Var::getVar("l"))*SemilinSetExp(Var::getVar("s")) + SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0]).star() << std::endl;
 */
 
 /*
-	SemilinSetExp x = SemilinSetExp(Var("a"));
-	SemilinSetExp y = SemilinSetExp(Var("b"));
+	SemilinSetExp x = SemilinSetExp(Var::getVar("a"));
+	SemilinSetExp y = SemilinSetExp(Var::getVar("b"));
 	SemilinSetExp z = (x*x*x+y*y*y).star();
 	std::cout << z << std::endl;
 */
