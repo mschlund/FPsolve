@@ -9,6 +9,7 @@
 #define COMMUTATIVEREXP_H_
 #include <set>
 #include <string>
+#include <memory>
 #include "counting-semiring.h"
 #include "var.h"
 
@@ -38,9 +39,9 @@ public:
 	enum optype type;
 private:
 	VarPtr elem;
-	std::set<CommutativeRExp>* seta;
-	std::multiset<CommutativeRExp>* setm;
-	CommutativeRExp* rexp;
+	std::shared_ptr<const std::set<CommutativeRExp>> seta;
+	std::shared_ptr<const std::multiset<CommutativeRExp>> setm;
+	std::shared_ptr<const CommutativeRExp> rexp;
 	std::string str;
 	std::string generateString() const;
 
@@ -50,9 +51,9 @@ public:
 
 	CommutativeRExp();
 	CommutativeRExp(VarPtr var);
-	CommutativeRExp(enum optype type, std::set<CommutativeRExp>* seta);
-	CommutativeRExp(enum optype type, std::multiset<CommutativeRExp>* setm);
-	CommutativeRExp(enum optype type, const CommutativeRExp& term);
+	CommutativeRExp(enum optype type, std::shared_ptr<const std::set<CommutativeRExp>> seta);
+	CommutativeRExp(enum optype type, std::shared_ptr<const std::multiset<CommutativeRExp>> setm);
+	CommutativeRExp(enum optype type, std::shared_ptr<const CommutativeRExp> term);
 	CommutativeRExp(const CommutativeRExp& expr);
 	virtual ~CommutativeRExp();
 	CommutativeRExp operator + (const CommutativeRExp& term) const;

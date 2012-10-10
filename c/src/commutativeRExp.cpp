@@ -6,6 +6,7 @@
 CommutativeRExp::CommutativeRExp()
 {
 	this->type = Empty;
+	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(VarPtr var)
@@ -15,33 +16,30 @@ CommutativeRExp::CommutativeRExp(VarPtr var)
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, std::set<CommutativeRExp>* seta)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::set<CommutativeRExp>> seta)
 {
 	this->type = type;
-	if(this->type == Addition)
-		this->seta = seta;
-	else
+	if(this->type != Addition)
 		assert(false); // should not be called with this constructor...
+	this->seta = seta;
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, std::multiset<CommutativeRExp>* setm)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::multiset<CommutativeRExp>> setm)
 {
 	this->type = type;
-	if(this->type == Multiplication)
-		this->setm = setm;
-	else
+	if(this->type != Multiplication)
 		assert(false); // should not be called with this constructor...
+	this->setm = setm;
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, const CommutativeRExp& rexp)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const CommutativeRExp> rexp)
 {
 	this->type = type;
-	if(this->type == Star)
-		this->rexp = new CommutativeRExp(rexp);
-	else
+	if(this->type != Star)
 		assert(false); // should not be called with this constructor...
+	this->rexp = rexp;
 	this->str = generateString();
 }
 
@@ -60,7 +58,7 @@ CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 		;// Do nothing
 	else
 		assert(false);
-	this->str = generateString();
+	this->str = expr.str;
 }
 
 CommutativeRExp::~CommutativeRExp()
@@ -76,29 +74,13 @@ CommutativeRExp::~CommutativeRExp()
 		delete elem_one;
 		elem_one = 0;
 	}
-	if(this->type == Element)
-	{
-		delete elem;
-	}
-	if(this->type == Addition )
-	{
-		delete seta;
-	}
-	if(this->type == Multiplication)
-	{
-		delete setm;
-	}
-	if(this->type == Star)
-	{
-		delete rexp;
-	}
 */
 }
 
 // union operator
 CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 {
-	std::set<CommutativeRExp>* retset= new std::set<CommutativeRExp>();
+	std::shared_ptr<std::set<CommutativeRExp> > retset(new std::set<CommutativeRExp>());
 
 	if(this->type == Element || this->type == Multiplication || this->type == Star)
 		retset->insert(*this);
@@ -127,7 +109,7 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 // concatenate all expressions from first set with all expressions of the second set
 CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 {
-	std::multiset<CommutativeRExp>* retset= new std::multiset<CommutativeRExp>();
+	std::shared_ptr<std::multiset<CommutativeRExp> > retset(new std::multiset<CommutativeRExp>());
 
 	if(this->type == Element || this->type == Addition || this->type == Star)
 	{
@@ -187,7 +169,7 @@ CommutativeRExp CommutativeRExp::star() const
 	else if (this->type == Empty)
 		return one(); // {}* = ε
 	else
-		return CommutativeRExp(Star, *this); // star the element
+		return CommutativeRExp(Star, std::shared_ptr<CommutativeRExp>(new CommutativeRExp(*this))); // star the element
 }
 
 CommutativeRExp CommutativeRExp::null()
@@ -236,6 +218,8 @@ std::string CommutativeRExp::generateString() const
 		ss << "(" << *this->setm << ")";
 	else if(this->type == Star)
 		ss << *this->rexp << "*";
+	else if(this->type == Empty)
+		ss << "{}";
 	return ss.str();
 }
 
