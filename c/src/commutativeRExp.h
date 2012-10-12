@@ -39,9 +39,9 @@ public:
 	enum optype type;
 private:
 	VarPtr elem;
-	std::shared_ptr<const std::set<CommutativeRExp>> seta;
-	std::shared_ptr<const std::multiset<CommutativeRExp>> setm;
-	std::shared_ptr<const CommutativeRExp> rexp;
+	std::shared_ptr<std::set<CommutativeRExp>> seta;
+	std::shared_ptr<std::multiset<CommutativeRExp>> setm;
+	std::shared_ptr<CommutativeRExp> rexp;
 	std::string str;
 	std::string generateString() const;
 
@@ -51,9 +51,9 @@ public:
 
 	CommutativeRExp();
 	CommutativeRExp(VarPtr var);
-	CommutativeRExp(enum optype type, std::shared_ptr<const std::set<CommutativeRExp>> seta);
-	CommutativeRExp(enum optype type, std::shared_ptr<const std::multiset<CommutativeRExp>> setm);
-	CommutativeRExp(enum optype type, std::shared_ptr<const CommutativeRExp> term);
+	CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta);
+	CommutativeRExp(enum optype type, std::shared_ptr<std::multiset<CommutativeRExp>> setm);
+	CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> term);
 	CommutativeRExp(const CommutativeRExp& expr);
 	virtual ~CommutativeRExp();
 	CommutativeRExp operator + (const CommutativeRExp& term) const;

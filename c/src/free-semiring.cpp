@@ -4,6 +4,10 @@
 FreeSemiring::FreeSemiring()
 {
 	// Do not use this constructor. It is needed for a std::unordered_map...
+
+	// dummy type, so valgrind does not complain about uninitialised value on
+	// switch-statemenet in copy-constructor
+	this->type = Dummy;
 }
 
 FreeSemiring::FreeSemiring(VarPtr var)

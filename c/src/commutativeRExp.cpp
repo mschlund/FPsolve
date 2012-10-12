@@ -16,7 +16,7 @@ CommutativeRExp::CommutativeRExp(VarPtr var)
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::set<CommutativeRExp>> seta)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta)
 {
 	this->type = type;
 	if(this->type != Addition)
@@ -25,7 +25,7 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::se
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::multiset<CommutativeRExp>> setm)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::multiset<CommutativeRExp>> setm)
 {
 	this->type = type;
 	if(this->type != Multiplication)
@@ -34,7 +34,7 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const std::mu
 	this->str = generateString();
 }
 
-CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<const CommutativeRExp> rexp)
+CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> rexp)
 {
 	this->type = type;
 	if(this->type != Star)
