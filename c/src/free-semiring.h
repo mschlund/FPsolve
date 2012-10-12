@@ -16,8 +16,8 @@ public:
 	std::shared_ptr<FreeSemiring> right_ptr;
 	enum optype {Element, Addition, Multiplication, Star, Dummy};
 	enum optype type;
-	static FreeSemiring* elem_null;
-	static FreeSemiring* elem_one;
+	static std::shared_ptr<FreeSemiring> elem_null;
+	static std::shared_ptr<FreeSemiring> elem_one;
 
 	FreeSemiring();
 	FreeSemiring(VarPtr var);

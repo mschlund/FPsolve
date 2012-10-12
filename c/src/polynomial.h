@@ -10,6 +10,7 @@
 #include <sstream>
 #include <initializer_list>
 #include <cassert>
+#include <memory>
 #include "var.h"
 #include "semiring.h"
 #include "matrix.h"
@@ -263,8 +264,8 @@ private:
 		}
 	}
 
-	static Polynomial<SR>* elem_null;
-	static Polynomial<SR>* elem_one;
+	static std::shared_ptr<Polynomial<SR>> elem_null;
+	static std::shared_ptr<Polynomial<SR>> elem_one;
 public:
 	// empty polynomial
 	Polynomial()
@@ -599,14 +600,14 @@ public:
 	static Polynomial<SR> const null()
 	{
 		if(!Polynomial::elem_null)
-			Polynomial::elem_null = new Polynomial(SR::null());
+			Polynomial::elem_null = std::shared_ptr<Polynomial<SR>>(new Polynomial(SR::null()));
 		return *Polynomial::elem_null;
 	}
 
 	static Polynomial<SR> const one()
 	{
 		if(!Polynomial::elem_one)
-			Polynomial::elem_one = new Polynomial(SR::one());
+			Polynomial::elem_one = std::shared_ptr<Polynomial<SR>>(new Polynomial(SR::one()));
 		return *Polynomial::elem_one;
 	}
 
@@ -630,8 +631,8 @@ public:
 template <typename SR> bool Polynomial<SR>::is_commutative = false;
 template <typename SR> bool Polynomial<SR>::is_idempotent = false;
 // initialize pointers
-template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_null = 0;
-template <typename SR> Polynomial<SR>* Polynomial<SR>::elem_one = 0;
+template <typename SR> std::shared_ptr<Polynomial<SR>> Polynomial<SR>::elem_null;
+template <typename SR> std::shared_ptr<Polynomial<SR>> Polynomial<SR>::elem_one;
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const Monomial<SR>& monomial)

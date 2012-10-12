@@ -63,18 +63,6 @@ CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 
 CommutativeRExp::~CommutativeRExp()
 {
-	// do not delete static pointers!!!
-/*	if(elem_null != 0)
-	{
-		delete elem_null;
-		elem_null = 0;
-	}
-	if(elem_one != 0)
-	{
-		delete elem_one;
-		elem_one = 0;
-	}
-*/
 }
 
 // union operator
@@ -175,14 +163,14 @@ CommutativeRExp CommutativeRExp::star() const
 CommutativeRExp CommutativeRExp::null()
 {
 	if(!CommutativeRExp::elem_null)
-		CommutativeRExp::elem_null = new CommutativeRExp();
+		CommutativeRExp::elem_null = std::shared_ptr<CommutativeRExp>(new CommutativeRExp());
 	return *CommutativeRExp::elem_null;
 }
 
 CommutativeRExp CommutativeRExp::one()
 {
 	if(!CommutativeRExp::elem_one)
-		CommutativeRExp::elem_one = new CommutativeRExp(Var::getVar("ε"));
+		CommutativeRExp::elem_one = std::shared_ptr<CommutativeRExp>(new CommutativeRExp(Var::getVar("ε")));
 	return *CommutativeRExp::elem_one;
 }
 
@@ -230,5 +218,5 @@ std::string CommutativeRExp::string() const
 
 bool CommutativeRExp::is_idempotent = true;
 bool CommutativeRExp::is_commutative = true;
-CommutativeRExp* CommutativeRExp::elem_null = 0;
-CommutativeRExp* CommutativeRExp::elem_one = 0;
+std::shared_ptr<CommutativeRExp> CommutativeRExp::elem_null;
+std::shared_ptr<CommutativeRExp> CommutativeRExp::elem_one;

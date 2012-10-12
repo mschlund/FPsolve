@@ -46,8 +46,8 @@ private:
 	std::string generateString() const;
 
 public:
-	static CommutativeRExp *elem_null;
-	static CommutativeRExp *elem_one;
+	static std::shared_ptr<CommutativeRExp> elem_null;
+	static std::shared_ptr<CommutativeRExp> elem_one;
 
 	CommutativeRExp();
 	CommutativeRExp(VarPtr var);

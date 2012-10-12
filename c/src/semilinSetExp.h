@@ -17,6 +17,7 @@
 #include <set>
 #include <map>
 #include <list>
+#include <memory>
 
 // TODO: bigints instead of finite precision ints ?
 
@@ -52,8 +53,8 @@ private:
 	std::set<LinSet> val;
 
 public:
-	static SemilinSetExp* elem_null; // null = {} (empty set)
-	static SemilinSetExp* elem_one; // one = {(0,0,...0)}
+	static std::shared_ptr<SemilinSetExp> elem_null; // null = {} (empty set)
+	static std::shared_ptr<SemilinSetExp> elem_one; // one = {(0,0,...0)}
 
 	SemilinSetExp();
 	SemilinSetExp(std::set<LinSet> val);

@@ -88,7 +88,7 @@ SemilinSetExp::~SemilinSetExp() {
 
 SemilinSetExp SemilinSetExp::null() {
 	if(!SemilinSetExp::elem_null)
-		SemilinSetExp::elem_null = new SemilinSetExp(std::set<LinSet>());
+		SemilinSetExp::elem_null = std::shared_ptr<SemilinSetExp>(new SemilinSetExp(std::set<LinSet>()));
 	return *SemilinSetExp::elem_null;
 }
 
@@ -98,7 +98,7 @@ SemilinSetExp SemilinSetExp::one() {
 		LinSet ls = LinSet();
 		ls.push_front(VecSparse());
 		elone.insert(ls);
-		SemilinSetExp::elem_one = new SemilinSetExp(elone);
+		SemilinSetExp::elem_one = std::shared_ptr<SemilinSetExp>(new SemilinSetExp(elone));
 	}
 	return *SemilinSetExp::elem_one;
 }
@@ -221,5 +221,5 @@ std::ostream& SemilinSetExp::operator<<(std::ostream& os) const {
 
 bool SemilinSetExp::is_idempotent = true;
 bool SemilinSetExp::is_commutative = true;
-SemilinSetExp* SemilinSetExp::elem_null = 0;
-SemilinSetExp* SemilinSetExp::elem_one = 0;
+std::shared_ptr<SemilinSetExp> SemilinSetExp::elem_null;
+std::shared_ptr<SemilinSetExp> SemilinSetExp::elem_one;

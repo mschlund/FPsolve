@@ -136,17 +136,17 @@ std::string FreeSemiring::string() const
 FreeSemiring FreeSemiring::null()
 {
 	if(!FreeSemiring::elem_null)
-		FreeSemiring::elem_null = new FreeSemiring(Var::getVar("Null"));
+		FreeSemiring::elem_null = std::shared_ptr<FreeSemiring>(new FreeSemiring(Var::getVar("Null")));
 	return *FreeSemiring::elem_null;
 }
 FreeSemiring FreeSemiring::one()
 {
 	if(!FreeSemiring::elem_one)
-		FreeSemiring::elem_one = new FreeSemiring(Var::getVar("One"));
+		FreeSemiring::elem_one = std::shared_ptr<FreeSemiring>(new FreeSemiring(Var::getVar("One")));
 	return *FreeSemiring::elem_one;
 }
 
 bool FreeSemiring::is_idempotent = false;
 bool FreeSemiring::is_commutative = false;
-FreeSemiring* FreeSemiring::elem_null = 0;
-FreeSemiring* FreeSemiring::elem_one = 0;
+std::shared_ptr<FreeSemiring> FreeSemiring::elem_null;
+std::shared_ptr<FreeSemiring> FreeSemiring::elem_one;

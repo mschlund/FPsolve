@@ -45,14 +45,14 @@ FloatSemiring FloatSemiring::star() const
 FloatSemiring FloatSemiring::null()
 {
 	if(!FloatSemiring::elem_null)
-		FloatSemiring::elem_null = new FloatSemiring(0);
+		FloatSemiring::elem_null = std::shared_ptr<FloatSemiring>(new FloatSemiring(0));
 	return *FloatSemiring::elem_null;
 }
 
 FloatSemiring FloatSemiring::one()
 {
 	if(!FloatSemiring::elem_one)
-		FloatSemiring::elem_one = new FloatSemiring(1);
+		FloatSemiring::elem_one = std::shared_ptr<FloatSemiring>(new FloatSemiring(1));
 	return *FloatSemiring::elem_one;
 }
 
@@ -65,5 +65,5 @@ std::string FloatSemiring::string() const
 
 bool FloatSemiring::is_idempotent = false;
 bool FloatSemiring::is_commutative = true;
-FloatSemiring* FloatSemiring::elem_null = 0;
-FloatSemiring* FloatSemiring::elem_one = 0;
+std::shared_ptr<FloatSemiring> FloatSemiring::elem_null;
+std::shared_ptr<FloatSemiring> FloatSemiring::elem_one;

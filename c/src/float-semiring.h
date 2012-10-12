@@ -2,14 +2,15 @@
 #define FLOAT_SEMIRING_H
 
 #include <string>
+#include <memory>
 #include "semiring.h"
 
 class FloatSemiring : public Semiring<FloatSemiring>
 {
 private:
 	float val;
-	static FloatSemiring* elem_null;
-	static FloatSemiring* elem_one;
+	static std::shared_ptr<FloatSemiring> elem_null;
+	static std::shared_ptr<FloatSemiring> elem_one;
 public:
 	FloatSemiring();
 	FloatSemiring(const float val);
