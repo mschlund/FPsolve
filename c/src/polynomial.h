@@ -118,7 +118,7 @@ public:
 	{
 		SR elem = this->coeff;
 
-		for(std::multiset<VarPtr>::const_iterator v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
+		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
 		{
 			auto e = values.find(*v_it);
 			assert(e != values.end()); // all variables should be in values
@@ -135,7 +135,7 @@ public:
 		SR coeff = this->coeff;
 		std::multiset<VarPtr> variables = this->variables;
 
-		for(std::map<VarPtr, VarPtr>::const_iterator m_it = mapping.begin(); m_it != mapping.end(); ++m_it)
+		for(auto m_it = mapping.begin(); m_it != mapping.end(); ++m_it)
 		{
 			int count = variables.count(m_it->first);
 			variables.erase( (*m_it).first ); // erase all occurences
@@ -150,13 +150,13 @@ public:
 	FreeSemiring make_free(std::unordered_map<SR,FreeSemiring,SR>* valuation) const
 	{
 		FreeSemiring result = FreeSemiring::one();
-		for(std::multiset<VarPtr>::const_iterator v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
+		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
 		{
 			result = result * FreeSemiring(*v_it);
 		}
 
 		// change the SR element to a constant in the free semiring
-		typename std::unordered_map<SR,FreeSemiring>::const_iterator elem = valuation->find(this->coeff);
+		auto elem = valuation->find(this->coeff);
 		if(elem == valuation->end()) // this is a new SR element
 		{
 			// map 'zero' and 'one' element to respective free semiring element
@@ -251,7 +251,7 @@ private:
 	{
 		this->monomials = monomials;
 		this->degree = 0;
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
 		}
@@ -283,9 +283,9 @@ public:
 			this->monomials = std::set<Monomial<SR> >();
 			this->degree = 0;
 
-			for(typename std::initializer_list<Monomial<SR> >::const_iterator m_it = monomials.begin(); m_it != monomials.end(); ++m_it)
+			for(auto m_it = monomials.begin(); m_it != monomials.end(); ++m_it)
 			{
-				typename std::set<Monomial<SR> >::const_iterator mon = this->monomials.find(*m_it);
+				auto mon = this->monomials.find(*m_it);
 
 				if(mon == this->monomials.end()) // not yet present as a monomial
 					this->monomials.insert(*m_it); // just insert it
@@ -323,10 +323,10 @@ public:
 	Polynomial<SR> operator+(const Polynomial<SR>& poly) const
 	{
 		std::set<Monomial<SR> > monomials = this->monomials;
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = poly.monomials.begin(); m_it != poly.monomials.end(); ++m_it)
+		for(auto m_it = poly.monomials.begin(); m_it != poly.monomials.end(); ++m_it)
 		{
 			// check if "same" monomial is already in the set
-			typename std::set<Monomial<SR> >::const_iterator mon = monomials.find(*m_it);
+			auto mon = monomials.find(*m_it);
 			if(mon == monomials.end()) // this is not the case
 				monomials.insert(*m_it); // just insert it
 			else // monomial with the same variables found
@@ -343,9 +343,9 @@ public:
 	{
 		std::set<Monomial<SR> > monomials;
 		// iterate over both this and the poly polynomial
-		for(typename std::set<Monomial<SR> >::const_iterator m_it1 = this->monomials.begin(); m_it1 != this->monomials.end(); ++m_it1)
+		for(auto m_it1 = this->monomials.begin(); m_it1 != this->monomials.end(); ++m_it1)
 		{
-			for(typename std::set<Monomial<SR> >::const_iterator m_it2 = poly.monomials.begin(); m_it2 != poly.monomials.end(); ++m_it2)
+			for(auto m_it2 = poly.monomials.begin(); m_it2 != poly.monomials.end(); ++m_it2)
 			{
 				Monomial<SR> tmp = (*m_it1) * (*m_it2);
 				auto tmp2 = monomials.find(tmp);
@@ -367,7 +367,7 @@ public:
 	Polynomial<SR> operator*(const VarPtr& var) const
 	{
 		std::set<Monomial<SR> > monomials;
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			monomials.insert( (*m_it) * var );
 		}
@@ -379,7 +379,7 @@ public:
 	{
 		std::set<Monomial<SR> > monomials;
 
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
+		for(auto m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
 		{
 			monomials.insert(elem * (*m_it));
 		}
@@ -392,7 +392,7 @@ public:
 		if(this->monomials.size() != polynomial.monomials.size())
 			return false;
 
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
+		for(auto m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
 		{
 			auto monomial = this->monomials.find(*m_it); // search with variables
 			if(monomial == this->monomials.end())
@@ -425,14 +425,14 @@ public:
 	{
 		std::set<Monomial<SR> > monomials;
 
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			//if(SR::is_commutative) // TODO: check if compiler is optimizing this out
 			if(true)
 			{
 				// take the derivative of m_it and add it to the result set
 				Monomial<SR> derivative = (*m_it).derivative(var);
-				typename std::set<Monomial<SR> >::const_iterator monomial = monomials.find(derivative);
+				auto monomial = monomials.find(derivative);
 				if(monomial == monomials.end()) // TODO: think about this and remove if not needed
 				{
 					monomials.insert(derivative);
@@ -459,7 +459,7 @@ public:
 	Polynomial<SR> derivative(const std::vector<VarPtr>& vars) const
 	{
 		Polynomial<SR> polynomial = *this; // copy the polynomial
-		for(typename std::vector<VarPtr>::const_iterator var = vars.begin(); var != vars.end(); ++var)
+		for(auto var = vars.begin(); var != vars.end(); ++var)
 		{
 			polynomial = polynomial.derivative(*var);
 		}
@@ -469,9 +469,9 @@ public:
 	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::vector<VarPtr>& variables)
 	{
 		std::vector<Polynomial<SR> > ret;
-		for(typename std::vector<Polynomial<SR> >::const_iterator poly = polynomials.begin(); poly != polynomials.end(); ++poly)
+		for(auto poly = polynomials.begin(); poly != polynomials.end(); ++poly)
 		{
-			for(std::vector<VarPtr>::const_iterator var = variables.begin(); var != variables.end(); ++var)
+			for(auto var = variables.begin(); var != variables.end(); ++var)
 			{
 				ret.push_back(poly->derivative(*var));
 			}
@@ -483,10 +483,10 @@ public:
 	Matrix<Polynomial<SR> > hessian() const
 	{
 		std::vector<Polynomial<SR> > ret;
-		for(std::multiset<VarPtr>::const_iterator var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
+		for(auto var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
 		{
 			Polynomial<SR> tmp = this->derivative(*var2);
-			for(std::multiset<VarPtr>::const_iterator var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
+			for(auto var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
 			{
 				ret.push_back(tmp.derivative(*var1));
 			}
@@ -497,7 +497,7 @@ public:
 	SR eval(const std::map<VarPtr,SR>& values) const
 	{
 		SR result = SR::null();
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			SR elem = m_it->eval(values);
 			result = result + elem;
@@ -510,25 +510,11 @@ public:
 	{
 		std::set<Monomial<SR> > monomials;
 
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 			monomials.insert((*m_it).subst(mapping));
 
 		return Polynomial<SR>(monomials);
 	}
-
-	// TODO: is this method really needed?
-	/*Polynomial<SR> eval(const std::map<Var,Polynomial<SR> >& values) const
-	{
-		Polynomial<SR> result = Polynomial<SR>::null;
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			Monomial<SR> foo = (*m_it);
-			Polynomial<SR> elem = foo.eval(values);
-			result = result + elem;
-		}
-
-		return result;
-	}*/
 
 	static Matrix<SR> eval(const Matrix<Polynomial<SR> >& polys, const std::map<VarPtr,SR>& values)
 	{
@@ -562,7 +548,7 @@ public:
 
 		FreeSemiring result = FreeSemiring::null();
 		// convert this polynomial by adding all converted monomials
-		for(typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			result = result + m_it->make_free(valuation);
 		}
@@ -594,6 +580,7 @@ public:
 	Polynomial<SR> star() const
 	{
 		// TODO: we cannot star polynomials!
+		assert(false);
 		return (*this);
 	}
 
@@ -617,7 +604,7 @@ public:
 	std::string string() const
 	{
 		std::stringstream ss;
-		for (typename std::set<Monomial<SR> >::const_iterator m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		for (auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			if(m_it != this->monomials.begin())
 				ss << " + ";
@@ -643,7 +630,7 @@ std::ostream& operator<<(std::ostream& os, const Monomial<SR>& monomial)
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, SR>& values)
 {
-	for(typename std::map<VarPtr, SR>::const_iterator value = values.begin(); value != values.end(); ++value)
+	for(auto value = values.begin(); value != values.end(); ++value)
 	{
 		os << value->first << "→" << value->second << ";";
 	}
@@ -652,7 +639,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, SR>& values)
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, Polynomial<SR> >& values)
 {
-	for(typename std::map<VarPtr, Polynomial<SR> >::const_iterator value = values.begin(); value != values.end(); ++value)
+	for(auto value = values.begin(); value != values.end(); ++value)
 	{
 		os << value->first << "→" << value->second << ";";
 	}
