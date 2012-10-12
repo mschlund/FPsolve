@@ -6,8 +6,7 @@
 #include <vector>
 #include <assert.h>
 #include <initializer_list>
-
-//FIXME: null/one-function!
+#include <memory>
 
 template <typename SR>
 class Matrix
@@ -229,7 +228,37 @@ public:
 		}
 		return ss.str();
 	}
+
+	static std::shared_ptr<Matrix<SR>> elem_null;
+	static std::shared_ptr<Matrix<SR>> elem_one;
+
+	static Matrix<SR> const null(int size)
+	{
+		if(!Matrix::elem_null)
+			Matrix::elem_null = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, SR::null()));
+		return *Matrix::elem_null;
+	}
+
+	static Matrix<SR> const one(int size)
+	{
+		if(!Matrix::elem_one)
+		{
+			std::vector<SR> ret;
+			for(int i = 0; i < size*size; ++i)
+			{
+				if(i%(size+1) == 0) // diagonal entry, [0,size+1,2*(size+1),...]
+					ret.push_back(SR::one());
+				else
+					ret.push_back(SR::null());
+			}
+			Matrix::elem_one = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, ret));
+		}
+		return *Matrix::elem_one;
+	}
 };
+
+template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_null;
+template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_one;
 
 // friend method of Matrix
 template <typename SR>

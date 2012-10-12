@@ -13,14 +13,8 @@ void MatrixTest::setUp()
 	m = new FreeSemiring(Var::getVar("m"));n = new FreeSemiring(Var::getVar("n"));
 	o = new FreeSemiring(Var::getVar("o"));p = new FreeSemiring(Var::getVar("p"));
 	q = new FreeSemiring(Var::getVar("q"));r = new FreeSemiring(Var::getVar("r"));
-	null = new Matrix<FreeSemiring>(3,3,{
-			FreeSemiring::null(),FreeSemiring::null(),FreeSemiring::null(),
-			FreeSemiring::null(),FreeSemiring::null(),FreeSemiring::null(),
-			FreeSemiring::null(),FreeSemiring::null(),FreeSemiring::null()});
-	one = new Matrix<FreeSemiring>(3,3,{
-			FreeSemiring::one(),FreeSemiring::null(),FreeSemiring::null(),
-			FreeSemiring::null(),FreeSemiring::one(),FreeSemiring::null(),
-			FreeSemiring::null(),FreeSemiring::null(),FreeSemiring::one()});
+	null = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::null(3));
+	one = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::one(3));
 	first = new Matrix<FreeSemiring>(3,2,{
 			*a,*b,*c,
 			*d,*e,*f});
