@@ -176,6 +176,8 @@ bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 				return false; // all elements are equal
 			case Star: // reduce to element comparison
 				return this->rexp < rhs.rexp;
+			case Empty: // empty expressions are always equal
+				return false;
 		}
 	}
 }
@@ -184,18 +186,34 @@ bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 {
 	if(this->type != expr.type)
 		return false;
-	else // check if this and expr is equal with respect to pointer equality...
+	else // same type, compare content
 	{
 		switch(this->type)
 		{
 			case Element:
 				return this->elem == expr.elem;
-			case Addition:
-				return this->seta == expr.seta;
-			case Multiplication:
-				return this->setm == expr.setm;
-			case Star:
-				return this->rexp == expr.rexp;
+			case Addition: // all elements have to be equal
+				for(auto l_it = this->seta->begin(), r_it = expr.seta->begin();
+					(l_it != this->seta->end() ) && (r_it != expr.seta->end());
+					++l_it, ++r_it )
+				{
+					if( !((*l_it) == (*r_it)) ) // at least one element is different
+						return false;
+				}
+				return true; // all elements are equal
+			case Multiplication: // all elements have to be equal
+				for(auto l_it = this->setm->begin(), r_it = expr.setm->begin();
+					(l_it != this->setm->end() ) && (r_it != expr.setm->end());
+					++l_it, ++r_it )
+				{
+					if( !((*l_it) == (*r_it) )) // at least one element is different
+						return false;
+				}
+				return true; // all elements are equal
+			case Star: // reduce to element comparison
+				return *this->rexp == *expr.rexp;
+			case Empty: // empty expressions are always equal
+				return true;
 		}
 	}
 }
