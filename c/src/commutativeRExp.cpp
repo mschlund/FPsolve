@@ -6,14 +6,12 @@
 CommutativeRExp::CommutativeRExp()
 {
 	this->type = Empty;
-	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(VarPtr var)
 {
 	this->type = Element;
 	this->elem = Var::getVar(var);
-	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta)
@@ -22,7 +20,6 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::set<Comm
 	if(this->type != Addition)
 		assert(false); // should not be called with this constructor...
 	this->seta = seta;
-	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::multiset<CommutativeRExp>> setm)
@@ -31,7 +28,6 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::multiset
 	if(this->type != Multiplication)
 		assert(false); // should not be called with this constructor...
 	this->setm = setm;
-	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> rexp)
@@ -40,7 +36,6 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRE
 	if(this->type != Star)
 		assert(false); // should not be called with this constructor...
 	this->rexp = rexp;
-	this->str = generateString();
 }
 
 CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
@@ -58,7 +53,6 @@ CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 		;// Do nothing
 	else
 		assert(false);
-	this->str = expr.str;
 }
 
 CommutativeRExp::~CommutativeRExp()
@@ -131,22 +125,79 @@ CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 //bool operator <(const CommutativeRExp& lhs, const CommutativeRExp& rhs)
 bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 {
+	// compare the expression type
 	if(this->type < rhs.type)
 		return true;
 	else if(this->type > rhs.type)
 		return false;
-	else // same type
+	else // same type, compare content
 	{
-		if(this->type == Element)
-			return this->elem < rhs.elem;
-		else
-			return this->str.compare(rhs.str) < 0;
+		switch(this->type)
+		{
+			case Element: // reduce to element comparison
+				return this->elem < rhs.elem;
+			case Addition: // length- then lexicographic-order based on elements of seta
+				if(this->seta->size() < rhs.seta->size())
+					return true;
+
+				for(auto l_it = this->seta->begin(), r_it = rhs.seta->begin();
+					(l_it != this->seta->end() ) && (r_it != rhs.seta->end());
+					++l_it, ++r_it )
+				{
+					if((*l_it) < (*r_it))
+						return true;
+					else
+					{
+						if( (*l_it) == (*r_it)) // elements are equal
+							continue; // check the next element
+						else
+							return false; // 'this' is bigger
+					}
+				}
+				return false; // all elements are equal
+			case Multiplication: // length- then lexicographic-order based on elements of setm
+				if(this->setm->size() < rhs.setm->size())
+					return true;
+
+				for(auto l_it = this->setm->begin(), r_it = rhs.setm->begin();
+					(l_it != this->setm->end() ) && (r_it != rhs.setm->end());
+					++l_it, ++r_it )
+				{
+					if((*l_it) < (*r_it))
+						return true;
+					else
+					{
+						if( (*l_it) == (*r_it)) // elements are equal
+							continue; // check the next element
+						else
+							return false; // 'this' is bigger
+					}
+				}
+				return false; // all elements are equal
+			case Star: // reduce to element comparison
+				return this->rexp < rhs.rexp;
+		}
 	}
 }
 
 bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 {
-	return this->str.compare(expr.str) == 0;
+	if(this->type != expr.type)
+		return false;
+	else // check if this and expr is equal with respect to pointer equality...
+	{
+		switch(this->type)
+		{
+			case Element:
+				return this->elem == expr.elem;
+			case Addition:
+				return this->seta == expr.seta;
+			case Multiplication:
+				return this->setm == expr.setm;
+			case Star:
+				return this->rexp == expr.rexp;
+		}
+	}
 }
 
 // star the whole RExp
@@ -213,7 +264,7 @@ std::string CommutativeRExp::generateString() const
 
 std::string CommutativeRExp::string() const
 {
-	return this->str;
+	return this->generateString();
 }
 
 bool CommutativeRExp::is_idempotent = true;

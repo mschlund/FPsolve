@@ -42,7 +42,7 @@ private:
 	std::shared_ptr<std::set<CommutativeRExp>> seta;
 	std::shared_ptr<std::multiset<CommutativeRExp>> setm;
 	std::shared_ptr<CommutativeRExp> rexp;
-	std::string str;
+	//std::string str;
 	std::string generateString() const;
 
 public:
