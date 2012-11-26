@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "float-semiring.h"
 #include "free-semiring.h"
 #include "semilinSetExp.h"
@@ -6,6 +7,7 @@
 #include "polynomial.h"
 #include "newton.h"
 #include "commutativeRExp.h"
+#include "parser.h"
 
 void test_addition()
 {
@@ -353,7 +355,7 @@ void test_newton()
 
 int main(int argc, char* argv[])
 {
-	std::cout << "testing..." << std::endl;
+	//std::cout << "testing..." << std::endl;
 	//test_addition();
 	//test_multiplication();
 	//test_variables();
@@ -369,7 +371,40 @@ int main(int argc, char* argv[])
 	//test_polynomial_matrix_evaluation();
 	//test_freesemiring();
 	//test_polynomial_to_freesemiring();
-	test_newton();
+	if(argc == 1) // no command-line arguments
+		test_newton();
+	else // there is an argument
+	{
+		Parser p;
+		std::string input;
+		while(std::cout << "> " && std::getline(std::cin, input))
+		{
+			if(std::string("-float").compare(argv[1]) == 0)
+			{
+				auto result = p.parse_float(input);
+				std::cout << result << std::endl;
+			}
+			else if(std::string("-free").compare(argv[1]) == 0)
+			{
+				auto result = p.parse_free(input);
+				std::cout << result << std::endl;
+			}
+			else if(std::string("-rexp").compare(argv[1]) == 0)
+			{
+				auto result = p.parse_rexp(input);
+				std::cout << result << std::endl;
+			}
+			else if(std::string("-polyrexp").compare(argv[1]) == 0)
+			{
+				auto result = p.parse_polyrexp(input);
+				std::cout << result << std::endl;
+			}
+			else
+			{
+				std::cout << "unknown argument" << std::endl;
+			}
+		}
+	}
 
 	return 0;
 }

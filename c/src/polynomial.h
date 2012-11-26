@@ -57,7 +57,21 @@ public:
 			this->variables = variables;
 			this->null = false;
 		}
-		this->null = true;
+		else
+			this->null = true;
+	}
+
+	// std::vector seems to be a neutral data type and does not leak internal data structure
+	Monomial(SR coeff, std::vector<VarPtr> variables)
+	{
+		this->coeff = coeff;
+		if( !(coeff == SR::null())) // we only need to save the variables in this case
+		{
+			this->variables.insert(variables.begin(), variables.end());
+			this->null = false;
+		}
+		else
+			this->null = true;
 	}
 
 	// add the coefficients of two monomials if there variables are equal
@@ -227,6 +241,10 @@ public:
 		this->coeff = this->coeff + coeff;
 	}
 
+	std::set<VarPtr> get_variables() const {
+		return std::set<VarPtr>(this->variables.begin(), this->variables.end());
+	}
+
 	std::string string() const
 	{
 		std::stringstream ss;
@@ -245,6 +263,7 @@ class Polynomial : public Semiring<Polynomial<SR> >
 private:
 	int degree;
 	std::set<Monomial<SR> > monomials;
+	std::set<VarPtr> variables;
 
 	// private constructor to hide the internal data structure
 	Polynomial(const std::set<Monomial<SR> >& monomials)
@@ -254,6 +273,8 @@ private:
 		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
 		{
 			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
+			auto vars = m_it->get_variables();
+			this->variables.insert(vars.begin(), vars.end()); // collect all used variables
 		}
 
 		// If there is a null-monomial, it should be at the front.
@@ -296,6 +317,8 @@ public:
 					this->monomials.insert( tmp + (*m_it) );
 				}
 				this->degree = m_it->get_degree() > this->degree ? m_it->get_degree() : this->degree;
+				auto vars = m_it->get_variables();
+				this->variables.insert(vars.begin(), vars.end()); // collect all used variables
 			}
 		}
 	}
@@ -574,6 +597,11 @@ public:
 	int get_degree()
 	{
 		return this->degree;
+	}
+
+	std::set<VarPtr> get_variables() const
+	{
+		return this->variables;
 	}
 
 	// some semiring functions
