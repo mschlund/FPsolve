@@ -80,8 +80,8 @@ using qi::_2;
 using qi::lit;
 using qi::lexeme;
 
-template <typename Iterator>
-struct float_parser : qi::grammar<Iterator, FloatSemiring()>
+template <typename Iterator, typename Skipper>
+struct float_parser : qi::grammar<Iterator, FloatSemiring(), Skipper>
 {
 	// specify the parser rules, term is the start rule (and in this case the only rule)
 	float_parser() : float_parser::base_type(expression)
@@ -96,15 +96,15 @@ struct float_parser : qi::grammar<Iterator, FloatSemiring()>
 	}
 
 	// this declare the available rules and the respecting return types of our parser
-	qi::rule<Iterator, FloatSemiring()> expression;
-	qi::rule<Iterator, FloatSemiring()> term;
-	qi::rule<Iterator, FloatSemiring()> starfactor;
-	qi::rule<Iterator, FloatSemiring()> factor;
+	qi::rule<Iterator, FloatSemiring(), Skipper> expression;
+	qi::rule<Iterator, FloatSemiring(), Skipper> term;
+	qi::rule<Iterator, FloatSemiring(), Skipper> starfactor;
+	qi::rule<Iterator, FloatSemiring(), Skipper> factor;
 
 };
 
-template <typename Iterator>
-struct free_parser : qi::grammar<Iterator, FreeSemiring()>
+template <typename Iterator, typename Skipper>
+struct free_parser : qi::grammar<Iterator, FreeSemiring(), Skipper>
 {
 	// specify the parser rules, term is the start rule (and in this case the only rule)
 	free_parser() : free_parser::base_type(expression)
@@ -119,14 +119,14 @@ struct free_parser : qi::grammar<Iterator, FreeSemiring()>
 	}
 
 	// this declare the available rules and the respecting return types of our parser
-	qi::rule<Iterator, FreeSemiring()> expression;
-	qi::rule<Iterator, FreeSemiring()> term;
-	qi::rule<Iterator, FreeSemiring()> starfactor;
-	qi::rule<Iterator, FreeSemiring()> factor;
+	qi::rule<Iterator, FreeSemiring(), Skipper> expression;
+	qi::rule<Iterator, FreeSemiring(), Skipper> term;
+	qi::rule<Iterator, FreeSemiring(), Skipper> starfactor;
+	qi::rule<Iterator, FreeSemiring(), Skipper> factor;
 };
 
-template <typename Iterator>
-struct rexp_parser : qi::grammar<Iterator, CommutativeRExp()>
+template <typename Iterator, typename Skipper>
+struct rexp_parser : qi::grammar<Iterator, CommutativeRExp(), Skipper>
 {
 	// specify the parser rules, term is the start rule (and in this case the only rule)
 	rexp_parser() : rexp_parser::base_type(expression)
@@ -141,14 +141,14 @@ struct rexp_parser : qi::grammar<Iterator, CommutativeRExp()>
 	}
 
 	// this declare the available rules and the respecting return types of our parser
-	qi::rule<Iterator, CommutativeRExp()> expression;
-	qi::rule<Iterator, CommutativeRExp()> term;
-	qi::rule<Iterator, CommutativeRExp()> starfactor;
-	qi::rule<Iterator, CommutativeRExp()> factor;
+	qi::rule<Iterator, CommutativeRExp(), Skipper> expression;
+	qi::rule<Iterator, CommutativeRExp(), Skipper> term;
+	qi::rule<Iterator, CommutativeRExp(), Skipper> starfactor;
+	qi::rule<Iterator, CommutativeRExp(), Skipper> factor;
 };
 
-template <typename Iterator>
-struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>()>
+template <typename Iterator, typename Skipper>
+struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>(), Skipper>
 {
 	// specify the parser rules, term is the start rule (and in this case the only rule)
 	polyrexp_parser() : polyrexp_parser::base_type(expression)
@@ -160,24 +160,24 @@ struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>()>
 	}
 
 	// this declare the available rules and the respecting return types of our parser
-	qi::rule<Iterator, Polynomial<CommutativeRExp>()> expression;
-	qi::rule<Iterator, Polynomial<CommutativeRExp>()> term;
-	qi::rule<Iterator, std::string()> var;
-	rexp_parser<Iterator> rexp;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> expression;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> term;
+	qi::rule<Iterator, std::string(), Skipper> var;
+	rexp_parser<Iterator, Skipper> rexp;
 };
 
 typedef std::string::const_iterator iterator_type;
 
 FloatSemiring Parser::parse_float(std::string input)
 {
-	typedef float_parser<iterator_type> float_parser;
+	typedef float_parser<iterator_type, qi::space_type> float_parser;
 	float_parser floater;
 	
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
 	FloatSemiring result;
-	if(!(qi::parse(iter, end, floater, result) && iter == end))
+	if(!(qi::phrase_parse(iter, end, floater, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
 	return result;
@@ -186,14 +186,14 @@ FloatSemiring Parser::parse_float(std::string input)
 
 FreeSemiring Parser::parse_free(std::string input)
 {
-	typedef free_parser<iterator_type> free_parser;
+	typedef free_parser<iterator_type, qi::space_type> free_parser;
 	free_parser freeer;
 	
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
 	FreeSemiring result;
-	if(!(qi::parse(iter, end, freeer, result) && iter == end))
+	if(!(qi::phrase_parse(iter, end, freeer, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
 	return result;
@@ -201,14 +201,14 @@ FreeSemiring Parser::parse_free(std::string input)
 
 CommutativeRExp Parser::parse_rexp(std::string input)
 {
-	typedef rexp_parser<iterator_type> rexp_parser;
+	typedef rexp_parser<iterator_type, qi::space_type> rexp_parser;
 	rexp_parser rexper;
 	
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
 	CommutativeRExp result;
-	if(!(qi::parse(iter, end, rexper, result) && iter == end))
+	if(!(qi::phrase_parse(iter, end, rexper, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
 	return result;
@@ -216,14 +216,14 @@ CommutativeRExp Parser::parse_rexp(std::string input)
 
 Polynomial<CommutativeRExp> Parser::parse_polyrexp(std::string input)
 {
-	typedef polyrexp_parser<iterator_type> polyrexp_parser;
+	typedef polyrexp_parser<iterator_type, qi::space_type> polyrexp_parser;
 	polyrexp_parser polyrexper;
 	
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
 	Polynomial<CommutativeRExp> result;
-	if(!(qi::parse(iter, end, polyrexper, result) && iter == end))
+	if(!(qi::phrase_parse(iter, end, polyrexper, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
 
