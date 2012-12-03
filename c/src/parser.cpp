@@ -2,6 +2,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
+#include <boost/fusion/include/std_pair.hpp>
 
 #include "parser.h"
 
@@ -19,7 +20,7 @@ namespace phx = boost::phoenix;
 struct star_impl
 {
 	template <typename T> struct result { typedef T type; }; // needed because this is how boost knows of what type the result will be
-	
+
 	template <typename T>
 	T operator()(T& s) const // this function does the actual work
 	{
@@ -30,7 +31,7 @@ const phx::function<star_impl> star;
 
 struct free_var_impl
 {
-	template <typename T> 
+	template <typename T>
 	struct result { typedef FreeSemiring type; }; // needed because this is how boost knows of what type the result will be
 
 	//template <typename T>
@@ -44,7 +45,7 @@ const phx::function<free_var_impl> free_var;
 
 struct rexp_var_impl
 {
-	template <typename T> 
+	template <typename T>
 	struct result { typedef CommutativeRExp type; }; // needed because this is how boost knows of what type the result will be
 
 	//template <typename T>
@@ -58,10 +59,9 @@ const phx::function<rexp_var_impl> rexp_var;
 
 struct polyrexp_impl
 {
-	template <typename T,typename U> 
+	template <typename T,typename U>
 	struct result { typedef Polynomial<CommutativeRExp> type; }; // needed because this is how boost knows of what type the result will be
 
-	//template <typename T>
 	const Polynomial<CommutativeRExp> operator()(CommutativeRExp& s, std::vector<std::string>& v) const // this function does the actual work
 	{
 		// create an element with the given var
@@ -73,12 +73,42 @@ struct polyrexp_impl
 };
 const phx::function<polyrexp_impl> polyrexp;
 
-// some boost::qi methods for pushing values through our parser 
+struct polyrexp2_impl
+{
+	template <typename T>
+	struct result { typedef Polynomial<CommutativeRExp> type; }; // needed because this is how boost knows of what type the result will be
+
+	const Polynomial<CommutativeRExp> operator()(std::string& s) const // this function does the actual work
+	{
+		// create an element without a variable
+		return Polynomial<CommutativeRExp>({Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar(s)),{})});
+	}
+};
+const phx::function<polyrexp2_impl> polyrexp2;
+
+struct polyvar_impl
+{
+	template <typename T>
+	struct result { typedef Polynomial<CommutativeRExp> type; }; // needed because this is how boost knows of what type the result will be
+
+	const Polynomial<CommutativeRExp> operator()(std::string& var) const // this function does the actual work
+	{
+		// create an element with the given var
+		if(var == "1") // special case for the one-element
+			return Polynomial<CommutativeRExp>::one();
+		else
+			return Polynomial<CommutativeRExp>({Monomial<CommutativeRExp>(CommutativeRExp::one(),{Var::getVar(var)})});
+	}
+};
+const phx::function<polyvar_impl> polyvar;
+
+// some boost::qi methods for pushing values through our parser
 using qi::_val;
 using qi::_1;
 using qi::_2;
 using qi::lit;
 using qi::lexeme;
+using qi::eps;
 
 template <typename Iterator, typename Skipper>
 struct float_parser : qi::grammar<Iterator, FloatSemiring(), Skipper>
@@ -136,7 +166,7 @@ struct rexp_parser : qi::grammar<Iterator, CommutativeRExp(), Skipper>
 		term = starfactor [_val = _1] >> *( '.' >> starfactor [_val = _val * _1] );
 		starfactor = factor [_val = _1] >> -(lit('*'))[_val = star(_val)];
 		factor =
-			qi::as_string[lexeme[+qi::lower]] [_val = rexp_var(_1)] |
+			qi::as_string[lexeme[+qi::alpha]] [_val = rexp_var(_1)] |
 			'(' >> expression [_val = _1] >> ')';
 	}
 
@@ -166,13 +196,44 @@ struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>(), Sk
 	rexp_parser<Iterator, Skipper> rexp;
 };
 
+template <typename Iterator, typename Skipper>
+struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<CommutativeRExp>>(), Skipper>
+{
+	// specify the parser rules, term is the start rule (and in this case the only rule)
+	grammar_parser() : grammar_parser::base_type(rule)
+	{
+		// what does a polynomial in the commutative regular expression semiring look like?
+		rule %= (varidentifier >> lexeme["::="] >> expression);
+		expression = term [_val = _1] >> *('|' >> expression [_val = _val + _1]); // addition
+		term =  ('(' >> term >> ')') [_val = _1] |
+			eps [_val = Polynomial<CommutativeRExp>::one()] >> // set _val to be the one-element of the semiring
+			*(
+				literal	[_val = _val * _1] |
+				var	[_val = _val * _1]  ); // multiplication
+		literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
+		var = varidentifier[_val = polyvar(_1)] ;
+		literalidentifier = qi::as_string[lexeme[+(ascii::char_ - '"' - ascii::space)]];
+		varidentifier = qi::as_string[lexeme[+(ascii::char_ - ':' - '=' - '|' - '(' - ')' - ascii::space)]];
+	}
+
+	// this declare the available rules and the respecting return types of our parser
+	qi::rule<Iterator, std::pair<std::string, Polynomial<CommutativeRExp>>(), Skipper> rule;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> expression;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> term;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> var;
+	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> literal;
+	qi::rule<Iterator, std::string(), Skipper> varidentifier;
+	qi::rule<Iterator, std::string(), Skipper> literalidentifier;
+	rexp_parser<Iterator, Skipper> rexp;
+};
+
 typedef std::string::const_iterator iterator_type;
 
 FloatSemiring Parser::parse_float(std::string input)
 {
 	typedef float_parser<iterator_type, qi::space_type> float_parser;
 	float_parser floater;
-	
+
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
@@ -188,7 +249,7 @@ FreeSemiring Parser::parse_free(std::string input)
 {
 	typedef free_parser<iterator_type, qi::space_type> free_parser;
 	free_parser freeer;
-	
+
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
@@ -203,7 +264,7 @@ CommutativeRExp Parser::parse_rexp(std::string input)
 {
 	typedef rexp_parser<iterator_type, qi::space_type> rexp_parser;
 	rexp_parser rexper;
-	
+
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
@@ -218,7 +279,7 @@ Polynomial<CommutativeRExp> Parser::parse_polyrexp(std::string input)
 {
 	typedef polyrexp_parser<iterator_type, qi::space_type> polyrexp_parser;
 	polyrexp_parser polyrexper;
-	
+
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
@@ -226,6 +287,21 @@ Polynomial<CommutativeRExp> Parser::parse_polyrexp(std::string input)
 	if(!(qi::phrase_parse(iter, end, polyrexper, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
+
+	return result;
+}
+
+std::pair<std::string, Polynomial<CommutativeRExp>> Parser::parse_grammar(std::string input)
+{
+	typedef grammar_parser<iterator_type, qi::space_type> grammar_parser;
+	grammar_parser grammarer;
+
+	iterator_type iter = input.begin();
+	iterator_type end = input.end();
+
+	std::pair<std::string, Polynomial<CommutativeRExp>> result;
+	if(!(qi::phrase_parse(iter, end, grammarer, qi::space, result) && iter == end))
+		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
 	return result;
 }

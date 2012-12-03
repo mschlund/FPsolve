@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include "float-semiring.h"
 #include "free-semiring.h"
 #include "semilinSetExp.h"
@@ -377,32 +378,66 @@ int main(int argc, char* argv[])
 	{
 		Parser p;
 		std::string input;
-		while(std::cout << "> " && std::getline(std::cin, input))
+		if(std::string("-float").compare(argv[1]) == 0)
 		{
-			if(std::string("-float").compare(argv[1]) == 0)
+			while(std::cout << "> " && std::getline(std::cin, input))
 			{
 				auto result = p.parse_float(input);
 				std::cout << result << std::endl;
 			}
-			else if(std::string("-free").compare(argv[1]) == 0)
+		}
+		else if(std::string("-free").compare(argv[1]) == 0)
+		{
+			while(std::cout << "> " && std::getline(std::cin, input))
 			{
 				auto result = p.parse_free(input);
 				std::cout << result << std::endl;
 			}
-			else if(std::string("-rexp").compare(argv[1]) == 0)
+		}
+		else if(std::string("-rexp").compare(argv[1]) == 0)
+		{
+			while(std::cout << "> " && std::getline(std::cin, input))
 			{
 				auto result = p.parse_rexp(input);
 				std::cout << result << std::endl;
 			}
-			else if(std::string("-polyrexp").compare(argv[1]) == 0)
+		}
+		else if(std::string("-polyrexp").compare(argv[1]) == 0)
+		{
+			while(std::cout << "> " && std::getline(std::cin, input))
 			{
 				auto result = p.parse_polyrexp(input);
 				std::cout << result << std::endl;
 			}
-			else
+		}
+		else if(std::string("-grammar").compare(argv[1]) == 0)
+		{
+			Newton<CommutativeRExp> newton;
+
+			// accumulate the input in rules
+			std::vector<Polynomial<CommutativeRExp> > rules;
+			// and all the variables in vars
+			std::vector<VarPtr> vars;
+
+			while(std::cout << "> " && std::getline(std::cin, input))
 			{
-				std::cout << "unknown argument" << std::endl;
+				auto result = p.parse_grammar(input); // (string, polynomial)
+				rules.push_back(result.second);
+				vars.push_back(Var::getVar(result.first));
+
+				std::cout << result.first << " → " << result.second << std::endl;
 			}
+			int i = 2; // default value
+			if(argc >= 2) // set the given iteration count
+				i = std::atoi(argv[2]);
+
+			Matrix<CommutativeRExp> result = newton.solve_fixpoint(rules, vars, i);
+			std::cout << i << "-th newton iteration: " << std::endl;
+			std::cout << result << std::endl;
+		}
+		else
+		{
+			std::cout << "unknown argument" << std::endl;
 		}
 	}
 
