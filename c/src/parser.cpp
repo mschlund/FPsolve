@@ -205,9 +205,9 @@ struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<
 		// what does a polynomial in the commutative regular expression semiring look like?
 		rule %= (varidentifier >> lexeme["::="] >> expression);
 		expression = term [_val = _1] >> *('|' >> expression [_val = _val + _1]); // addition
-		term =  ('(' >> term >> ')') [_val = _1] |
-			eps [_val = Polynomial<CommutativeRExp>::one()] >> // set _val to be the one-element of the semiring
+		term = 	eps [_val = Polynomial<CommutativeRExp>::one()] >> // set _val to be the one-element of the semiring
 			*(
+				('(' >> expression >> ')') [_val = _val * _1] |
 				literal	[_val = _val * _1] |
 				var	[_val = _val * _1]  ); // multiplication
 		literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
@@ -224,7 +224,6 @@ struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<
 	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> literal;
 	qi::rule<Iterator, std::string(), Skipper> varidentifier;
 	qi::rule<Iterator, std::string(), Skipper> literalidentifier;
-	rexp_parser<Iterator, Skipper> rexp;
 };
 
 typedef std::string::const_iterator iterator_type;
