@@ -163,6 +163,31 @@ int main(int argc, char* argv[])
 		{
 			Newton<CommutativeRExp> newton;
 
+			// accumulate the input in rules
+			std::vector<Polynomial<CommutativeRExp> > rules;
+			// and all the variables in vars
+			std::vector<VarPtr> vars;
+
+			while(std::cout << "> " && std::getline(std::cin, input))
+			{
+				auto result = p.parse_grammar(input); // (string, polynomial)
+				rules.push_back(result.second);
+				vars.push_back(Var::getVar(result.first));
+
+				std::cout << result.first << " → " << result.second << std::endl;
+			}
+			int i = 2; // default value
+			if(argc > 2) // set the given iteration count
+				i = std::atoi(argv[2]);
+
+			Matrix<CommutativeRExp> result = newton.solve_fixpoint(rules, vars, i);
+			std::cout << i << "-th newton iteration: " << std::endl;
+			std::cout << result << std::endl;
+		}
+		else if(std::string("-grammar_scc").compare(argv[1]) == 0)
+		{
+			Newton<CommutativeRExp> newton;
+
 			// accumulate all the rules with the variables
 			std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> rules;
 
