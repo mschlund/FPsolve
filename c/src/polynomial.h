@@ -327,6 +327,7 @@ public:
 	{
 		this->monomials = polynomial.monomials;
 		this->degree = polynomial.degree;
+		this->variables = polynomial.variables;
 	}
 
 	// create a 'constant' polynomial
@@ -340,6 +341,7 @@ public:
 	{
 		this->monomials = polynomial.monomials;
 		this->degree = polynomial.degree;
+		this->variables = polynomial.variables;
 		return (*this);
 	}
 
@@ -361,7 +363,7 @@ public:
 		}
 		return Polynomial(monomials);
 	}
-	
+
 	Polynomial<SR> operator*(const Polynomial<SR>& poly) const
 	{
 		std::set<Monomial<SR> > monomials;
