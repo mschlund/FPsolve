@@ -290,7 +290,7 @@ Polynomial<CommutativeRExp> Parser::parse_polyrexp(std::string input)
 	return result;
 }
 
-std::pair<std::string, Polynomial<CommutativeRExp>> Parser::parse_grammar(std::string input)
+std::pair<VarPtr, Polynomial<CommutativeRExp>> Parser::parse_grammar(std::string input)
 {
 	typedef grammar_parser<iterator_type, qi::space_type> grammar_parser;
 	grammar_parser grammarer;
@@ -302,5 +302,5 @@ std::pair<std::string, Polynomial<CommutativeRExp>> Parser::parse_grammar(std::s
 	if(!(qi::phrase_parse(iter, end, grammarer, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
-	return result;
+	return std::pair<VarPtr, Polynomial<CommutativeRExp>>(Var::getVar(result.first), result.second);
 }

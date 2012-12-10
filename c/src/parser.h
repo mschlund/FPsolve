@@ -16,7 +16,7 @@ public:
 	FreeSemiring parse_free(std::string input);
 	CommutativeRExp parse_rexp(std::string input);
 	Polynomial<CommutativeRExp> parse_polyrexp(std::string input);
-	std::pair<std::string, Polynomial<CommutativeRExp>> parse_grammar(std::string input);
+	std::pair<VarPtr, Polynomial<CommutativeRExp>> parse_grammar(std::string input);
 };
 
 #endif

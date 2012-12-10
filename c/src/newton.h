@@ -154,6 +154,9 @@ public:
 		Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
 
 		auto valuation = new std::unordered_map<FreeSemiring,SR,FreeSemiring>();
+		// insert null and one valuations into the map
+		valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::null(), SR::null()));
+		valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::one(), SR::one()));
 		for(auto v_it = valuation_tmp->begin(); v_it != valuation_tmp->end(); ++v_it)
 		{
 			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(v_it->second, v_it->first));

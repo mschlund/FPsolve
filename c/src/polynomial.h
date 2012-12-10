@@ -143,6 +143,29 @@ public:
 		return elem;
 	}
 
+	// partially evaluate the monomial at the position values
+	Monomial<SR> partial_eval(const std::map<VarPtr, SR>& values) const
+	{
+		// keep the coefficient
+		Monomial<SR> elem(this->coeff);
+
+		// then loop over all variables and try to evaluate them
+		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
+		{
+			auto e = values.find(*v_it);
+			if(e == values.end()) // variable not found in the mapping, so keep it
+			{
+				elem.variables.insert(*v_it);
+			}
+			else // variable was found, use it for evaluation
+			{
+				elem.coeff = elem.coeff * (e->second);
+			}
+		}
+
+		return elem;
+	}
+
 	// substitute variables with other variables
 	Monomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const
 	{
@@ -526,6 +549,18 @@ public:
 		{
 			SR elem = m_it->eval(values);
 			result = result + elem;
+		}
+		return result;
+	}
+
+	// evaluate the polynomial with the given mapping and return the new polynomial
+	Polynomial<SR> partial_eval(const std::map<VarPtr,SR>& values) const
+	{
+		Polynomial<SR> result = Polynomial<SR>::null();
+		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
+		{
+			Monomial<SR> elem = m_it->partial_eval(values);
+			result = result + Polynomial({elem});
 		}
 		return result;
 	}
