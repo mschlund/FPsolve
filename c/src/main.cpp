@@ -29,20 +29,39 @@ void test_newton()
 
 */
 
-/*
-	Newton<SemilinSetExp> newton;
+
+/*	Newton<SemilinSetExp> newton;
 	std::vector<VarPtr> variables;
-	variables.push_back(Var::getVar("x"));
+	variables.push_back(Var::getVar("x1"));
+	variables.push_back(Var::getVar("x2"));
+	variables.push_back(Var::getVar("x3"));
+	variables.push_back(Var::getVar("x4"));
 	std::cout << "- newton (cnt-SR):" << std::endl;
 
 	std::vector<Polynomial<SemilinSetExp> > polynomials;
 	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("c")), {}) });
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x1"),Var::getVar("x1")}),
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x2"),Var::getVar("x3")})
+		});
+	Polynomial<SemilinSetExp> f2 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x1"),Var::getVar("x2")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {})
+		});
+	Polynomial<SemilinSetExp> f3 = Polynomial<SemilinSetExp>({
+			Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x4"),Var::getVar("x3")}),
+			Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("b")), {})
+		});
+	Polynomial<SemilinSetExp> f4 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x4"),Var::getVar("x4")}),
+		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x2"),Var::getVar("x3")})
+		});
 
 	polynomials.push_back(f1);
+	polynomials.push_back(f2);
+	polynomials.push_back(f3);
+	polynomials.push_back(f4);
 
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 6);
+	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 	std::cout << result << std::endl;
 */
 
@@ -73,8 +92,9 @@ void test_newton()
 	polynomials.push_back(f2);
 	polynomials.push_back(f3);
 
-	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 2);
-	std::cout << result << std::endl;
+	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 4000);
+	std::cout << "done!" << std::endl;
+	//std::cout << result << std::endl;
 
 
 /*	Newton<SemilinSetExp> newton;
@@ -244,13 +264,15 @@ int main(int argc, char* argv[])
 			boost::strong_components(graph,&component[0]);
 
 			// group neccessary equations together
-			int num_comp = *std::max_element(component.begin(), component.end()); // find the number of components
+			int num_comp = *std::max_element(component.begin(), component.end()) + 1; // find the number of components
 			std::vector<std::vector<VarPtr>> vars;
 			std::vector<std::vector<Polynomial<CommutativeRExp>>> rexs;
 			//std::cout << "number of components = " << num_comp << std::endl;
-			vars.resize(num_comp+1);
-			rexs.resize(num_comp+1);
+			vars.resize(num_comp);
+			rexs.resize(num_comp);
 
+			// iterate over all vertices (0 to n)
+			// collect the necessary variables + equations for every component
 			for (int j = 0; j != component.size(); ++j)
 			{
 				//std::cout << j << ", " << graph[j].var << " is in component " << component[j] << std::endl;
@@ -260,7 +282,7 @@ int main(int argc, char* argv[])
 
 			// calculate the solution
 			std::map<VarPtr, CommutativeRExp> solution;
-			for(int j = 0; j != vars.size(); ++j)
+			for(int j = 0; j != num_comp; ++j)
 			{
 				// use the solutions to get rid of variables in the remaining equations
 				std::vector<Polynomial<CommutativeRExp>> tmp1;

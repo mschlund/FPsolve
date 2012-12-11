@@ -140,6 +140,10 @@ public:
 			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(free_elem,sr_elem));
 		}
 		Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
+
+		//std::cout << "Jacobian (evaluated): " << std::endl;
+		//std::cout << J_s_new << std::endl;
+
 		Matrix<SR> result = J_s_new * delta;
 		return result;
 	}
@@ -161,6 +165,9 @@ public:
 		{
 			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(v_it->second, v_it->first));
 		}
+
+		//std::cout << "Jacobian (with vars): " << std::endl;
+		//std::cout << J << std::endl;
 
 		Matrix<FreeSemiring> J_s = J_free.star();
 
