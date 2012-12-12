@@ -187,6 +187,7 @@ struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>(), Sk
 		expression = term [_val  = _1] >> *( '+' >> term [_val = _val + _1] );
 		term = ( rexp >> *( '.' >> var) )[_val = polyrexp(_1, _2)];
 		var = +qi::as_string[lexeme[+qi::upper]] [_val = _1];
+		//var = +qi::as_string[lexeme['<' >> +(ascii::char_ - '>') >> '>']] [_val = _1];
 	}
 
 	// this declare the available rules and the respecting return types of our parser
@@ -195,6 +196,9 @@ struct polyrexp_parser : qi::grammar<Iterator, Polynomial<CommutativeRExp>(), Sk
 	qi::rule<Iterator, std::string(), Skipper> var;
 	rexp_parser<Iterator, Skipper> rexp;
 };
+
+//FIXME: empty lines in the input-file lead to a segfault :)
+//TODO: allow rules going over multiple lines
 
 template <typename Iterator, typename Skipper>
 struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<CommutativeRExp>>(), Skipper>
@@ -210,13 +214,17 @@ struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<
 				('(' >> expression >> ')') [_val = _val * _1] |
 				literal	[_val = _val * _1] |
 				var	[_val = _val * _1]  ); // multiplication
-		literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
-		var = varidentifier[_val = polyvar(_1)] ;
-		literalidentifier = qi::as_string[lexeme[+(ascii::char_ - '"' - ascii::space)]];
-		varidentifier = qi::as_string[lexeme[+(ascii::char_ - ':' - '=' - '|' - '(' - ')' - ascii::space)]];
+		//literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
+		literal = sidentifier [_val = polyrexp2(_1)] |
+				'"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
+		var = varidentifier[_val = polyvar(_1)];
+		literalidentifier = qi::as_string[lexeme[+(ascii::char_ - '"' - '|' -'('- ')' - ascii::space - '<' - '>')]];
+		sidentifier = qi::as_string[lexeme[(ascii::char_ - '"' - '|' -'('- ')' - ascii::space - '<' - '>')]];
+		//varidentifier = qi::as_string[lexeme[+(ascii::char_ - ':' - '=' - '|' - '(' - ')' - ascii::space)]];
+		varidentifier = qi::as_string[lexeme['<' >> +(ascii::char_ - '>') >> '>']];
 	}
 
-	// this declare the available rules and the respecting return types of our parser
+	// this declares the available rules and the respecting return types of our parser
 	qi::rule<Iterator, std::pair<std::string, Polynomial<CommutativeRExp>>(), Skipper> rule;
 	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> expression;
 	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> term;
@@ -224,6 +232,7 @@ struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<
 	qi::rule<Iterator, Polynomial<CommutativeRExp>(), Skipper> literal;
 	qi::rule<Iterator, std::string(), Skipper> varidentifier;
 	qi::rule<Iterator, std::string(), Skipper> literalidentifier;
+	qi::rule<Iterator, std::string(), Skipper> sidentifier;
 };
 
 typedef std::string::const_iterator iterator_type;
