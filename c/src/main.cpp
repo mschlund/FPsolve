@@ -218,8 +218,12 @@ int main(int argc, char* argv[])
 				std::cout << result.first << " → " << result.second << std::endl;
 			}
 			int i = 2; // default value
+			bool iterations_given = false;
 			if(argc > 2) // set the given iteration count
+			{
+				iterations_given = true;
 				i = std::atoi(argv[2]);
+			}
 
 			// create map of variables to [0..n]. this is used to enumerate important variables in a clean way from 0 to n
 			std::map<VarPtr, int> var_key;
@@ -294,6 +298,9 @@ int main(int argc, char* argv[])
 				// replace old equations with simplified ones
 				rexs[j] = tmp1;
 
+				// dynamic iterations
+				if(!iterations_given)
+					i = rexs[j].size();
 				// do some real work here
 				Matrix<CommutativeRExp> result = newton.solve_fixpoint(rexs[j], vars[j], i);
 				std::cout << i << "-th newton iteration: " << std::endl;
