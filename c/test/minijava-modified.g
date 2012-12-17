@@ -4,12 +4,12 @@
 <ClassDeclaration> ::= "class" <Identifier> <G> "{" <B> <C> "}"
 <G> ::= "extends" <Identifier> | 
 <B> ::= <B> <VarDeclaration> | 
-<C> ::= 1 | <C> <MethodDeclaration>
+<C> ::= <C> <MethodDeclaration> | 
 <VarDeclaration> ::= <Type> <Identifier> ";"
 <MethodDeclaration> ::= "public" <Type> <Identifier> "(" <E> ")" "{" <B> <F> "return" <Expression> ";" "}"
-<D> ::= 1 | <D> "," <Type> <Identifier>
-<E> ::= 1 | <Type> <Identifier> <D>
-<F> ::= 1 | <F> <Statement>
+<D> ::= <D> "," <Type> <Identifier> | 
+<E> ::= <Type> <Identifier> <D> | 
+<F> ::= <F> <Statement> | 
 <Type> ::= "int" "[" "]" | "boolean" | "int" | <Identifier>
 <Statement> ::= "{" <F> "}" | "if" "(" <Expression> ")" <Statement> "else" <Statement> | "while" "(" <Expression> ")" <Statement> | "System.out.println" "(" <Expression> ")" ";" | <Identifier> "=" <Expression> ";"	| <Identifier> "[" <Expression> "]" "=" <Expression> ";"
 <Expression> ::= <Expression> <H> <Expression> | <Expression> "[" <Expression> "]" | <Expression> "." "length" | <Expression> "." <Identifier> "(" <K> ")" | "<INTEGER_LITERAL>" | "true" | "false" | <Identifier> | "this" | "new" "int" "[" <Expression> "]" | "new" <Identifier> "(" ")" | "!" <Expression> | "(" <Expression> ")"
