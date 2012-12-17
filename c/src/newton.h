@@ -148,6 +148,30 @@ public:
 		return result;
 	}
 
+	// this is just a wrapper function at the moment
+	std::map<VarPtr,SR> solve_fixpoint(const std::vector<std::pair<VarPtr, Polynomial<SR>>>& equations, int max_iter)
+	{
+		std::vector<Polynomial<SR>> F;
+		std::vector<VarPtr> poly_vars;
+		for(auto equation_it = equations.begin(); equation_it != equations.end(); ++equation_it)
+		{
+			poly_vars.push_back(equation_it->first);
+			F.push_back(equation_it->second);
+		}
+		Matrix<SR> result = this->solve_fixpoint(F, poly_vars, max_iter);
+
+		// repack everything and return it
+		std::map<VarPtr,SR> solution;
+		auto result_vec = result.getElements();
+		auto var_it = poly_vars.begin();
+		for(auto result_it = result_vec.begin(); result_it != result_vec.end(); ++result_it)
+		{
+			solution.insert(solution.begin(), std::pair<VarPtr,SR>(*var_it, *result_it));
+			++var_it;
+		}
+		return solution;
+	}
+
 	// iterate until convergence
 	// TODO: seems to be 2 iterations off compared to sage-impl..
 	Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F, const std::vector<VarPtr>& poly_vars, int max_iter)
