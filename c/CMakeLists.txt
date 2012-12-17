@@ -4,7 +4,12 @@ SET(PROJECTNAME newton)
 
 PROJECT( ${PROJECTNAME} )
 
-FIND_PACKAGE(Boost 1.49.0 COMPONENTS program_options)
+#FIND_PACKAGE(Boost 1.49.0 COMPONENTS program_options)
+FIND_PACKAGE(Boost COMPONENTS program_options)
+IF (Boost_FOUND)
+    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
+    ADD_DEFINITIONS( "-DHAS_BOOST" )
+ENDIF()
 
 IF(EXISTS "src/")
         FILE(GLOB_RECURSE cppsource "src/*.cpp")
@@ -22,6 +27,8 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
         #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")      ## More warnings during compile
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x") ## c++0x support
 ENDIF()
+
+
 
 ADD_EXECUTABLE( ${PROJECTNAME} ${csource} ${cppsource} ${hheaders} )
 
