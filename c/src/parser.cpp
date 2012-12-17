@@ -212,13 +212,13 @@ struct grammar_parser : qi::grammar<Iterator, std::pair<std::string, Polynomial<
 		term = 	eps [_val = Polynomial<CommutativeRExp>::one()] >> // set _val to be the one-element of the semiring
 			*(
 				('(' >> expression >> ')') [_val = _val * _1] |
-				literal	[_val = _val * _1] |
-				var	[_val = _val * _1]  ); // multiplication
+				var	[_val = _val * _1]   | // multiplication
+                literal	[_val = _val * _1] );
 		//literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
-		literal = sidentifier [_val = polyrexp2(_1)] |
-				'"' >> literalidentifier [_val = polyrexp2(_1)] >> '"';
+		literal = '"' >> literalidentifier [_val = polyrexp2(_1)] >> '"' | sidentifier [_val = polyrexp2(_1)];
+
 		var = varidentifier[_val = polyvar(_1)];
-		literalidentifier = qi::as_string[lexeme[+(ascii::char_ - '"' - '|' -'('- ')' - ascii::space - '<' - '>')]];
+		literalidentifier = qi::as_string[lexeme[+(ascii::char_ -'"')] ];
 		sidentifier = qi::as_string[lexeme[(ascii::char_ - '"' - '|' -'('- ')' - ascii::space - '<' - '>')]];
 		//varidentifier = qi::as_string[lexeme[+(ascii::char_ - ':' - '=' - '|' - '(' - ')' - ascii::space)]];
 		varidentifier = qi::as_string[lexeme['<' >> +(ascii::char_ - '>') >> '>']];
