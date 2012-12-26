@@ -85,6 +85,8 @@ std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::ve
 template <typename SR>
 std::map<VarPtr, SR> apply_newton(std::vector<std::pair<VarPtr, Polynomial<SR>>> equations, bool scc, bool iteration_flag, int iterations, bool graphviz_output)
 {
+	// TODO: sanity checks on the input!
+
 	// generate an instance of the newton solver
 	Newton<SR> newton;
 

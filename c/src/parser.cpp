@@ -2,6 +2,7 @@
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 
 #include "parser.h"
@@ -61,6 +62,10 @@ using qi::_2;
 using qi::lit;
 using qi::lexeme;
 using qi::eps;
+using phx::ref; // must be used as phx::ref, otherwise g++ is confused with std::ref...
+using phx::insert;
+using phx::end;
+using phx::begin;
 
 typedef std::string::const_iterator iterator_type;
 
@@ -89,9 +94,11 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 template <typename SR_Parser, typename SR>
 struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarPtr, Polynomial<SR>>>(), qi::space_type>
 {
+	std::vector<std::pair<VarPtr, Polynomial<SR>>> new_rules; // accumulate generated rules in this vector
 	equation_parser() : equation_parser::base_type(equations)
 	{
-		equations %= *(equation);
+		// the first rule combines the generated equations with the read equations and returns them in one vector
+		equations = (*equation)[_val = _1] [insert(_val, end(_val), begin(phx::ref(new_rules)), end(phx::ref(new_rules)))];
 		equation %= (var >> lexeme["::="] >> polynomial >> ';');
 		polynomial = summand [_val = _1] >> *('|' >> summand [_val = _val + _1]); // addition
 		summand = eps [_val = Polynomial<SR>::one()] >> // set _val to one-element of the semiring
