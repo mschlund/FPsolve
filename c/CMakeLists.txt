@@ -1,5 +1,8 @@
 CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )
 
+#SET(CMAKE_C_COMPILER "clang")
+#SET(CMAKE_CXX_COMPILER "clang++")
+
 SET(PROJECTNAME newton)
 
 PROJECT( ${PROJECTNAME} )
@@ -11,24 +14,14 @@ IF (Boost_FOUND)
     ADD_DEFINITIONS( "-DHAS_BOOST" )
 ENDIF()
 
-IF(EXISTS "src/")
-        FILE(GLOB_RECURSE cppsource "src/*.cpp")
-        FILE(GLOB_RECURSE csource "src/*.c")
-        FILE(GLOB_RECURSE hheaders "src/*.h")
-ELSE()
-        FILE(GLOB cppsource "*.cpp")
-        FILE(GLOB csource "*.c")
-        FILE(GLOB hheaders "*.h")
-ENDIF()
+FILE(GLOB_RECURSE cppsource "${PROJECT_SOURCE_DIR}/src/*.cpp")
+FILE(GLOB_RECURSE csource "${PROJECT_SOURCE_DIR}/src/*.c")
+FILE(GLOB_RECURSE hheaders "${PROJECT_SOURCE_DIR}/src/*.h")
 
-IF(CMAKE_COMPILER_IS_GNUCXX)
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")        ## Optimize
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")         ## Debug information
-        #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")      ## More warnings during compile
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x") ## c++0x support
-ENDIF()
-
-
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")				## Optimize
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")				## Debug information
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic-errors")	## More warnings during compile
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")			## c++0x support
 
 ADD_EXECUTABLE( ${PROJECTNAME} ${csource} ${cppsource} ${hheaders} )
 

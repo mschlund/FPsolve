@@ -30,6 +30,8 @@ FreeSemiring::FreeSemiring(const FreeSemiring& term)
 	case Star:
 		this->left_ptr = term.left_ptr;
 		break;
+	case Dummy:
+		break; // do not copy anything
 	}
 }
 
@@ -92,6 +94,8 @@ bool FreeSemiring::operator ==(const FreeSemiring& term) const
 			return (this->type == term.type && *this->left_ptr == *term.left_ptr && *this->right_ptr == *term.right_ptr);
 		case Star:
 			return (this->type == term.type && *this->left_ptr == *term.left_ptr);
+		case Dummy:
+			assert(false);
 	}
 	return false;
 }
@@ -128,6 +132,8 @@ std::string FreeSemiring::string() const
 		ss << this->left_ptr->string() << "*";
 		ss << ")";
 		break;
+	case Dummy:
+		assert(false);
 	}
 
 	return ss.str();

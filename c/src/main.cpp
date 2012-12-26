@@ -72,7 +72,7 @@ std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::ve
 
 	// iterate over all vertices (0 to n)
 	// collect the necessary variables + equations for every component
-	for (int j = 0; j != component.size(); ++j)
+	for (unsigned int j = 0; j != component.size(); ++j)
 	{
 		//std::cout << j << ", " << graph[j].var << " is in component " << component[j] << std::endl;
 		grouped_equations[component[j]].push_back(std::pair<VarPtr,Polynomial<SR>>(graph[j].var, graph[j].rex));
@@ -109,7 +109,7 @@ std::map<VarPtr, SR> apply_newton(std::vector<std::pair<VarPtr, Polynomial<SR>>>
 	// the same loop is used for both the scc and the non-scc variant
 	// in the non-scc variant, we just run once through the loop
 	//for(auto it1 = equations2.begin(); it != equations2.end(); ++it)
-	for(int j = 0; j != equations2.size(); ++j)
+	for(unsigned int j = 0; j != equations2.size(); ++j)
 	{
 		// use the solutions to get rid of variables in the remaining equations
 		// does nothing in the first round
@@ -171,7 +171,7 @@ int main(int argc, char* argv[])
 		return 0;
 	}
 
-	int iterations;
+	int iterations=0;
 	if(vm.count("iterations"))
 		iterations = vm["iterations"].as<int>();
 

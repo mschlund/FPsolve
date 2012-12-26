@@ -148,8 +148,9 @@ std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starpl
 					}
 					break;
 				}
-				case Star: // should not happen, fall through
-				case Plus: // no idea, what to do
+				case Star:  // should not happen, fall through
+				case Plus:  // no idea, what to do, fall through
+				case Empty: // should not happen
 					assert(false); // we should have been optimizing this, debug more!
 					break;
 			}
@@ -269,6 +270,9 @@ bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 				return false;
 		}
 	}
+
+	assert(false);
+	return false;
 }
 
 bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
@@ -306,6 +310,8 @@ bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 				return true;
 		}
 	}
+	assert(false); // should not happen
+	return false;
 }
 
 // star the whole RExp

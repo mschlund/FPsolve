@@ -211,7 +211,7 @@ std::string SemilinSetExp::string() const {
 	}
 	ss << "]" << '\n';
 	return ss.str();
-};
+}
 
 
 std::ostream& SemilinSetExp::operator<<(std::ostream& os) const {

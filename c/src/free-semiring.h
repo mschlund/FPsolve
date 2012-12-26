@@ -58,9 +58,11 @@ SR FreeSemiring_eval(FreeSemiring elem, std::unordered_map<FreeSemiring, SR, Fre
 	case FreeSemiring::Star:
 		result = FreeSemiring_eval(*elem.left_ptr, valuation).star();
 		break;
+	case FreeSemiring::Dummy:
+		assert(false);
 	};
 	return result;
-};
+}
 
 template <typename SR>
 Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix, std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation)
@@ -74,7 +76,7 @@ Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix, std::unordered_map<Fre
 	}
 
 	return Matrix<SR>(matrix.getRows(), matrix.getColumns(), ret);
-};
+}
 
 // returns a pointer to a map which changes the access direction
 // you have to delete the map by yourself!
