@@ -35,14 +35,14 @@
 class CommutativeRExp : public Semiring<CommutativeRExp>
 {
 public:
-	enum optype {Empty, Element, Addition, Multiplication, Star};
+	enum optype {Empty, Element, Addition, Multiplication, Star, Plus};
 	enum optype type;
 private:
 	VarPtr elem;
 	std::shared_ptr<std::set<CommutativeRExp>> seta;
 	std::shared_ptr<std::multiset<CommutativeRExp>> setm;
 	std::shared_ptr<CommutativeRExp> rexp;
-	//std::string str;
+	std::shared_ptr<std::multiset<CommutativeRExp>> optimize_starplus(std::shared_ptr<std::multiset<CommutativeRExp>>& set) const;
 	std::string generateString() const;
 
 public:

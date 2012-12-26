@@ -208,6 +208,11 @@ int main(int argc, char* argv[])
 		std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> equations(p.rexp_parser(input_all));
 		if(equations.empty()) return -1;
 
+		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		{
+			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+		}
+
 		// apply the newton method to the equations
 		auto result = apply_newton<CommutativeRExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;
@@ -216,6 +221,11 @@ int main(int argc, char* argv[])
 	{
 		std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> equations(p.float_parser(input_all));
 		if(equations.empty()) return -1;
+
+		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		{
+			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+		}
 
 		auto result = apply_newton<FloatSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;

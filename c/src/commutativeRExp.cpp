@@ -33,7 +33,7 @@ CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::multiset
 CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> rexp)
 {
 	this->type = type;
-	if(this->type != Star)
+	if(this->type != Star && this->type != Plus)
 		assert(false); // should not be called with this constructor...
 	this->rexp = rexp;
 }
@@ -48,6 +48,8 @@ CommutativeRExp::CommutativeRExp(const CommutativeRExp& expr)
 	else if(this->type == Multiplication)
 		this->setm = expr.setm;
 	else if(this->type == Star)
+		this->rexp = expr.rexp;
+	else if(this->type == Plus)
 		this->rexp = expr.rexp;
 	else if(this->type == Empty)
 		;// Do nothing
@@ -64,7 +66,7 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 {
 	std::shared_ptr<std::set<CommutativeRExp> > retset(new std::set<CommutativeRExp>());
 
-	if(this->type == Element || this->type == Multiplication || this->type == Star)
+	if(this->type == Element || this->type == Multiplication || this->type == Star || this->type == Plus)
 		retset->insert(*this);
 	else if(this->type == Addition)
 		retset->insert(this->seta->begin(), this->seta->end());
@@ -73,7 +75,7 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 	else
 		assert(false); // this should not happen
 
-	if(expr.type == Element || expr.type == Multiplication || expr.type == Star)
+	if(expr.type == Element || expr.type == Multiplication || expr.type == Star || expr.type == Plus)
 		retset->insert(expr);
 	else if(expr.type == Addition)
 		retset->insert(expr.seta->begin(), expr.seta->end());
@@ -88,12 +90,84 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 	return CommutativeRExp(Addition, retset);
 }
 
+// try to find a case of xx^* and convert it to x^+
+std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starplus(std::shared_ptr<std::multiset<CommutativeRExp>>& set) const
+{
+	// we have to be careful, we will modify the set_copy!
+	// loop over all elements in the set and find the stared elements
+	std::shared_ptr<std::multiset<CommutativeRExp>> set_copy(new std::multiset<CommutativeRExp>());
+	*set_copy = *set;
+	bool changed = false;
+	for(auto it = set->begin(); it != set->end(); ++it)
+	{
+		if(it->type == Star) // we found a stared element
+		{
+			// distinguish on the nested type
+			switch(it->rexp->type)
+			{
+				case Element:  // easy, just try to find this element on the outer set, fall through case
+				case Addition: // addition behaves like an element in the original multiplication set
+				{
+					auto elem = set_copy->find(*it->rexp);
+					if(elem != set_copy->end())
+					{
+						// create x^+
+						auto plus_elem = CommutativeRExp(Plus, it->rexp);
+						// delete both x and x^*
+						set_copy->erase(*elem);
+						set_copy->erase(*it);
+						// then insert x^+
+						set_copy->insert(plus_elem);
+						changed = true;
+					}
+					break;
+				}
+				case Multiplication: // more tricky case, because the inner stared elements are distributed in the original multiplication set
+				{
+					bool found_all_elements = true;
+					for(auto it2 = it->rexp->setm->begin(); it2 != it->rexp->setm->end(); ++it2)
+					{
+						auto elem = set_copy->find(*it2);
+						if(elem == set_copy->end())
+						{
+							found_all_elements = false;
+							break;
+						}
+					}
+					if(found_all_elements)
+					{
+						// create x^+
+						auto plus_elem = CommutativeRExp(Plus, it->rexp);
+						// delete both x and x^*
+						for(auto it2 = it->rexp->setm->begin(); it2 != it->rexp->setm->end(); ++it2)
+							set_copy->erase(*it2);
+						set_copy->erase(*it);
+						// then insert x^+
+						set_copy->insert(plus_elem);
+						changed = true;
+					}
+					break;
+				}
+				case Star: // should not happen, fall through
+				case Plus: // no idea, what to do
+					assert(false); // we should have been optimizing this, debug more!
+					break;
+			}
+		}
+
+	}
+	if(changed)
+		return set_copy;
+	else
+		return set;
+}
+
 // concatenate all expressions from first set with all expressions of the second set
 CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 {
 	std::shared_ptr<std::multiset<CommutativeRExp> > retset(new std::multiset<CommutativeRExp>());
 
-	if(this->type == Element || this->type == Addition || this->type == Star)
+	if(this->type == Element || this->type == Addition || this->type == Star || this->type == Plus)
 	{
 		if(this->type == Element && *this == one())
 			return expr; // 1 * x = x
@@ -106,7 +180,7 @@ CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 	else
 		assert(false); // this should not happen
 
-	if(expr.type == Element || expr.type == Addition || expr.type == Star)
+	if(expr.type == Element || expr.type == Addition || expr.type == Star || expr.type == Plus)
 	{
 		if(expr.type == Element && expr == one())
 			return *this; // x * 1 = x
@@ -119,10 +193,24 @@ CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 	else
 		assert(false); // this should not happen
 
+	// x(x^*) = x^+
+	// check if there was at least one star in the returned multiplication set
+	bool star_found = false;
+	for(auto it = retset->begin(); it != retset->end(); ++it) // TODO: maybe reverse search order!
+	{
+		if(it->type == Star)
+		{
+			star_found = true;
+			break;
+		}
+	}
+
+	if(star_found)
+		retset = optimize_starplus(retset);
+
 	return CommutativeRExp(Multiplication, retset);
 }
 
-//bool operator <(const CommutativeRExp& lhs, const CommutativeRExp& rhs)
 bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 {
 	// compare the expression type
@@ -174,7 +262,8 @@ bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 					}
 				}
 				return false; // all elements are equal
-			case Star: // reduce to element comparison
+			case Star: // reduce to element comparison, fall through case
+			case Plus:
 				return this->rexp < rhs.rexp;
 			case Empty: // empty expressions are always equal
 				return false;
@@ -210,7 +299,8 @@ bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 						return false;
 				}
 				return true; // all elements are equal
-			case Star: // reduce to element comparison
+			case Star: // reduce to element comparison, fall through case
+			case Plus:
 				return *this->rexp == *expr.rexp;
 			case Empty: // empty expressions are always equal
 				return true;
@@ -275,6 +365,8 @@ std::string CommutativeRExp::generateString() const
 		ss << "(" << *this->setm << ")";
 	else if(this->type == Star)
 		ss << *this->rexp << "*";
+	else if(this->type == Plus)
+		ss << *this->rexp << "¤"; // TODO: fix output...
 	else if(this->type == Empty)
 		ss << "{}";
 	return ss.str();
