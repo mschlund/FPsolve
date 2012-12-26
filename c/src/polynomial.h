@@ -360,6 +360,13 @@ public:
 		this->degree = 0;
 	}
 
+	// create a polynomial which consists only of one variable
+	Polynomial(VarPtr var)
+	{
+		this->monomials = {Monomial<SR>(SR::one(),{var})};
+		this->degree = 1;
+	}
+
 	Polynomial& operator=(const Polynomial& polynomial)
 	{
 		this->monomials = polynomial.monomials;

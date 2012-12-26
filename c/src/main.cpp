@@ -15,131 +15,6 @@
 #include "commutativeRExp.h"
 #include "parser.h"
 
-void test_newton()
-{
-	/*
-	Newton<FloatSemiring> newton;
-	std::vector<VarPtr> variables;
-	variables.push_back(Var::getVar("x"));
-	variables.push_back(Var::getVar("y"));
-	variables.push_back(Var::getVar("z"));
-	std::cout << "- newton (float):" << std::endl;
-	std::vector<Polynomial<FloatSemiring> > polynomials = get_newton_test_polynomials();
-	Matrix<FloatSemiring> result = newton.solve_fixpoint(polynomials, variables, 2);
-	std::cout << result << std::endl;
-
-*/
-
-
-/*	Newton<SemilinSetExp> newton;
-	std::vector<VarPtr> variables;
-	variables.push_back(Var::getVar("x1"));
-	variables.push_back(Var::getVar("x2"));
-	variables.push_back(Var::getVar("x3"));
-	variables.push_back(Var::getVar("x4"));
-	std::cout << "- newton (cnt-SR):" << std::endl;
-
-	std::vector<Polynomial<SemilinSetExp> > polynomials;
-	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x1"),Var::getVar("x1")}),
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x2"),Var::getVar("x3")})
-		});
-	Polynomial<SemilinSetExp> f2 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x1"),Var::getVar("x2")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {})
-		});
-	Polynomial<SemilinSetExp> f3 = Polynomial<SemilinSetExp>({
-			Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x4"),Var::getVar("x3")}),
-			Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("b")), {})
-		});
-	Polynomial<SemilinSetExp> f4 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x4"),Var::getVar("x4")}),
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {Var::getVar("x2"),Var::getVar("x3")})
-		});
-
-	polynomials.push_back(f1);
-	polynomials.push_back(f2);
-	polynomials.push_back(f3);
-	polynomials.push_back(f4);
-
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
-	std::cout << result << std::endl;
-*/
-
-	Newton<CommutativeRExp> newton;
-	std::vector<VarPtr> variables;
-	variables.push_back(Var::getVar("x"));
-	variables.push_back(Var::getVar("y"));
-	variables.push_back(Var::getVar("z"));
-	std::cout << "- newton (counting-SR):" << std::endl;
-
-	std::vector<Polynomial<CommutativeRExp> > polynomials;
-	// define new polynomial axy+b
-	Polynomial<CommutativeRExp> f1 = Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("y")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("b")), {}) });
-
-	// define new polynomial cyz+dyx+e
-	Polynomial<CommutativeRExp> f2 = Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("c")), {Var::getVar("y"),Var::getVar("z")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("d")), {Var::getVar("y"),Var::getVar("x")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("e")), {}) });
-
-	// define new polynomial fx+g
-	Polynomial<CommutativeRExp> f3 =  Polynomial<CommutativeRExp>({
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("f")), {Var::getVar("x")}),
-		Monomial<CommutativeRExp>(CommutativeRExp(Var::getVar("g")), {}) });
-	polynomials.push_back(f1);
-	polynomials.push_back(f2);
-	polynomials.push_back(f3);
-
-	Matrix<CommutativeRExp> result = newton.solve_fixpoint(polynomials, variables, 4000);
-	std::cout << "done!" << std::endl;
-	//std::cout << result << std::endl;
-
-
-/*	Newton<SemilinSetExp> newton;
-	std::vector<VarPtr> v;
-	v.push_back(Var::getVar("x"));
-	std::cout << "- newton (cnt-SR):" << std::endl;
-
-	std::vector<Polynomial<SemilinSetExp> > polys;
-	Polynomial<SemilinSetExp> f0 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("s")), {Var::getVar("x"),Var::getVar("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("s")), {}) });
-
-	polys.push_back(f0);
-	Matrix<SemilinSetExp> r = newton.solve_fixpoint(polys, v, 2);
-	std::vector<SemilinSetExp> sol1 = r.getElements();
-
-	std::cout << sol1[0] << std::endl;
-
-//	std::cout << (SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0])<< std::endl;
-
-	std::vector<VarPtr> variables;
-	variables.push_back(Var::getVar("e"));
-	std::vector<Polynomial<SemilinSetExp> > polynomials;
-	Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp::one(), {}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("l"))*SemilinSetExp(Var::getVar("s")), {Var::getVar("e")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0], {Var::getVar("e")}) });
-
-	polynomials.push_back(f1);
-
-	Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 1);
-	std::cout << result << std::endl;
-	std::cout << (SemilinSetExp(Var::getVar("l"))*SemilinSetExp(Var::getVar("s")) + SemilinSetExp(Var::getVar("r"))*SemilinSetExp(Var::getVar("s"))*sol1[0]).star() << std::endl;
-*/
-
-/*
-	SemilinSetExp x = SemilinSetExp(Var::getVar("a"));
-	SemilinSetExp y = SemilinSetExp(Var::getVar("b"));
-	SemilinSetExp z = (x*x*x+y*y*y).star();
-	std::cout << z << std::endl;
-*/
-
-}
-
 // group the equations to SCCs
 template <typename SR>
 std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::vector<std::pair<VarPtr, Polynomial<SR>>> equations, bool graphviz_output)
@@ -320,31 +195,29 @@ int main(int argc, char* argv[])
 			input.push_back(line);
 	}
 
+	// join the input into one string
+	std::string input_all = std::accumulate(input.begin(), input.end(), std::string(""));
+
 	Parser p;
 
 	if(vm.count("rexp"))
 	{
 		// parse the input into a list of (Var → Polynomial[SR])
-		std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> equations;
-		for(auto line_it = input.begin(); line_it != input.end(); ++line_it)
-			equations.push_back(p.parse_grammar(*line_it));
+		std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> equations(p.rexp_parser(input_all));
+		if(equations.empty()) return -1;
 
 		// apply the newton method to the equations
 		auto result = apply_newton<CommutativeRExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;
 	}
-/*	else if(vm.count("float"))
+	else if(vm.count("float"))
 	{
-		// parse the input into a list of (Var → Polynomial[SR])
-		std::vector<std::pair<VarPtr, Polynomial<FloatSemiringp>> equations;
-		for(auto line_it = input.begin(); line_it != input.end(); ++line_it)
-			equations.push_back(p.parse_polyfloat(*line_it));
+		std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> equations(p.float_parser(input_all));
+		if(equations.empty()) return -1;
 
-		// apply the newton method to the equations
 		auto result = apply_newton<FloatSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
-
 		std::cout << result_string(result) << std::endl;
-	}*/
+	}
 
 	return 0;
 }
