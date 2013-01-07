@@ -56,8 +56,8 @@ public:
 	CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> term);
 	CommutativeRExp(const CommutativeRExp& expr);
 	virtual ~CommutativeRExp();
-	CommutativeRExp operator + (const CommutativeRExp& term) const;
-	CommutativeRExp operator * (const CommutativeRExp& term) const;
+	CommutativeRExp operator += (const CommutativeRExp& term);
+	CommutativeRExp operator *= (const CommutativeRExp& term);
 	bool operator < (const CommutativeRExp& term) const;
 	bool operator == (const CommutativeRExp& term) const;
 	CommutativeRExp star () const;

@@ -375,7 +375,7 @@ public:
 		return (*this);
 	}
 
-	Polynomial<SR> operator+(const Polynomial<SR>& poly) const
+	Polynomial<SR> operator+=(const Polynomial<SR>& poly)
 	{
 		std::set<Monomial<SR> > monomials = this->monomials;
 		for(auto m_it = poly.monomials.begin(); m_it != poly.monomials.end(); ++m_it)
@@ -391,10 +391,12 @@ public:
 				monomials.insert( tmp + (*m_it) ); // then add both of them and overwrite the old one
 			}
 		}
-		return Polynomial(monomials);
+
+		*this = Polynomial(monomials);
+		return *this;
 	}
 
-	Polynomial<SR> operator*(const Polynomial<SR>& poly) const
+	Polynomial<SR> operator*=(const Polynomial<SR>& poly)
 	{
 		std::set<Monomial<SR> > monomials;
 		// iterate over both this and the poly polynomial
@@ -415,7 +417,8 @@ public:
 			}
 		}
 
-		return Polynomial(monomials);
+		*this = Polynomial(monomials);
+		return *this;
 	}
 
 	// multiplying a polynomial with a variable

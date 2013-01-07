@@ -54,28 +54,30 @@ FreeSemiring::~FreeSemiring()
 	//	delete this->elem;
 }
 
-FreeSemiring FreeSemiring::operator +(const FreeSemiring& term) const
+FreeSemiring FreeSemiring::operator +=(const FreeSemiring& term)
 {
 	if(*this == FreeSemiring::null())
-		return term;
+		*this = term;
 	else if(term == FreeSemiring::null())
-		return *this;
+	; // do not do anything
 	else
-		return FreeSemiring(Addition, *this, term);
+		*this = FreeSemiring(Addition, *this, term);
+	return *this;
 }
 
-FreeSemiring FreeSemiring::operator *(const FreeSemiring& term) const
+FreeSemiring FreeSemiring::operator *=(const FreeSemiring& term)
 {
 	if(*this == FreeSemiring::one())
-		return term;
+		*this = term;
 	else if(term == FreeSemiring::one())
-		return *this;
+		; // do not do anything
 	else if(*this == FreeSemiring::null())
-		return *this;
+		; // do not do anything
 	else if(term == FreeSemiring::null())
-		return term;
+		*this = term;
 	else
-		return FreeSemiring(Multiplication, *this, term);
+		*this = FreeSemiring(Multiplication, *this, term);
+	return *this;
 }
 
 // TODO: at the moment == returns true iff the whole structure is identical

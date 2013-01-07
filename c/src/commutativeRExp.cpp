@@ -62,7 +62,7 @@ CommutativeRExp::~CommutativeRExp()
 }
 
 // union operator
-CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
+CommutativeRExp CommutativeRExp::operator +=(const CommutativeRExp& expr)
 {
 	std::shared_ptr<std::set<CommutativeRExp> > retset(new std::set<CommutativeRExp>());
 
@@ -71,7 +71,10 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 	else if(this->type == Addition)
 		retset->insert(this->seta->begin(), this->seta->end());
 	else if(this->type == Empty)
-		return expr; // {} + x = x
+	{
+		*this = expr;
+		return *this; // {} + x = x
+	}
 	else
 		assert(false); // this should not happen
 
@@ -87,7 +90,8 @@ CommutativeRExp CommutativeRExp::operator +(const CommutativeRExp& expr) const
 	// degenerated case, both sets have been equal
 	if(retset->size() == 1)
 		return *this; // so we can just return one of the elements // TODO: check this! quick test shows this is right
-	return CommutativeRExp(Addition, retset);
+	*this = CommutativeRExp(Addition, retset); // TODO: do not create a new object
+	return *this;
 }
 
 // try to find a case of xx^* and convert it to x^+
@@ -164,14 +168,17 @@ std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starpl
 }
 
 // concatenate all expressions from first set with all expressions of the second set
-CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
+CommutativeRExp CommutativeRExp::operator *=(const CommutativeRExp& expr)
 {
 	std::shared_ptr<std::multiset<CommutativeRExp> > retset(new std::multiset<CommutativeRExp>());
 
 	if(this->type == Element || this->type == Addition || this->type == Star || this->type == Plus)
 	{
 		if(this->type == Element && *this == one())
-			return expr; // 1 * x = x
+		{
+			*this = expr;
+			return *this; // 1 * x = x
+		}
 		retset->insert(*this);
 	}
 	else if(this->type == Multiplication)
@@ -190,7 +197,10 @@ CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 	else if(expr.type == Multiplication)
 		retset->insert(expr.setm->begin(), expr.setm->end());
 	else if(expr.type == Empty)
-		return expr; // x * {} = {}
+	{
+		*this = expr;
+		return *this; // x * {} = {}
+	}
 	else
 		assert(false); // this should not happen
 
@@ -209,7 +219,8 @@ CommutativeRExp CommutativeRExp::operator *(const CommutativeRExp& expr) const
 	if(star_found)
 		retset = optimize_starplus(retset);
 
-	return CommutativeRExp(Multiplication, retset);
+	*this = CommutativeRExp(Multiplication, retset);
+	return *this;
 }
 
 bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const

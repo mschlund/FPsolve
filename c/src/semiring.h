@@ -8,8 +8,18 @@
 template <typename SR>
 class Semiring {
 public:
-	virtual SR operator * (const SR& elem) const = 0;
-	virtual SR operator + (const SR& elem) const = 0;
+	friend SR operator * (const SR& lhs, const SR& rhs)
+	{
+		SR result = lhs;
+		result *= rhs;
+		return result;
+	}
+	friend SR operator + (const SR& lhs, const SR& rhs)
+	{
+		SR result = lhs;
+		result += rhs;
+		return result;
+	}
 	virtual SR star () const = 0;
 	virtual bool operator ==(const SR& elem) const = 0;
 	static bool is_idempotent;
@@ -22,6 +32,11 @@ public:
 		return std::hash<std::string>()(sr.string());
 	}
 };
+
+template <typename SR>
+SR operator *= (SR& lhs, const SR& rhs);
+template <typename SR>
+SR operator += (SR& lhs, const SR& rhs);
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const Semiring<SR>& elem)

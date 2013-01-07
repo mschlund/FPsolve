@@ -25,8 +25,8 @@ public:
 	FreeSemiring(optype type, FreeSemiring left);
 	FreeSemiring(optype type, FreeSemiring left, FreeSemiring right);
 	virtual ~FreeSemiring();
-	FreeSemiring operator + (const FreeSemiring& term) const;
-	FreeSemiring operator * (const FreeSemiring& term) const;
+	FreeSemiring operator += (const FreeSemiring& term);
+	FreeSemiring operator *= (const FreeSemiring& term);
 	bool operator == (const FreeSemiring& term) const;
 	FreeSemiring star () const;
 	static FreeSemiring null();

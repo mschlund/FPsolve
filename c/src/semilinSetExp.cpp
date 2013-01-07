@@ -103,7 +103,7 @@ SemilinSetExp SemilinSetExp::one() {
 	return *SemilinSetExp::elem_one;
 }
 
-SemilinSetExp SemilinSetExp::operator + (const SemilinSetExp& sl) const {
+SemilinSetExp SemilinSetExp::operator += (const SemilinSetExp& sl) {
 	std::set<LinSet> result;
 
 	for(std::set<LinSet>::const_iterator it_arg = sl.val.begin(); it_arg != sl.val.end(); ++it_arg) {
@@ -115,17 +115,19 @@ SemilinSetExp SemilinSetExp::operator + (const SemilinSetExp& sl) const {
 
 	//std::set_union(this->val.begin(),this->val.end(),sl.getVal().begin(),sl.getVal().end(),result.begin());
 
-	return SemilinSetExp(result);
+	*this = SemilinSetExp(result);
+	return *this;
 }
 
-SemilinSetExp SemilinSetExp::operator * (const SemilinSetExp& sl) const {
+SemilinSetExp SemilinSetExp::operator *= (const SemilinSetExp& sl) {
 	std::set<LinSet> result;
 	for(std::set<LinSet>::const_iterator it_arg = sl.val.begin(); it_arg != sl.val.end(); ++it_arg) {
 		for(std::set<LinSet>::const_iterator it_m = this->val.begin(); it_m != this->val.end(); ++it_m) {
 					result.insert((*it_arg) * (*it_m));
 		}
 	}
-	return SemilinSetExp(result);
+	*this = SemilinSetExp(result);
+	return *this;
 }
 
 std::set<LinSet> SemilinSetExp::getVal() const {

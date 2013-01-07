@@ -20,14 +20,16 @@ FloatSemiring::~FloatSemiring()
 {
 }
 
-FloatSemiring FloatSemiring::operator+(const FloatSemiring& elem) const
+FloatSemiring FloatSemiring::operator+=(const FloatSemiring& elem)
 {
-	return FloatSemiring(this->val + elem.val);
+	this->val += elem.val;
+	return *this;
 }
 
-FloatSemiring FloatSemiring::operator*(const FloatSemiring& elem) const
+FloatSemiring FloatSemiring::operator*=(const FloatSemiring& elem)
 {
-	return FloatSemiring(this->val * elem.val);
+	this->val *= elem.val;
+	return *this;
 }
 
 bool FloatSemiring::operator==(const FloatSemiring& elem) const

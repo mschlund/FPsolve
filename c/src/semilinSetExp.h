@@ -62,8 +62,8 @@ public:
 	virtual ~SemilinSetExp();
 	static SemilinSetExp null();
 	static SemilinSetExp one();
-	SemilinSetExp operator + (const SemilinSetExp& sl) const;
-	SemilinSetExp operator * (const SemilinSetExp& sl) const;
+	SemilinSetExp operator += (const SemilinSetExp& sl);
+	SemilinSetExp operator *= (const SemilinSetExp& sl);
 	static std::set<LinSet> star(LinSet ls);
 	SemilinSetExp star() const;
 	std::string string() const;
