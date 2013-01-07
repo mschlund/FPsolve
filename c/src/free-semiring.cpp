@@ -10,6 +10,16 @@ FreeSemiring::FreeSemiring()
 	this->type = Dummy;
 }
 
+// used by boost::ublas with FreeSemiring(0) to
+// generate a zero Element
+FreeSemiring::FreeSemiring(int zero)
+{
+	assert(zero == 0);
+
+	this->type = Element;
+	this->elem = Var::getVar("Null");
+}
+
 FreeSemiring::FreeSemiring(VarPtr var)
 {
 	this->type = Element;

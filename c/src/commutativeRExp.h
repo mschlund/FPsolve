@@ -50,6 +50,7 @@ public:
 	static std::shared_ptr<CommutativeRExp> elem_one;
 
 	CommutativeRExp();
+	CommutativeRExp(int zero);
 	CommutativeRExp(VarPtr var);
 	CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta);
 	CommutativeRExp(enum optype type, std::shared_ptr<std::multiset<CommutativeRExp>> setm);

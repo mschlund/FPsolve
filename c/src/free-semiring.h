@@ -20,6 +20,7 @@ public:
 	static std::shared_ptr<FreeSemiring> elem_one;
 
 	FreeSemiring();
+	FreeSemiring(int zero);
 	FreeSemiring(VarPtr var);
 	FreeSemiring(const FreeSemiring& term);
 	FreeSemiring(optype type, FreeSemiring left);

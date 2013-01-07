@@ -8,6 +8,15 @@ CommutativeRExp::CommutativeRExp()
 	this->type = Empty;
 }
 
+// used by boost::ublas with CommutativeRExp(0) to
+// generate a zero Element
+CommutativeRExp::CommutativeRExp(int zero)
+{
+	assert(zero == 0);
+
+	this->type = Empty;
+}
+
 CommutativeRExp::CommutativeRExp(VarPtr var)
 {
 	this->type = Element;

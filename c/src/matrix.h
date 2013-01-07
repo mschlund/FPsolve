@@ -7,225 +7,200 @@
 #include <assert.h>
 #include <initializer_list>
 #include <memory>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+
+namespace ub = boost::numeric::ublas;
 
 template <typename SR>
 class Matrix
 {
 private:
-	std::vector<SR> elements;
-	int columns;
-	int rows;
+	ub::matrix<SR> m;
 
-	// this is a naive implementation which creates lots of matrices
-	// maybe we can work directly on the elements (but then multiplication etc. are harder)
-	static Matrix recursive_star(Matrix matrix)
+	inline static ub::matrix<SR> topLeft(ub::matrix<SR>& matrix, int split) {return ub::subrange(matrix, 0,split, 0,split);}
+	inline static ub::matrix<SR> topRight(ub::matrix<SR>& matrix, int split) {return ub::subrange(matrix, 0,split, split,matrix.size2());}
+	inline static ub::matrix<SR> bottomLeft(ub::matrix<SR>& matrix, int split) {return ub::subrange(matrix, split,matrix.size1(), 0,split);}
+	inline static ub::matrix<SR> bottomRight(ub::matrix<SR>& matrix, int split) {return ub::subrange(matrix, split,matrix.size1(), split,matrix.size2());}
+
+	static ub::matrix<SR> recursive_star(ub::matrix<SR> matrix)
 	{
-		assert(matrix.rows == matrix.columns);
-		if(matrix.rows == 1) // just a scalar in a matrix
+		assert(matrix.size1() == matrix.size2());
+		if(matrix.size1() == 1) // just a scalar
 		{
-			matrix.elements[0] = matrix.elements[0].star(); // use semiring-star
-			return matrix;
+			auto ret = ub::matrix<SR>(1,1);
+			ret(0,0) = matrix(0,0).star();
+			return ret;
 		}
 		// peel mode if n%2 != 0, split in middle otherwise
-		int split = matrix.rows%2 == 0 ? matrix.columns/2 : matrix.columns-1;
+		int split = matrix.size1()%2 == 0 ? matrix.size2()/2 : matrix.size2()-1;
 
-		// TODO: this might be slightly inefficient
-		Matrix a_11 = matrix.submatrix(0,split,0,split);
-		Matrix a_12 = matrix.submatrix(split,matrix.columns,0,split);
-		Matrix a_21 = matrix.submatrix(0,split,split,matrix.rows);
-		Matrix a_22 = matrix.submatrix(split,matrix.columns,split,matrix.rows);
-		Matrix as_11 = recursive_star(a_11);
-		Matrix as_22 = recursive_star(a_22);
-		Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
-		Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
-		Matrix A_12 = as_11 * a_12 * A_22;
-		Matrix A_21 = as_22 * a_21 * A_11;
-		return block_matrix(A_11,A_12,A_21,A_22);
+		ub::matrix_range<ub::matrix<SR> > a_11 (matrix, ub::range(0, split), ub::range(0, split));
+		ub::matrix_range<ub::matrix<SR> > a_12 (matrix, ub::range(0, split), ub::range(split, matrix.size2()));
+		ub::matrix_range<ub::matrix<SR> > a_21 (matrix, ub::range(split, matrix.size1()), ub::range(0, split));
+		ub::matrix_range<ub::matrix<SR> > a_22 (matrix, ub::range(split, matrix.size1()), ub::range(split, matrix.size2()));
+		ub::matrix<SR> as_11 = recursive_star(a_11);
+		ub::matrix<SR> as_22 = recursive_star(a_22);
+
+		// create result matrix and fill it
+		ub::matrix<SR> ret(matrix.size1(), matrix.size2());
+		// TODO: implement topLeft etc. so that the result can be used on the left hand side
+		// at the moment, using them as lhs seem to work on a copy. Try to return a reference somehow
+
+		//topLeft(ret, split) = recursive_star(a_11 + ub::prod(ub::matrix<SR>(ub::prod(a_12, as_22)), a_21));
+		ub::subrange(ret, 0,split, 0,split) = recursive_star(a_11 + ub::prod(ub::matrix<SR>(ub::prod(a_12, as_22)), a_21));
+		//bottomRight(ret, split) = recursive_star(a_22 + ub::prod(ub::matrix<SR>(ub::prod(a_21, as_11)), a_12));
+		ub::subrange(ret, split,matrix.size1(), split,matrix.size2()) = recursive_star(a_22 + ub::prod(ub::matrix<SR>(ub::prod(a_21, as_11)), a_12));
+		//topRight(ret, split) = ub::prod(as_11, ub::prod<ub::matrix<SR>>(a_12, bottomRight(ret,split)));
+		ub::subrange(ret, 0,split, split,matrix.size2()) = ub::prod(as_11, ub::prod<ub::matrix<SR>>(a_12, bottomRight(ret,split)));
+		//bottomLeft(ret, split) = ub::prod(as_22, ub::prod<ub::matrix<SR>>(a_21, topLeft(ret,split)));
+		ub::subrange(ret, split,matrix.size1(), 0,split) = ub::prod(as_22, ub::prod<ub::matrix<SR>>(a_21, topLeft(ret,split)));
+		return ret;
 	}
 
-	static Matrix block_matrix(Matrix a_11, Matrix a_12, Matrix a_21, Matrix a_22)
-	{
-		std::vector<SR> ret;
-		assert(a_11.rows == a_12.rows && a_21.rows == a_22.rows);
-		assert(a_11.columns == a_21.columns && a_12.columns == a_22.columns);
-		for(int r=0; r < a_11.rows; r++)
-		{
-			ret.insert(	ret.end(),
-					a_11.elements.begin()+(r*a_11.columns),
-					a_11.elements.begin()+((r+1)*a_11.columns));
-			ret.insert(	ret.end(),
-					a_12.elements.begin()+(r*a_12.columns),
-					a_12.elements.begin()+((r+1)*a_12.columns));
-		}
-		for(int r=0; r < a_21.rows; r++)
-		{
-			ret.insert(	ret.end(),
-					a_21.elements.begin()+(r*a_21.columns),
-					a_21.elements.begin()+((r+1)*a_21.columns));
-			ret.insert(	ret.end(),
-					a_22.elements.begin()+(r*a_22.columns),
-					a_22.elements.begin()+((r+1)*a_22.columns));
-		}
-		return Matrix(a_11.columns+a_12.columns, a_11.rows+a_21.rows, ret);
-	}
 public:
 	Matrix(const Matrix& matrix)
 	{
-		this->columns = matrix.columns;
-		this->rows = matrix.rows;
-		this->elements = matrix.elements;
+		this->m = matrix.m;
 	}
 
 	Matrix(int c, int r, std::initializer_list<SR> elements)
 	{
-		this->columns = c;
-		this->rows = r;
-		this->elements = elements;
+		this->m = ub::matrix<SR>(r,c);
+		int i_c = 0;
+		int i_r = 0;
+		for(auto element_it = elements.begin(); element_it != elements.end(); ++element_it)
+		{
+			this->m(i_r,i_c) = *element_it;
+			if(++i_c >= c)
+			{
+				i_c = 0;
+				++i_r;
+			}
+			if(i_r >= r) assert(false);
+		}
 	}
 
 	Matrix& operator=(const Matrix& matrix)
 	{
-		this->columns = matrix.columns;
-		this->rows = matrix.rows;
-		this->elements = matrix.elements;
+		this->m = matrix.m;
 		return (*this);
 	};
 
 	 // initialize c x r matrix with the null element
 	Matrix(int c, int r){
-		this->columns = c;
-		this->rows = r;
-		elements.assign(this->rows*this->columns,SR::null());
+		this->m = ub::matrix<SR>(r,c);
+		for(int i_r = 0; i_r < r; ++i_r)
+		{
+			for(int i_c = 0; i_c < c; ++i_c)
+			{
+				this->m(i_r,i_c) = SR::null();
+			}
+		}
+
 	}
 	Matrix(int c, int r, const SR& elem){ // initialize c x r matrix with elem
-		this->columns = c;
-		this->rows = r;
-		elements.assign(this->rows*this->columns,elem);
+		this->m = ub::matrix<SR>(r,c);
+		for(int i_r = 0; i_r < r; ++i_r)
+		{
+			for(int i_c = 0; i_c < c; ++i_c)
+			{
+				this->m(i_r,i_c) = elem;
+			}
+		}
 	}
 	Matrix(unsigned int c, unsigned int r, const std::vector<SR>& elements)
 	{
 		assert(c*r == elements.size());
-		this->columns = c;
-		this->rows = r;
-		this->elements = elements;
-	}
-	// get the submatrix starting from colum cs,...
-	Matrix submatrix(int cs, int ce, int rs, int re)
-	{
-		assert(cs>=0 && cs<this->columns && ce <= this->columns && ce > cs);
-		assert(rs>=0 && rs<this->rows && re <= this->rows && re > rs);
-		int nc = ce-cs; // new column count
-		int nr = re-rs; // new row count
-		std::vector<SR> ret;
-		for(int r=rs; r<re; r++)
+		this->m = ub::matrix<SR>(r,c);
+		for(int i_r = 0; i_r < r; ++i_r)
 		{
-			for(int c=cs; c<ce; c++)
+			for(int i_c = 0; i_c < c; ++i_c)
 			{
-				// copy the needed values from elements to ret
-				//ret[nc*(r-rs)+cs-c] = this->elements[this->columns*r+c];
-				ret.push_back(this->elements[this->columns*r+c]);
+				this->m(i_r,i_c) = elements[i_r*c+i_c];
 			}
 		}
-		return Matrix(nc, nr, ret);
 	}
-	Matrix operator + (const Matrix& mat)
+	Matrix operator += (const Matrix& mat)
 	{
-		assert(this->rows == mat.rows && this->columns == mat.columns);
-		std::vector<SR> ret;
-		for(int i=0; i<this->columns * this->rows; i++)
-		{
-			ret.push_back(this->elements.at(i)+mat.elements.at(i));
-		}
-
-		return Matrix(this->columns, this->rows, ret);
+		this->m = this->m + mat.m;
+		return *this;
 	};
-	Matrix operator * (const Matrix& mat)
+	Matrix operator + (const Matrix& mat) const
 	{
-		assert(this->columns == mat.rows);
-		// TODO: naive implementation, tune this
-		std::vector<SR> ret;
-		ret.assign(this->rows*mat.columns,SR::null());
-		int i,r,c;
-		for(r = 0; r<this->rows; r++)
-		{
-			for(c = 0; c<mat.columns; c++)
-			{
-				SR tmp = SR::null();
-				for(i = 0; i<this->columns; i++)
-				{
-					assert((unsigned int)i*mat.columns+c < mat.elements.size());
-					assert((unsigned int)r*this->columns+i < this->elements.size());
-					tmp = tmp + this->elements.at(r*this->columns+i) * mat.elements.at(i*mat.columns+c);
-				}
-				assert((unsigned int)r*mat.columns+c < ret.size());
-				ret.at(r*mat.columns+c) = tmp;
-			}
-		}
-		return Matrix(mat.columns, this->rows, ret);
+		Matrix result = *this;
+		result += mat;
+		return result;
+	}
+	Matrix operator *= (const Matrix& mat)
+	{
+		this->m = ub::prod(this->m,mat.m);
+		return *this;
 	};
+	Matrix operator * (const Matrix& mat) const
+	{
+		Matrix result = *this;
+		result *= mat;
+		return result;
+	}
 
 	bool operator== (const Matrix& mat)
 	{
-		assert(this->rows == mat.rows && this->columns == mat.columns);
-
-		bool result = true;
-		for(int i=0; i<this->columns * this->rows; i++)
-		{
-			if( !(this->elements[i] == mat.elements[i]) )
-				result = false;
-		}
-		return result;
+		return this->m == mat.m;
 	}
 
 	Matrix star ()
 	{
-		assert(this->columns == this->rows);
+		assert(this->m.size1() == this->m.size2());
 		Matrix ret(*this);
-		return recursive_star(ret);
+		ret.m = recursive_star(this->m);
+		return ret;
 	};
 
 	Matrix transpose() const
 	{
-		std::vector<SR> ret;
-		for(int c = 0; c<this->columns; c++)
-		{
-			for(int r = 0; r<this->rows; r++)
-			{
-				ret.push_back(this->elements.at(r*this->columns+c));
-			}
-		}
-		return Matrix(this->rows, this->columns, ret);
+		Matrix result = *this;
+		result->m = ub::trans(this->m);
+		return result;
 	};
 
 	int getRows() const
 	{
-		return this->rows;
+		return this->m.size1();
 	};
 
 	int getColumns() const
 	{
-		return this->columns;
+		return this->m.size2();
 	};
 
 	std::vector<SR> getElements() const
 	{
-		std::vector<SR> ret = this->elements;
-		return ret;
+		std::vector<SR> result;
+		for(auto it = this->m.data().begin(); it != this->m.data().end(); ++it)
+		{
+			result.push_back(*it);
+		}
+		return result;
 	};
 
 	std::string string() const
 	{
 		std::stringstream ss;
-		int r;
-		int c;
-		for(r = 0; r < this->rows; r++)
+		int r,c;
+		int rows = this->getRows();
+		int columns = this->getColumns();
+		std::vector<SR> elements = this->getElements();
+		for(r = 0; r < rows; r++)
 		{
-			for(c = 0; c < this->columns; c++)
+			for(c = 0; c < columns; c++)
 			{
-				ss << this->elements.at(r*this->columns+c) << " ";
+				ss << elements.at(r*columns+c) << " ";
 			}
 			ss << std::endl;
 		}
+		// TODO: use operator<< of ublas::matrix (in io.hpp)
 		return ss.str();
 	}
 
@@ -259,17 +234,6 @@ public:
 
 template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_null;
 template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_one;
-
-// friend method of Matrix
-template <typename SR>
-Matrix<SR> operator * (SR elem, const Matrix<SR>& mat)
-{
-	std::vector<SR> ret;
-	for(int i=0; i<mat.rows*mat.columns; i++)
-	{
-		ret.push_back(elem*mat[i]); // semiring multiplication
-	}
-}
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const Matrix<SR>& matrix)
