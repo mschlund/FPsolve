@@ -15,21 +15,22 @@
 #include "commutativeRExp.h"
 #include "parser.h"
 
+template <typename SR>
+struct VertexProp {
+	std::string name;   // used for graphviz output
+	VarPtr var;         // var and rex combines the equations in the vertex
+	Polynomial<SR> rex;
+};
+
 // group the equations to SCCs
 template <typename SR>
 std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::vector<std::pair<VarPtr, Polynomial<SR>>> equations, bool graphviz_output)
 {
-	struct VertexProp {
-		std::string name;   // used for graphviz output
-		VarPtr var;         // var and rex combines the equations in the vertex
-		Polynomial<SR> rex;
-	};
-
 	// create map of variables to [0..n]. this is used to enumerate important variables in a clean way from 0 to n during graph construction
 	std::map<VarPtr, int> var_key;
 
 	// build the graph
-	boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, VertexProp> graph(equations.size());
+	boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, VertexProp<SR>> graph(equations.size());
 	for(auto e_it = equations.begin(); e_it != equations.end(); ++e_it)
 	{
 		// if the variable is not yet in the map insert it together with the size of
@@ -55,7 +56,7 @@ std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::ve
 	{
 		// output the created graph to graph.dot
 		boost::dynamic_properties dp;
-		dp.property("label", boost::get(&VertexProp::name, graph)); // vertex name is the name of the equation
+		dp.property("label", boost::get(&VertexProp<SR>::name, graph)); // vertex name is the name of the equation
 		dp.property("node_id", get(boost::vertex_index, graph)); // this is needed
 		std::ofstream outf("graph.dot");
 		boost::write_graphviz_dp(outf, graph, dp);
