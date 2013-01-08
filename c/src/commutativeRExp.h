@@ -31,6 +31,17 @@
 
 */
 
+/* TODO:
+ * mögliche Rewrite-Regeln zur Optimierung :)
+
+- x + (x)* = (x)*
+[- 1 + x(x)* = x*] (enthalten im Nächsten wenn die +-Optimierung gemacht wird)
+- 1 + (x)+ = x* (aber auch: 1 + (x)+ + (y)+ = (x)* + (y)*
+- (x)* + (y)+ = (x)* + (y)*
+
+*/
+
+
 
 class CommutativeRExp : public Semiring<CommutativeRExp>
 {
