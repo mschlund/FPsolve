@@ -286,7 +286,7 @@ bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 				return false; // all elements are equal
 			case Star: // reduce to element comparison, fall through case
 			case Plus:
-				return this->rexp < rhs.rexp;
+				return this->rexp < rhs.rexp; //FIXME: how are shared pointers compared??
 			case Empty: // empty expressions are always equal
 				return false;
 		}
