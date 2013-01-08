@@ -138,6 +138,7 @@ std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starpl
 				case Multiplication: // more tricky case, because the inner stared elements are distributed in the original multiplication set
 				{
 					bool found_all_elements = true;
+					// for every element in the starred multiplication
 					for(auto it2 = it->rexp->setm->begin(); it2 != it->rexp->setm->end(); ++it2)
 					{
 						auto elem = set_copy->find(*it2);
