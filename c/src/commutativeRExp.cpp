@@ -104,14 +104,14 @@ CommutativeRExp CommutativeRExp::operator +=(const CommutativeRExp& expr)
 }
 
 // try to find a case of xx^* and convert it to x^+
-std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starplus(std::shared_ptr<std::multiset<CommutativeRExp>>& set) const
+void CommutativeRExp::optimize_starplus()
 {
 	// we have to be careful, we will modify the set_copy!
 	// loop over all elements in the set and find the stared elements
 	std::shared_ptr<std::multiset<CommutativeRExp>> set_copy(new std::multiset<CommutativeRExp>());
-	*set_copy = *set;
+	*set_copy = *this->setm;
 	bool changed = false;
-	for(auto it = set->begin(); it != set->end(); ++it)
+	for(auto it = this->setm->begin(); it != this->setm->end(); ++it)
 	{
 		if(it->type == Star) // we found a stared element
 		{
@@ -172,9 +172,7 @@ std::shared_ptr<std::multiset<CommutativeRExp>> CommutativeRExp::optimize_starpl
 
 	}
 	if(changed)
-		return set_copy;
-	else
-		return set;
+		this->setm = set_copy;
 }
 
 // concatenate all expressions from first set with all expressions of the second set
@@ -226,10 +224,11 @@ CommutativeRExp CommutativeRExp::operator *=(const CommutativeRExp& expr)
 		}
 	}
 
+	this->setm = retset;
+	this->type = Multiplication;
 	if(star_found)
-		retset = optimize_starplus(retset);
+		optimize_starplus();
 
-	*this = CommutativeRExp(Multiplication, retset);
 	return *this;
 }
 
