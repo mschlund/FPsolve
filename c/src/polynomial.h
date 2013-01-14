@@ -22,12 +22,12 @@ template <typename SR>
 class Monomial
 {
 private:
-	std::multiset<VarPtr> variables;
+	std::multiset<VarPtr,VarPtrSort> variables;
 	SR coeff;
 	bool null;
 
 	// private constructor to not leak the internal data structure
-	Monomial(SR coeff, std::multiset<VarPtr> variables)
+	Monomial(SR coeff, std::multiset<VarPtr,VarPtrSort> variables)
 	{
 		this->coeff = coeff;
 		if( !(coeff == SR::null())) // we only need to save the variables in this case
@@ -84,7 +84,7 @@ public:
 	// multiply two monomials
 	Monomial operator*(const Monomial& monomial) const
 	{
-		std::multiset<VarPtr> variables = this->variables;
+		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
 		// "add" the variables from one to the other monomial
 		variables.insert(monomial.variables.begin(), monomial.variables.end());
 		return Monomial(this->coeff * monomial.coeff, variables);
@@ -93,7 +93,7 @@ public:
 	// multiply a monomial with a variable
 	Monomial operator*(const VarPtr& var) const
 	{
-		std::multiset<VarPtr> variables = this->variables;
+		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
 		// "add" the variables from one to the other monomial
 		variables.insert(var);
 		return Monomial(this->coeff, variables);
@@ -123,7 +123,7 @@ public:
 				break;
 			}
 		}
-		std::multiset<VarPtr> result(variables.begin(), variables.end());
+		std::multiset<VarPtr,VarPtrSort> result(variables.begin(), variables.end());
 		return Monomial(coeff, result);
 	}
 
@@ -170,7 +170,7 @@ public:
 	Monomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const
 	{
 		SR coeff = this->coeff;
-		std::multiset<VarPtr> variables = this->variables;
+		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
 
 		for(auto m_it = mapping.begin(); m_it != mapping.end(); ++m_it)
 		{

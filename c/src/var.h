@@ -25,14 +25,23 @@ public:
 	static VarPtr getVar();
 	static VarPtr getVar(std::string name);
 	static VarPtr getVar(VarPtr var);
+	bool operator<(const Var& rhs) const;
 	friend bool operator==(const VarPtr& l, const VarPtr& r);
 	friend bool operator!=(const VarPtr& l, const VarPtr& r);
 	friend bool operator<(const VarPtr& l, const VarPtr& r);
 	std::string string() const;
 };
 
+struct VarPtrSort
+{
+	bool operator()(const VarPtr& lhs, const VarPtr& rhs) const
+	{
+		return lhs < rhs;
+	}
+};
+
 std::ostream& operator<<(std::ostream& os, const VarPtr var);
-std::ostream& operator<<(std::ostream& os, const std::multiset<VarPtr> vars);
+std::ostream& operator<<(std::ostream& os, const std::multiset<VarPtr,VarPtrSort> vars);
 std::ostream& operator<<(std::ostream& os, const std::vector<VarPtr> vars);
 
 #endif

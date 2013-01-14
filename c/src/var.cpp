@@ -50,6 +50,11 @@ VarPtr Var::getVar(VarPtr var)
 	return var;
 }
 
+bool Var::operator<(const Var& rhs) const
+{
+	return this->id < rhs.id;
+}
+
 bool operator==(const VarPtr& l, const VarPtr& r)
 {
 	return l->id == r->id;
@@ -67,10 +72,10 @@ bool operator<(const VarPtr& l, const VarPtr& r)
 
 std::string Var::string() const
 {
-	std::stringstream ss;
+	//std::stringstream ss;
 	//ss << "Var(" << this->name << ")";
-	ss << this->name;
-	return ss.str();
+	//ss << this->name;
+	return this->name;
 }
 
 int Var::max_id = 0;
@@ -81,7 +86,7 @@ std::ostream& operator<<(std::ostream& os, const VarPtr var)
 	return os << var->string();
 }
 
-std::ostream& operator<<(std::ostream& os, const std::multiset<VarPtr> vars)
+std::ostream& operator<<(std::ostream& os, const std::multiset<VarPtr,VarPtrSort> vars)
 {
 	std::stringstream ss;
 	ss << "{";
