@@ -70,6 +70,97 @@ CommutativeRExp::~CommutativeRExp()
 {
 }
 
+/*
+- x + (x)* = (x)*
+[- 1 + x(x)* = x*] (enthalten im Nächsten wenn die +-Optimierung gemacht wird)
+- 1 + (x)+ = x* (aber auch: 1 + (x)+ + (y)+ = (x)* + (y)*
+- (x)* + (y)+ = (x)* + (y)*
+*/
+
+// the plus argument indicates, whether there is the SR-One element in the set or not
+void CommutativeRExp::optimize(bool one)
+{
+	std::shared_ptr<std::set<CommutativeRExp>> set_copy(new std::set<CommutativeRExp>());
+	*set_copy = *this->seta;
+	bool changed = false;
+	bool used_one = false;
+
+	for(auto it = this->seta->begin(); it != this->seta->end(); ++it)
+	{
+		if(one && it->type == Plus) // 1 + x^+ = 1 + x^* // remove the one later
+		{
+			auto elem = set_copy->find(*it);
+			if(elem != set_copy->end())
+			{
+				auto tmp = *elem;
+				tmp.type = Star;
+				set_copy->erase(*elem);
+				set_copy->insert(tmp);
+				changed = true;
+				used_one = true;
+			}
+		}
+		if(it->type == Star) // we found a stared element
+		{
+			// distinguish on the nested type
+			switch(it->rexp->type)
+			{
+				case Element:  // easy, just try to find this element on the outer set, fall through case
+				case Multiplication: // multiplication behaves like an element in the original addition set
+				{
+					auto elem = set_copy->find(*it->rexp);
+					if(elem != set_copy->end())
+					{
+						// delete x
+						set_copy->erase(*elem);
+						changed = true;
+					}
+					break;
+				}
+				case Addition: // more tricky case, because the inner stared elements are distributed in the original addition set
+				{
+					bool found_all_elements = true;
+					// for every element in the starred multiplication
+					for(auto it2 = it->rexp->seta->begin(); it2 != it->rexp->seta->end(); ++it2)
+					{
+						auto elem = set_copy->find(*it2);
+						if(elem == set_copy->end())
+						{
+							found_all_elements = false;
+							break;
+						}
+					}
+					if(found_all_elements)
+					{
+						// delete all the elements in x* in the original addition set
+						for(auto it2 = it->rexp->seta->begin(); it2 != it->rexp->seta->end(); ++it2)
+							set_copy->erase(*it2);
+						changed = true;
+					}
+					break;
+				}
+				case Star:  // should not happen, fall through
+				case Plus:  // no idea, what to do, fall through
+				case Empty: // should not happen
+					assert(false); // we should have been optimizing this, debug more!
+					break;
+			}
+
+		}
+	}
+	if(changed)
+	{
+		this->seta = set_copy;
+		if(used_one)
+		{
+			auto o = this->seta->find(this->one());
+			if(o == this->seta->end())
+				assert(false); // this should not happen
+			this->seta->erase(*o); // delete the one element
+		}
+	}
+}
+
 // union operator
 CommutativeRExp CommutativeRExp::operator +=(const CommutativeRExp& expr)
 {
@@ -99,7 +190,27 @@ CommutativeRExp CommutativeRExp::operator +=(const CommutativeRExp& expr)
 	// degenerated case, both sets have been equal
 	if(retset->size() == 1)
 		return *this; // so we can just return one of the elements // TODO: check this! quick test shows this is right
-	*this = CommutativeRExp(Addition, retset); // TODO: do not create a new object
+	this->type = Addition;
+	this->seta = retset;
+	// x+(x^*) = x^*
+	// check if there was at least one star in the multiplication set
+	bool star_found = false;
+	bool one_found = false;
+	for(auto it = retset->begin(); it != retset->end(); ++it) // TODO: maybe reverse search order!
+	{
+		if(it->type == Star)
+		{
+			star_found = true;
+			continue;
+		}
+		if(it->type == Plus || *it == this->one()) // x^+ == 1 + x^+
+		{
+			one_found = true;
+			continue;
+		}
+	}
+	if(star_found)
+		optimize(one_found);
 	return *this;
 }
 

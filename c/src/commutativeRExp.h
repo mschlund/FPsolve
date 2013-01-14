@@ -54,6 +54,7 @@ private:
 	std::shared_ptr<std::multiset<CommutativeRExp>> setm;
 	std::shared_ptr<CommutativeRExp> rexp;
 	void optimize_starplus();
+	void optimize(bool one);
 	std::string generateString() const;
 
 public:
