@@ -14,9 +14,49 @@ IF (Boost_FOUND)
     ADD_DEFINITIONS( "-DHAS_BOOST" )
 ENDIF()
 
+
+
+# CPPUnit Library and includes... does not seem to work??
+# taken from: http://www.cmake.org/pipermail/cmake/2006-October/011446.html
+# 
+INCLUDE(FindPkgConfig)
+PKG_CHECK_MODULES(CPPUNIT "cppunit")
+IF(NOT CPPUNIT_FOUND)
+FIND_PATH(CPPUNIT_INCLUDE_DIRS cppunit/TestCase.h
+  /usr/local/include
+  /usr/include
+)
+
+FIND_LIBRARY(CPPUNIT_LIBRARIES cppunit
+           ${CPPUNIT_INCLUDE_DIRS}/../lib
+           /usr/local/lib
+           /usr/lib)
+
+IF(CPPUNIT_INCLUDE_DIRS)
+  IF(CPPUNIT_LIBRARIES)
+    SET(CPPUNIT_FOUND "YES")
+    SET(CPPUNIT_LIBRARIES ${CPPUNIT_LIBRARIES} ${CMAKE_DL_LIBS})
+  ENDIF(CPPUNIT_LIBRARIES)
+ENDIF(CPPUNIT_INCLUDE_DIRS)
+
+INCLUDE(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(CPPUNIT DEFAULT_MSG CPPUNIT_LIBRARIES CPPUNIT_INCLUDE_DIRS)
+ENDIF(NOT CPPUNIT_FOUND)
+
+# ------------- END CPPUnit
+
+
+
 FILE(GLOB_RECURSE cppsource "${PROJECT_SOURCE_DIR}/src/*.cpp")
 FILE(GLOB_RECURSE csource "${PROJECT_SOURCE_DIR}/src/*.c")
 FILE(GLOB_RECURSE hheaders "${PROJECT_SOURCE_DIR}/src/*.h")
+
+SET(TEST_SOURCE_PATH ${PROJECT_SOURCE_DIR}/test)
+SET(TEST_EXEC_NAME newton_test)
+
+FILE(GLOB_RECURSE TEST_SOURCE_FILES ${TEST_SOURCE_PATH}/*.cpp)
+FILE(GLOB_RECURSE TEST_HEADER_FILES ${TEST_SOURCE_PATH}/*.h)
+
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")				## Optimize
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")				## Debug information
@@ -25,6 +65,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")			## c++0x support
 
 ADD_EXECUTABLE( ${PROJECTNAME} ${csource} ${cppsource} ${hheaders} )
 
-include_directories(${Boost_INCLUDE_DIRS})
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES}	)
+ADD_EXECUTABLE( ${TEST_EXEC_NAME} ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES} ${csource} ${cppsource} ${hheaders} )
+
+include_directories(${Boost_INCLUDE_DIRS} ${CPPUNIT_INCLUDE_DIRS})
+
+target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES}	${CPPUNIT_LIBRARIES})
 

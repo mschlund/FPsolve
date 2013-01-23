@@ -147,7 +147,25 @@ public:
 
 	bool operator== (const Matrix& mat)
 	{
-		return this->m == mat.m;
+		unsigned int rows1 = this->m.size1();
+		unsigned int cols1 = this->m.size2();
+		unsigned int rows2 = mat.m.size1();
+		unsigned int cols2 = mat.m.size2();
+
+		if(rows1 != rows2 || cols1 != cols2)
+			return false;
+		else {
+			// if the dimensions match, do element-wise comparison
+			for(unsigned int i=0; i<rows1; ++i) {
+				for(unsigned int j=0; j<cols2; ++j)	{
+					if(not(this->m(i,j) == mat.m(i,j)))
+						return false;
+				}
+			}
+		}
+
+		//no difference found -> matrices are equal
+		return true;
 	}
 
 	Matrix star ()

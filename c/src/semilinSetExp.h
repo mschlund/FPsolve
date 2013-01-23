@@ -37,16 +37,15 @@
 // {(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})} * {(w_00,{w_10,...,w_n0}),..., (w_0q,{w_1q,...,w_nq})} =
 // {(v_0i+w_0j,{v_1i,...,v_ni}\cup{w_1j,...,w_nj} ) | i=0..p, j=0..q}
 
-// star{(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})} = complicated...
+// star{(v_00,{v_10,...,v_n0}),..., (v_0p,{v_1p,...,v_np})}:
 // star(l_1,l_2,...,l_n) = \prod_{i=1}^n star(l_i)
-// where star(l_i) gives a semilinear set
+// where star((v_00,{v_10,...,v_n0})) = 1 +  (v_00,{v_00,v_10,...,v_n0})
 
 typedef std::map<VarPtr,unsigned int> VecSparse;
-//typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
-typedef std::list<VecSparse> LinSet; // new implementation..
+typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
 
-// FIXME: avoid deep-copying (+,*,..)
-// TODO: refactoring ?? ... decouple semirings and semiring-elements! ???
+//typedef std::list<VecSparse> LinSet; // new implementation.. changed back to old one :)
+// reasons: set takes care of uniqueness of generators, sorting sets is trivial,...
 
 class SemilinSetExp : public Semiring<SemilinSetExp> {
 private:
