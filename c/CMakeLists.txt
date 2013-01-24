@@ -1,73 +1,39 @@
-CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )
+cmake_minimum_required(VERSION 2.8)
 
-#SET(CMAKE_C_COMPILER "clang")
-#SET(CMAKE_CXX_COMPILER "clang++")
+set(PROJECTNAME newton)
 
-SET(PROJECTNAME newton)
+project(${PROJECTNAME})
 
-PROJECT( ${PROJECTNAME} )
+# Boost
 
-#FIND_PACKAGE(Boost 1.49.0 COMPONENTS program_options)
-FIND_PACKAGE(Boost COMPONENTS program_options)
-IF (Boost_FOUND)
-    INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIR})
-    ADD_DEFINITIONS( "-DHAS_BOOST" )
-ENDIF()
+find_package(Boost COMPONENTS program_options)
+if (Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIR})
+  add_definitions("-DHAS_BOOST")
+endif()
 
+include_directories(${Boost_INCLUDE_DIRS})
 
+# Cppunit; cmake configuration taken from:
+# http://www.cmake.org/pipermail/cmake/2006-December/012349.html
 
-# CPPUnit Library and includes... does not seem to work??
-# taken from: http://www.cmake.org/pipermail/cmake/2006-October/011446.html
-# 
-INCLUDE(FindPkgConfig)
-PKG_CHECK_MODULES(CPPUNIT "cppunit")
-IF(NOT CPPUNIT_FOUND)
-FIND_PATH(CPPUNIT_INCLUDE_DIRS cppunit/TestCase.h
-  /usr/local/include
-  /usr/include
-)
+include(FindPkgConfig)
+pkg_check_modules(CPPUNIT cppunit)
 
-FIND_LIBRARY(CPPUNIT_LIBRARIES cppunit
-           ${CPPUNIT_INCLUDE_DIRS}/../lib
-           /usr/local/lib
-           /usr/lib)
+link_directories(${CPPUNIT_LIBRARY_DIRS})
+include_directories(${CPPUNIT_INCLUDE_DIRS})
 
-IF(CPPUNIT_INCLUDE_DIRS)
-  IF(CPPUNIT_LIBRARIES)
-    SET(CPPUNIT_FOUND "YES")
-    SET(CPPUNIT_LIBRARIES ${CPPUNIT_LIBRARIES} ${CMAKE_DL_LIBS})
-  ENDIF(CPPUNIT_LIBRARIES)
-ENDIF(CPPUNIT_INCLUDE_DIRS)
+# CXXFLAGS
 
-INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(CPPUNIT DEFAULT_MSG CPPUNIT_LIBRARIES CPPUNIT_INCLUDE_DIRS)
-ENDIF(NOT CPPUNIT_FOUND)
+# Optimizing at -O1 actually results in lower compile time for me.  Probably due
+# to optimizations getting rid of some of the code (and not pushing it through
+# the backend)...
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 
-# ------------- END CPPUnit
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -pedantic-errors")
+set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
-
-FILE(GLOB_RECURSE cppsource "${PROJECT_SOURCE_DIR}/src/*.cpp")
-FILE(GLOB_RECURSE csource "${PROJECT_SOURCE_DIR}/src/*.c")
-FILE(GLOB_RECURSE hheaders "${PROJECT_SOURCE_DIR}/src/*.h")
-
-SET(TEST_SOURCE_PATH ${PROJECT_SOURCE_DIR}/test)
-SET(TEST_EXEC_NAME newton_test)
-
-FILE(GLOB_RECURSE TEST_SOURCE_FILES ${TEST_SOURCE_PATH}/*.cpp)
-FILE(GLOB_RECURSE TEST_HEADER_FILES ${TEST_SOURCE_PATH}/*.h)
-
-
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")				## Optimize
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")				## Debug information
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic-errors")	## More warnings during compile
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")			## c++0x support
-
-ADD_EXECUTABLE( ${PROJECTNAME} ${csource} ${cppsource} ${hheaders} )
-
-ADD_EXECUTABLE( ${TEST_EXEC_NAME} ${TEST_SOURCE_FILES} ${TEST_HEADER_FILES} ${csource} ${cppsource} ${hheaders} )
-
-include_directories(${Boost_INCLUDE_DIRS} ${CPPUNIT_INCLUDE_DIRS})
-
-target_link_libraries(${PROJECTNAME} ${Boost_LIBRARIES}	${CPPUNIT_LIBRARIES})
-
+add_subdirectory("src")
+add_subdirectory("test")
