@@ -13,6 +13,8 @@
 
 namespace ub = boost::numeric::ublas;
 
+//FIXME: Matrix constructor: r,c (switch order--#rows first!)
+
 template <typename SR>
 class Matrix
 {
@@ -72,13 +74,14 @@ public:
 		int i_r = 0;
 		for(auto element_it = elements.begin(); element_it != elements.end(); ++element_it)
 		{
+			if(i_r >= r || i_c >= c) assert(false);
+
 			this->m(i_r,i_c) = *element_it;
 			if(++i_c >= c)
 			{
 				i_c = 0;
 				++i_r;
 			}
-			if(i_r >= r) assert(false);
 		}
 	}
 
@@ -152,14 +155,26 @@ public:
 		unsigned int rows2 = mat.m.size1();
 		unsigned int cols2 = mat.m.size2();
 
+		std::cout << "r1:" << rows1 << std::endl;
+		std::cout << "c1:" << cols1 << std::endl;
+		std::cout << "r2:" << rows2 << std::endl;
+		std::cout << "c2:" << cols2 << std::endl;
+
+
 		if(rows1 != rows2 || cols1 != cols2)
 			return false;
 		else {
 			// if the dimensions match, do element-wise comparison
 			for(unsigned int i=0; i<rows1; ++i) {
-				for(unsigned int j=0; j<cols2; ++j)	{
-					if(not(this->m(i,j) == mat.m(i,j)))
+				for(unsigned int j=0; j<cols1; ++j)	{
+					std::cout << "(" << i << "," << j << ")" << std::endl;
+					std::cout << this->m(i,j) << std::endl;
+					std::cout << mat.m(i,j) << std::endl;
+					if(!(this->m(i,j) == mat.m(i,j)) ) {
+						std::cout << "elements are NOT equal!"<<std::endl;
 						return false;
+					}
+
 				}
 			}
 		}
