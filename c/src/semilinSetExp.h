@@ -61,17 +61,19 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
     static std::shared_ptr<SemilinSetExp> elem_one;
 
     SemilinSetExp();
-    SemilinSetExp(std::set<LinSet> val);
+    SemilinSetExp(const std::set<LinSet> &val);
     SemilinSetExp(VarPtr v);
 
     virtual ~SemilinSetExp();
 
     static SemilinSetExp null();
     static SemilinSetExp one();
-    static std::set<LinSet> star(LinSet ls);
+    static std::set<LinSet> star(const LinSet &ls);
 
     SemilinSetExp star() const;
     std::string string() const;
+
+    /* FIXME: Why do we need that?  It's not going to be efficient... */
     std::set<LinSet> getVal() const;
 
     SemilinSetExp operator += (const SemilinSetExp& sl);
@@ -80,8 +82,8 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
     bool operator == (const SemilinSetExp& sl) const;
     std::ostream& operator<<(std::ostream& os) const;
 
-    static bool is_idempotent;
-    static bool is_commutative;
+    static const bool is_idempotent;
+    static const bool is_commutative;
 };
 
 
