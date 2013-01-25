@@ -15,13 +15,15 @@
 #include "var.h"
 #include "semiring.h"
 
-// TODO: bigints instead of finite precision ints ?
-
-// use the identities
-// (1) (x*)* = x*
-// (2) (x+y)* = x*y*
-// (3) (xy*)* = 1 + xx*y*   to push stars inwards
-// use distributive law when multiplying
+/* TODO:
+ * - Bigints instead of finite precision ints?  Maybe should be configurable
+ *   (e.g. templates)?
+ * - Use the identities:
+ *   (1) (x*)* = x*
+ *   (2) (x+y)* = x*y*
+ *   (3) (xy*)* = 1 + xx*y*  (to push stars inwards)
+ * - Use distributive law when multiplying.
+ */
 
 
 // represents the counting-SR over an alphabet of size k as (fully expanded) semilinear sets,
@@ -37,37 +39,49 @@
 // star(l_1,l_2,...,l_n) = \prod_{i=1}^n star(l_i)
 // where star((v_00,{v_10,...,v_n0})) = 1 +  (v_00,{v_00,v_10,...,v_n0})
 
-typedef std::map<VarPtr,unsigned int> VecSparse;
-typedef std::pair<VecSparse, std::set<VecSparse>  > LinSet;
 
-//typedef std::list<VecSparse> LinSet; // new implementation.. changed back to old one :)
-// reasons: set takes care of uniqueness of generators, sorting sets is trivial,...
+typedef std::map<VarPtr, unsigned int> VecSparse;
+
+/* At some point we used
+ *   typedef std::list<VecSparse> LinSet;
+ * but the current one turns out to be more convenient.  Reasons: set takes care
+ * of uniqueness of generators, sorting sets is trivial...
+ */
+typedef std::pair< VecSparse, std::set<VecSparse> > LinSet;
+
 
 class SemilinSetExp : public Semiring<SemilinSetExp> {
-private:
-	std::set<LinSet> val;
+  private:
+    std::set<LinSet> val;
 
-public:
-	static std::shared_ptr<SemilinSetExp> elem_null; // null = {} (empty set)
-	static std::shared_ptr<SemilinSetExp> elem_one; // one = {(0,0,...0)}
+  public:
+    /* null = {} (empty set) */
+    static std::shared_ptr<SemilinSetExp> elem_null;
+    /* one = (0, {(0,0,...0)}) */
+    static std::shared_ptr<SemilinSetExp> elem_one;
 
-	SemilinSetExp();
-	SemilinSetExp(std::set<LinSet> val);
-	SemilinSetExp(VarPtr v);
-	virtual ~SemilinSetExp();
-	static SemilinSetExp null();
-	static SemilinSetExp one();
-	SemilinSetExp operator += (const SemilinSetExp& sl);
-	SemilinSetExp operator *= (const SemilinSetExp& sl);
-	static std::set<LinSet> star(LinSet ls);
-	SemilinSetExp star() const;
-	std::string string() const;
-	bool operator == (const SemilinSetExp& sl) const;
-	std::set<LinSet> getVal() const;
-	std::ostream& operator<<(std::ostream& os) const;
+    SemilinSetExp();
+    SemilinSetExp(std::set<LinSet> val);
+    SemilinSetExp(VarPtr v);
 
-	static bool is_idempotent;
-	static bool is_commutative;
+    virtual ~SemilinSetExp();
+
+    static SemilinSetExp null();
+    static SemilinSetExp one();
+    static std::set<LinSet> star(LinSet ls);
+
+    SemilinSetExp star() const;
+    std::string string() const;
+    std::set<LinSet> getVal() const;
+
+    SemilinSetExp operator += (const SemilinSetExp& sl);
+    SemilinSetExp operator *= (const SemilinSetExp& sl);
+
+    bool operator == (const SemilinSetExp& sl) const;
+    std::ostream& operator<<(std::ostream& os) const;
+
+    static bool is_idempotent;
+    static bool is_commutative;
 };
 
 
