@@ -11,6 +11,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(SemilinSetExpTest);
 
 void SemilinSetExpTest::setUp()
 {
+	std::cout << "SL-Test :" << std::endl;
 	a = new SemilinSetExp(Var::getVar("a"));
 	b = new SemilinSetExp(Var::getVar("b"));
 	c = new SemilinSetExp(Var::getVar("c"));

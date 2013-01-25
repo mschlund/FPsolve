@@ -100,7 +100,7 @@ SemilinSetExp SemilinSetExp::operator += (const SemilinSetExp& sl) {
 	std::set<LinSet> result;
 
 	std::insert_iterator<std::set<LinSet> > it(result, result.begin());
-	std::set_union(this->val.begin(),this->val.end(),sl.getVal().begin(),sl.getVal().end(),it);
+	std::set_union(this->val.begin(),this->val.end(),sl.val.begin(),sl.val.end(),it);
 
 	*this = SemilinSetExp(result);
 	return *this;

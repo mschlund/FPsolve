@@ -30,9 +30,9 @@ include_directories(${CPPUNIT_INCLUDE_DIRS})
 # the backend)...
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -pedantic-errors")
+set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -pedantic-errors -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 
 add_subdirectory("src")

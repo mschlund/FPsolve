@@ -155,30 +155,19 @@ public:
 		unsigned int rows2 = mat.m.size1();
 		unsigned int cols2 = mat.m.size2();
 
-		std::cout << "r1:" << rows1 << std::endl;
-		std::cout << "c1:" << cols1 << std::endl;
-		std::cout << "r2:" << rows2 << std::endl;
-		std::cout << "c2:" << cols2 << std::endl;
-
-
 		if(rows1 != rows2 || cols1 != cols2)
 			return false;
 		else {
 			// if the dimensions match, do element-wise comparison
 			for(unsigned int i=0; i<rows1; ++i) {
 				for(unsigned int j=0; j<cols1; ++j)	{
-					std::cout << "(" << i << "," << j << ")" << std::endl;
-					std::cout << this->m(i,j) << std::endl;
-					std::cout << mat.m(i,j) << std::endl;
-					if(!(this->m(i,j) == mat.m(i,j)) ) {
-						std::cout << "elements are NOT equal!"<<std::endl;
+					if( not(this->m(i,j) == mat.m(i,j)) ) {
 						return false;
 					}
 
 				}
 			}
 		}
-
 		//no difference found -> matrices are equal
 		return true;
 	}

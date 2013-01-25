@@ -4,6 +4,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(CommutativeRExpTest);
 
 void CommutativeRExpTest::setUp()
 {
+	std::cout << "CRegExp-Test :" << std::endl;
 	a = new CommutativeRExp(Var::getVar("a"));
 	b = new CommutativeRExp(Var::getVar("b"));
 	c = new CommutativeRExp(Var::getVar("c"));

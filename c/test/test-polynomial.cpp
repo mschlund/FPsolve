@@ -8,6 +8,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
 void PolynomialTest::setUp()
 {
+	std::cout << "Poly-Test:" << std::endl;
 	a = new FreeSemiring(Var::getVar("a"));b = new FreeSemiring(Var::getVar("b"));
 	c = new FreeSemiring(Var::getVar("c"));d = new FreeSemiring(Var::getVar("d"));
 	e = new FreeSemiring(Var::getVar("e"));
