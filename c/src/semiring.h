@@ -1,6 +1,7 @@
 #ifndef SEMIRING_H
 #define SEMIRING_H
-#include <iostream>
+
+#include <iosfwd>
 #include <string>
 #include <functional> // for std::hash
 

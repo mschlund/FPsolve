@@ -5,6 +5,9 @@
  *      Author: maxi
  */
 
+#include <algorithm>
+#include <cassert>
+
 #include "semilinSetExp.h"
 
 // adding two Var-maps componentwise... could be put in a util-class ?

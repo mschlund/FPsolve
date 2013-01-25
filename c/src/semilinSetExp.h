@@ -8,16 +8,12 @@
 #ifndef SEMILINSETEXP_H_
 #define SEMILINSETEXP_H_
 
-#include "var.h"
-#include "counting-semiring.h"
-
-#include <cassert>
-
-#include <algorithm>
-#include <set>
 #include <map>
-#include <list>
 #include <memory>
+#include <set>
+
+#include "var.h"
+#include "semiring.h"
 
 // TODO: bigints instead of finite precision ints ?
 
