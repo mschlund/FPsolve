@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 #include <initializer_list>
 #include <memory>
 #include <boost/numeric/ublas/matrix.hpp>
