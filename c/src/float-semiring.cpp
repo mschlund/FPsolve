@@ -1,4 +1,4 @@
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 #include <limits> // for epsilon
 #include <cmath> // for fabs

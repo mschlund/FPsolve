@@ -3,7 +3,6 @@
 
 #include <string>
 #include "float-semiring.h"
-#include "free-semiring.h"
 #include "commutativeRExp.h"
 #include "polynomial.h"
 
