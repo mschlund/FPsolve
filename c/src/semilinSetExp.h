@@ -63,6 +63,7 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
     SemilinSetExp();
     SemilinSetExp(const std::set<LinSet> &val);
     SemilinSetExp(VarPtr v);
+    SemilinSetExp(VarPtr var, unsigned int cnt);
 
     virtual ~SemilinSetExp();
 

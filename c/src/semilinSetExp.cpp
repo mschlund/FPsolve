@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 
 #include "semilinSetExp.h"
 
@@ -60,6 +61,13 @@ SemilinSetExp::SemilinSetExp() : val() { }
 
 SemilinSetExp::SemilinSetExp(VarPtr var) : val() {
   VecSparse offset = { std::make_pair(var, 1) };
+  LinSet ls{};
+  ls.first = offset;
+  val.insert(std::move(ls));
+}
+
+SemilinSetExp::SemilinSetExp(VarPtr var, unsigned int cnt) : val() {
+  VecSparse offset = { std::make_pair(var, cnt) };
   LinSet ls{};
   ls.first = offset;
   val.insert(std::move(ls));

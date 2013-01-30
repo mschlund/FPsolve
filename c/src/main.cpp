@@ -157,14 +157,50 @@ int main(int argc, char* argv[])
 		( "iterations,i", po::value<int>(), "specify the number of newton iterations. default is optimal number" )
 		//( "verbose", "enable verbose output" )
 		//( "debug", "enable debug output" )
+		( "test", "just for testing purposes ... explicit test defined in main()" )
 		( "file,f", po::value<std::string>(), "input file" )
 		( "float", "float semiring" )
 		( "rexp", "commutative regular expression semiring" )
 		( "graphviz", "create the file graph.dot with the equation graph" )
 		;
+
 	po::variables_map vm;
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
+
+	if(vm.count("test")) {
+		Newton<SemilinSetExp> newton;
+		std::vector<VarPtr> variables;
+		variables.push_back(Var::getVar("x"));
+		std::cout << "- newton (cnt-SR):" << std::endl;
+
+		std::vector<Polynomial<SemilinSetExp> > polynomials;
+		Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("x")}),
+		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("c")), {}) });
+
+		polynomials.push_back(f1);
+
+		Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
+		std::cout << result << std::endl;
+
+/*		auto s1 = CommutativeRExp(Var::getVar("a"));
+		auto s2 = CommutativeRExp(Var::getVar("b"));
+		auto m1 = Matrix<CommutativeRExp>(1,1,{s1});
+		auto m2 = Matrix<CommutativeRExp>(1,1,{s2});
+*/
+
+		// this actually led to a strange bug with the ublas-matrix implementation!!
+/*		auto s1 = SemilinSetExp(Var::getVar("a"));
+		auto s2 = SemilinSetExp(Var::getVar("b"));
+		auto m1 = Matrix<SemilinSetExp>(1,1,{s1});
+		auto m2 = Matrix<SemilinSetExp>(1,1,{s2});
+
+		auto m3 = m1*m2;
+		std::cout << m3;
+*/
+		return 0;
+	}
 
 	if(vm.count("help"))
 	{
@@ -203,8 +239,7 @@ int main(int argc, char* argv[])
 
 	Parser p;
 
-	if(vm.count("rexp"))
-	{
+	if(vm.count("rexp")) {
 		// parse the input into a list of (Var → Polynomial[SR])
 		std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> equations(p.rexp_parser(input_all));
 		if(equations.empty()) return -1;
@@ -218,8 +253,7 @@ int main(int argc, char* argv[])
 		auto result = apply_newton<CommutativeRExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;
 	}
-	else if(vm.count("float"))
-	{
+	else if(vm.count("float")) {
 		std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> equations(p.float_parser(input_all));
 		if(equations.empty()) return -1;
 
@@ -231,6 +265,19 @@ int main(int argc, char* argv[])
 		auto result = apply_newton<FloatSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;
 	}
+/*	else if(vm.count("slset")) {
+		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> equations(p.slset_parser(input_all));
+		if(equations.empty()) return -1;
+
+		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		{
+			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+		}
+
+		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+		std::cout << result_string(result) << std::endl;
+	}
+*/
 
 	return 0;
 }

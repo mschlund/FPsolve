@@ -67,6 +67,9 @@ void SemilinSetExpTest::testMultiplication()
 
 	// associativity (a * b) * c == a * (b * c)
 	CPPUNIT_ASSERT( ((*a) * (*b)) * (*c) == (*a) * ((*b) * (*c)) );
+
+	// commutativity with a more "complicated" expression (a+b+c)* . (c+b) = (c+b) . (a+b+c)*
+	CPPUNIT_ASSERT( ((*a) + (*b) + *(c)).star() * ( (*c) + (*c) + (*b) + (*b) )== ( (*c) + (*c) + (*b) + (*b) ) * ((*a) + (*b) + *(c)).star() );
 }
 
 void SemilinSetExpTest::testStar()

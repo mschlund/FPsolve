@@ -1,5 +1,7 @@
 #include <cassert>
 #include <string>
+#include <iostream>
+
 #include "commutativeRExp.h"
 
 // this creates the empty set
@@ -19,6 +21,8 @@ CommutativeRExp::CommutativeRExp(int zero)
 
 CommutativeRExp::CommutativeRExp(VarPtr var)
 {
+	std::cout << "MUH!" << std::endl;
+	std::cout << var << std::endl;
 	this->type = Element;
 	this->elem = Var::getVar(var);
 }
