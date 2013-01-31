@@ -125,7 +125,8 @@ std::map<VarPtr, SR> apply_newton(std::vector<std::pair<VarPtr, Polynomial<SR>>>
 
 		// dynamic iterations
 		if(!iteration_flag)
-			iterations = equations2[j].size();
+			// for commutative SRs newton has converged after n+1 iterations, so use this number as default
+			iterations = equations2[j].size() + 1;
 
 		// do some real work here
 		std::map<VarPtr, SR> result = newton.solve_fixpoint(equations2[j], iterations);
@@ -161,6 +162,7 @@ int main(int argc, char* argv[])
 		( "file,f", po::value<std::string>(), "input file" )
 		( "float", "float semiring" )
 		( "rexp", "commutative regular expression semiring" )
+		( "slset", "explicit semilinear sets semiring (as vectors)" )
 		( "graphviz", "create the file graph.dot with the equation graph" )
 		;
 
@@ -213,8 +215,12 @@ int main(int argc, char* argv[])
 		iterations = vm["iterations"].as<int>();
 
 	// check if we can do something useful
-	if(!vm.count("float") && !vm.count("rexp")) // check for all compatible parameters
+	if(!vm.count("float") && !vm.count("rexp") && !vm.count("slset")) // check for all compatible parameters
+	{
+		std::cout << "Please supply a supported semiring :)" << std::endl;
 		return 0;
+	}
+
 
 
 	std::vector<std::string> input;
@@ -239,7 +245,19 @@ int main(int argc, char* argv[])
 
 	Parser p;
 
-	if(vm.count("rexp")) {
+	if(vm.count("slset")) {
+		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> equations(p.slset_parser(input_all));
+		if(equations.empty()) return -1;
+
+		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		{
+			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+		}
+
+		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+		std::cout << result_string(result) << std::endl;
+	}
+	else if(vm.count("rexp")) {
 		// parse the input into a list of (Var → Polynomial[SR])
 		std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> equations(p.rexp_parser(input_all));
 		if(equations.empty()) return -1;
@@ -265,19 +283,8 @@ int main(int argc, char* argv[])
 		auto result = apply_newton<FloatSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
 		std::cout << result_string(result) << std::endl;
 	}
-/*	else if(vm.count("slset")) {
-		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> equations(p.slset_parser(input_all));
-		if(equations.empty()) return -1;
 
-		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
-		{
-			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
-		}
 
-		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
-		std::cout << result_string(result) << std::endl;
-	}
-*/
 
 	return 0;
 }

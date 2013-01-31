@@ -1,1 +1,1 @@
-<even> ::= <even> XX | XX
+<even> ::= <even> "XX" | "XX";

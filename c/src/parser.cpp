@@ -54,6 +54,21 @@ struct rexp_var_impl
 };
 const phx::function<rexp_var_impl> rexp_var;
 
+struct slset_var_impl
+{
+	template <typename T, typename U>
+	struct result { typedef SemilinSetExp type; }; // this tells Boost the return type
+
+	const SemilinSetExp operator()(std::string& s, unsigned int& cnt) const
+	{
+		// create an element with the given var
+		return SemilinSetExp(Var::getVar(s), cnt);
+	}
+};
+const phx::function<slset_var_impl> slset_var;
+
+
+
 struct var_impl
 {
 	template <typename T>
@@ -112,6 +127,22 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 		elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = rexp_var(_1)] >> '"';
 	}
 	qi::rule<iterator_type, CommutativeRExp()> elem;
+};
+
+// parser for a semilinear set expression semiring element
+// e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>"
+struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp()>
+{
+	slset_elem_parser() : slset_elem_parser::base_type(elem)
+	{
+		// create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
+		elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
+				 var [_val = _val * _1] >>
+				*( (',' >> var ) [_val = _val * _1] ) >> qi::lit(">\"");
+		var = (qi::as_string[lexeme[+(ascii::char_ - ':') ]] >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
+	}
+	qi::rule<iterator_type, SemilinSetExp()> elem;
+	qi::rule<iterator_type, SemilinSetExp()> var;
 };
 
 
@@ -177,4 +208,10 @@ std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> Parser::float_parser(s
 std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
 {
 	return parser<rexp_elem_parser, CommutativeRExp>(input);
+}
+
+// wrapper function for explicit semilinear set equations
+std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
+{
+	return parser<slset_elem_parser, SemilinSetExp>(input);
 }

@@ -5,7 +5,7 @@
 #--------------------
 # Design & Engineering :)
 #--------------------
-- Unit-Tests (possibly test-generation? large instances for performance-testing, also: over the free-semiring)
+[DONE] Unit-Tests (possibly test-generation? large instances for performance-testing, also: over the free-semiring)
 - Output?
 
 #---------------
@@ -21,16 +21,16 @@
 
 - Counting-Semiring (representation of Semiliniear-Sets)
   - As Presburger-Formulae --> Automata (Mona)
-  - As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
+  [DONE] As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
   - As (short!) rational Generating Functions (same as second one???)
 
 
 #---------------------
 # Efficient Algorithms
 #---------------------
-- simplified Newton-Iteration for (commutative) idempotent Semirings
+[DONE] simplified Newton-Iteration for (commutative) idempotent Semirings
 - efficient Algorithm for computing Mat-Star (Bandwidth-reduction for systems of (right-)linear fixpoint equations)
-- decomposed Newton-Method (split into SCCs and solve bottom-up)
+[DONE] decomposed Newton-Method (split into SCCs and solve bottom-up)
 
 
 
@@ -38,7 +38,7 @@
 # UI/Usability
 #----------------
 - Easy building/specification of Semirings (input-language/config-file/GUI)
-- Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
+[DONE] Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
 
 
 
