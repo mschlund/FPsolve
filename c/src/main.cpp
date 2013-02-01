@@ -230,6 +230,8 @@ int main(int argc, char* argv[])
 		// we are reading the input from the given file
 		std::ifstream file;
 		file.open(vm["file"].as<std::string>(), std::ifstream::in);
+		if(file.fail())
+		  std::cerr << "Could not open input file: " << vm["file"].as<std::string>() << std::endl;
 		while(std::getline(file, line))
 			input.push_back(line);
 	}

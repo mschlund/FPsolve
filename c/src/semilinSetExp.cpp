@@ -23,6 +23,54 @@ VecSparse operator+(const VecSparse &a, const VecSparse &b) {
   return result;
 }
 
+/*
+ * check if b = k*a for a natural number k.
+ */
+bool SemilinSetExp::divides(const VecSparse &a, const VecSparse &b) {
+  if(a.size() != b.size())
+    return false;
+
+  unsigned int k=0;
+
+  for(auto &pair : b) {
+    if(a.count(pair.first) > 0) {
+      // have we already obtained a candidate for a multiple?
+      if(0 != k) {
+        if(pair.second != k*a.at(pair.first) )
+          return false;
+      }
+      // no candidate for k yet
+      else if(pair.second % a.at(pair.first) != 0)
+        return false;
+      else
+        // division leaves no remainder -> candidate k found
+        k = pair.second / a.at(pair.first);
+    }
+    else {
+      // Domains are different! => a does not divide b
+      return false;
+    }
+  }
+  return true;
+}
+
+/*
+ * Perform simple optimization:
+ * if g = k*h for some generators g!=h and natural number k, then remove g from generators
+ */
+void SemilinSetExp::clean_generators(LinSet &ls) {
+  // check for all pairs of generators (g,h) if divides(h,g)
+  for(auto &g : ls.second) {
+    for(auto &h : ls.second) {
+      if(g==h)
+        continue;
+      if(divides(h,g))
+        ls.second.erase(g);
+    }
+  }
+}
+
+
 LinSet operator*(const LinSet &ls1, const LinSet &ls2) {
 
   LinSet result;
@@ -36,6 +84,7 @@ LinSet operator*(const LinSet &ls1, const LinSet &ls2) {
   set_union(ls1.second.begin(), ls1.second.end(),
             ls2.second.begin(), ls2.second.end(), it);
 
+  SemilinSetExp::clean_generators(result);
   return result;
 }
 
@@ -66,10 +115,12 @@ SemilinSetExp::SemilinSetExp(VarPtr var) : val() {
 }
 
 SemilinSetExp::SemilinSetExp(VarPtr var, unsigned int cnt) : val() {
-  VecSparse offset = { std::make_pair(var, cnt) };
-  LinSet ls{};
-  ls.first = offset;
-  val.insert(std::move(ls));
+  if(0 != cnt) {
+    VecSparse offset = { std::make_pair(var, cnt) };
+    LinSet ls{};
+    ls.first = offset;
+    val.insert(std::move(ls));
+  }
 }
 
 SemilinSetExp::SemilinSetExp(const std::set<LinSet> &v) {
@@ -158,7 +209,7 @@ std::set<LinSet> SemilinSetExp::star(const LinSet &ls) {
 SemilinSetExp SemilinSetExp::star() const {
   SemilinSetExp result = SemilinSetExp::one();
   for (auto &ls : val) {
-    result = result * SemilinSetExp(star(ls));
+    result *= SemilinSetExp(star(ls));
   }
   return result;
 }

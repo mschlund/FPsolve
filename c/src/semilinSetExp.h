@@ -68,7 +68,10 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
 
     static SemilinSetExp null();
     static SemilinSetExp one();
+
     static std::set<LinSet> star(const LinSet &ls);
+    static bool divides(const VecSparse &a, const VecSparse &b);
+    static void clean_generators(LinSet &ls);
 
     SemilinSetExp star() const;
     std::string string() const;
