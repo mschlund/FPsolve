@@ -1,12 +1,79 @@
 #ifndef FREE_SEMIRING_H
 #define FREE_SEMIRING_H
 
-#include <string>
 #include <memory>
+#include <string>
 #include <unordered_map>
+
+#include "matrix.h"
 #include "semiring.h"
 #include "var.h"
-#include "matrix.h"
+
+#include "free-structure.h"
+
+
+class FreeSemiring2 : public Semiring<FreeSemiring2> {
+  public:
+    FreeSemiring2(const VarPtr var) {
+      assert(var);
+      Init();
+      assert(factory_);
+      node_ = factory_->NewElement(var);
+    }
+
+    static FreeSemiring2 null() {
+      Init();
+      assert(factory_);
+      return FreeSemiring2{factory_->GetEmpty()};
+    }
+
+    static FreeSemiring2 one() {
+      Init();
+      assert(factory_);
+      return FreeSemiring2{factory_->GetEpsilon()};
+    }
+
+    FreeSemiring2 star() const {
+      Init();
+      assert(factory_);
+      return FreeSemiring2{factory_->NewStar(node_)};
+    }
+
+    FreeSemiring2 operator+(const FreeSemiring2 &x) {
+      assert(factory_);
+      return FreeSemiring2{factory_->NewAddition(node_, x.node_)};
+    }
+
+    FreeSemiring2 operator*(const FreeSemiring2 &x) {
+      assert(factory_);
+      return FreeSemiring2{factory_->NewMultiplication(node_, x.node_)};
+    }
+
+    bool operator==(const FreeSemiring2 &x) const {
+      return node_ == x.node_;
+    }
+
+    std::string string() const {
+      assert(false);
+      return "";
+    }
+
+  private:
+    FreeSemiring2(NodePtr n) : node_(n) { assert(factory_); }
+
+    static void Init() {
+      if (factory_ == nullptr) {
+        factory_ = std::move(std::unique_ptr<NodeFactory>(new NodeFactory));
+      }
+    }
+
+    NodePtr node_;
+    static std::unique_ptr<NodeFactory> factory_;
+};
+
+
+
+
 
 class FreeSemiring : public Semiring<FreeSemiring>
 {
