@@ -53,13 +53,12 @@ typedef std::pair< VecSparse, std::set<VecSparse> > LinSet;
 class SemilinSetExp : public Semiring<SemilinSetExp> {
   private:
     std::set<LinSet> val;
-
-  public:
     /* null = {} (empty set) */
     static std::shared_ptr<SemilinSetExp> elem_null;
     /* one = (0, {(0,0,...0)}) */
     static std::shared_ptr<SemilinSetExp> elem_one;
 
+  public:
     SemilinSetExp();
     SemilinSetExp(const std::set<LinSet> &val);
     SemilinSetExp(VarPtr v);
@@ -73,9 +72,6 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
 
     SemilinSetExp star() const;
     std::string string() const;
-
-    /* FIXME: Why do we need that?  It's not going to be efficient... */
-    std::set<LinSet> getVal() const;
 
     SemilinSetExp operator += (const SemilinSetExp& sl);
     SemilinSetExp operator *= (const SemilinSetExp& sl);

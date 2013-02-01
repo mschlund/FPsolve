@@ -24,7 +24,6 @@ VecSparse operator+(const VecSparse &a, const VecSparse &b) {
 }
 
 LinSet operator*(const LinSet &ls1, const LinSet &ls2) {
-  //assert(!ls1.empty() && !ls2.empty());
 
   LinSet result;
 
@@ -98,6 +97,7 @@ SemilinSetExp SemilinSetExp::one() {
   return *SemilinSetExp::elem_one;
 }
 
+// TODO: check for obvious inclusions and remove them
 SemilinSetExp SemilinSetExp::operator+=(const SemilinSetExp &sl) {
   std::set<LinSet> result;
   std::insert_iterator< std::set<LinSet> > it(result, result.begin());
@@ -117,13 +117,9 @@ SemilinSetExp SemilinSetExp::operator*=(const SemilinSetExp &sl) {
   return *this;
 }
 
-std::set<LinSet> SemilinSetExp::getVal() const {
-  return val;
-}
-
 // TODO: semantic equivalence check or at least some more sophisticated check
 bool SemilinSetExp::operator == (const SemilinSetExp &sl) const {
-  return (val == sl.getVal());
+  return (val == sl.val);
 }
 
 std::set<LinSet> SemilinSetExp::star(const LinSet &ls) {
@@ -145,7 +141,7 @@ std::set<LinSet> SemilinSetExp::star(const LinSet &ls) {
   }
 
   SemilinSetExp tmp_one{one()};
-  std::set<LinSet> v{tmp_one.getVal()};
+  std::set<LinSet> v{tmp_one.val};
   std::set<LinSet> result{v};
 
   /* Star of a linear set is a semilinear set:
