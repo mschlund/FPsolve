@@ -6,19 +6,26 @@ project(${PROJECTNAME})
 
 # Boost
 
-find_package(Boost COMPONENTS program_options)
-if (Boost_FOUND)
-  include_directories(${Boost_INCLUDE_DIR})
-  add_definitions("-DHAS_BOOST")
-endif()
+if(DEFINED ENV{BOOST_ROOT})
+  set(Boost_NO_SYSTEM_PATHS true)
+endif(DEFINED ENV{BOOST_ROOT})
+
+find_package(Boost COMPONENTS program_options REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
 # Cppunit; cmake configuration taken from:
 # http://www.cmake.org/pipermail/cmake/2006-December/012349.html
 
-include(FindPkgConfig)
-pkg_check_modules(CPPUNIT cppunit)
+
+if(DEFINED ENV{CPPUNIT_ROOT})
+  set(CPPUNIT_INCLUDE_DIRS "$ENV{CPPUNIT_ROOT}/include/")
+  set(CPPUNIT_LIBRARY_DIRS "$ENV{CPPUNIT_ROOT}/lib/")
+  set(CPPUNIT_LIBRARIES "cppunit")
+else(DEFINED ENV{CPPUNIT_ROOT})
+  include(FindPkgConfig)
+  pkg_check_modules(CPPUNIT cppunit)
+endif(DEFINED ENV{CPPUNIT_ROOT})
 
 link_directories(${CPPUNIT_LIBRARY_DIRS})
 include_directories(${CPPUNIT_INCLUDE_DIRS})
