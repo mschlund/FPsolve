@@ -102,10 +102,17 @@ struct hash<FreeSemiring2> {
 
 /*
  * Evaluator
+ *
+ * We want to memoize the result of evaluating every subgraph, since we can
+ * reach the same node (and thus the same subgraph) many times.  So only the
+ * first one we will actually perform the computation, in all subsequent visits
+ * we will reuse the memoized reslt.  Note that this is ok, because we never
+ * modify the actual semiring values.  We use shared_ptrs to avoid any
+ * unnecessary copying of temporary values, etc.
  */
-
 template <typename SR>
 class Evaluator : public NodeVisitor {
+  typedef std::shared_ptr<SR> SRPtr_;
   public:
     Evaluator(const std::unordered_map<VarPtr, SR> &v)
         : val_(v), evaled_(), result_() {}
@@ -114,36 +121,36 @@ class Evaluator : public NodeVisitor {
       LookupEval(a.GetLhs());
       auto temp = std::move(result_);
       LookupEval(a.GetRhs());
-      result_ = temp + result_;
+      result_ = std::make_shared<SR>(*temp + *result_);
     }
 
     void Visit(const Multiplication &m) {
       LookupEval(m.GetLhs());
       auto temp = std::move(result_);
       LookupEval(m.GetRhs());
-      result_ = temp * result_;
+      result_ = std::make_shared<SR>(*temp * *result_);
     }
 
     void Visit(const Star &s) {
       LookupEval(s.GetNode());
-      result_ = result_.star();
+      result_ = std::make_shared<SR>(result_->star());
     }
 
     void Visit(const Element &e) {
       auto iter = val_.find(e.GetVar());
       assert(iter != val_.end());
-      result_ = iter->second;
+      result_ = std::make_shared<SR>(iter->second);
     }
 
     void Visit(const Epsilon &e) {
-      result_ = SR::one();
+      result_ = std::make_shared<SR>(SR::one());
     }
 
     void Visit(const Empty &e) {
-      result_ = SR::null();
+      result_ = std::make_shared<SR>(SR::null());
     }
 
-    SR& GetResult() {
+    std::shared_ptr<SR> GetResult() {
       return result_;
     }
 
@@ -159,15 +166,15 @@ class Evaluator : public NodeVisitor {
     }
 
     const std::unordered_map<VarPtr, SR> &val_;
-    std::unordered_map<NodePtr, SR> evaled_;
-    SR result_;
+    std::unordered_map<NodePtr, SRPtr_> evaled_;
+    SRPtr_ result_;
 };
 
 template <typename SR>
 SR FreeSemiring2::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
-  return std::move(evaluator.GetResult());
+  return std::move(*evaluator.GetResult());
 }
 
 // FIXME: Matrix eval should store the valuation of the subtrees of FreeSemiring
