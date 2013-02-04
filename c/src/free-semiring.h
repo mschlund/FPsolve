@@ -16,25 +16,25 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
   public:
     FreeSemiring2(const VarPtr var) {
       assert(var);
-      Init();
+      InitFactory();
       assert(factory_);
       node_ = factory_->NewElement(var);
+      assert(node_);
     }
 
     static FreeSemiring2 null() {
-      Init();
+      InitFactory();
       assert(factory_);
       return FreeSemiring2{factory_->GetEmpty()};
     }
 
     static FreeSemiring2 one() {
-      Init();
+      InitFactory();
       assert(factory_);
       return FreeSemiring2{factory_->GetEpsilon()};
     }
 
     FreeSemiring2 star() const {
-      Init();
       assert(factory_);
       return FreeSemiring2{factory_->NewStar(node_)};
     }
@@ -54,14 +54,28 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
     }
 
     std::string string() const {
-      assert(false);
-      return "";
+      std::stringstream ss;
+      ss << *node_;
+      return ss.str();
+    }
+
+    template <typename SR>
+    SR Eval(const std::unordered_map<VarPtr, SR> &valuation) const;
+
+    void PrintDot(std::ostream &out) {
+      assert(factory_);
+      factory_->PrintDot(out);
+    }
+
+    void GC() {
+      assert(factory_);
+      factory_->GC();
     }
 
   private:
     FreeSemiring2(NodePtr n) : node_(n) { assert(factory_); }
 
-    static void Init() {
+    static void InitFactory() {
       if (factory_ == nullptr) {
         factory_ = std::move(std::unique_ptr<NodeFactory>(new NodeFactory));
       }
@@ -69,10 +83,95 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
 
     NodePtr node_;
     static std::unique_ptr<NodeFactory> factory_;
+
+    friend struct std::hash<FreeSemiring2>;
 };
 
+namespace std {
+
+template <>
+struct hash<FreeSemiring2> {
+  inline std::size_t operator()(const FreeSemiring2 &fs) const {
+    std::hash<NodePtr> h;
+    return h(fs.node_);
+  }
+};
+
+}  /* namespace std */
 
 
+/*
+ * Evaluator
+ */
+
+template <typename SR>
+class Evaluator : public NodeVisitor {
+  public:
+    Evaluator(const std::unordered_map<VarPtr, SR> &v)
+        : val_(v), evaled_(), result_() {}
+
+    void Visit(const Addition &a) {
+      LookupEval(a.GetLhs());
+      auto temp = std::move(result_);
+      LookupEval(a.GetRhs());
+      result_ = temp + result_;
+    }
+
+    void Visit(const Multiplication &m) {
+      LookupEval(m.GetLhs());
+      auto temp = std::move(result_);
+      LookupEval(m.GetRhs());
+      result_ = temp * result_;
+    }
+
+    void Visit(const Star &s) {
+      LookupEval(s.GetNode());
+      result_ = result_.star();
+    }
+
+    void Visit(const Element &e) {
+      auto iter = val_.find(e.GetVar());
+      assert(iter != val_.end());
+      result_ = iter->second;
+    }
+
+    void Visit(const Epsilon &e) {
+      result_ = SR::one();
+    }
+
+    void Visit(const Empty &e) {
+      result_ = SR::null();
+    }
+
+    SR& GetResult() {
+      return result_;
+    }
+
+  private:
+    void LookupEval(const NodePtr &node) {
+      auto iter = evaled_.find(node);
+      if (iter != evaled_.end()) {
+        result_ = iter->second;
+      } else {
+        node->Accept(*this);  /* Sets the result_ correctly */
+        evaled_.emplace(node, result_);
+      }
+    }
+
+    const std::unordered_map<VarPtr, SR> &val_;
+    std::unordered_map<NodePtr, SR> evaled_;
+    SR result_;
+};
+
+template <typename SR>
+SR FreeSemiring2::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
+  Evaluator<SR> evaluator{valuation};
+  node_->Accept(evaluator);
+  return std::move(evaluator.GetResult());
+}
+
+// FIXME: Matrix eval should store the valuation of the subtrees of FreeSemiring
+// across different FreeSemirings accessed in the matrix...
 
 
 class FreeSemiring : public Semiring<FreeSemiring>

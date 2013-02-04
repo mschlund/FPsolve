@@ -1,6 +1,8 @@
 #include <sstream>
 #include "free-semiring.h"
 
+std::unique_ptr<NodeFactory> FreeSemiring2::factory_;
+
 FreeSemiring::FreeSemiring()
 {
 	// Do not use this constructor. It is needed for a std::unordered_map...

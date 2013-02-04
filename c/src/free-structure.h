@@ -25,9 +25,14 @@ class NodeFactory;
 
 class Node {
   public:
-    virtual ~Node() = 0;
-    virtual void Accept(NodeVisitor &visitor) = 0;
+    virtual ~Node() = default;
+    virtual void Accept(NodeVisitor &visitor) const = 0;
 };
+
+class StringPrinter;
+
+std::ostream& operator<<(std::ostream &out, const Node &node);
+
 
 /* We're providing the basic default implementations of Visit() functions, so
  * that the visitors inheriting from NodeVisitor can implement only some of
@@ -36,12 +41,12 @@ class Node {
 class NodeVisitor {
   public:
     virtual ~NodeVisitor() = default;
-    virtual void Visit(Addition &a);
-    virtual void Visit(Multiplication &m);
-    virtual void Visit(Star &s);
-    virtual void Visit(Element &e);
-    virtual void Visit(Epsilon &e);
-    virtual void Visit(Empty &e);
+    virtual void Visit(const Addition &a);
+    virtual void Visit(const Multiplication &m);
+    virtual void Visit(const Star &s);
+    virtual void Visit(const Element &e);
+    virtual void Visit(const Epsilon &e);
+    virtual void Visit(const Empty &e);
 };
 
 
@@ -49,7 +54,7 @@ class Addition : public Node {
   public:
     ~Addition() = default;
 
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
 
     NodePtr GetLhs() const { return lhs; }
     NodePtr GetRhs() const { return rhs; }
@@ -65,7 +70,7 @@ class Multiplication : public Node {
   public:
     ~Multiplication() = default;
 
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
 
     NodePtr GetLhs() const { return lhs; }
     NodePtr GetRhs() const { return rhs; }
@@ -81,7 +86,7 @@ class Star : public Node {
   public:
     ~Star() = default;
 
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
 
     NodePtr GetNode() const { return node; }
 
@@ -95,7 +100,7 @@ class Element : public Node {
   public:
     ~Element() = default;
 
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
 
     VarPtr GetVar() const { return var; }
 
@@ -108,7 +113,7 @@ class Element : public Node {
 class Empty : public Node {
   public:
     ~Empty() = default;
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
   private:
     Empty() = default;
     friend class NodeFactory;
@@ -117,7 +122,7 @@ class Empty : public Node {
 class Epsilon : public Node {
   public:
     ~Epsilon() = default;
-    void Accept(NodeVisitor &visitor) { visitor.Visit(*this); }
+    void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
   private:
     Epsilon() = default;
     friend class NodeFactory;
@@ -134,6 +139,9 @@ class NodeFactory {
     virtual NodePtr NewElement(VarPtr var);
     virtual NodePtr GetEmpty() const { return empty_; }
     virtual NodePtr GetEpsilon() const { return epsilon_; }
+
+    virtual void PrintDot(std::ostream &out);
+    virtual void GC();
 
   private:
     std::unordered_map< std::pair<NodePtr, NodePtr>, NodePtr > additions_;
