@@ -25,7 +25,7 @@ class NodeFactory;
 
 class Node {
   public:
-    virtual ~Node() = default;
+    virtual ~Node() {}
     virtual void Accept(NodeVisitor &visitor) const = 0;
 };
 
@@ -40,7 +40,7 @@ std::ostream& operator<<(std::ostream &out, const Node &node);
  * only need to override the Visit(Element &). */
 class NodeVisitor {
   public:
-    virtual ~NodeVisitor() = default;
+    virtual ~NodeVisitor() {}
     virtual void Visit(const Addition &a);
     virtual void Visit(const Multiplication &m);
     virtual void Visit(const Star &s);
