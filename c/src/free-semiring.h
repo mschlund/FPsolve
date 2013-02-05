@@ -1,5 +1,4 @@
-#ifndef FREE_SEMIRING_H
-#define FREE_SEMIRING_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -14,44 +13,62 @@
 template <typename SR>
 class Evaluator;
 
-class FreeSemiring2 : public Semiring<FreeSemiring2> {
+class FreeSemiring : public Semiring<FreeSemiring> {
   public:
-    FreeSemiring2(const VarPtr var) {
+    /* Default constructor creates zero element. */
+    FreeSemiring() {
+      InitFactory();
+      assert(factory_);
+      node_ = factory_->GetEmpty();
+    }
+
+    FreeSemiring(const VarPtr var) {
       assert(var);
       InitFactory();
       assert(factory_);
       node_ = factory_->NewElement(var);
-      assert(node_);
     }
 
-    static FreeSemiring2 null() {
+    static FreeSemiring null() {
       InitFactory();
       assert(factory_);
-      return FreeSemiring2{factory_->GetEmpty()};
+      return FreeSemiring{factory_->GetEmpty()};
     }
 
-    static FreeSemiring2 one() {
+    static FreeSemiring one() {
       InitFactory();
       assert(factory_);
-      return FreeSemiring2{factory_->GetEpsilon()};
+      return FreeSemiring{factory_->GetEpsilon()};
     }
 
-    FreeSemiring2 star() const {
+    FreeSemiring star() const {
       assert(factory_);
-      return FreeSemiring2{factory_->NewStar(node_)};
+      return FreeSemiring{factory_->NewStar(node_)};
     }
 
-    FreeSemiring2 operator+(const FreeSemiring2 &x) {
+    FreeSemiring operator+(const FreeSemiring &x) {
       assert(factory_);
-      return FreeSemiring2{factory_->NewAddition(node_, x.node_)};
+      return FreeSemiring{factory_->NewAddition(node_, x.node_)};
     }
 
-    FreeSemiring2 operator*(const FreeSemiring2 &x) {
+    FreeSemiring& operator+=(const FreeSemiring &x) {
       assert(factory_);
-      return FreeSemiring2{factory_->NewMultiplication(node_, x.node_)};
+      node_ = factory_->NewAddition(node_, x.node_);
+      return *this;
     }
 
-    bool operator==(const FreeSemiring2 &x) const {
+    FreeSemiring operator*(const FreeSemiring &x) {
+      assert(factory_);
+      return FreeSemiring{factory_->NewMultiplication(node_, x.node_)};
+    }
+
+    FreeSemiring& operator*=(const FreeSemiring &x) {
+      assert(factory_);
+      node_ = factory_->NewMultiplication(node_, x.node_);
+      return *this;
+    }
+
+    bool operator==(const FreeSemiring &x) const {
       return node_ == x.node_;
     }
 
@@ -78,7 +95,7 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
     }
 
   private:
-    FreeSemiring2(NodePtr n) : node_(n) { assert(factory_); }
+    FreeSemiring(NodePtr n) : node_(n) { assert(factory_); }
 
     static void InitFactory() {
       if (factory_ == nullptr) {
@@ -89,14 +106,14 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
     NodePtr node_;
     static std::unique_ptr<NodeFactory> factory_;
 
-    friend struct std::hash<FreeSemiring2>;
+    friend struct std::hash<FreeSemiring>;
 };
 
 namespace std {
 
 template <>
-struct hash<FreeSemiring2> {
-  inline std::size_t operator()(const FreeSemiring2 &fs) const {
+struct hash<FreeSemiring> {
+  inline std::size_t operator()(const FreeSemiring &fs) const {
     std::hash<NodePtr> h;
     return h(fs.node_);
   }
@@ -159,6 +176,9 @@ class Evaluator : public NodeVisitor {
       return result_;
     }
 
+    static const bool is_idempotent = false;
+    static const bool is_commutative = false;
+
   private:
     void LookupEval(const NodePtr &node) {
       auto iter = evaled_.find(node);
@@ -176,23 +196,23 @@ class Evaluator : public NodeVisitor {
 };
 
 template <typename SR>
-SR FreeSemiring2::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
+SR FreeSemiring::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
   return std::move(*evaluator.GetResult());
 }
 
 template <typename SR>
-SR FreeSemiring2::Eval(Evaluator<SR> &evaluator) const {
+SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
   node_->Accept(evaluator);
   return std::move(*evaluator.GetResult());
 }
 
 template <typename SR>
-Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring2> &matrix,
+Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
     const std::unordered_map<VarPtr, SR> &valuation) {
 
-  std::vector<FreeSemiring2> elements = matrix.getElements();
+  std::vector<FreeSemiring> elements = matrix.getElements();
   std::vector<SR> result;
 
   /* We have a single Evaluator that is used for all evaluations of the elements
@@ -207,75 +227,16 @@ Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring2> &matrix,
   return Matrix<SR>(matrix.getRows(), matrix.getColumns(), std::move(result));
 }
 
-
-class FreeSemiring : public Semiring<FreeSemiring>
-{
-public:
-	VarPtr elem;
-	std::shared_ptr<FreeSemiring> left_ptr;
-	std::shared_ptr<FreeSemiring> right_ptr;
-	enum optype {Element, Addition, Multiplication, Star, Dummy};
-	enum optype type;
-	static std::shared_ptr<FreeSemiring> elem_null;
-	static std::shared_ptr<FreeSemiring> elem_one;
-
-	FreeSemiring();
-	FreeSemiring(int zero);
-	FreeSemiring(VarPtr var);
-	FreeSemiring(const FreeSemiring& term);
-	FreeSemiring(optype type, FreeSemiring left);
-	FreeSemiring(optype type, FreeSemiring left, FreeSemiring right);
-	virtual ~FreeSemiring();
-	FreeSemiring operator += (const FreeSemiring& term);
-	FreeSemiring operator *= (const FreeSemiring& term);
-	bool operator == (const FreeSemiring& term) const;
-	FreeSemiring star () const;
-	static FreeSemiring null();
-	static FreeSemiring one();
-	std::string string() const;
-	static bool is_idempotent;
-	static bool is_commutative;
-};
-
+/* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
-SR FreeSemiring_eval(FreeSemiring elem, std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation)
-{
-	SR result;
-	switch(elem.type)
-	{
-	case FreeSemiring::Element:
-	{
-		typename std::unordered_map<FreeSemiring,SR,FreeSemiring>::const_iterator tmp = valuation->find(elem);
-		assert(tmp!=valuation->end());
-		result = tmp->second;
-	}
-		break;
-	case FreeSemiring::Addition:
-		result = FreeSemiring_eval(*elem.left_ptr, valuation) + FreeSemiring_eval(*elem.right_ptr, valuation);
-		break;
-	case FreeSemiring::Multiplication:
-		result = FreeSemiring_eval(*elem.left_ptr, valuation) * FreeSemiring_eval(*elem.right_ptr, valuation);
-		break;
-	case FreeSemiring::Star:
-		result = FreeSemiring_eval(*elem.left_ptr, valuation).star();
-		break;
-	case FreeSemiring::Dummy:
-		assert(false);
-	};
-	return result;
+SR FreeSemiring_eval(FreeSemiring elem,
+    std::unordered_map<VarPtr, SR> *valuation) {
+  return elem.Eval(*valuation);
 }
 
+/* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
-Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix, std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation)
-{
-	std::vector<FreeSemiring> elements = matrix.getElements();
-	std::vector<SR> ret;
-
-	for(unsigned int i=0; i<elements.size(); i++)
-	{
-		ret.push_back(FreeSemiring_eval<SR>(elements.at(i),valuation));
-	}
-
-	return Matrix<SR>(matrix.getRows(), matrix.getColumns(), ret);
+Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix,
+    std::unordered_map<VarPtr, SR> *valuation) {
+  return FreeSemiringMatrixEval(matrix, *valuation);
 }
-#endif

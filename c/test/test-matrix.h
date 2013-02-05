@@ -3,7 +3,13 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 #include "../src/matrix.h"
-#include "../src/free-semiring.h"
+
+#ifndef OLD_FREESEMIRING
+#include "free-semiring.h"
+#else
+#include "free-semiring-old.h"
+#endif  /* OLD_FREESEMIRING */
+
 
 class MatrixTest : public CppUnit::TestFixture
 {

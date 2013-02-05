@@ -124,17 +124,20 @@ void PolynomialTest::testMatrixEvaluation()
 void PolynomialTest::testPolynomialToFreeSemiring()
 {
 	// auto valuation = new std::unordered_map<FreeSemiring, FreeSemiring, FreeSemiring>();
-	std::unordered_map<FreeSemiring, FreeSemiring, FreeSemiring> valuation;
+	std::unordered_map<FreeSemiring, VarPtr, FreeSemiring> valuation;
 	FreeSemiring elem = second->make_free(&valuation);
 	//std::cout << "poly2free: " << std::endl << (*second) << " → " << elem << std::endl;
-	auto r_valuation = valuation;
+        std::unordered_map<VarPtr, FreeSemiring> r_valuation;
+        for (auto &pair : valuation) {
+          r_valuation.emplace(pair.second, pair.first);
+        }
 	/*for(auto v_it = r_valuation->begin(); v_it != r_valuation->end(); ++v_it)
 	{
 		std::cout << "valuation: " << v_it->first << " → " << v_it->second << std::endl;
 	}*/
-        r_valuation[FreeSemiring{Var::getVar("x")}] = *a;
-        r_valuation[FreeSemiring{Var::getVar("y")}] = *b;
-        r_valuation[FreeSemiring{Var::getVar("z")}] = *c;
+        r_valuation[Var::getVar("x")] = *a;
+        r_valuation[Var::getVar("y")] = *b;
+        r_valuation[Var::getVar("z")] = *c;
 
 	FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
 

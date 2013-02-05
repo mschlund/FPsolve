@@ -95,6 +95,13 @@ NodePtr NodeFactory::NewAddition(NodePtr lhs, NodePtr rhs) {
     return lhs;
   }
 
+  /* Since + is commutative, use pointers to order the arguments.
+   * This makes it possible to have that:
+   *   NewAddition(a, b) == NewAddition(b, a) */
+  if (lhs > rhs) {
+    std::swap(lhs, rhs);
+  }
+
   auto iter = additions_.find({lhs, rhs});
   if (iter != additions_.end()) {
     return iter->second;
@@ -115,6 +122,10 @@ NodePtr NodeFactory::NewMultiplication(NodePtr lhs, NodePtr rhs) {
     return lhs;
   }
 
+  if (lhs == empty_ || rhs == empty_) {
+    return empty_;
+  }
+
   auto iter = multiplications_.find({lhs, rhs});
   if (iter != multiplications_.end()) {
     return iter->second;
@@ -128,7 +139,7 @@ NodePtr NodeFactory::NewStar(NodePtr node) {
   assert(node);
 
   if (node == empty_ || node == epsilon_) {
-    return node;
+    return epsilon_;
   }
 
   auto iter = stars_.find(node);

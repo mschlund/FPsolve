@@ -14,7 +14,13 @@
 #include "var.h"
 #include "semiring.h"
 #include "matrix.h"
+
+#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
+#else
+#include "free-semiring-old.h"
+#endif  /* OLD_FREESEMIRING */
+
 
 //FIXME: Polynomials are no semiring in our definition (not starable)
 
@@ -184,7 +190,7 @@ public:
 	}
 
 	// convert this monomial to an element of the free semiring
-	FreeSemiring make_free(std::unordered_map<SR,FreeSemiring,SR>* valuation) const
+	FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR>* valuation) const
 	{
 		FreeSemiring result = FreeSemiring::one();
 		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
@@ -199,12 +205,12 @@ public:
 			// map 'zero' and 'one' element to respective free semiring element
 			if(this->coeff == SR::null())
 			{
-				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::null()));
+				// valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::null()));
 				result = FreeSemiring::null() * result;
 			}
 			else if(this->coeff == SR::one())
 			{
-				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::one()));
+				// valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::one()));
 				result = FreeSemiring::one() * result;
 			}
 			else
@@ -212,7 +218,7 @@ public:
 				// use a fresh constant - the constructor of Var::getVar() will do this
 				VarPtr tmp_var = Var::getVar();
 				FreeSemiring tmp(tmp_var);
-				valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,tmp));
+				valuation->insert(valuation->begin(), std::pair<SR, VarPtr>(this->coeff,tmp_var));
 				result = tmp * result;
 			}
 		}
@@ -611,10 +617,10 @@ public:
 	// convert this polynomial to an element of the free semiring. regard the valuation map
 	// which can already define a conversion from the SR element to a free SR constant
 	// the valuation map is extended in this function
-	FreeSemiring make_free(std::unordered_map<SR,FreeSemiring, SR>* valuation)
+	FreeSemiring make_free(std::unordered_map<SR,VarPtr, SR>* valuation)
 	{
 		if(!valuation)
-			valuation = new std::unordered_map<SR, FreeSemiring, SR>();
+			valuation = new std::unordered_map<SR, VarPtr, SR>();
 
 		FreeSemiring result = FreeSemiring::null();
 		// convert this polynomial by adding all converted monomials
@@ -627,12 +633,12 @@ public:
 	}
 
 	// convert this matrix of polynomials to a matrix with elements of the free semiring
-	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::unordered_map<SR, FreeSemiring, SR>* valuation)
+	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::unordered_map<SR, VarPtr, SR>* valuation)
 	{
 		std::vector<Polynomial<SR> > polynomials = polys.getElements();
 		std::vector<FreeSemiring> ret;
 		if(!valuation)
-			valuation = new std::unordered_map<SR, FreeSemiring, SR>();
+			valuation = new std::unordered_map<SR, VarPtr, SR>();
 
 		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
 		{
