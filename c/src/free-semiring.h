@@ -11,6 +11,8 @@
 
 #include "free-structure.h"
 
+template <typename SR>
+class Evaluator;
 
 class FreeSemiring2 : public Semiring<FreeSemiring2> {
   public:
@@ -61,6 +63,9 @@ class FreeSemiring2 : public Semiring<FreeSemiring2> {
 
     template <typename SR>
     SR Eval(const std::unordered_map<VarPtr, SR> &valuation) const;
+
+    template <typename SR>
+    SR Eval(Evaluator<SR> &evaluator) const;
 
     void PrintDot(std::ostream &out) {
       assert(factory_);
@@ -177,8 +182,30 @@ SR FreeSemiring2::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
   return std::move(*evaluator.GetResult());
 }
 
-// FIXME: Matrix eval should store the valuation of the subtrees of FreeSemiring
-// across different FreeSemirings accessed in the matrix...
+template <typename SR>
+SR FreeSemiring2::Eval(Evaluator<SR> &evaluator) const {
+  node_->Accept(evaluator);
+  return std::move(*evaluator.GetResult());
+}
+
+template <typename SR>
+Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring2> &matrix,
+    const std::unordered_map<VarPtr, SR> &valuation) {
+
+  std::vector<FreeSemiring2> elements = matrix.getElements();
+  std::vector<SR> result;
+
+  /* We have a single Evaluator that is used for all evaluations of the elements
+   * of the original matrix.  This way if different elements refer to the same
+   * FreeSemiring subexpression, we memoize the result and reuse it. */
+  Evaluator<SR> evaluator{valuation};
+
+  for(auto &elem : elements) {
+    result.emplace_back(elem.Eval(evaluator));
+  }
+
+  return Matrix<SR>(matrix.getRows(), matrix.getColumns(), std::move(result));
+}
 
 
 class FreeSemiring : public Semiring<FreeSemiring>
