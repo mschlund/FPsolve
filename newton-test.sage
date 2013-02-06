@@ -50,7 +50,7 @@ def test_newton(max_iter=20) :
 
 # generate a (sparse) system of n quadratic equations in n variables with real coefficients in (0,1)
 # return the system (as a vector of symbolic expressions) as well as its variables
-# eps is the "density", i.e. eps*n of the coefficients will be non-zero
+# eps is the "density", i.e. eps*(binom(n,2)) of the coefficients will be non-zero
 import numpy.random
 import itertools
 import random
@@ -61,7 +61,7 @@ def gen_random_quadratic_eqns(n, eps) :
     # n variables ==> n choose 2 monomials, select eps*n of those which will be non-zero
     monomials = [m for m in itertools.combinations(poly_vars,2)]
 
-    k = int(eps*n)
+    k = int(eps*(n*n/2 - n/2))
     
     #TODO: make coefficients symbolic constants
     F = []
@@ -76,6 +76,12 @@ def gen_random_quadratic_eqns(n, eps) :
         F.append(f)
 
     return F,poly_vars
+
+#TODO: print them to stdout
+# format:
+# <X> ::= c_1 <X><Y> | c_2 <X><Z> | ... ;
+
+
 
 
 

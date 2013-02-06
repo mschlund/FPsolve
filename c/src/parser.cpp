@@ -131,14 +131,16 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 
 // parser for a semilinear set expression semiring element
 // e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>"
+// FIXME: cannot input the one-element atm!
 struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp()>
 {
 	slset_elem_parser() : slset_elem_parser::base_type(elem)
 	{
 		// create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
 		elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
-				 var [_val = _val * _1] >>
-				*( (',' >> var ) [_val = _val * _1] ) >> qi::lit(">\"");
+				   var [_val = _val * _1] >>
+				   *( (',' >> var ) [_val = _val * _1] ) >> qi::lit(">\"")
+		    |  qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >> qi::lit(">\"");
 		var = (qi::as_string[lexeme[+(ascii::char_ - ':') ]] >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
 	}
 	qi::rule<iterator_type, SemilinSetExp()> elem;

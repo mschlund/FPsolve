@@ -216,11 +216,11 @@ SemilinSetExp SemilinSetExp::star() const {
 
 std::string SemilinSetExp::string() const {
   std::stringstream ss;
-  ss << "[" << std::endl;
+  ss << "[";
   for (auto &ls : val) {
-    ss << ls << std::endl;
+    ss << ls << "; ";
   }
-  ss << "]" << std::endl;
+  ss << "]";
   return ss.str();
 }
 
