@@ -2,7 +2,12 @@
 #define TEST_FREE_SEMIRING_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/free-semiring.h"
+
+#ifndef OLD_FREESEMIRING
+#include "free-semiring.h"
+#else
+#include "free-semiring-old.h"
+#endif  /* OLD_FREESEMIRING */
 
 class FreeSemiringTest : public CppUnit::TestFixture
 {

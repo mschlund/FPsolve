@@ -4,7 +4,12 @@
 #include <cstdio>
 #include "matrix.h"
 #include "polynomial.h"
+
+#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
+#else
+#include "free-semiring-old.h"
+#endif  /* OLD_FREESEMIRING */
 
 // FIXME: do not return values ...inefficent... e.g. supply result as argument in a reference :)
 
@@ -127,17 +132,16 @@ private:
 public:
 	// calculate the next newton iterand
 	Matrix<SR> step(const std::vector<VarPtr>& poly_vars, const Matrix<FreeSemiring>& J_s,
-			std::unordered_map<FreeSemiring, SR, FreeSemiring>* valuation,
+			std::unordered_map<VarPtr, SR>* valuation,
 			const Matrix<SR>& v, const Matrix<SR>& delta)
 	{
 		assert(poly_vars.size() == (unsigned int)v.getRows());
 		int i=0;
 		for(std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin(); poly_var != poly_vars.end(); ++poly_var)
 		{
-			FreeSemiring free_elem = FreeSemiring(*poly_var);
 			SR sr_elem = v.getElements().at(i++);
-			valuation->erase(free_elem); // clean the old variables from the map
-			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(free_elem,sr_elem));
+			valuation->erase(*poly_var); // clean the old variables from the map
+			valuation->insert(valuation->begin(), std::pair<VarPtr,SR>(*poly_var,sr_elem));
 		}
 		Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
 
@@ -178,16 +182,16 @@ public:
 	{
 		Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
 		Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
-		auto valuation_tmp = new std::unordered_map<SR,FreeSemiring,SR>();
+		auto valuation_tmp = new std::unordered_map<SR, VarPtr, SR>();
 		Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
 
-		auto valuation = new std::unordered_map<FreeSemiring,SR,FreeSemiring>();
+		auto valuation = new std::unordered_map<VarPtr, SR>();
 		// insert null and one valuations into the map
-		valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::null(), SR::null()));
-		valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::one(), SR::one()));
+		// valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::null(), SR::null()));
+		// valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::one(), SR::one()));
 		for(auto v_it = valuation_tmp->begin(); v_it != valuation_tmp->end(); ++v_it)
 		{
-			valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(v_it->second, v_it->first));
+			valuation->insert(valuation->begin(), std::pair<VarPtr, SR>(v_it->second, v_it->first));
 		}
 
 		//std::cout << "Jacobian (with vars): " << std::endl;

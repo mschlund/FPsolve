@@ -1,13 +1,13 @@
 #include <iostream>
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include <cstdlib>
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/strong_components.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/program_options.hpp>
 #include "float-semiring.h"
-#include "free-semiring.h"
 #include "semilinSetExp.h"
 #include "matrix.h"
 #include "polynomial.h"
