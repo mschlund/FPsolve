@@ -21,7 +21,6 @@ def gen_random_quadratic_eqns(n, eps) :
     
     for i in range(n) :
         non_zero = random.sample(monomials, k-1)
-        non_zero
         coeff = list(numpy.random.dirichlet([1]*k))
         const_coeff = coeff.pop()
         mon_coeffs = map(lambda x : str(x[0]) + " " + "<"+x[1][0]+">"+"<"+x[1][1]+">", zip(coeff,non_zero) )
