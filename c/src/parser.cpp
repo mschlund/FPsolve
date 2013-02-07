@@ -130,21 +130,22 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 };
 
 // parser for a semilinear set expression semiring element
-// e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>"
-// FIXME: cannot input the one-element atm!
-struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp()>
+// e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>" or "<>" (for the one-element)
+struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space_type>
 {
 	slset_elem_parser() : slset_elem_parser::base_type(elem)
 	{
 		// create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
 		elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
-				   var [_val = _val * _1] >>
-				   *( (',' >> var ) [_val = _val * _1] ) >> qi::lit(">\"")
+				   var_cnt [_val = _val * _1] >>
+				   *( (',' >> var_cnt) [_val = _val * _1] ) >> qi::lit(">\"")
 		    |  qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >> qi::lit(">\"");
-		var = (qi::as_string[lexeme[+(ascii::char_ - ':') ]] >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
+		var_cnt = (varidentifier >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
+		varidentifier = qi::as_string[+(qi::alnum)];
 	}
-	qi::rule<iterator_type, SemilinSetExp()> elem;
-	qi::rule<iterator_type, SemilinSetExp()> var;
+	qi::rule<iterator_type, SemilinSetExp(), qi::space_type> elem;
+	qi::rule<iterator_type, SemilinSetExp(), qi::space_type> var_cnt;
+	qi::rule<iterator_type, std::string()> varidentifier;
 };
 
 

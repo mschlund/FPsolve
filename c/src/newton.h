@@ -28,8 +28,8 @@ private:
 		return s;
 	};
 
-	// generate vectors of vectors [[x0,x1,...xn,]] such that each possible permutation
-	// of integers with 0 <= xi <max is in the result. also each permutation has a sum with
+	// generate vectors of vectors [[x0,x1,...xn,]] such that each possible combination
+	// of integers with 0 <= xi <max is in the result. also each combination has a sum with
 	// min_sum <= sum <= max_sum
 	std::vector<std::vector<int> > genIdx(int max, int n, int min_sum, int max_sum)
 	{

@@ -121,6 +121,9 @@ SemilinSetExp::SemilinSetExp(VarPtr var, unsigned int cnt) : val() {
     ls.first = offset;
     val.insert(std::move(ls));
   }
+  else {
+    std::cerr << "[INFO] SL-set: tried to generate slset having a variable with count zero.. ignoring it." << std::endl;
+  }
 }
 
 SemilinSetExp::SemilinSetExp(const std::set<LinSet> &v) {

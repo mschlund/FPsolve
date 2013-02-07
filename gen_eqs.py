@@ -28,7 +28,7 @@ def gen_random_quadratic_eqns(n, eps) :
         f = f + " | " + str(const_coeff)
         print "<" + poly_vars[i] + ">" + " ::= " + f + ";"
 
-gen_random_quadratic_eqns(3, 0.8)
+gen_random_quadratic_eqns(5, 0.6)
 
 
 #TODO: make coefficients symbolic constants -> obtain generator for sl-sets or regexp-SR
