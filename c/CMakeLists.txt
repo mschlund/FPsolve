@@ -30,6 +30,21 @@ endif(DEFINED ENV{CPPUNIT_ROOT})
 link_directories(${CPPUNIT_LIBRARY_DIRS})
 include_directories(${CPPUNIT_INCLUDE_DIRS})
 
+# lpsolve
+
+if(DEFINED ENV{LPSOLVE_ROOT})
+  set(LPSOLVE_INCLUDE_DIRS "$ENV{CPPUNIT_ROOT}/include/")
+  set(LPSOLVE_LIBRARY_DIRS "$ENV{CPPUNIT_ROOT}/lib/")
+  set(LPSOLVE_LIBRARIES "lpsolve")
+else(DEFINED ENV{LPSOLVE_ROOT})
+  include(FindPkgConfig)
+  pkg_check_modules(LPSOLVE lpsolve)
+endif(DEFINED ENV{LPSOLVE_ROOT})
+
+link_directories(${LPSOLVE_LIBRARY_DIRS})
+include_directories(${LPSOLVE_INCLUDE_DIRS})
+
+
 # CXXFLAGS
 
 # Optimizing at -O1 actually results in lower compile time for me.  Probably due

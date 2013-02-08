@@ -53,6 +53,30 @@ bool SemilinSetExp::divides(const VecSparse &a, const VecSparse &b) {
   }
   return true;
 }
+/*
+// check for inclusion between linsets via solving an ILP
+bool SemilinSetExp::is_included(LinSet &ls1, LinSet &ls2) {
+
+}
+
+// simple inclusion check: just check if offset of ls1 is reachable in ls2 and if generators of ls1
+// are included (set inclusion) in those of ls2
+// even simpler: check if offsets are the SAME and if generators are subsets
+bool SemilinSetExp::is_included_simple(LinSet &ls1, LinSet &ls2) {
+
+}
+
+// compute the (unique, minimal) Hilbert-basis for the linear set
+void SemilinSetExp::min_hilbert(LinSet &ls) {
+
+}
+
+// check for pairwise inclusions between the linsets,
+// if inclusion found: remove the subset
+void SemilinSetExp::clean_slset() {
+
+}
+*/
 
 /*
  * Perform simple optimization:
@@ -69,6 +93,8 @@ void SemilinSetExp::clean_generators(LinSet &ls) {
     }
   }
 }
+
+
 
 
 LinSet operator*(const LinSet &ls1, const LinSet &ls2) {
