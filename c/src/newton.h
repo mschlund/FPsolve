@@ -1,7 +1,9 @@
 #ifndef NEWTON_H
 #define NEWTON_H
 
-#include <cstdio>
+#include <cstdint>
+#include <algorithm>
+
 #include "matrix.h"
 #include "polynomial.h"
 
@@ -11,79 +13,100 @@
 #include "free-semiring-old.h"
 #endif  /* OLD_FREESEMIRING */
 
+
+/* This defines the generator that is able to create all possible combinations
+ * of integers such they are smaller than max and their sum is between min_sum
+ * and max_sum. */
+class Generator {
+  public:
+    Generator(std::vector<std::uint32_t>::size_type size, std::uint32_t max,
+              std::uint32_t min_sum, std::uint32_t max_sum)
+        : vector_(size), max_(max), min_sum_(min_sum), max_sum_(max_sum) {
+      assert(0 < vector_.size());
+      assert(0 < max);
+      assert(min_sum <= max_sum);
+      assert(min_sum <= vector_.size() * max);
+    }
+
+    bool NextCombination() {
+      std::uint32_t sum = 0;
+      bool added = false;
+      bool valid = false;
+
+      do {
+        added = AddOne();
+        sum = CurrentSum();
+        valid = min_sum_ <= sum && sum <= max_sum_;
+        if (added && valid) {
+          return true;
+        }
+      } while (added && !valid);
+
+      return false;
+    }
+
+    const std::vector<std::uint32_t>& GetVectorRef() const { return vector_; }
+
+  private:
+    std::uint32_t CurrentSum() const {
+      assert(std::all_of(vector_.begin(), vector_.end(),
+                         [this](std::uint32_t i) { return i <= max_; }));
+      return std::accumulate(vector_.begin(), vector_.end(), 0);
+    }
+
+    /* Add 1 to the current vector, wrap-around if some value is > max.  Returns
+     * false if we cannot add 1 (i.e., the last element would overflow). */
+    bool AddOne() {
+      for (auto &integer : vector_) {
+        ++integer;
+        if (integer <= max_) {
+          return true;
+        }
+        integer = 0;
+      }
+      return false;
+    }
+
+
+    std::vector<std::uint32_t> vector_;
+    std::uint32_t max_;
+    std::uint32_t min_sum_;
+    std::uint32_t max_sum_;
+};
+
 template <typename SR>
 class Newton {
   private:
-    int sum(int* array, int n) {
-      int s = 0;
-      for (int i=0; i<n; i++) {
-        s += array[i];
-      }
-      return s;
-    };
-
-    // generate vectors of vectors [[x0,x1,...xn,]] such that each possible permutation
-    // of integers with 0 <= xi <max is in the result. also each permutation has a sum with
-    // min_sum <= sum <= max_sum
-    std::vector<std::vector<int> > genIdx(int max, int n, int min_sum,
-                                          int max_sum) {
-      std::vector<std::vector<int> > result;
-      // initialize base array
-      int* base = new int[n];
-
-      while (base[n-1] <= max) {
-        int k = 0;
-        base[k]++;
-        if (base[k]>max) {
-          while (k<n && base[k]>max && base[n-1] <= max) {
-            base[k] = 0;
-            k++;
-            base[k]++;
-          }
-        }
-        int s = sum(base, n);
-        if (min_sum <= s && s <= max_sum) {
-          std::vector<int> tmp(base,base+n);
-          result.push_back(tmp);
-        }
-      }
-
-      delete[] base;
-      return result;
-    }
-
     Matrix<Polynomial<SR> > compute_symbolic_delta(
         const std::vector<VarPtr>& v,
         const std::vector<VarPtr>& v_upd,
         const std::vector<Polynomial<SR> >& F,
         const std::vector<VarPtr>& poly_vars) {
 
-      std::vector<Polynomial<SR> > delta;
-      int n = v.size();
+      auto num_variables = v.size();
+      assert(num_variables == v_upd.size() &&
+             num_variables == poly_vars.size());
 
-      for (int i=0; i<n; ++i) {
+      std::vector<Polynomial<SR> > delta;
+
+      for (int i = 0; i < num_variables; ++i) {
         Polynomial<SR> delta_i = Polynomial<SR>::null();
         Polynomial<SR> f = F.at(i);
-        int deg = f.get_degree();
+        int degree = f.get_degree();
 
-        // create [[0,...,0],[0,...,deg],[deg,...,deg]]
-        std::vector<std::vector<int> > p = genIdx(deg,n,2,deg);
+        /* We want to calculate all possible derivatives of at least second
+         * order, but lower or equal to the degree of polynomial. */
+        Generator generator{num_variables, degree, 2, degree};
 
-        //iterate over (x,y,...,z) with x,y,...,z \in [0,deg+1]
-        for (std::vector<std::vector<int> >::const_iterator it = p.begin();
-             it != p.end(); ++it) {
+        while (generator.NextCombination()) {
           std::vector<VarPtr> dx;
-          Polynomial<SR> prod = Polynomial<SR>(SR::one());
+          Polynomial<SR> prod{SR::one()};
 
-          std::vector<VarPtr>::const_iterator var = poly_vars.begin();
-          std::vector<VarPtr>::const_iterator elem = v_upd.begin();
-          for (std::vector<int>::const_iterator z = it->begin(); z != it->end(); ++z) {
-            for (int j=0; j<(*z); ++j) {
-              dx.push_back(*var); // generate a multiset of variables like "xxxyyzzzz";
-              prod = prod * (*elem);	// prod = prod * elem^z ... (elem is a variable)
+          for (auto index = 0; index < num_variables; ++index) {
+            for (int j = 0; j < generator.GetVectorRef()[index]; ++j) {
+              dx.push_back(poly_vars[index]);
+              prod *= v_upd[index];
             }
-            ++var; // next variable
-            ++elem; // next element of vector v_upd
           }
 
           // eval f.derivative(dx) at v
