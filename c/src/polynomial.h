@@ -27,29 +27,29 @@
 template <typename SR>
 class Monomial {
   private:
-    SR coeff;
-    std::multiset<VarPtr,VarPtrSort> variables;
+    SR coefficient_;
+    std::multiset<VarPtr,VarPtrSort> variables_;
 
     // private constructor to not leak the internal data structure
-    Monomial(SR coeff, std::multiset<VarPtr,VarPtrSort> variables)
-        : coeff(coeff), variables(variables) {}
+    Monomial(SR c, std::multiset<VarPtr,VarPtrSort> variables)
+        : coefficient_(c), variables_(variables) {}
 
   public:
     // constant monomial coeff
-    Monomial(SR coeff) : coeff(coeff) {}
+    Monomial(SR c) : coefficient_(c) {}
 
-    Monomial(SR coeff, std::initializer_list<VarPtr> variables)
-        : coeff(coeff), variables(variables) {}
+    Monomial(SR c, std::initializer_list<VarPtr> variables)
+        : coefficient_(c), variables_(variables) {}
 
     // std::vector seems to be a neutral data type and does not leak internal data structure
-    Monomial(SR c, std::vector<VarPtr> vs) : coeff(c) {
-      variables.insert(vs.begin(), vs.end());
+    Monomial(SR c, std::vector<VarPtr> vs) : coefficient_(c) {
+      variables_.insert(vs.begin(), vs.end());
     }
 
     // add the coefficients of two monomials if there variables are equal
     Monomial operator+(const Monomial& monomial) const {
-      assert(this->variables == monomial.variables);
-      return Monomial(this->coeff + monomial.coeff, this->variables);
+      assert(variables_ == monomial.variables_);
+      return Monomial(coefficient_ + monomial.coefficient_, variables_);
     }
 
     // multiply two monomials
@@ -57,24 +57,26 @@ class Monomial {
       if (is_null() || monomial.is_null()) {
         return Monomial{SR::null()};
       }
-      std::multiset<VarPtr,VarPtrSort> variables = this->variables;
+      auto tmp_vars = variables_;
       // "add" the variables from one to the other monomial
-      variables.insert(monomial.variables.begin(), monomial.variables.end());
-      return Monomial(this->coeff * monomial.coeff, variables);
+      tmp_vars.insert(monomial.variables_.begin(), monomial.variables_.end());
+      // FIXME: move instead of copying
+      return Monomial(coefficient_ * monomial.coefficient_, tmp_vars);
     }
 
     // multiply a monomial with a variable
     Monomial operator*(const VarPtr& var) const {
-      std::multiset<VarPtr,VarPtrSort> variables = this->variables;
+      auto tmp_vars = variables_;
       // "add" the variables from one to the other monomial
-      variables.insert(var);
-      return Monomial(this->coeff, variables);
+      tmp_vars.insert(var);
+      // FIXME: move instead of copying
+      return Monomial(coefficient_, tmp_vars);
     }
 
     // commutative version of derivative
     Monomial derivative(const VarPtr& var) const {
       // count number of occurences of var in variables
-      int count = this->variables.count(var);
+      int count = variables_.count(var);
 
       // variable is not in variables, derivative is null
       if(count == 0)
@@ -82,29 +84,28 @@ class Monomial {
 
       // remove one of these by removing the first of them and then "multiply"
       // the coefficient with count
-      std::vector<VarPtr> variables(this->variables.begin(), this->variables.end());
-      SR coeff = this->coeff;
+      std::vector<VarPtr> variables(variables_.begin(), variables_.end());
+      SR tmp_coeff = coefficient_;
       for(unsigned int i=0; i<variables.size(); ++i) {
         if(variables[i] == var) {
           variables.erase(variables.begin()+i);
           for(int j = 0; j<count-1; ++j)
-            coeff = coeff + this->coeff;
+            tmp_coeff = tmp_coeff + coefficient_;
           break;
         }
       }
-      std::multiset<VarPtr,VarPtrSort> result(variables.begin(), variables.end());
-      return Monomial(coeff, result);
+      std::multiset<VarPtr,VarPtrSort> tmp_vars(variables.begin(), variables.end());
+      return Monomial(tmp_coeff, tmp_vars);
     }
 
     // evaluate the monomial at the position values
     SR eval(const std::map<VarPtr, SR>& values) const {
-      SR elem = this->coeff;
+      SR elem = coefficient_;
 
-      for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it) {
-        auto e = values.find(*v_it);
+      for(auto var : variables_) {
+        auto e = values.find(var);
         assert(e != values.end()); // all variables should be in values
-        SR foo = e->second;
-        elem = elem * foo;
+        elem = elem * e->second;
       }
 
       return elem;
@@ -113,16 +114,17 @@ class Monomial {
     // partially evaluate the monomial at the position values
     Monomial<SR> partial_eval(const std::map<VarPtr, SR>& values) const {
       // keep the coefficient
-      Monomial<SR> elem(this->coeff);
+      Monomial<SR> elem(coefficient_);
 
       // then loop over all variables and try to evaluate them
-      for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it) {
-        auto e = values.find(*v_it);
-        if(e == values.end()) { // variable not found in the mapping, so keep it
-          elem.variables.insert(*v_it);
-        }
-        else { // variable was found, use it for evaluation
-          elem.coeff = elem.coeff * (e->second);
+      for(auto var : variables_) {
+        auto e = values.find(var);
+        if(e == values.end()) {
+          // variable not found in the mapping, so keep it
+          elem.variables_.insert(var);
+        } else {
+          // variable was found, use it for evaluation
+          elem.coefficient_ = elem.coefficient_ * e->second;
         }
       }
 
@@ -131,46 +133,44 @@ class Monomial {
 
     // substitute variables with other variables
     Monomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const {
-      SR coeff = this->coeff;
-      std::multiset<VarPtr,VarPtrSort> variables = this->variables;
+      auto tmp_vars = variables_;
 
       for(auto m_it = mapping.begin(); m_it != mapping.end(); ++m_it) {
-        int count = variables.count(m_it->first);
-        variables.erase( (*m_it).first ); // erase all occurences
-        for(int i = 0; i < count; ++i)
-          variables.insert( (*m_it).second ); // and "replace" them
+        std::size_t count = tmp_vars.count(m_it->first);
+        tmp_vars.erase(m_it->first); // erase all occurences
+        for(std::size_t i = 0; i < count; ++i)
+          tmp_vars.insert(m_it->second); // and "replace" them
       }
 
-      return Monomial(coeff, variables);
+      return Monomial(coefficient_, tmp_vars);
     }
 
     // convert this monomial to an element of the free semiring
     FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR>* valuation) const {
       FreeSemiring result = FreeSemiring::one();
-      for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it) {
-        result = result * FreeSemiring(*v_it);
+      for(auto var : variables_) {
+        result = result * FreeSemiring(var);
       }
 
       // change the SR element to a constant in the free semiring
-      auto elem = valuation->find(this->coeff);
+      auto elem = valuation->find(coefficient_);
       if(elem == valuation->end()) { // this is a new SR element
         // map 'zero' and 'one' element to respective free semiring element
-        if(this->coeff == SR::null()) {
-          // valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::null()));
+        if(coefficient_ == SR::null()) {
+          // valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(coeff,FreeSemiring::null()));
           result = FreeSemiring::null() * result;
-        }
-        else if(this->coeff == SR::one()) {
-          // valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::one()));
+        } else if (coefficient_ == SR::one()) {
+          // valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(coeff,FreeSemiring::one()));
           result = FreeSemiring::one() * result;
         } else {
           // use a fresh constant - the constructor of Var::getVar() will do this
           VarPtr tmp_var = Var::getVar();
           FreeSemiring tmp(tmp_var);
-          valuation->insert(valuation->begin(), std::pair<SR, VarPtr>(this->coeff,tmp_var));
+          valuation->emplace(coefficient_, tmp_var);
           result = tmp * result;
         }
-      }
-      else { // this is an already known element
+      } else {
+        // this is an already known element
         result = (elem->second) * result;
       }
       return result;
@@ -178,49 +178,50 @@ class Monomial {
 
     // a monomial is smaller than another monomial if the variables are smaller
     bool operator<(const Monomial& monomial) const {
-      return this->variables < monomial.variables;
+      return variables_ < monomial.variables_;
     }
 
     // a monomial is equal to another monomial if the variables are equal
     // warning: the coefficient will not be regarded --- FIXME:this is extremly dangerous (regarding set-implementation of polynomial)!
     bool operator==(const Monomial& monomial) const {
-      return this->variables == monomial.variables;
+      return variables_ == monomial.variables_;
     }
 
     // both monomials are equal if they have the same variables and the same coefficient
     bool equal(const Monomial& monomial) const {
-      return this->variables == monomial.variables && this->coeff == monomial.coeff;
+      return variables_ == monomial.variables_ &&
+             coefficient_ == monomial.coefficient_;
     }
 
     int get_degree() const {
-      return this->variables.size();
+      return variables_.size();
     }
 
     SR get_coeff() const {
-      return this->coeff;
+      return coefficient_;
     }
 
     bool is_null() const {
-      return coeff == SR::null();
+      return coefficient_ == SR::null();
     }
 
     void set_coeff(SR coeff) {
-      this->coeff = coeff;
+      coefficient_ = coeff;
     }
 
     void add_to_coeff(const SR coeff) {
-      this->coeff = this->coeff + coeff;
+      coefficient_ = coefficient_ + coeff;
     }
 
     std::set<VarPtr> get_variables() const {
-      return std::set<VarPtr>(this->variables.begin(), this->variables.end());
+      return std::set<VarPtr>(variables_.begin(), variables_.end());
     }
 
     std::string string() const {
       std::stringstream ss;
-      ss << this->coeff;
-      if(!(this->coeff == SR::null() || this->variables.empty())) {
-        ss << "*" << this->variables;
+      ss << coefficient_;
+      if(!is_null()) {
+        ss << "*" << variables_;
       }
       return ss.str();
     }
