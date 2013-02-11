@@ -138,10 +138,10 @@ template <typename SR>
 class Newton {
   private:
     Matrix<Polynomial<SR> > compute_symbolic_delta(
-        const std::vector<VarPtr>& v,
-        const std::vector<VarPtr>& v_upd,
-        const std::vector<Polynomial<SR> >& F,
-        const std::vector<VarPtr>& poly_vars) {
+        const std::vector<VarPtr> &v,
+        const std::vector<VarPtr> &v_upd,
+        const std::vector<Polynomial<SR> > &F,
+        const std::vector<VarPtr> &poly_vars) {
 
       auto num_variables = v.size();
       assert(num_variables == v_upd.size() &&
@@ -170,19 +170,16 @@ class Newton {
           }
 
           // eval f.derivative(dx) at v
-          std::map<VarPtr,VarPtr> values;
-          int j = 0;
-          for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
-               poly_var != poly_vars.end(); ++poly_var) {
-            values.insert(values.begin(),
-                          std::pair<VarPtr,VarPtr>((*poly_var),v.at(j++)));
+          std::map<VarPtr, VarPtr> values;
+          for (std::size_t index = 0; index < v.size(); ++index) {
+            values.emplace(poly_vars[index], v[index]);
           }
           Polynomial<SR> f_eval = f.derivative(dx).subst(values);
 
           delta_i = delta_i + f_eval * prod;
         }
 
-        delta.push_back(delta_i);
+        delta.emplace_back(std::move(delta_i));
       }
 
       return Matrix<Polynomial<SR> >(1, delta.size(), delta);
@@ -202,14 +199,14 @@ class Newton {
 
   public:
     // calculate the next newton iterand
-    Matrix<SR> step(const std::vector<VarPtr>& poly_vars,
-        const Matrix<FreeSemiring>& J_s,
-        std::unordered_map<VarPtr, SR>* valuation,
-        const Matrix<SR>& v, const Matrix<SR>& delta) {
+    Matrix<SR> step(const std::vector<VarPtr> &poly_vars,
+        const Matrix<FreeSemiring> &J_s,
+        std::unordered_map<VarPtr, SR> *valuation,
+        const Matrix<SR> &v, const Matrix<SR> &delta) {
       assert(poly_vars.size() == (unsigned int)v.getRows());
-      int i=0;
+      int i = 0;
       for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
-          poly_var != poly_vars.end(); ++poly_var) {
+           poly_var != poly_vars.end(); ++poly_var) {
         SR sr_elem = v.getElements().at(i++);
         valuation->erase(*poly_var); // clean the old variables from the map
         valuation->insert(valuation->begin(),
