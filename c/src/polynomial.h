@@ -1,19 +1,19 @@
 #ifndef POLYNOMIAL_H
 #define POLYNOMIAL_H
 
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <iostream>
-#include <string>
-#include <list>
-#include <sstream>
-#include <initializer_list>
 #include <cassert>
+#include <initializer_list>
+#include <list>
+#include <map>
 #include <memory>
-#include "var.h"
-#include "semiring.h"
+#include <set>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+
 #include "matrix.h"
+#include "semiring.h"
+#include "var.h"
 
 #ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
@@ -27,51 +27,23 @@
 template <typename SR>
 class Monomial {
   private:
-    std::multiset<VarPtr,VarPtrSort> variables;
     SR coeff;
-    bool null;
+    std::multiset<VarPtr,VarPtrSort> variables;
 
     // private constructor to not leak the internal data structure
-    Monomial(SR coeff, std::multiset<VarPtr,VarPtrSort> variables) {
-      this->coeff = coeff;
-      if( !(coeff == SR::null())) { // we only need to save the variables in this case
-        this->null = false;
-        this->variables = variables;
-      }
-      else
-        this->null = true;
-    }
+    Monomial(SR coeff, std::multiset<VarPtr,VarPtrSort> variables)
+        : coeff(coeff), variables(variables) {}
 
   public:
     // constant monomial coeff
-    Monomial(SR coeff) {
-      this->coeff = coeff;
-      if(this->coeff == SR::null())
-        this->null = true;
-      else
-        this->null = false;
-    }
+    Monomial(SR coeff) : coeff(coeff) {}
 
-    Monomial(SR coeff, std::initializer_list<VarPtr> variables) {
-      this->coeff = coeff;
-      if( !(coeff == SR::null())) // we only need to save the variables in this case
-      {
-        this->variables = variables;
-        this->null = false;
-      }
-      else
-        this->null = true;
-    }
+    Monomial(SR coeff, std::initializer_list<VarPtr> variables)
+        : coeff(coeff), variables(variables) {}
 
     // std::vector seems to be a neutral data type and does not leak internal data structure
-    Monomial(SR coeff, std::vector<VarPtr> variables) {
-      this->coeff = coeff;
-      if( !(coeff == SR::null())) { // we only need to save the variables in this case
-        this->variables.insert(variables.begin(), variables.end());
-        this->null = false;
-      }
-      else
-        this->null = true;
+    Monomial(SR c, std::vector<VarPtr> vs) : coeff(c) {
+      variables.insert(vs.begin(), vs.end());
     }
 
     // add the coefficients of two monomials if there variables are equal
@@ -82,6 +54,9 @@ class Monomial {
 
     // multiply two monomials
     Monomial operator*(const Monomial& monomial) const {
+      if (is_null() || monomial.is_null()) {
+        return Monomial{SR::null()};
+      }
       std::multiset<VarPtr,VarPtrSort> variables = this->variables;
       // "add" the variables from one to the other monomial
       variables.insert(monomial.variables.begin(), monomial.variables.end());
@@ -226,7 +201,7 @@ class Monomial {
     }
 
     bool is_null() const {
-      return this->null;
+      return coeff == SR::null();
     }
 
     void set_coeff(SR coeff) {
