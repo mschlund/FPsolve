@@ -22,141 +22,182 @@
 #endif  /* OLD_FREESEMIRING */
 
 
+/*
+ * The std::map<VarPtr, std::uint16_t> should be a separate class that contains
+ * the following functionality.
+ */
+
+
+std::uint16_t GetDegreeOf(const std::map<VarPtr, std::uint16_t> &map,
+    const VarPtr var);
+
+void EraseAll(std::map<VarPtr, std::uint16_t> &map, const VarPtr var);
+
+void Insert(std::map<VarPtr, std::uint16_t> &map, const VarPtr var,
+    std::uint16_t deg = 1);
+
+void Erase(std::map<VarPtr, std::uint16_t> &map, const VarPtr var,
+    std::uint16_t deg = 1);
+
+
 //FIXME: Polynomials are no semiring in our definition (not starable)
 
 template <typename SR>
 class Monomial {
   private:
     SR coefficient_;
-    std::multiset<VarPtr,VarPtrSort> variables_;
+    /* Maps each variable to its degree. */
+    std::map<VarPtr, std::uint16_t> variables_;
 
     // private constructor to not leak the internal data structure
-    Monomial(SR c, std::multiset<VarPtr,VarPtrSort> variables)
-        : coefficient_(c), variables_(variables) {}
+    Monomial(SR c, std::map<VarPtr, std::uint16_t> vs)
+        : coefficient_(c), variables_(vs) {}
 
   public:
-    // constant monomial coeff
+    /* Constant. */
     Monomial(SR c) : coefficient_(c) {}
 
-    Monomial(SR c, std::initializer_list<VarPtr> variables)
-        : coefficient_(c), variables_(variables) {}
-
-    // std::vector seems to be a neutral data type and does not leak internal data structure
-    Monomial(SR c, std::vector<VarPtr> vs) : coefficient_(c) {
-      variables_.insert(vs.begin(), vs.end());
+    Monomial(SR c, std::initializer_list<VarPtr> vs)
+        : coefficient_(c) {
+      for (auto var : vs) {
+        Insert(variables_, var);
+      }
     }
 
-    // add the coefficients of two monomials if there variables are equal
-    Monomial operator+(const Monomial& monomial) const {
+    // Monomial(SR c, std::initializer_list< std::pair<VarPtr, std::uint16_t> > vs)
+    //     : coefficient_(c) {
+    //   for (auto var_degree : vs) {
+    //     Insert(variables_, var_degree.first, var_degree.second);
+    //   }
+    // }
+
+    /* std::vector seems to be a neutral data type and does not leak internal
+     * data structure. */
+    Monomial(SR c, std::vector< std::pair<VarPtr, std::uint16_t> > vs)
+        : coefficient_(c) {
+      for (auto var_degree : vs) {
+        Insert(variables_, var_degree.first, var_degree.second);
+      }
+    }
+
+    /* Add the coefficients of two monomials if their variables are equal. */
+    Monomial operator+(const Monomial &monomial) const {
       assert(variables_ == monomial.variables_);
-      return Monomial(coefficient_ + monomial.coefficient_, variables_);
+      return Monomial{coefficient_ + monomial.coefficient_, variables_};
     }
 
     // multiply two monomials
-    Monomial operator*(const Monomial& monomial) const {
+    Monomial operator*(const Monomial &monomial) const {
       if (is_null() || monomial.is_null()) {
         return Monomial{SR::null()};
       }
       auto tmp_vars = variables_;
-      // "add" the variables from one to the other monomial
-      tmp_vars.insert(monomial.variables_.begin(), monomial.variables_.end());
+      for (auto var_degree : monomial.variables_) {
+        Insert(tmp_vars, var_degree.first, var_degree.second);
+      }
       // FIXME: move instead of copying
       return Monomial(coefficient_ * monomial.coefficient_, tmp_vars);
     }
 
     // multiply a monomial with a variable
-    Monomial operator*(const VarPtr& var) const {
+    Monomial operator*(const VarPtr &var) const {
       auto tmp_vars = variables_;
       // "add" the variables from one to the other monomial
-      tmp_vars.insert(var);
+      Insert(tmp_vars, var);
       // FIXME: move instead of copying
-      return Monomial(coefficient_, tmp_vars);
+      return Monomial{coefficient_, tmp_vars};
     }
 
     // commutative version of derivative
-    Monomial derivative(const VarPtr& var) const {
-      // count number of occurences of var in variables
-      int count = variables_.count(var);
+    Monomial derivative(const VarPtr &var) const {
 
-      // variable is not in variables, derivative is null
-      if(count == 0)
+      auto var_iter = variables_.find(var);
+
+      /* If the variable does not appear in the monomial, the derivative
+       * must be 0. */
+      if (var_iter == variables_.end()) {
         return Monomial(SR::null());
-
-      // remove one of these by removing the first of them and then "multiply"
-      // the coefficient with count
-      std::vector<VarPtr> variables(variables_.begin(), variables_.end());
-      SR tmp_coeff = coefficient_;
-      for(unsigned int i=0; i<variables.size(); ++i) {
-        if(variables[i] == var) {
-          variables.erase(variables.begin()+i);
-          for(int j = 0; j<count-1; ++j)
-            tmp_coeff = tmp_coeff + coefficient_;
-          break;
-        }
       }
-      std::multiset<VarPtr,VarPtrSort> tmp_vars(variables.begin(), variables.end());
-      return Monomial(tmp_coeff, tmp_vars);
+
+      auto degree_before = var_iter->second;
+
+      /* Remove one of these by removing the first of them and then "multiply"
+       * the coefficient with degree_before. */
+      auto tmp_vars = variables_;
+      Erase(tmp_vars, var);
+
+      SR tmp_coeff = coefficient_;
+      for(int i = 0; i < degree_before; ++i) {
+        tmp_coeff = tmp_coeff + coefficient_;
+      }
+      // FIXME: move instead of copying
+      return Monomial{tmp_coeff, tmp_vars};
     }
 
     // evaluate the monomial at the position values
-    SR eval(const std::map<VarPtr, SR>& values) const {
-      SR elem = coefficient_;
+    SR eval(const std::map<VarPtr, SR> &values) const {
+      SR result{coefficient_};
 
-      for(auto var : variables_) {
-        auto e = values.find(var);
-        assert(e != values.end()); // all variables should be in values
-        elem = elem * e->second;
-      }
-
-      return elem;
-    }
-
-    // partially evaluate the monomial at the position values
-    Monomial<SR> partial_eval(const std::map<VarPtr, SR>& values) const {
-      // keep the coefficient
-      Monomial<SR> elem(coefficient_);
-
-      // then loop over all variables and try to evaluate them
-      for(auto var : variables_) {
-        auto e = values.find(var);
-        if(e == values.end()) {
-          // variable not found in the mapping, so keep it
-          elem.variables_.insert(var);
-        } else {
-          // variable was found, use it for evaluation
-          elem.coefficient_ = elem.coefficient_ * e->second;
+      for (auto var_degree : variables_) {
+        auto value_iter = values.find(var_degree.first);
+        assert(value_iter != values.end()); // all variables should be in values
+        for (std::uint16_t i = 0; i < var_degree.second; ++i) {
+          result = result * value_iter->second;
         }
       }
 
-      return elem;
+      return result;
+    }
+
+    // partially evaluate the monomial at the position values
+    Monomial<SR> partial_eval(const std::map<VarPtr, SR> &values) const {
+      // keep the coefficient
+      Monomial<SR> result{coefficient_};
+
+      // then loop over all variables and try to evaluate them
+      for (auto var_degree : variables_) {
+        auto e = values.find(var_degree.first);
+        if (e == values.end()) {
+          // variable not found in the mapping, so keep it
+          Insert(result.variables_, var_degree.first, var_degree.second);
+        } else {
+          // variable was found, use it for evaluation
+          result.coefficient_ = result.coefficient_ * e->second;
+        }
+      }
+
+      return result;
     }
 
     // substitute variables with other variables
-    Monomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const {
+    Monomial<SR> subst(const std::map<VarPtr, VarPtr> &mapping) const {
       auto tmp_vars = variables_;
 
-      for(auto m_it = mapping.begin(); m_it != mapping.end(); ++m_it) {
-        std::size_t count = tmp_vars.count(m_it->first);
-        tmp_vars.erase(m_it->first); // erase all occurences
-        for(std::size_t i = 0; i < count; ++i)
-          tmp_vars.insert(m_it->second); // and "replace" them
+      for(auto from_to : mapping) {
+        auto degree = GetDegreeOf(tmp_vars, from_to.first);
+        EraseAll(tmp_vars, from_to.first);
+        Insert(tmp_vars, from_to.second, degree);
       }
 
-      return Monomial(coefficient_, tmp_vars);
+      // FIXME: move instead of copying
+      return Monomial{coefficient_, tmp_vars};
     }
 
     // convert this monomial to an element of the free semiring
-    FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR>* valuation) const {
+    FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR> *valuation) const {
       FreeSemiring result = FreeSemiring::one();
-      for(auto var : variables_) {
-        result = result * FreeSemiring(var);
+      for(auto var_degree : variables_) {
+        FreeSemiring tmp{var_degree.first};
+        for (std::uint16_t i = 0; i < var_degree.second; ++i) {
+          result = result * tmp;
+        }
       }
 
       // change the SR element to a constant in the free semiring
       auto elem = valuation->find(coefficient_);
       if(elem == valuation->end()) { // this is a new SR element
         // map 'zero' and 'one' element to respective free semiring element
-        if(coefficient_ == SR::null()) {
+        if (coefficient_ == SR::null()) {
           // valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(coeff,FreeSemiring::null()));
           result = FreeSemiring::null() * result;
         } else if (coefficient_ == SR::one()) {
@@ -165,7 +206,7 @@ class Monomial {
         } else {
           // use a fresh constant - the constructor of Var::getVar() will do this
           VarPtr tmp_var = Var::getVar();
-          FreeSemiring tmp(tmp_var);
+          FreeSemiring tmp{tmp_var};
           valuation->emplace(coefficient_, tmp_var);
           result = tmp * result;
         }
@@ -214,7 +255,11 @@ class Monomial {
     }
 
     std::set<VarPtr> get_variables() const {
-      return std::set<VarPtr>(variables_.begin(), variables_.end());
+      std::set<VarPtr> set;
+      for (auto var_degree : variables_) {
+        set.insert(var_degree.first);
+      }
+      return set;
     }
 
     std::string string() const {
