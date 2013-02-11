@@ -19,24 +19,31 @@
  * and max_sum. */
 class Generator {
   public:
-    Generator(std::vector<std::uint32_t>::size_type size, std::uint32_t max,
-              std::uint32_t min_sum, std::uint32_t max_sum)
-        : vector_(size), max_(max), min_sum_(min_sum), max_sum_(max_sum) {
+    Generator(std::size_t size, std::uint16_t max,
+              std::uint16_t min_sum, std::uint16_t max_sum)
+        : vector_(size), current_sum_(0), max_(max),
+          min_sum_(min_sum), max_sum_(max_sum) {
       assert(0 < vector_.size());
       assert(0 < max);
       assert(min_sum <= max_sum);
       assert(min_sum <= vector_.size() * max);
+      assert(current_sum_ == CurrentSum());
     }
 
     bool NextCombination() {
-      std::uint32_t sum = 0;
       bool added = false;
       bool valid = false;
 
       do {
-        added = AddOne();
-        sum = CurrentSum();
-        valid = min_sum_ <= sum && sum <= max_sum_;
+        if (current_sum_ < min_sum_) {
+          added = JumpMin();
+        } else if (max_sum_ < current_sum_) {
+          added = JumpMax();
+        } else {
+          added = AddOne();
+        }
+        assert(current_sum_ == CurrentSum() && BelowEqualMax());
+        valid = min_sum_ <= current_sum_ && current_sum_ <= max_sum_;
         if (added && valid) {
           return true;
         }
@@ -45,33 +52,86 @@ class Generator {
       return false;
     }
 
-    const std::vector<std::uint32_t>& GetVectorRef() const { return vector_; }
+    const std::vector<std::uint16_t>& GetVectorRef() const {
+      assert(current_sum_ == CurrentSum());
+      assert(BelowEqualMax());
+      assert(min_sum_ <= current_sum_ && current_sum_ <= max_sum_);
+
+      return vector_;
+    }
 
   private:
-    std::uint32_t CurrentSum() const {
-      assert(std::all_of(vector_.begin(), vector_.end(),
-                         [this](std::uint32_t i) { return i <= max_; }));
+    std::uint16_t CurrentSum() const {
       return std::accumulate(vector_.begin(), vector_.end(), 0);
     }
 
-    /* Add 1 to the current vector, wrap-around if some value is > max.  Returns
-     * false if we cannot add 1 (i.e., the last element would overflow). */
-    bool AddOne() {
-      for (auto &integer : vector_) {
+    bool BelowEqualMax() const {
+      return std::all_of(vector_.begin(), vector_.end(),
+                         [this](std::uint16_t i) { return i <= max_; });
+    }
+
+
+    /* Add 1 to the current vector, wrap-around if some value is > max_.
+     * Returns false if we cannot add 1 (i.e., the last element would
+     * overflow). */
+    bool AddOne(std::size_t start_index = 0) {
+      for (auto i = start_index; i < vector_.size(); ++i) {
+        auto &integer = vector_[i];
         ++integer;
+        ++current_sum_;
         if (integer <= max_) {
           return true;
         }
+        current_sum_ -= integer;
         integer = 0;
       }
       return false;
     }
 
+    /* Create the smallest vector that satisfies the min_sum_ requirement.  This
+     * means adding (without overflowing) min_sum_ - current_sum_. */
+    bool JumpMin() {
+      assert(min_sum_ > current_sum_);
+      auto remaining = min_sum_ - current_sum_;
+      for (auto &integer : vector_) {
+        auto to_add = integer + remaining > max_ ? max_ - integer : remaining;
+        integer += to_add;
+        current_sum_ += to_add;
+        remaining -= to_add;
+        if (remaining == 0) {
+          return true;
+        }
+      }
+      /* Added as much as we could, but still not enough... */
+      return false;
+    }
 
-    std::vector<std::uint32_t> vector_;
-    std::uint32_t max_;
-    std::uint32_t min_sum_;
-    std::uint32_t max_sum_;
+    /* Create the smallest vector that satisfies the max_sum_ requirement.  This
+     * means that we add (with overflow) enough to get below max. */
+    bool JumpMax() {
+      assert(max_sum_ < current_sum_);
+      for (std::size_t i = 0; i < vector_.size(); ++i) {
+        auto &integer = vector_[i];
+
+        /* If integer == 0 then this is harmless. */
+        current_sum_ -= integer;
+        integer = 0;
+
+        /* We're wrapping around integer and should add 1 to the next position.
+         * Check if that is enough or whether we should try to wrap-around the
+         * next position too.  This can happen when integer == 1. */
+        if (current_sum_ - integer + 1 <= max_sum_) {
+          return AddOne(i + 1);
+        }
+      }
+      return false;
+    }
+
+    std::vector<std::uint16_t> vector_;
+    std::uint16_t current_sum_;
+    std::uint16_t max_;
+    std::uint16_t min_sum_;
+    std::uint16_t max_sum_;
 };
 
 template <typename SR>
