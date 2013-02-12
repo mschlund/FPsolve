@@ -33,3 +33,15 @@ void Erase(std::map<VarPtr, std::uint16_t> &map, const VarPtr var,
     var_iter->second -= deg;
   }
 }
+
+void Merge(std::map<VarPtr, Degree> &to_modify,
+    const std::map<VarPtr, Degree> &to_merge) {
+  for (auto &var_degree : to_merge) {
+    auto iter_inserted = to_modify.insert(var_degree);
+    if (!iter_inserted.second) {
+      iter_inserted.first->second = std::max(iter_inserted.first->second,
+                                             var_degree.second);
+    }
+  }
+}
+
