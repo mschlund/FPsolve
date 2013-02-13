@@ -390,6 +390,14 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       return degree;
     }
 
+    Degree GetMaxDegreeOf(const VarPtr var) {
+      auto var_degree_iter = variables_.find(var);
+      if (var_degree_iter == variables_.end()) {
+        return 0;
+      }
+      return var_degree_iter->second;
+    }
+
     /* FIXME: Get rid of this. */
     std::set<VarPtr> get_variables() const {
       std::set<VarPtr> vars;

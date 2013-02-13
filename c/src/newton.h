@@ -6,6 +6,7 @@
 
 #include "matrix.h"
 #include "polynomial.h"
+#include "var_degree_map.h"
 
 #ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
@@ -19,15 +20,14 @@
  * and max_sum. */
 class Generator {
   public:
-    Generator(std::size_t size, std::uint16_t max,
-              std::uint16_t min_sum, std::uint16_t max_sum)
-        : vector_(size), current_sum_(0), max_(max),
+    Generator(const std::vector<Degree> &max, Degree min_sum, Degree max_sum)
+        : vector_(max.size()), max_(max), current_sum_(0),
           min_sum_(min_sum), max_sum_(max_sum) {
       assert(0 < vector_.size());
-      assert(0 < max);
       assert(min_sum <= max_sum);
-      assert(min_sum <= vector_.size() * max);
       assert(current_sum_ == CurrentSum());
+      assert(min_sum <= std::accumulate(max_.begin(), max_.end(),
+                                        static_cast<Degree>(0)));
     }
 
     bool NextCombination() {
@@ -66,8 +66,12 @@ class Generator {
     }
 
     bool BelowEqualMax() const {
-      return std::all_of(vector_.begin(), vector_.end(),
-                         [this](std::uint16_t i) { return i <= max_; });
+      for (std::size_t i = 0; i < vector_.size(); ++i) {
+        if (vector_[i] > max_[i]) {
+          return false;
+        }
+      }
+      return true;
     }
 
 
@@ -76,10 +80,14 @@ class Generator {
      * overflow). */
     bool AddOne(std::size_t start_index = 0) {
       for (auto i = start_index; i < vector_.size(); ++i) {
+        if (max_[i] == 0) {
+          continue;
+        }
+
         auto &integer = vector_[i];
         ++integer;
         ++current_sum_;
-        if (integer <= max_) {
+        if (integer <= max_[i]) {
           return true;
         }
         current_sum_ -= integer;
@@ -93,8 +101,14 @@ class Generator {
     bool JumpMin() {
       assert(min_sum_ > current_sum_);
       auto remaining = min_sum_ - current_sum_;
-      for (auto &integer : vector_) {
-        auto to_add = integer + remaining > max_ ? max_ - integer : remaining;
+      for (std::size_t i = 0; i < vector_.size(); ++i) { // auto &integer : vector_) {
+        if (max_[i] == 0) {
+          continue;
+        }
+        auto &integer = vector_[i];
+        auto integer_max = max_[i];
+        auto to_add = integer + remaining > integer_max ?
+                      integer_max - integer : remaining;
         integer += to_add;
         current_sum_ += to_add;
         remaining -= to_add;
@@ -111,6 +125,10 @@ class Generator {
     bool JumpMax() {
       assert(max_sum_ < current_sum_);
       for (std::size_t i = 0; i < vector_.size(); ++i) {
+        if (max_[i] == 0) {
+          continue;
+        }
+
         auto &integer = vector_[i];
 
         /* If integer == 0 then this is harmless. */
@@ -128,10 +146,10 @@ class Generator {
     }
 
     std::vector<std::uint16_t> vector_;
-    std::uint16_t current_sum_;
-    std::uint16_t max_;
-    std::uint16_t min_sum_;
-    std::uint16_t max_sum_;
+    const std::vector<Degree> &max_;
+    Degree current_sum_;
+    Degree min_sum_;
+    Degree max_sum_;
 };
 
 template <typename SR>
@@ -149,20 +167,26 @@ class Newton {
 
       std::vector<Polynomial<SR> > delta;
 
+      std::vector<Degree> current_max_degree(num_variables);
+
       for (int i = 0; i < num_variables; ++i) {
         Polynomial<SR> delta_i = Polynomial<SR>::null();
         Polynomial<SR> f = F.at(i);
-        int degree = f.get_degree();
+        Degree poly_max_degree = f.get_degree();
+
+        for (std::size_t i = 0; i < num_variables; ++i) {
+          current_max_degree[i] = f.GetMaxDegreeOf(poly_vars[i]);
+        }
 
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
-        Generator generator{num_variables, degree, 2, degree};
+        Generator generator{current_max_degree, 2, poly_max_degree};
 
         while (generator.NextCombination()) {
           std::vector<VarPtr> dx;
           Polynomial<SR> prod{SR::one()};
 
-          for (auto index = 0; index < num_variables; ++index) {
+          for (std::size_t index = 0; index < num_variables; ++index) {
             for (int j = 0; j < generator.GetVectorRef()[index]; ++j) {
               dx.push_back(poly_vars[index]);
               prod *= v_upd[index];
