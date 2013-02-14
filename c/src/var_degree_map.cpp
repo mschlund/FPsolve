@@ -16,7 +16,9 @@ void VarDegreeMap::Insert(const VarPtr var, std::uint16_t deg) {
   if (deg == 0) {
     return;
   }
-  auto iter_inserted = map_.emplace(var, deg);
+  // GCC 4.7 is missing emplace
+  // auto iter_inserted = map_.emplace(var, deg);
+  auto iter_inserted = map_.insert(std::make_pair(var, deg));
   if (!iter_inserted.second) {
     iter_inserted.first->second += deg;
   }

@@ -42,14 +42,18 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       if (c == SR::null()) {
         return;
       }
-      map.emplace(m, c);
+      // FIXME: GCC 4.7 is missing emplace
+      // map.emplace(m, c);
+      map.insert(std::make_pair(m, c));
     }
 
     void InsertMonomial(std::map<Monomial, SR> &map, Monomial &&m, SR &&c) {
       if (c == SR::null()) {
         return;
       }
-      map.emplace(std::move(m), std::move(c));
+      // FIXME: GCC 4.7 is missing emplace
+      // map.emplace(std::move(m), std::move(c));
+      map.insert(std::make_pair(std::move(m), std::move(c)));
     }
 
     void InsertMonomial(const Monomial &m, const SR &c) {
@@ -260,7 +264,9 @@ class Polynomial : public Semiring< Polynomial<SR> > {
           result_vector.push_back(polynomial.derivative(variable));
         }
       }
-      return Matrix< Polynomial<SR> >{ variables.size(), polynomials.size(),
+      // FIXME: Clean up Matrix and then remove the casts...
+      return Matrix< Polynomial<SR> >{ static_cast<int>(variables.size()),
+                                       static_cast<int>(polynomials.size()),
                                        std::move(result_vector) };
     };
 
@@ -299,18 +305,19 @@ class Polynomial : public Semiring< Polynomial<SR> > {
 
     static Matrix<SR> eval(const Matrix< Polynomial<SR> > &poly_matrix,
         const std::map<VarPtr, SR> &values) {
-      std::vector< Polynomial<SR> > tmp_polynomials = poly_matrix.getElements();
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<SR> result;
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
       }
-      return Matrix<SR>{poly_matrix.getColumns(), poly_matrix.getRows(), result};
+      return Matrix<SR>{poly_matrix.getColumns(), poly_matrix.getRows(),
+                        std::move(result)};
     }
 
     // FIXME: Why values is passed by value???
     static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > poly_matrix,
         std::map<VarPtr,Polynomial<SR> > values) {
-      std::vector< Polynomial<SR> > tmp_polynomials = poly_matrix.getElements();
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector< Polynomial<SR> > result;
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
@@ -367,7 +374,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       //   valuation = new std::unordered_map<SR, VarPtr, SR>();
 
 
-      std::vector< Polynomial<SR> > tmp_polynomials = poly_matrix.getElements();
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<FreeSemiring> result;
 
       for (const auto &polynomial : tmp_polynomials) {

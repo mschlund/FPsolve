@@ -75,7 +75,7 @@ class Monomial {
       auto tmp_variables = variables_;
       tmp_variables.Erase(var);
 
-      return { var_degree_iter->second, std::move(tmp_variables) };
+      return { var_degree_iter->second, Monomial{std::move(tmp_variables)} };
     }
 
     /* Evaluate the monomial given the map from variables to values. */

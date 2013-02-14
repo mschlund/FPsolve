@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <limits>
 #include <map>
 
 #include "var.h"

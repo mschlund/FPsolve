@@ -163,13 +163,13 @@ class Newton {
 
       std::vector<Degree> current_max_degree(num_variables);
 
-      for (int i = 0; i < num_variables; ++i) {
+      for (std::size_t i = 0; i < num_variables; ++i) {
         Polynomial<SR> delta_i = Polynomial<SR>::null();
         Polynomial<SR> f = F.at(i);
         Degree poly_max_degree = f.get_degree();
 
-        for (std::size_t i = 0; i < num_variables; ++i) {
-          current_max_degree[i] = f.GetMaxDegreeOf(poly_vars[i]);
+        for (std::size_t j = 0; j < num_variables; ++j) {
+          current_max_degree[j] = f.GetMaxDegreeOf(poly_vars[j]);
         }
 
         /* We want to calculate all possible derivatives of at least second
@@ -190,7 +190,9 @@ class Newton {
           // eval f.derivative(dx) at v
           std::map<VarPtr, VarPtr> values;
           for (std::size_t index = 0; index < v.size(); ++index) {
-            values.emplace(poly_vars[index], v[index]);
+            // FIXME: GCC 4.7 is missing emplace
+            // values.emplace(poly_vars[index], v[index]);
+            values.insert(std::make_pair(poly_vars[index], v[index]));
           }
           Polynomial<SR> f_eval = f.derivative(dx).subst(values);
 
