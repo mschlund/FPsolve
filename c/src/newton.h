@@ -4,16 +4,10 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "free-semiring.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "var_degree_map.h"
-
-#ifndef OLD_FREESEMIRING
-#include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
-
 
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum

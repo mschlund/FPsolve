@@ -2,13 +2,8 @@
 
 #include <iosfwd>
 
-#include "var_degree_map.h"
-
-#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
+#include "var_degree_map.h"
 
 
 template <typename SR>

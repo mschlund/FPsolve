@@ -1,8 +1,9 @@
-#include "test-polynomial.h"
-#include "../src/matrix.h"
 #include <iostream>
 #include <vector>
 #include <map>
+
+#include "../src/matrix.h"
+#include "test-polynomial.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 

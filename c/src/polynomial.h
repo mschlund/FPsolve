@@ -9,17 +9,12 @@
 #include <string>
 #include <unordered_map>
 
+#include "free-semiring.h"
 #include "matrix.h"
 #include "monomial.h"
 #include "semiring.h"
 #include "var.h"
 #include "var_degree_map.h"
-
-#ifndef OLD_FREESEMIRING
-#include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
 
 
 /*
