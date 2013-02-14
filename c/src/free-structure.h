@@ -16,8 +16,8 @@ class Element;
 class Epsilon;
 class Empty;
 
-/* This probably shouldn't be std::shared_ptr; see [Note: Garbage] */
-typedef std::shared_ptr<Node> NodePtr;
+/* See [Note: Garbage] */
+typedef Node* NodePtr;
 
 class NodeVisitor;
 
@@ -61,8 +61,8 @@ class Addition : public Node {
 
   private:
     Addition(NodePtr l, NodePtr r) : lhs(l), rhs(r) {}
-    NodePtr lhs;
-    NodePtr rhs;
+    const NodePtr lhs;
+    const NodePtr rhs;
     friend class NodeFactory;
 };
 
@@ -77,8 +77,8 @@ class Multiplication : public Node {
 
   private:
     Multiplication(NodePtr l, NodePtr r) : lhs(l), rhs(r) {}
-    NodePtr lhs;
-    NodePtr rhs;
+    const NodePtr lhs;
+    const NodePtr rhs;
     friend class NodeFactory;
 };
 
@@ -92,7 +92,7 @@ class Star : public Node {
 
   private:
     Star(NodePtr n) : node(n) {}
-    NodePtr node;
+    const NodePtr node;
     friend class NodeFactory;
 };
 
@@ -106,7 +106,7 @@ class Element : public Node {
 
   private:
     Element(VarPtr v) : var(v) {}
-    VarPtr var;
+    const VarPtr var;
     friend class NodeFactory;
 };
 
@@ -131,7 +131,14 @@ class Epsilon : public Node {
 class NodeFactory {
   public:
     NodeFactory() : empty_(new Empty), epsilon_(new Epsilon) {}
-    virtual ~NodeFactory() = default;
+    virtual ~NodeFactory() {
+      for (auto &pair : additions_) { delete pair.second; }
+      for (auto &pair : multiplications_) { delete pair.second; }
+      for (auto &pair : stars_) { delete pair.second; }
+      for (auto &pair : elems_) { delete pair.second; }
+      delete empty_;
+      delete epsilon_;
+    }
 
     virtual NodePtr NewAddition(NodePtr lhs, NodePtr rhs);
     virtual NodePtr NewMultiplication(NodePtr lhs, NodePtr rhs);

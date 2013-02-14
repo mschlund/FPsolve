@@ -2,13 +2,9 @@
 #define TEST_POLYNOMIAL_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/polynomial.h"
 
-#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
+#include "polynomial.h"
 
 class PolynomialTest : public CppUnit::TestFixture
 {

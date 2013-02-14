@@ -1,730 +1,467 @@
 #ifndef POLYNOMIAL_H
 #define POLYNOMIAL_H
 
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <iostream>
-#include <string>
-#include <list>
-#include <sstream>
-#include <initializer_list>
+#include <algorithm>
 #include <cassert>
-#include <memory>
-#include "var.h"
-#include "semiring.h"
-#include "matrix.h"
+#include <initializer_list>
+#include <list>
+#include <map>
+#include <string>
+#include <unordered_map>
 
-#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
+#include "matrix.h"
+#include "monomial.h"
+#include "semiring.h"
+#include "var.h"
+#include "var_degree_map.h"
 
 
-//FIXME: Polynomials are no semiring in our definition (not starable)
+/*
+ * TODO:
+ * - Add SanityCheck that checks all the invariants.
+ */
 
-template <typename SR>
-class Monomial
-{
-private:
-	std::multiset<VarPtr,VarPtrSort> variables;
-	SR coeff;
-	bool null;
 
-	// private constructor to not leak the internal data structure
-	Monomial(SR coeff, std::multiset<VarPtr,VarPtrSort> variables)
-	{
-		this->coeff = coeff;
-		if( !(coeff == SR::null())) // we only need to save the variables in this case
-		{
-			this->null = false;
-			this->variables = variables;
-		}
-		else
-			this->null = true;
-	}
-public:
-	// constant monomial coeff
-	Monomial(SR coeff)
-	{
-		this->coeff = coeff;
-		if(this->coeff == SR::null())
-			this->null = true;
-		else
-			this->null = false;
-	}
-
-	Monomial(SR coeff, std::initializer_list<VarPtr> variables)
-	{
-		this->coeff = coeff;
-		if( !(coeff == SR::null())) // we only need to save the variables in this case
-		{
-			this->variables = variables;
-			this->null = false;
-		}
-		else
-			this->null = true;
-	}
-
-	// std::vector seems to be a neutral data type and does not leak internal data structure
-	Monomial(SR coeff, std::vector<VarPtr> variables)
-	{
-		this->coeff = coeff;
-		if( !(coeff == SR::null())) // we only need to save the variables in this case
-		{
-			this->variables.insert(variables.begin(), variables.end());
-			this->null = false;
-		}
-		else
-			this->null = true;
-	}
-
-	// add the coefficients of two monomials if there variables are equal
-	Monomial operator+(const Monomial& monomial) const
-	{
-		assert(this->variables == monomial.variables);
-		return Monomial(this->coeff + monomial.coeff, this->variables);
-	}
-
-	// multiply two monomials
-	Monomial operator*(const Monomial& monomial) const
-	{
-		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
-		// "add" the variables from one to the other monomial
-		variables.insert(monomial.variables.begin(), monomial.variables.end());
-		return Monomial(this->coeff * monomial.coeff, variables);
-	}
-
-	// multiply a monomial with a variable
-	Monomial operator*(const VarPtr& var) const
-	{
-		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
-		// "add" the variables from one to the other monomial
-		variables.insert(var);
-		return Monomial(this->coeff, variables);
-	}
-
-	// commutative version of derivative
-	Monomial derivative(const VarPtr& var) const
-	{
-		// count number of occurences of var in variables
-		int count = this->variables.count(var);
-
-		// variable is not in variables, derivative is null
-		if(count == 0)
-			return Monomial(SR::null());
-
-		// remove one of these by removing the first of them and then "multiply"
-		// the coefficient with count
-		std::vector<VarPtr> variables(this->variables.begin(), this->variables.end());
-		SR coeff = this->coeff;
-		for(unsigned int i=0; i<variables.size(); ++i)
-		{
-			if(variables[i] == var)
-			{
-				variables.erase(variables.begin()+i);
-				for(int j = 0; j<count-1; ++j)
-					coeff = coeff + this->coeff;
-				break;
-			}
-		}
-		std::multiset<VarPtr,VarPtrSort> result(variables.begin(), variables.end());
-		return Monomial(coeff, result);
-	}
-
-	// evaluate the monomial at the position values
-	SR eval(const std::map<VarPtr, SR>& values) const
-	{
-		SR elem = this->coeff;
-
-		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
-		{
-			auto e = values.find(*v_it);
-			assert(e != values.end()); // all variables should be in values
-			SR foo = e->second;
-			elem = elem * foo;
-		}
-
-		return elem;
-	}
-
-	// partially evaluate the monomial at the position values
-	Monomial<SR> partial_eval(const std::map<VarPtr, SR>& values) const
-	{
-		// keep the coefficient
-		Monomial<SR> elem(this->coeff);
-
-		// then loop over all variables and try to evaluate them
-		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
-		{
-			auto e = values.find(*v_it);
-			if(e == values.end()) // variable not found in the mapping, so keep it
-			{
-				elem.variables.insert(*v_it);
-			}
-			else // variable was found, use it for evaluation
-			{
-				elem.coeff = elem.coeff * (e->second);
-			}
-		}
-
-		return elem;
-	}
-
-	// substitute variables with other variables
-	Monomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const
-	{
-		SR coeff = this->coeff;
-		std::multiset<VarPtr,VarPtrSort> variables = this->variables;
-
-		for(auto m_it = mapping.begin(); m_it != mapping.end(); ++m_it)
-		{
-			int count = variables.count(m_it->first);
-			variables.erase( (*m_it).first ); // erase all occurences
-			for(int i = 0; i < count; ++i)
-				variables.insert( (*m_it).second ); // and "replace" them
-		}
-
-		return Monomial(coeff, variables);
-	}
-
-	// convert this monomial to an element of the free semiring
-	FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR>* valuation) const
-	{
-		FreeSemiring result = FreeSemiring::one();
-		for(auto v_it = this->variables.begin(); v_it != this->variables.end(); ++v_it)
-		{
-			result = result * FreeSemiring(*v_it);
-		}
-
-		// change the SR element to a constant in the free semiring
-		auto elem = valuation->find(this->coeff);
-		if(elem == valuation->end()) // this is a new SR element
-		{
-			// map 'zero' and 'one' element to respective free semiring element
-			if(this->coeff == SR::null())
-			{
-				// valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::null()));
-				result = FreeSemiring::null() * result;
-			}
-			else if(this->coeff == SR::one())
-			{
-				// valuation->insert(valuation->begin(), std::pair<SR,FreeSemiring>(this->coeff,FreeSemiring::one()));
-				result = FreeSemiring::one() * result;
-			}
-			else
-			{
-				// use a fresh constant - the constructor of Var::getVar() will do this
-				VarPtr tmp_var = Var::getVar();
-				FreeSemiring tmp(tmp_var);
-				valuation->insert(valuation->begin(), std::pair<SR, VarPtr>(this->coeff,tmp_var));
-				result = tmp * result;
-			}
-		}
-		else // this is an already known element
-		{
-			result = (elem->second) * result;
-		}
-		return result;
-	}
-
-	// a monomial is smaller than another monomial if the variables are smaller
-	bool operator<(const Monomial& monomial) const
-	{
-		return this->variables < monomial.variables;
-	}
-
-	// a monomial is equal to another monomial if the variables are equal
-	// warning: the coefficient will not be regarded --- FIXME:this is extremly dangerous (regarding set-implementation of polynomial)!
-	bool operator==(const Monomial& monomial) const
-	{
-		return this->variables == monomial.variables;
-	}
-
-	// both monomials are equal if they have the same variables and the same coefficient
-	bool equal(const Monomial& monomial) const
-	{
-		return this->variables == monomial.variables && this->coeff == monomial.coeff;
-	}
-
-	int get_degree() const
-	{
-		return this->variables.size();
-	}
-
-	SR get_coeff() const {
-		return this->coeff;
-	}
-
-	bool is_null() const
-	{
-		return this->null;
-	}
-
-	void set_coeff(SR coeff) {
-		this->coeff = coeff;
-	}
-
-	void add_to_coeff(const SR coeff) {
-		this->coeff = this->coeff + coeff;
-	}
-
-	std::set<VarPtr> get_variables() const {
-		return std::set<VarPtr>(this->variables.begin(), this->variables.end());
-	}
-
-	std::string string() const
-	{
-		std::stringstream ss;
-		ss << this->coeff;
-		if( !(this->coeff == SR::null() || this->variables.empty()))
-		{
-			ss << "*" << this->variables;
-		}
-		return ss.str();
-	}
-};
+/* FIXME: Polynomials are no semiring in our definition (not starable). */
 
 template <typename SR>
-class Polynomial : public Semiring<Polynomial<SR> >
-{
-private:
-	int degree;
-	std::set<Monomial<SR> > monomials;
-	std::set<VarPtr> variables;
+class Polynomial : public Semiring< Polynomial<SR> > {
+  private:
+    /* Invariant:  The map is never empty.  In particular the 0 element of
+     * Polynomial is represented as singleton map with empty monomial pointing
+     * to the 0 element of the semiring. */
+    std::map<Monomial, SR> monomials_;
 
-	// private constructor to hide the internal data structure
-	Polynomial(const std::set<Monomial<SR> >& monomials)
-	{
-		this->monomials = monomials;
-		this->degree = 0;
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			this->degree = (*m_it).get_degree() > this->degree ? (*m_it).get_degree() : this->degree;
-			auto vars = m_it->get_variables();
-			this->variables.insert(vars.begin(), vars.end()); // collect all used variables
-		}
+    /* The maximum degree of each of the variables that appear in the
+     * polynomial. */
+    VarDegreeMap variables_;
 
-		// If there is a null-monomial, it should be at the front.
-		// If the polynomial has more than one element, delete the null element
-		if(this->monomials.size() > 1 && this->monomials.begin()->is_null())
-		{
-			this->monomials.erase(this->monomials.begin());
-		}
-	}
+    static void InsertMonomial(std::map<Monomial, SR> &map, const Monomial &m,
+        const SR &c) {
+      if (c == SR::null()) {
+        return;
+      }
+      // FIXME: GCC 4.7 is missing emplace
+      // map.emplace(m, c);
+      map.insert(std::make_pair(m, c));
+    }
 
-	static std::shared_ptr<Polynomial<SR>> elem_null;
-	static std::shared_ptr<Polynomial<SR>> elem_one;
-public:
-	// empty polynomial
-	Polynomial()
-	{
-		this->degree = 0;
-	};
+    void InsertMonomial(std::map<Monomial, SR> &map, Monomial &&m, SR &&c) {
+      if (c == SR::null()) {
+        return;
+      }
+      // FIXME: GCC 4.7 is missing emplace
+      // map.emplace(std::move(m), std::move(c));
+      map.insert(std::make_pair(std::move(m), std::move(c)));
+    }
 
-	Polynomial(std::initializer_list<Monomial<SR> > monomials)
-	{
-		if(monomials.size() == 0) {
-			this->monomials = {Monomial<SR>(SR::null(),{})};
-			this->degree = 0;
-		}
-		else {
-			this->monomials = std::set<Monomial<SR> >();
-			this->degree = 0;
+    void InsertMonomial(const Monomial &m, const SR &c) {
+      InsertMonomial(monomials_, m, c);
+    }
 
-			for(auto m_it = monomials.begin(); m_it != monomials.end(); ++m_it)
-			{
-				auto mon = this->monomials.find(*m_it);
+    void InsertMonomial(Monomial &&m, SR &&c) {
+      InsertMonomial(monomials_, std::move(m), std::move(c));
+    }
 
-				if(mon == this->monomials.end()) // not yet present as a monomial
-					this->monomials.insert(*m_it); // just insert it
-				else {
-					//monomial already present in this polynomial---add the coefficients (note that c++ containers cannot be modified in-place!)
-					Monomial<SR> tmp = *mon;
-					this->monomials.erase(mon);
-					this->monomials.insert( tmp + (*m_it) );
-				}
-				this->degree = m_it->get_degree() > this->degree ? m_it->get_degree() : this->degree;
-				auto vars = m_it->get_variables();
-				this->variables.insert(vars.begin(), vars.end()); // collect all used variables
-			}
-		}
-	}
+    Polynomial(std::map<Monomial, SR> &&ms, VarDegreeMap &&vs)
+        : monomials_(std::move(ms)), variables_(std::move(vs)) {
+      assert(SanityCheck());
+    }
 
-	Polynomial(const Polynomial& polynomial)
-	{
-		this->monomials = polynomial.monomials;
-		this->degree = polynomial.degree;
-		this->variables = polynomial.variables;
-	}
+    /* Private constructor to hide the internal data structure. */
+    Polynomial(const std::map<Monomial, SR> &ms) : monomials_(ms) {
+      for (auto &monomial_coeff : monomials_) {
+        variables_.Merge(monomial_coeff.first.variables_);
+      }
+      assert(SanityCheck());
+    }
 
-	// create a 'constant' polynomial
-	Polynomial(const SR& elem)
-	{
-		this->monomials = {Monomial<SR>(elem,{})};
-		this->degree = 0;
-	}
+    bool SanityCheck() const {
+      if (monomials_.empty()) {
+        return variables_.empty();
+      }
+      VarDegreeMap tmp_variables;
+      for (const auto &monomial_coeff : monomials_) {
+        tmp_variables.Merge(monomial_coeff.first.variables_);
+      }
+      return tmp_variables == variables_;
+    }
 
-	// create a polynomial which consists only of one variable
-	Polynomial(VarPtr var)
-	{
-		this->monomials = {Monomial<SR>(SR::one(),{var})};
-		this->degree = 1;
-	}
+  public:
+    Polynomial() = default;
 
-	Polynomial& operator=(const Polynomial& polynomial)
-	{
-		this->monomials = polynomial.monomials;
-		this->degree = polynomial.degree;
-		this->variables = polynomial.variables;
-		return (*this);
-	}
+    Polynomial(SR &&c, Monomial &&m) {
+      variables_ = m.variables_;
+      InsertMonomial(std::move(m), std::move(c));
 
-	Polynomial<SR> operator+=(const Polynomial<SR>& poly)
-	{
-		std::set<Monomial<SR> > monomials = this->monomials;
-		for(auto m_it = poly.monomials.begin(); m_it != poly.monomials.end(); ++m_it)
-		{
-			// check if "same" monomial is already in the set
-			auto mon = monomials.find(*m_it);
-			if(mon == monomials.end()) // this is not the case
-				monomials.insert(*m_it); // just insert it
-			else // monomial with the same variables found
-			{
-				Monomial<SR> tmp = *mon;
-				monomials.erase(mon);
-				monomials.insert( tmp + (*m_it) ); // then add both of them and overwrite the old one
-			}
-		}
+      assert(SanityCheck());
+    }
 
-		*this = Polynomial(monomials);
-		return *this;
-	}
+    Polynomial(std::initializer_list< std::pair<SR, Monomial> > init_list) {
+      for (const auto &coeff_monomial : init_list) {
+        auto iter = monomials_.find(coeff_monomial.second);
+        if (iter == monomials_.end()) {
+          variables_.Merge(coeff_monomial.second.variables_);
+          InsertMonomial(coeff_monomial.second, coeff_monomial.first);
+        } else {
+          /* FIXME: can we use here std::move? */
+          auto tmp_monomial_coeff = *iter;
+          monomials_.erase(iter);
+          InsertMonomial(tmp_monomial_coeff.first,
+                         tmp_monomial_coeff.second + coeff_monomial.first);
+        }
+      }
+      assert(SanityCheck());
+    }
 
-	Polynomial<SR> operator*=(const Polynomial<SR>& poly)
-	{
-		std::set<Monomial<SR> > monomials;
-		// iterate over both this and the poly polynomial
-		for(auto m_it1 = this->monomials.begin(); m_it1 != this->monomials.end(); ++m_it1)
-		{
-			for(auto m_it2 = poly.monomials.begin(); m_it2 != poly.monomials.end(); ++m_it2)
-			{
-				Monomial<SR> tmp = (*m_it1) * (*m_it2);
-				auto tmp2 = monomials.find(tmp);
-				if(tmp2 == monomials.end())
-					monomials.insert(tmp); // multiply them and insert them to the result set
-				else // the monomial was already in the list. Add them.
-				{
-					tmp = tmp + *tmp2;
-					monomials.erase(*tmp2);
-					monomials.insert(tmp);
-				}
-			}
-		}
+    Polynomial(const Polynomial &p) = default;
+    Polynomial(Polynomial &&p) = default;
 
-		*this = Polynomial(monomials);
-		return *this;
-	}
+    /* Create a 'constant' polynomial. */
+    Polynomial(const SR &elem) { InsertMonomial(Monomial{}, elem); }
+    Polynomial(SR &&elem) { InsertMonomial(Monomial{}, std::move(elem)); }
 
-	// multiplying a polynomial with a variable
-	Polynomial<SR> operator*(const VarPtr& var) const
-	{
-		std::set<Monomial<SR> > monomials;
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			monomials.insert( (*m_it) * var );
-		}
+    /* Create a polynomial which consists only of one variable. */
+    Polynomial(const VarPtr var) {
+      InsertMonomial(Monomial{var}, SR::one());
+      variables_.Insert(var);
+      assert(SanityCheck());
+    }
 
-		return Polynomial(monomials);
-	}
+    Polynomial<SR>& operator=(const Polynomial<SR> &p) = default;
+    Polynomial<SR>& operator=(Polynomial<SR> &&p) = default;
 
-	friend Polynomial<SR> operator*(const SR& elem, const Polynomial<SR>& polynomial)
-	{
-		std::set<Monomial<SR> > monomials;
+    Polynomial<SR>& operator+=(const Polynomial<SR> &polynomial) {
+      for (const auto &monomial_coeff : polynomial.monomials_) {
+        auto iter = monomials_.find(monomial_coeff.first);
+        if (iter == monomials_.end()) {
+          variables_.Merge(monomial_coeff.first.variables_);
+          InsertMonomial(monomial_coeff.first, monomial_coeff.second);
+        } else {
+          /* FIXME: can we use here std::move? */
+          auto tmp_monomial_coeff = *iter;
+          monomials_.erase(iter);
+          InsertMonomial(tmp_monomial_coeff.first,
+                         tmp_monomial_coeff.second + monomial_coeff.second);
+        }
+      }
 
-		for(auto m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
-		{
-			monomials.insert(elem * (*m_it));
-		}
+      assert(SanityCheck());
+      return *this;
+    }
 
-		return Polynomial(monomials);
-	}
+    Polynomial<SR>& operator*=(const Polynomial<SR> &rhs) {
+      if (monomials_.empty()) {
+        return *this;
+      } else if (rhs.monomials_.empty()) {
+        monomials_.clear();
+        variables_.clear();
+        return *this;
+      }
 
-	bool operator==(const Polynomial<SR>& polynomial) const
-	{
-		if(this->monomials.size() != polynomial.monomials.size())
-			return false;
+      std::map<Monomial, SR> tmp_monomials;
+      VarDegreeMap tmp_variables;
 
-		for(auto m_it = polynomial.monomials.begin(); m_it != polynomial.monomials.end(); ++m_it)
-		{
-			auto monomial = this->monomials.find(*m_it); // search with variables
-			if(monomial == this->monomials.end())
-				return false; // could not find this monomial
-			else
-			{
-				if(!monomial->equal(*m_it)) // check if the monomial has the same coefficient
-					return false;
-			}
+      // iterate over both this and the poly polynomial
+      for (const auto &lhs_monomial_coeff : monomials_) {
+        for (const auto &rhs_monomial_coeff : rhs.monomials_) {
+          auto tmp_monomial = lhs_monomial_coeff.first * rhs_monomial_coeff.first;
+          auto tmp_coeff = lhs_monomial_coeff.second * rhs_monomial_coeff.second;
 
-		}
-		return true;
-	}
+          auto iter = tmp_monomials.find(tmp_monomial);
+          if (iter == tmp_monomials.end()) {
+            /* The monomial is not in the list: update the variables and insert
+             * the monomial. */
+            tmp_variables.Merge(tmp_monomial.variables_);
+            InsertMonomial(tmp_monomials, std::move(tmp_monomial),
+                           std::move(tmp_coeff));
+          } else {
+            /* The monomial is already in the list, so add the coefficients. */
+            iter->second = tmp_coeff + iter->second;
+          }
+        }
+      }
 
-	// convert the given matrix to a matrix containing polynomials
-	// TODO: needed?
-	static Matrix<Polynomial<SR> > convert(const Matrix<SR>& mat)
-	{
-		std::vector<Polynomial<SR> > ret;
-		for(int i=0; i<mat.getColumns() * mat.getRows(); ++i)
-		{
-			// create constant polynomials
-			ret.push_back(Polynomial(mat.getElements().at(i)));
-		}
+      monomials_ = std::move(tmp_monomials);
+      variables_ = std::move(tmp_variables);
+      assert(SanityCheck());
+      return *this;
+    }
 
-		return Matrix<Polynomial<SR> >(mat.getColumns(), mat.getRows(), ret);
-	}
+    // multiplying a polynomial with a variable
+    Polynomial<SR> operator*(const VarPtr &var) const {
+      std::map<Monomial, SR> tmp_monomials;
+      VarDegreeMap tmp_variables;
+      for (const auto &monomial_coeff : monomials_) {
+        auto tmp_monomial = monomial_coeff.first * var;
+        tmp_variables.Merge(tmp_monomial.variables_);
+        InsertMonomial(tmp_monomials, std::move(tmp_monomial),
+                                      monomial_coeff.second);
+      }
 
-	Polynomial<SR> derivative(const VarPtr& var) const
-	{
-		std::set<Monomial<SR> > monomials;
+      return Polynomial{std::move(tmp_monomials)};
+    }
 
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			//if(SR::is_commutative) // TODO: check if compiler is optimizing this out
-			if(true)
-			{
-				// take the derivative of m_it and add it to the result set
-				Monomial<SR> derivative = (*m_it).derivative(var);
-				auto monomial = monomials.find(derivative);
-				if(monomial == monomials.end()) // TODO: think about this and remove if not needed
-				{
-					monomials.insert(derivative);
-				}
-				else
-				{
-					Monomial<SR> tmp = (*monomial) + derivative;
-					monomials.erase(monomial); // remove
-					monomials.insert(tmp); // and insert the updated version
-				}
-			}
-			else // non-commutative case
-			{
-				assert(false);	// TODO: not implemented yet
-			}
-		}
+    friend Polynomial<SR> operator*(const SR &elem,
+        const Polynomial<SR> &polynomial) {
 
-		if(monomials.empty()) // TODO: save variables explicit in this class and check if var is in vars
-			return Polynomial();
-		else
-			return Polynomial(monomials);
-	}
+      std::map<Monomial, SR> tmp_monomials;
 
-	Polynomial<SR> derivative(const std::vector<VarPtr>& vars) const
-	{
-		Polynomial<SR> polynomial = *this; // copy the polynomial
-		for(auto var = vars.begin(); var != vars.end(); ++var)
-		{
-			polynomial = polynomial.derivative(*var);
-		}
-		return polynomial;
-	}
+      for (const auto &monomial_coeff : polynomial.monomials_) {
+        InsertMonomial(tmp_monomials, monomial_coeff.first,
+                       elem * monomial_coeff.second);
+      }
 
-	static Matrix<Polynomial<SR> > jacobian(const std::vector<Polynomial<SR> >& polynomials, const std::vector<VarPtr>& variables)
-	{
-		std::vector<Polynomial<SR> > ret;
-		for(auto poly = polynomials.begin(); poly != polynomials.end(); ++poly)
-		{
-			for(auto var = variables.begin(); var != variables.end(); ++var)
-			{
-				ret.push_back(poly->derivative(*var));
-			}
-		}
-		return Matrix<Polynomial<SR> >(variables.size(), polynomials.size(), ret);
-	};
+      return Polynomial{std::move(tmp_monomials)};
+    }
 
-	// TODO: i need the variables in this function!
-	Matrix<Polynomial<SR> > hessian() const
-	{
-		std::vector<Polynomial<SR> > ret;
-		for(auto var2 = this->variables.begin(); var2 != this->variables.end(); ++var2)
-		{
-			Polynomial<SR> tmp = this->derivative(*var2);
-			for(auto var1 = this->variables.begin(); var1 != this->variables.end(); ++var1)
-			{
-				ret.push_back(tmp.derivative(*var1));
-			}
-		}
-		return Matrix<Polynomial<SR> >(this->variables.size(), this->variables.size(), ret);
-	}
+    bool operator==(const Polynomial<SR> &polynomial) const {
 
-	SR eval(const std::map<VarPtr,SR>& values) const
-	{
-		SR result = SR::null();
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			SR elem = m_it->eval(values);
-			result = result + elem;
-		}
-		return result;
-	}
+      return variables_ == polynomial.variables_ &&
+             monomials_ == polynomial.monomials_;
 
-	// evaluate the polynomial with the given mapping and return the new polynomial
-	Polynomial<SR> partial_eval(const std::map<VarPtr,SR>& values) const
-	{
-		Polynomial<SR> result = Polynomial<SR>::null();
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			Monomial<SR> elem = m_it->partial_eval(values);
-			result = result + Polynomial({elem});
-		}
-		return result;
-	}
+    }
 
-	// substitute variables with other variables
-	Polynomial<SR> subst(const std::map<VarPtr, VarPtr>& mapping) const
-	{
-		std::set<Monomial<SR> > monomials;
+    Polynomial<SR> derivative(const VarPtr& var) const {
+      std::map<Monomial, SR> tmp_monomials;
+      VarDegreeMap tmp_variables;
 
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-			monomials.insert((*m_it).subst(mapping));
+      for (const auto &monomial_coeff : monomials_) {
+        /* Take the derivative of every monomial and add it to the result. */
+        auto count_derivative = monomial_coeff.first.derivative(var);
+        auto iter = tmp_monomials.find(count_derivative.second);
+        SR tmp_coeff = SR::null();
+        for (Degree i = 0; i < count_derivative.first; ++i) {
+          tmp_coeff += monomial_coeff.second;
+        }
+        if (iter == tmp_monomials.end()) {
+          tmp_variables.Merge(count_derivative.second.variables_);
+          InsertMonomial(tmp_monomials, count_derivative.second,
+                         std::move(tmp_coeff));
+        } else {
+          iter->second += std::move(tmp_coeff);
+        }
+      }
 
-		return Polynomial<SR>(monomials);
-	}
+      return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
+    }
 
-	static Matrix<SR> eval(const Matrix<Polynomial<SR> >& polys, const std::map<VarPtr,SR>& values)
-	{
-		std::vector<Polynomial<SR> > polynomials = polys.getElements();
-		std::vector<SR> ret;
-		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
-		{
-			ret.push_back(polynomials[i].eval(values));
-		}
-		return Matrix<SR>(polys.getColumns(), polys.getRows(), ret);
-	}
+    Polynomial<SR> derivative(const std::vector<VarPtr> &vars) const {
+      Polynomial<SR> tmp_polynomial = *this;
+      for (auto var : vars) {
+        tmp_polynomial = tmp_polynomial.derivative(var);
+      }
+      return tmp_polynomial;
+    }
 
-	static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > polys, std::map<VarPtr,Polynomial<SR> > values)
-	{
-		std::vector<Polynomial<SR> > polynomials = polys.getElements();
-		std::vector<Polynomial<SR> > ret;
-		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
-		{
-			ret.push_back(polynomials[i].eval(values));
-		}
-		return Matrix<Polynomial<SR> >(polys.getColumns(), polys.getRows(), ret);
-	}
+    static Matrix< Polynomial<SR> > jacobian(
+        const std::vector< Polynomial<SR> > &polynomials,
+        const std::vector<VarPtr> &variables) {
+      std::vector< Polynomial<SR> > result_vector;
+      for (const auto &polynomial : polynomials) {
+        for (const auto variable : variables) {
+          result_vector.push_back(polynomial.derivative(variable));
+        }
+      }
+      // FIXME: Clean up Matrix and then remove the casts...
+      return Matrix< Polynomial<SR> >{ static_cast<int>(variables.size()),
+                                       static_cast<int>(polynomials.size()),
+                                       std::move(result_vector) };
+    };
 
-	// convert this polynomial to an element of the free semiring. regard the valuation map
-	// which can already define a conversion from the SR element to a free SR constant
-	// the valuation map is extended in this function
-	FreeSemiring make_free(std::unordered_map<SR,VarPtr, SR>* valuation)
-	{
-		if(!valuation)
-			valuation = new std::unordered_map<SR, VarPtr, SR>();
+    SR eval(const std::map<VarPtr, SR> &values) const {
+      SR result = SR::null();
+      for (const auto &monomial_coeff : monomials_) {
+        result += monomial_coeff.second * monomial_coeff.first.eval(values);
+      }
+      return result;
+    }
 
-		FreeSemiring result = FreeSemiring::null();
-		// convert this polynomial by adding all converted monomials
-		for(auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			result = result + m_it->make_free(valuation);
-		}
+    /* Evaluate as much as possible (depending on the provided values) and
+     * return both the concrete result and the remaining (i.e., unevaluated)
+     * monomial. */
+    Polynomial<SR> partial_eval(const std::map<VarPtr, SR> &values) const {
+      Polynomial<SR> result = Polynomial<SR>::null();
+      for (const auto &monomial_coeff : monomials_) {
+        auto tmp_coeff_monomial = monomial_coeff.first.partial_eval(values);
+        result += Polynomial(monomial_coeff.second * tmp_coeff_monomial.first,
+                             std::move(tmp_coeff_monomial.second));
+      }
+      return result;
+    }
 
-		return result;
-	}
+    /* Variable substitution. */
+    Polynomial<SR> subst(const std::map<VarPtr, VarPtr> &mapping) const {
+      std::map<Monomial, SR> tmp_monomials;
 
-	// convert this matrix of polynomials to a matrix with elements of the free semiring
-	static Matrix<FreeSemiring> make_free(const Matrix<Polynomial<SR> >& polys, std::unordered_map<SR, VarPtr, SR>* valuation)
-	{
-		std::vector<Polynomial<SR> > polynomials = polys.getElements();
-		std::vector<FreeSemiring> ret;
-		if(!valuation)
-			valuation = new std::unordered_map<SR, VarPtr, SR>();
+      for (const auto &monomial_coeff : monomials_) {
+        InsertMonomial(tmp_monomials, monomial_coeff.first.subst(mapping),
+                       monomial_coeff.second);
+      }
 
-		for(int i = 0; i < polys.getRows()*polys.getColumns(); i++)
-		{
-			ret.push_back(polynomials[i].make_free(valuation));
-		}
-		return Matrix<FreeSemiring>(polys.getColumns(), polys.getRows(), ret);
-	}
+      return Polynomial<SR>{std::move(tmp_monomials)};
+    }
 
-	int get_degree()
-	{
-		return this->degree;
-	}
+    static Matrix<SR> eval(const Matrix< Polynomial<SR> > &poly_matrix,
+        const std::map<VarPtr, SR> &values) {
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      std::vector<SR> result;
+      for (const auto &polynomial : tmp_polynomials) {
+        result.emplace_back(polynomial.eval(values));
+      }
+      return Matrix<SR>{poly_matrix.getColumns(), poly_matrix.getRows(),
+                        std::move(result)};
+    }
 
-	std::set<VarPtr> get_variables() const
-	{
-		return this->variables;
-	}
+    // FIXME: Why values is passed by value???
+    static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > poly_matrix,
+        std::map<VarPtr,Polynomial<SR> > values) {
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      std::vector< Polynomial<SR> > result;
+      for (const auto &polynomial : tmp_polynomials) {
+        result.emplace_back(polynomial.eval(values));
+      }
+      return Matrix< Polynomial<SR> >{poly_matrix.getColumns(),
+                                      poly_matrix.getRows(), result};
+    }
 
-	// some semiring functions
-	Polynomial<SR> star() const
-	{
-		// TODO: we cannot star polynomials!
-		assert(false);
-		return (*this);
-	}
+    /* Convert this polynomial to an element of the free semiring.  Note that
+     * the provided valuation might be modified with new elements. */
+    FreeSemiring make_free(std::unordered_map<SR, VarPtr, SR> *valuation) const {
+      assert(valuation);
 
-	static Polynomial<SR> const null()
-	{
-		if(!Polynomial::elem_null)
-			Polynomial::elem_null = std::shared_ptr<Polynomial<SR>>(new Polynomial(SR::null()));
-		return *Polynomial::elem_null;
-	}
+      /* FIXME: Do we need that?  The above assertion should let us know...
+      if (!valuation) {
+        valuation = new std::unordered_map<SR, VarPtr, SR>();
+      }
+      */
 
-	static Polynomial<SR> const one()
-	{
-		if(!Polynomial::elem_one)
-			Polynomial::elem_one = std::shared_ptr<Polynomial<SR>>(new Polynomial(SR::one()));
-		return *Polynomial::elem_one;
-	}
+      auto result = FreeSemiring::null();
+      // convert this polynomial by adding all converted monomials
+      for (const auto &monomial_coeff : monomials_) {
 
-	static bool is_idempotent;
-	static bool is_commutative;
+        if (monomial_coeff.second == SR::null()) {
+          result += FreeSemiring::null();
+        } else if (monomial_coeff.second == SR::one()) {
+          result += FreeSemiring::one();
+        } else {
+          auto value_iter = valuation->find(monomial_coeff.second);
+          if (value_iter == valuation->end()) {
+            /* Use a fresh constant - the constructor of Var::getVar() will take
+             * care of this. */
+            VarPtr tmp_var = Var::getVar();
+            FreeSemiring tmp_var_free{tmp_var};
+            valuation->emplace(monomial_coeff.second, tmp_var);
+            result += tmp_var_free * monomial_coeff.first.make_free();
+          } else {
+            result += value_iter->second * monomial_coeff.first.make_free();
+          }
+        }
+      }
 
-	std::string string() const
-	{
-		std::stringstream ss;
-		for (auto m_it = this->monomials.begin(); m_it != this->monomials.end(); ++m_it)
-		{
-			if(m_it != this->monomials.begin())
-				ss << " + ";
-			ss << (*m_it);
-		}
+      return result;
+    }
 
-		return ss.str();
-	}
+    /* Same as make_free but for matrix form. */
+    static Matrix<FreeSemiring> make_free(
+        const Matrix< Polynomial<SR> > &poly_matrix,
+        std::unordered_map<SR, VarPtr, SR> *valuation) {
+
+      assert(valuation);
+      // FIXME: Again, do we need that?
+      // if (!valuation)
+      //   valuation = new std::unordered_map<SR, VarPtr, SR>();
+
+
+      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      std::vector<FreeSemiring> result;
+
+      for (const auto &polynomial : tmp_polynomials) {
+        result.emplace_back(polynomial.make_free(valuation));
+      }
+      return Matrix<FreeSemiring>{poly_matrix.getColumns(),
+                                  poly_matrix.getRows(), std::move(result)};
+    }
+
+    Degree get_degree() {
+      Degree degree = 0;
+      for (auto &monomial_coeff : monomials_) {
+        degree = std::max(degree, monomial_coeff.first.get_degree());
+      }
+      return degree;
+    }
+
+    Degree GetMaxDegreeOf(const VarPtr var) {
+      auto var_degree_iter = variables_.find(var);
+      if (var_degree_iter == variables_.end()) {
+        return 0;
+      }
+      return var_degree_iter->second;
+    }
+
+    /* FIXME: Get rid of this. */
+    std::set<VarPtr> get_variables() const {
+      std::set<VarPtr> vars;
+      for (auto var_degree : variables_) {
+        vars.insert(var_degree.first);
+      }
+      return vars;
+    }
+
+    // TODO: we cannot star polynomials!
+    Polynomial<SR> star() const {
+      assert(false);
+      return (*this);
+    }
+
+    static Polynomial<SR> null() {
+      return Polynomial<SR>{};
+    }
+
+    static Polynomial<SR> one() {
+      return Polynomial<SR>{SR::one()};
+    }
+
+    static bool is_idempotent;
+    static bool is_commutative;
+
+    std::string string() const {
+      std::stringstream ss;
+      for (auto iter = monomials_.begin(); iter != monomials_.end(); ++iter) {
+        if (iter != monomials_.begin())
+          ss << " + ";
+        ss << iter->second << " * " << iter->first;
+      }
+      ss << " degree info: ";
+      for (auto &var_degree : variables_) {
+        ss << var_degree.first << " |-> " << var_degree.second;
+      }
+
+      return ss.str();
+    }
 };
 
 template <typename SR> bool Polynomial<SR>::is_commutative = false;
 template <typename SR> bool Polynomial<SR>::is_idempotent = false;
-// initialize pointers
-template <typename SR> std::shared_ptr<Polynomial<SR>> Polynomial<SR>::elem_null;
-template <typename SR> std::shared_ptr<Polynomial<SR>> Polynomial<SR>::elem_one;
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, const Monomial<SR>& monomial)
-{
-	return 	os << monomial.string();
+std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, SR>& values) {
+  for (auto value = values.begin(); value != values.end(); ++value) {
+    os << value->first << "→" << value->second << ";";
+  }
+  return os;
 }
 
+
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, SR>& values)
-{
-	for(auto value = values.begin(); value != values.end(); ++value)
-	{
-		os << value->first << "→" << value->second << ";";
-	}
-	return os;
+std::ostream& operator<<(std::ostream& os,
+    const std::map<VarPtr, Polynomial<SR> >& values) {
+  for (const auto &key_value : values) {
+    os << key_value->first << "→" << key_value->second << ";";
+  }
+  return os;
 }
-template <typename SR>
-std::ostream& operator<<(std::ostream& os, const std::map<VarPtr, Polynomial<SR> >& values)
-{
-	for(auto value = values.begin(); value != values.end(); ++value)
-	{
-		os << value->first << "→" << value->second << ";";
-	}
-	return os;
-}
+
 
 #endif

@@ -2,13 +2,9 @@
 #define TEST_MATRIX_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/matrix.h"
 
-#ifndef OLD_FREESEMIRING
 #include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
+#include "matrix.h"
 
 
 class MatrixTest : public CppUnit::TestFixture
