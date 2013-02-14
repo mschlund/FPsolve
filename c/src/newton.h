@@ -4,39 +4,40 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "free-semiring.h"
 #include "matrix.h"
 #include "polynomial.h"
-
-#ifndef OLD_FREESEMIRING
-#include "free-semiring.h"
-#else
-#include "free-semiring-old.h"
-#endif  /* OLD_FREESEMIRING */
-
+#include "var_degree_map.h"
 
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum
  * and max_sum. */
 class Generator {
   public:
-    Generator(std::vector<std::uint32_t>::size_type size, std::uint32_t max,
-              std::uint32_t min_sum, std::uint32_t max_sum)
-        : vector_(size), max_(max), min_sum_(min_sum), max_sum_(max_sum) {
+    Generator(const std::vector<Degree> &max, Degree min_sum, Degree max_sum)
+        : vector_(max.size()), max_(max), current_sum_(0),
+          min_sum_(min_sum), max_sum_(max_sum) {
       assert(0 < vector_.size());
-      assert(0 < max);
       assert(min_sum <= max_sum);
-      assert(min_sum <= vector_.size() * max);
+      assert(current_sum_ == CurrentSum());
+      assert(min_sum <= std::accumulate(max_.begin(), max_.end(),
+                                        static_cast<Degree>(0)));
     }
 
     bool NextCombination() {
-      std::uint32_t sum = 0;
       bool added = false;
       bool valid = false;
 
       do {
-        added = AddOne();
-        sum = CurrentSum();
-        valid = min_sum_ <= sum && sum <= max_sum_;
+        if (current_sum_ < min_sum_) {
+          added = JumpMin();
+        } else if (max_sum_ < current_sum_) {
+          added = JumpMax();
+        } else {
+          added = AddOne();
+        }
+        assert(current_sum_ == CurrentSum() && BelowEqualMax());
+        valid = min_sum_ <= current_sum_ && current_sum_ <= max_sum_;
         if (added && valid) {
           return true;
         }
@@ -45,43 +46,114 @@ class Generator {
       return false;
     }
 
-    const std::vector<std::uint32_t>& GetVectorRef() const { return vector_; }
+    const std::vector<std::uint16_t>& GetVectorRef() const {
+      assert(current_sum_ == CurrentSum());
+      assert(BelowEqualMax());
+      assert(min_sum_ <= current_sum_ && current_sum_ <= max_sum_);
+
+      return vector_;
+    }
 
   private:
-    std::uint32_t CurrentSum() const {
-      assert(std::all_of(vector_.begin(), vector_.end(),
-                         [this](std::uint32_t i) { return i <= max_; }));
+    std::uint16_t CurrentSum() const {
       return std::accumulate(vector_.begin(), vector_.end(), 0);
     }
 
-    /* Add 1 to the current vector, wrap-around if some value is > max.  Returns
-     * false if we cannot add 1 (i.e., the last element would overflow). */
-    bool AddOne() {
-      for (auto &integer : vector_) {
+    bool BelowEqualMax() const {
+      for (std::size_t i = 0; i < vector_.size(); ++i) {
+        if (vector_[i] > max_[i]) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+
+    /* Add 1 to the current vector, wrap-around if some value is > max_.
+     * Returns false if we cannot add 1 (i.e., the last element would
+     * overflow). */
+    bool AddOne(std::size_t start_index = 0) {
+      for (auto i = start_index; i < vector_.size(); ++i) {
+        if (max_[i] == 0) {
+          continue;
+        }
+
+        auto &integer = vector_[i];
         ++integer;
-        if (integer <= max_) {
+        ++current_sum_;
+        if (integer <= max_[i]) {
           return true;
         }
+        current_sum_ -= integer;
         integer = 0;
       }
       return false;
     }
 
+    /* Create the smallest vector that satisfies the min_sum_ requirement.  This
+     * means adding (without overflowing) min_sum_ - current_sum_. */
+    bool JumpMin() {
+      assert(min_sum_ > current_sum_);
+      auto remaining = min_sum_ - current_sum_;
+      for (std::size_t i = 0; i < vector_.size(); ++i) { // auto &integer : vector_) {
+        if (max_[i] == 0) {
+          continue;
+        }
+        auto &integer = vector_[i];
+        auto integer_max = max_[i];
+        auto to_add = integer + remaining > integer_max ?
+                      integer_max - integer : remaining;
+        integer += to_add;
+        current_sum_ += to_add;
+        remaining -= to_add;
+        if (remaining == 0) {
+          return true;
+        }
+      }
+      /* Added as much as we could, but still not enough... */
+      return false;
+    }
 
-    std::vector<std::uint32_t> vector_;
-    std::uint32_t max_;
-    std::uint32_t min_sum_;
-    std::uint32_t max_sum_;
+    /* Create the smallest vector that satisfies the max_sum_ requirement.  This
+     * means that we add (with overflow) enough to get below max. */
+    bool JumpMax() {
+      assert(max_sum_ < current_sum_);
+      for (std::size_t i = 0; i < vector_.size(); ++i) {
+        if (max_[i] == 0) {
+          continue;
+        }
+
+        auto &integer = vector_[i];
+
+        /* If integer == 0 then this is harmless. */
+        current_sum_ -= integer;
+        integer = 0;
+
+        /* We're wrapping around integer and should add 1 to the next position.
+         * Check if that is enough or whether we should try to wrap-around the
+         * next position too.  This can happen when integer == 1. */
+        if (current_sum_ - integer + 1 <= max_sum_) {
+          return AddOne(i + 1);
+        }
+      }
+      return false;
+    }
+
+    std::vector<std::uint16_t> vector_;
+    const std::vector<Degree> &max_;
+    Degree current_sum_;
+    Degree min_sum_;
+    Degree max_sum_;
 };
 
 template <typename SR>
 class Newton {
   private:
     Matrix<Polynomial<SR> > compute_symbolic_delta(
-        const std::vector<VarPtr>& v,
-        const std::vector<VarPtr>& v_upd,
-        const std::vector<Polynomial<SR> >& F,
-        const std::vector<VarPtr>& poly_vars) {
+        const std::vector<VarPtr> &v,
+        const std::vector<VarPtr> &v_upd,
+        const std::vector<Polynomial<SR> > &F,
+        const std::vector<VarPtr> &poly_vars) {
 
       auto num_variables = v.size();
       assert(num_variables == v_upd.size() &&
@@ -89,20 +161,26 @@ class Newton {
 
       std::vector<Polynomial<SR> > delta;
 
-      for (int i = 0; i < num_variables; ++i) {
+      std::vector<Degree> current_max_degree(num_variables);
+
+      for (std::size_t i = 0; i < num_variables; ++i) {
         Polynomial<SR> delta_i = Polynomial<SR>::null();
         Polynomial<SR> f = F.at(i);
-        int degree = f.get_degree();
+        Degree poly_max_degree = f.get_degree();
+
+        for (std::size_t j = 0; j < num_variables; ++j) {
+          current_max_degree[j] = f.GetMaxDegreeOf(poly_vars[j]);
+        }
 
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
-        Generator generator{num_variables, degree, 2, degree};
+        Generator generator{current_max_degree, 2, poly_max_degree};
 
         while (generator.NextCombination()) {
           std::vector<VarPtr> dx;
           Polynomial<SR> prod{SR::one()};
 
-          for (auto index = 0; index < num_variables; ++index) {
+          for (std::size_t index = 0; index < num_variables; ++index) {
             for (int j = 0; j < generator.GetVectorRef()[index]; ++j) {
               dx.push_back(poly_vars[index]);
               prod *= v_upd[index];
@@ -110,19 +188,18 @@ class Newton {
           }
 
           // eval f.derivative(dx) at v
-          std::map<VarPtr,VarPtr> values;
-          int j = 0;
-          for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
-               poly_var != poly_vars.end(); ++poly_var) {
-            values.insert(values.begin(),
-                          std::pair<VarPtr,VarPtr>((*poly_var),v.at(j++)));
+          std::map<VarPtr, VarPtr> values;
+          for (std::size_t index = 0; index < v.size(); ++index) {
+            // FIXME: GCC 4.7 is missing emplace
+            // values.emplace(poly_vars[index], v[index]);
+            values.insert(std::make_pair(poly_vars[index], v[index]));
           }
           Polynomial<SR> f_eval = f.derivative(dx).subst(values);
 
           delta_i = delta_i + f_eval * prod;
         }
 
-        delta.push_back(delta_i);
+        delta.emplace_back(std::move(delta_i));
       }
 
       return Matrix<Polynomial<SR> >(1, delta.size(), delta);
@@ -142,14 +219,14 @@ class Newton {
 
   public:
     // calculate the next newton iterand
-    Matrix<SR> step(const std::vector<VarPtr>& poly_vars,
-        const Matrix<FreeSemiring>& J_s,
-        std::unordered_map<VarPtr, SR>* valuation,
-        const Matrix<SR>& v, const Matrix<SR>& delta) {
+    Matrix<SR> step(const std::vector<VarPtr> &poly_vars,
+        const Matrix<FreeSemiring> &J_s,
+        std::unordered_map<VarPtr, SR> *valuation,
+        const Matrix<SR> &v, const Matrix<SR> &delta) {
       assert(poly_vars.size() == (unsigned int)v.getRows());
-      int i=0;
+      int i = 0;
       for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
-          poly_var != poly_vars.end(); ++poly_var) {
+           poly_var != poly_vars.end(); ++poly_var) {
         SR sr_elem = v.getElements().at(i++);
         valuation->erase(*poly_var); // clean the old variables from the map
         valuation->insert(valuation->begin(),

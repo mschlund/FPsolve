@@ -95,6 +95,10 @@ NodePtr NodeFactory::NewAddition(NodePtr lhs, NodePtr rhs) {
     return lhs;
   }
 
+  if (lhs == rhs) {
+    return lhs;
+  }
+
   /* Since + is commutative, use pointers to order the arguments.
    * This makes it possible to have that:
    *   NewAddition(a, b) == NewAddition(b, a) */

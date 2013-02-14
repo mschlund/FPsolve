@@ -1,3 +1,3 @@
 #include "free-semiring.h"
 
-std::unique_ptr<NodeFactory> FreeSemiring::factory_;
+NodeFactory FreeSemiring::factory_;

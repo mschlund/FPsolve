@@ -17,54 +17,41 @@ class FreeSemiring : public Semiring<FreeSemiring> {
   public:
     /* Default constructor creates zero element. */
     FreeSemiring() {
-      InitFactory();
-      assert(factory_);
-      node_ = factory_->GetEmpty();
+      node_ = factory_.GetEmpty();
     }
 
     FreeSemiring(const VarPtr var) {
       assert(var);
-      InitFactory();
-      assert(factory_);
-      node_ = factory_->NewElement(var);
+      node_ = factory_.NewElement(var);
     }
 
     static FreeSemiring null() {
-      InitFactory();
-      assert(factory_);
-      return FreeSemiring{factory_->GetEmpty()};
+      return FreeSemiring{factory_.GetEmpty()};
     }
 
     static FreeSemiring one() {
-      InitFactory();
-      assert(factory_);
-      return FreeSemiring{factory_->GetEpsilon()};
+      return FreeSemiring{factory_.GetEpsilon()};
     }
 
     FreeSemiring star() const {
-      assert(factory_);
-      return FreeSemiring{factory_->NewStar(node_)};
+      return FreeSemiring{factory_.NewStar(node_)};
     }
 
     FreeSemiring operator+(const FreeSemiring &x) {
-      assert(factory_);
-      return FreeSemiring{factory_->NewAddition(node_, x.node_)};
+      return FreeSemiring{factory_.NewAddition(node_, x.node_)};
     }
 
     FreeSemiring& operator+=(const FreeSemiring &x) {
-      assert(factory_);
-      node_ = factory_->NewAddition(node_, x.node_);
+      node_ = factory_.NewAddition(node_, x.node_);
       return *this;
     }
 
     FreeSemiring operator*(const FreeSemiring &x) {
-      assert(factory_);
-      return FreeSemiring{factory_->NewMultiplication(node_, x.node_)};
+      return FreeSemiring{factory_.NewMultiplication(node_, x.node_)};
     }
 
     FreeSemiring& operator*=(const FreeSemiring &x) {
-      assert(factory_);
-      node_ = factory_->NewMultiplication(node_, x.node_);
+      node_ = factory_.NewMultiplication(node_, x.node_);
       return *this;
     }
 
@@ -85,26 +72,18 @@ class FreeSemiring : public Semiring<FreeSemiring> {
     SR Eval(Evaluator<SR> &evaluator) const;
 
     void PrintDot(std::ostream &out) {
-      assert(factory_);
-      factory_->PrintDot(out);
+      factory_.PrintDot(out);
     }
 
     void GC() {
-      assert(factory_);
-      factory_->GC();
+      factory_.GC();
     }
 
   private:
-    FreeSemiring(NodePtr n) : node_(n) { assert(factory_); }
-
-    static void InitFactory() {
-      if (factory_ == nullptr) {
-        factory_ = std::move(std::unique_ptr<NodeFactory>(new NodeFactory));
-      }
-    }
+    FreeSemiring(NodePtr n) : node_(n) {}
 
     NodePtr node_;
-    static std::unique_ptr<NodeFactory> factory_;
+    static NodeFactory factory_;
 
     friend struct std::hash<FreeSemiring>;
 };
@@ -134,46 +113,51 @@ struct hash<FreeSemiring> {
  */
 template <typename SR>
 class Evaluator : public NodeVisitor {
-  typedef std::shared_ptr<SR> SRPtr_;
   public:
     Evaluator(const std::unordered_map<VarPtr, SR> &v)
         : val_(v), evaled_(), result_() {}
+
+    ~Evaluator() {
+      for (auto &pair : evaled_) { delete pair.second; }
+      /* Top level Node will not be in evaled_. */
+      delete result_;
+    }
 
     void Visit(const Addition &a) {
       LookupEval(a.GetLhs());
       auto temp = std::move(result_);
       LookupEval(a.GetRhs());
-      result_ = std::make_shared<SR>(*temp + *result_);
+      result_ = new SR(*temp + *result_);
     }
 
     void Visit(const Multiplication &m) {
       LookupEval(m.GetLhs());
       auto temp = std::move(result_);
       LookupEval(m.GetRhs());
-      result_ = std::make_shared<SR>(*temp * *result_);
+      result_ = new SR(*temp * *result_);
     }
 
     void Visit(const Star &s) {
       LookupEval(s.GetNode());
-      result_ = std::make_shared<SR>(result_->star());
+      result_ = new SR(result_->star());
     }
 
     void Visit(const Element &e) {
       auto iter = val_.find(e.GetVar());
       assert(iter != val_.end());
-      result_ = std::make_shared<SR>(iter->second);
+      result_ = new SR(iter->second);
     }
 
     void Visit(const Epsilon &e) {
-      result_ = std::make_shared<SR>(SR::one());
+      result_ = new SR(SR::one());
     }
 
     void Visit(const Empty &e) {
-      result_ = std::make_shared<SR>(SR::null());
+      result_ = new SR(SR::null());
     }
 
-    std::shared_ptr<SR> GetResult() {
-      return result_;
+    SR& GetResult() {
+      return *result_;
     }
 
     static const bool is_idempotent = false;
@@ -191,28 +175,28 @@ class Evaluator : public NodeVisitor {
     }
 
     const std::unordered_map<VarPtr, SR> &val_;
-    std::unordered_map<NodePtr, SRPtr_> evaled_;
-    SRPtr_ result_;
+    std::unordered_map<NodePtr, SR*> evaled_;
+    SR* result_;
 };
 
 template <typename SR>
 SR FreeSemiring::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
-  return std::move(*evaluator.GetResult());
+  return std::move(evaluator.GetResult());
 }
 
 template <typename SR>
 SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
   node_->Accept(evaluator);
-  return std::move(*evaluator.GetResult());
+  return std::move(evaluator.GetResult());
 }
 
 template <typename SR>
 Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
     const std::unordered_map<VarPtr, SR> &valuation) {
 
-  std::vector<FreeSemiring> elements = matrix.getElements();
+  const std::vector<FreeSemiring> &elements = matrix.getElements();
   std::vector<SR> result;
 
   /* We have a single Evaluator that is used for all evaluations of the elements
