@@ -1,260 +1,213 @@
-#ifndef MATRIX_H
-#define MATRIX_H
+#pragma once
 
-#include <string>
-#include <sstream>
-#include <vector>
 #include <assert.h>
 #include <initializer_list>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <vector>
 
 template <typename SR>
-class Matrix
-{
-private:
-	std::vector<SR> elements;
-	int columns;
-	int rows;
+class Matrix {
+  private:
+    std::size_t columns;
+    std::size_t rows;
+    std::vector<SR> elements;
 
-	// this is a naive implementation which creates lots of matrices
-	// maybe we can work directly on the elements (but then multiplication etc. are harder)
-	static Matrix recursive_star(Matrix matrix)
-	{
-		assert(matrix.rows == matrix.columns);
-		if(matrix.rows == 1) // just a scalar in a matrix
-		{
-			matrix.elements[0] = matrix.elements[0].star(); // use semiring-star
-			return matrix;
-		}
-		// peel mode if n%2 != 0, split in middle otherwise
-		int split = matrix.rows%2 == 0 ? matrix.columns/2 : matrix.columns-1;
+    // this is a naive implementation which creates lots of matrices
+    // maybe we can work directly on the elements (but then multiplication etc. are harder)
+    static Matrix recursive_star(Matrix matrix) {
+      assert(matrix.rows == matrix.columns);
+      if (matrix.rows == 1) {
+        // just a scalar in a matrix
+        matrix.elements[0] = matrix.elements[0].star(); // use semiring-star
+        return matrix;
+      }
+      // peel mode if n%2 != 0, split in middle otherwise
+      std::size_t split = matrix.rows%2 == 0 ? matrix.columns/2 : matrix.columns-1;
 
-		// TODO: this might be slightly inefficient
-		Matrix a_11 = matrix.submatrix(0,split,0,split);
-		Matrix a_12 = matrix.submatrix(split,matrix.columns,0,split);
-		Matrix a_21 = matrix.submatrix(0,split,split,matrix.rows);
-		Matrix a_22 = matrix.submatrix(split,matrix.columns,split,matrix.rows);
-		Matrix as_11 = recursive_star(a_11);
-		Matrix as_22 = recursive_star(a_22);
-		Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
-		Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
-		Matrix A_12 = as_11 * a_12 * A_22;
-		Matrix A_21 = as_22 * a_21 * A_11;
-		return block_matrix(A_11,A_12,A_21,A_22);
-	}
+      // TODO: this might be slightly inefficient
+      Matrix a_11 = matrix.submatrix(0,split,0,split);
+      Matrix a_12 = matrix.submatrix(split,matrix.columns,0,split);
+      Matrix a_21 = matrix.submatrix(0,split,split,matrix.rows);
+      Matrix a_22 = matrix.submatrix(split,matrix.columns,split,matrix.rows);
+      Matrix as_11 = recursive_star(a_11);
+      Matrix as_22 = recursive_star(a_22);
+      Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
+      Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
+      Matrix A_12 = as_11 * a_12 * A_22;
+      Matrix A_21 = as_22 * a_21 * A_11;
+      return block_matrix(A_11,A_12,A_21,A_22);
+    }
 
-	static Matrix block_matrix(Matrix a_11, Matrix a_12, Matrix a_21, Matrix a_22)
-	{
-		std::vector<SR> ret;
-		assert(a_11.rows == a_12.rows && a_21.rows == a_22.rows);
-		assert(a_11.columns == a_21.columns && a_12.columns == a_22.columns);
-		for(int r=0; r < a_11.rows; r++)
-		{
-			ret.insert(	ret.end(),
-					a_11.elements.begin()+(r*a_11.columns),
-					a_11.elements.begin()+((r+1)*a_11.columns));
-			ret.insert(	ret.end(),
-					a_12.elements.begin()+(r*a_12.columns),
-					a_12.elements.begin()+((r+1)*a_12.columns));
-		}
-		for(int r=0; r < a_21.rows; r++)
-		{
-			ret.insert(	ret.end(),
-					a_21.elements.begin()+(r*a_21.columns),
-					a_21.elements.begin()+((r+1)*a_21.columns));
-			ret.insert(	ret.end(),
-					a_22.elements.begin()+(r*a_22.columns),
-					a_22.elements.begin()+((r+1)*a_22.columns));
-		}
-		return Matrix(a_11.columns+a_12.columns, a_11.rows+a_21.rows, ret);
-	}
-public:
-	Matrix(const Matrix& matrix)
-	{
-		this->columns = matrix.columns;
-		this->rows = matrix.rows;
-		this->elements = matrix.elements;
-	}
+    static Matrix block_matrix(Matrix a_11, Matrix a_12, Matrix a_21, Matrix a_22) {
+      std::vector<SR> ret;
+      assert(a_11.rows == a_12.rows && a_21.rows == a_22.rows);
+      assert(a_11.columns == a_21.columns && a_12.columns == a_22.columns);
+      for (int r=0; r < a_11.rows; r++) {
+        ret.insert(     ret.end(),
+            a_11.elements.begin()+(r*a_11.columns),
+            a_11.elements.begin()+((r+1)*a_11.columns));
+        ret.insert(     ret.end(),
+            a_12.elements.begin()+(r*a_12.columns),
+            a_12.elements.begin()+((r+1)*a_12.columns));
+      }
+      for (int r=0; r < a_21.rows; r++) {
+        ret.insert(     ret.end(),
+            a_21.elements.begin()+(r*a_21.columns),
+            a_21.elements.begin()+((r+1)*a_21.columns));
+        ret.insert(     ret.end(),
+            a_22.elements.begin()+(r*a_22.columns),
+            a_22.elements.begin()+((r+1)*a_22.columns));
+      }
+      return Matrix(a_11.columns+a_12.columns, a_11.rows+a_21.rows, ret);
+    }
 
-	Matrix(int c, int r, std::initializer_list<SR> elements)
-	{
-		this->columns = c;
-		this->rows = r;
-		this->elements = elements;
-	}
+  public:
+    Matrix(const Matrix &m) = default;
+    Matrix(Matrix &&m) = default;
 
-	Matrix& operator=(const Matrix& matrix)
-	{
-		this->columns = matrix.columns;
-		this->rows = matrix.rows;
-		this->elements = matrix.elements;
-		return (*this);
-	};
+    Matrix(std::size_t c, std::size_t r, const std::vector<SR> &es)
+        : columns(c), rows(r), elements(es) {
+      assert(columns * rows == elements.size());
+    }
 
-	 // initialize c x r matrix with the null element
-	Matrix(int c, int r){
-		this->columns = c;
-		this->rows = r;
-		elements.assign(this->rows*this->columns,SR::null());
-	}
-	Matrix(int c, int r, const SR& elem){ // initialize c x r matrix with elem
-		this->columns = c;
-		this->rows = r;
-		elements.assign(this->rows*this->columns,elem);
-	}
-	Matrix(unsigned int c, unsigned int r, const std::vector<SR>& elements)
-	{
-		assert(c*r == elements.size());
-		this->columns = c;
-		this->rows = r;
-		this->elements = elements;
-	}
-	// get the submatrix starting from colum cs,...
-	Matrix submatrix(int cs, int ce, int rs, int re)
-	{
-		assert(cs>=0 && cs<this->columns && ce <= this->columns && ce > cs);
-		assert(rs>=0 && rs<this->rows && re <= this->rows && re > rs);
-		int nc = ce-cs; // new column count
-		int nr = re-rs; // new row count
-		std::vector<SR> ret;
-		for(int r=rs; r<re; r++)
-		{
-			for(int c=cs; c<ce; c++)
-			{
-				// copy the needed values from elements to ret
-				//ret[nc*(r-rs)+cs-c] = this->elements[this->columns*r+c];
-				ret.push_back(this->elements[this->columns*r+c]);
-			}
-		}
-		return Matrix(nc, nr, ret);
-	}
-	Matrix operator + (const Matrix& mat)
-	{
-		assert(this->rows == mat.rows && this->columns == mat.columns);
-		std::vector<SR> ret;
-		for(int i=0; i<this->columns * this->rows; i++)
-		{
-			ret.push_back(this->elements.at(i)+mat.elements.at(i));
-		}
+    Matrix(std::size_t c, std::size_t r, std::vector<SR> &&es)
+      : columns(c), rows(r), elements(std::move(es)) {
+      assert(columns * rows == elements.size());
+    }
 
-		return Matrix(this->columns, this->rows, ret);
-	};
-	Matrix operator * (const Matrix& mat)
-	{
-		assert(this->columns == mat.rows);
-		// TODO: naive implementation, tune this
-		std::vector<SR> ret;
-		ret.assign(this->rows*mat.columns,SR::null());
-		int i,r,c;
-		for(r = 0; r<this->rows; r++)
-		{
-			for(c = 0; c<mat.columns; c++)
-			{
-				SR tmp = SR::null();
-				for(i = 0; i<this->columns; i++)
-				{
-					assert((unsigned int)i*mat.columns+c < mat.elements.size());
-					assert((unsigned int)r*this->columns+i < this->elements.size());
-					tmp = tmp + this->elements.at(r*this->columns+i) * mat.elements.at(i*mat.columns+c);
-				}
-				assert((unsigned int)r*mat.columns+c < ret.size());
-				ret.at(r*mat.columns+c) = tmp;
-			}
-		}
-		return Matrix(mat.columns, this->rows, ret);
-	};
+    Matrix(std::size_t c, std::size_t r, std::initializer_list<SR> es)
+        : columns(c), rows(r), elements(es) {
+      assert(columns * rows == elements.size());
+    }
 
-	bool operator== (const Matrix& mat)
-	{
-		assert(this->rows == mat.rows && this->columns == mat.columns);
+    Matrix(std::size_t c, std::size_t r)
+        : columns(c), rows(r), elements(columns * rows, SR::null()) {}
 
-		bool result = true;
-		for(int i=0; i<this->columns * this->rows; i++)
-		{
-			if( !(this->elements[i] == mat.elements[i]) )
-				result = false;
-		}
-		return result;
-	}
+    Matrix(std::size_t c, std::size_t r, const SR &elem)
+        : columns(c), rows(r), elements(columns * rows, elem) {}
 
-	Matrix star ()
-	{
-		assert(this->columns == this->rows);
-		Matrix ret(*this);
-		return recursive_star(ret);
-	};
+    Matrix& operator=(const Matrix &matrix) = default;
+    Matrix& operator=(Matrix &&matrix) = default;
 
-	Matrix transpose() const
-	{
-		std::vector<SR> ret;
-		for(int c = 0; c<this->columns; c++)
-		{
-			for(int r = 0; r<this->rows; r++)
-			{
-				ret.push_back(this->elements.at(r*this->columns+c));
-			}
-		}
-		return Matrix(this->rows, this->columns, ret);
-	};
+    // get the submatrix starting from colum cs,...
+    Matrix submatrix(std::size_t cs, std::size_t ce, std::size_t rs, std::size_t re) {
+      assert(cs >= 0 && cs < columns && ce <= columns && ce > cs);
+      assert(rs >= 0 && rs < rows && re <= rows && re > rs);
+      std::size_t nc = ce-cs; // new column count
+      std::size_t nr = re-rs; // new row count
+      std::vector<SR> ret;
+      for (std::size_t r = rs; r < re; r++) {
+        for (std::size_t c = cs; c < ce; c++) {
+          // copy the needed values from elements to ret
+          //ret[nc*(r-rs)+cs-c] = elements[columns*r+c];
+          ret.push_back(elements[columns*r+c]);
+        }
+      }
+      return Matrix(nc, nr, std::move(ret));
+    }
 
-	int getRows() const
-	{
-		return this->rows;
-	};
+    Matrix operator+(const Matrix& mat) {
+      assert(rows == mat.rows && columns == mat.columns &&
+             elements.size() == mat.elements.size());
+      std::vector<SR> result;
+      result.reserve(elements.size());
+      for (std::size_t i = 0; i < columns * rows; ++i) {
+        result.emplace_back(elements[i] + mat.elements[i]);
+      }
 
-	int getColumns() const
-	{
-		return this->columns;
-	};
+      return Matrix(columns, rows, std::move(result));
+    };
 
-	std::vector<SR> getElements() const
-	{
-		std::vector<SR> ret = this->elements;
-		return ret;
-	};
+    Matrix operator*(const Matrix &rhs) {
+      assert(columns == rhs.rows);
+      // TODO: naive implementation, tune this
+      std::vector<SR> result(rows * rhs.columns, SR::null());
+      for (std::size_t r = 0; r < rows; ++r) {
+        for (std::size_t c = 0; c < rhs.columns; ++c) {
+          SR tmp = SR::null();
+          for (std::size_t i = 0; i < columns; ++i) {
+            assert(i * rhs.columns + c < rhs.elements.size());
+            assert(r * columns + i < elements.size());
+            tmp += elements[r * columns + i] * rhs.elements[i * rhs.columns + c];
+          }
+          assert(r * rhs.columns + c < result.size());
+          result[r * rhs.columns + c] = tmp;
+        }
+      }
+      return Matrix(rhs.columns, rows, std::move(result));
+    };
 
-	std::string string() const
-	{
-		std::stringstream ss;
-		int r;
-		int c;
-		for(r = 0; r < this->rows; r++)
-		{
-			for(c = 0; c < this->columns; c++)
-			{
-				ss << this->elements.at(r*this->columns+c) << " ";
-			}
-			ss << std::endl;
-		}
-		return ss.str();
-	}
+    bool operator==(const Matrix &rhs) {
+      assert(rows == rhs.rows && columns == rhs.columns &&
+             elements.size() == rhs.elements.size());
+      return elements == rhs.elements;
+    }
 
-	static std::shared_ptr<Matrix<SR>> elem_null;
-	static std::shared_ptr<Matrix<SR>> elem_one;
+    Matrix star() {
+      assert(columns == rows);
+      Matrix ret(*this);
+      return recursive_star(ret);
+    };
 
-	static Matrix<SR> const null(int size)
-	{
-		if(!Matrix::elem_null)
-			Matrix::elem_null = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, SR::null()));
-		return *Matrix::elem_null;
-	}
+    Matrix transpose() const {
+      std::vector<SR> ret;
+      for (int c = 0; c < columns; ++c) {
+        for (int r = 0; r < rows; ++r) {
+          ret.push_back(elements[r * columns + c]);
+        }
+      }
+      return Matrix(rows, columns, ret);
+    };
 
-	static Matrix<SR> const one(int size)
-	{
-		if(!Matrix::elem_one)
-		{
-			std::vector<SR> ret;
-			for(int i = 0; i < size*size; ++i)
-			{
-				if(i%(size+1) == 0) // diagonal entry, [0,size+1,2*(size+1),...]
-					ret.push_back(SR::one());
-				else
-					ret.push_back(SR::null());
-			}
-			Matrix::elem_one = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, ret));
-		}
-		return *Matrix::elem_one;
-	}
+    std::size_t getRows() const {
+      return rows;
+    };
+
+    std::size_t getColumns() const {
+      return columns;
+    };
+
+    const std::vector<SR>& getElements() const {
+      return elements;
+    };
+
+    std::string string() const {
+      std::stringstream ss;
+      int r;
+      int c;
+      for (r = 0; r < rows; ++r) {
+        for (c = 0; c < columns; ++c) {
+          ss << elements.at(r * columns + c) << " ";
+        }
+        ss << std::endl;
+      }
+      return ss.str();
+    }
+
+    static std::shared_ptr<Matrix<SR>> elem_null;
+    static std::shared_ptr<Matrix<SR>> elem_one;
+
+    static Matrix<SR> const null(int size) {
+      if (!Matrix::elem_null)
+        Matrix::elem_null = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, SR::null()));
+      return *Matrix::elem_null;
+    }
+
+    static Matrix<SR> const one(int size) {
+      if (!Matrix::elem_one) {
+        std::vector<SR> ret;
+        for (int i = 0; i < size*size; ++i) {
+          if (i%(size+1) == 0) // diagonal entry, [0,size+1,2*(size+1),...]
+            ret.push_back(SR::one());
+          else
+            ret.push_back(SR::null());
+        }
+        Matrix::elem_one = std::shared_ptr<Matrix<SR>>(new Matrix(size, size, ret));
+      }
+      return *Matrix::elem_one;
+    }
 };
 
 template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_null;
@@ -262,18 +215,14 @@ template <typename SR> std::shared_ptr<Matrix<SR>> Matrix<SR>::elem_one;
 
 // friend method of Matrix
 template <typename SR>
-Matrix<SR> operator * (SR elem, const Matrix<SR>& mat)
-{
-	std::vector<SR> ret;
-	for(int i=0; i<mat.rows*mat.columns; i++)
-	{
-		ret.push_back(elem*mat[i]); // semiring multiplication
-	}
+Matrix<SR> operator*(SR elem, const Matrix<SR> &mat) {
+  std::vector<SR> ret;
+  for (std::size_t i = 0; i < mat.rows * mat.columns; ++i) {
+    ret.push_back(elem * mat[i]); // semiring multiplication
+  }
 }
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os, const Matrix<SR>& matrix)
-{
-	return os << matrix.string();
+std::ostream& operator<<(std::ostream &os, const Matrix<SR> &matrix) {
+  return os << matrix.string();
 }
-#endif
