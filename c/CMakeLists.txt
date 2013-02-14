@@ -54,11 +54,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -pedantic-errors -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-
-if(${OLD_FREESEMIRING})
-  add_definitions(-DOLD_FREESEMIRING)
-endif(${OLD_FREESEMIRING})
+set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 if(${LPSOLVE})
   add_definitions(-DLPSOLVE_OPT)

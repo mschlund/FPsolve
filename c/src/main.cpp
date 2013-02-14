@@ -178,8 +178,8 @@ int main(int argc, char* argv[])
 
 		std::vector<Polynomial<SemilinSetExp> > polynomials;
 		Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("a")), {Var::getVar("x"),Var::getVar("x")}),
-		Monomial<SemilinSetExp>(SemilinSetExp(Var::getVar("c")), {}) });
+		  { SemilinSetExp(Var::getVar("a")), Monomial{ {Var::getVar("x"),Var::getVar("x")} } },
+		  { SemilinSetExp(Var::getVar("c")), Monomial{} } });
 
 		polynomials.push_back(f1);
 
