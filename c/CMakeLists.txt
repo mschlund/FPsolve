@@ -33,17 +33,16 @@ include_directories(${CPPUNIT_INCLUDE_DIRS})
 # lpsolve
 
 if(DEFINED ENV{LPSOLVE_ROOT})
-  set(LPSOLVE_INCLUDE_DIRS "$ENV{CPPUNIT_ROOT}/include/")
-  set(LPSOLVE_LIBRARY_DIRS "$ENV{CPPUNIT_ROOT}/lib/")
-  set(LPSOLVE_LIBRARIES "lpsolve")
+  set(CPPUNIT_INCLUDE_DIRS "$ENV{LPSOLVE_ROOT}/include/")
+  set(CPPUNIT_LIBRARY_DIRS "$ENV{LPSOLVE_ROOT}/lib/")
+  set(CPPUNIT_LIBRARIES "lpsolve55")
 else(DEFINED ENV{LPSOLVE_ROOT})
-  include(FindPkgConfig)
-  pkg_check_modules(LPSOLVE lpsolve)
+  set(LPSOLVE_INCLUDE_DIRS "/usr/include/lpsolve/")
+  set(LPSOLVE_LIBRARY_DIRS "/usr/lib/lp_solve/")
+  set(LPSOLVE_LIBRARIES "lpsolve55")
+#  include(FindPkgConfig)
+#  pkg_check_modules(LPSOLVE lpsolve55)
 endif(DEFINED ENV{LPSOLVE_ROOT})
-
-link_directories(${LPSOLVE_LIBRARY_DIRS})
-include_directories(${LPSOLVE_INCLUDE_DIRS})
-
 
 # CXXFLAGS
 
@@ -60,6 +59,18 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O2")
 if(${OLD_FREESEMIRING})
   add_definitions(-DOLD_FREESEMIRING)
 endif(${OLD_FREESEMIRING})
+
+if(${LPSOLVE})
+  add_definitions(-DLPSOLVE_OPT)
+else(${LPSOLVE})
+  set(LPSOLVE_INCLUDE_DIRS "")
+  set(LPSOLVE_LIBRARY_DIRS "")
+  set(LPSOLVE_LIBRARIES "")
+endif(${LPSOLVE})
+
+link_directories(${LPSOLVE_LIBRARY_DIRS})
+include_directories(${LPSOLVE_INCLUDE_DIRS})
+
 
 add_subdirectory("src")
 add_subdirectory("test")

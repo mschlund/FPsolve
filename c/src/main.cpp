@@ -257,6 +257,15 @@ int main(int argc, char* argv[])
 		}
 
 		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+
+		// final cleanup :)
+/*		SemilinSetExp tmp;
+		for (auto e : result) {
+		  tmp = e.second;
+		  tmp.clean_slset();
+		  result[e.first] = tmp;
+		}
+*/
 		std::cout << result_string(result) << std::endl;
 	}
 	else if(vm.count("rexp")) {

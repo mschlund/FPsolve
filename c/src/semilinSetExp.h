@@ -68,10 +68,8 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
 
     static SemilinSetExp null();
     static SemilinSetExp one();
-
     static std::set<LinSet> star(const LinSet &ls);
-    static bool divides(const VecSparse &a, const VecSparse &b);
-    static void clean_generators(LinSet &ls);
+
 
     SemilinSetExp star() const;
     std::string string() const;
@@ -82,10 +80,11 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
     bool operator == (const SemilinSetExp& sl) const;
     std::ostream& operator<<(std::ostream& os) const;
 
+    void clean_slset();
+
     static const bool is_idempotent;
     static const bool is_commutative;
 };
-
 
 
 
