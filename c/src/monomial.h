@@ -2,8 +2,14 @@
 
 #include <iosfwd>
 
-#include "free-semiring.h"
 #include "var_degree_map.h"
+
+#ifndef OLD_FREESEMIRING
+#include "free-semiring.h"
+#else
+#include "free-semiring-old.h"
+#endif  /* OLD_FREESEMIRING */
+
 
 template <typename SR>
 class Polynomial;
