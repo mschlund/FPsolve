@@ -202,7 +202,7 @@ class Newton {
         delta.emplace_back(std::move(delta_i));
       }
 
-      return Matrix<Polynomial<SR> >(1, delta.size(), delta);
+      return Matrix<Polynomial<SR> >(delta.size(), delta);
     }
 
     std::vector<VarPtr> get_symbolic_vector(int size, std::string prefix) {
@@ -270,7 +270,7 @@ class Newton {
     // TODO: seems to be 2 iterations off compared to sage-impl..
     Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F,
                               const std::vector<VarPtr>& poly_vars, int max_iter) {
-      Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(1,F.size(),F);
+      Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(F.size(),F);
       Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
       auto valuation_tmp = new std::unordered_map<SR, VarPtr, SR>();
       Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
@@ -295,7 +295,7 @@ class Newton {
       std::vector<VarPtr> u_upd =
         this->get_symbolic_vector(poly_vars.size(), "u_upd");
 
-      Matrix<SR> v = Matrix<SR>(1,(int)F.size()); // v^0 = 0
+      Matrix<SR> v = Matrix<SR>((int)F.size(),1); // v^0 = 0
 
       // d^0 = F(0)
       std::map<VarPtr,SR> values;

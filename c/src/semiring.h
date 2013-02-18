@@ -9,6 +9,7 @@
 template <typename SR>
 class Semiring {
 public:
+        virtual ~Semiring() = default;
 	friend SR operator * (const SR& lhs, const SR& rhs)
 	{
 		SR result = lhs;
@@ -28,6 +29,10 @@ public:
 	static SR null();
 	static SR one();
 	virtual std::string string() const = 0;
+
+        // FIXME: This might be _really_ inefficient.  Maybe we should just
+        // require that the semirings provide the specialization for
+        // std::hash...?
 	size_t operator()(const SR& sr) const
 	{
 		return std::hash<std::string>()(sr.string());

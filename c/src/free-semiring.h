@@ -208,7 +208,7 @@ Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
     result.emplace_back(elem.Eval(evaluator));
   }
 
-  return Matrix<SR>(matrix.getRows(), matrix.getColumns(), std::move(result));
+  return Matrix<SR>(matrix.getRows(), std::move(result));
 }
 
 /* FIXME: Temporary wrapper for compatibility with the old implementation. */

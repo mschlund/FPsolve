@@ -93,14 +93,14 @@ void PolynomialTest::testJacobian() {
     Polynomial<FreeSemiring>({ {FreeSemiring::null(), {}} })
   };
 
-  Matrix<Polynomial<FreeSemiring> > result = Matrix<Polynomial<FreeSemiring> >(3,2,polys2);
+  Matrix<Polynomial<FreeSemiring> > result = Matrix<Polynomial<FreeSemiring> >(2,polys2);
 
   CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
 
   polys = {*p1};
   vars = {Var::getVar("x")};
   polys2 = { Polynomial<FreeSemiring>({ {*a+*b, {}} }) };
-  result = Matrix<Polynomial<FreeSemiring> >(1,1,polys2);
+  result = Matrix<Polynomial<FreeSemiring> >(1,polys2);
   CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
 
 }
