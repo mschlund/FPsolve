@@ -6,6 +6,12 @@
 #include <string>
 #include <vector>
 
+/*
+ * FIXME:
+ * - unify handling of rows and columns: rows _always_ should be passed before
+ *   columns
+ */
+
 template <typename SR>
 class Matrix {
   public:
@@ -33,6 +39,20 @@ class Matrix {
     Matrix(std::size_t c, std::size_t r, const SR &elem)
         : columns_(c), rows_(r), elements_(columns_ * rows_, elem) {}
 
+    inline std::size_t GetIndex(std::size_t r, std::size_t c) const {
+      return r * columns_ + c;
+    }
+
+    inline SR& At(std::size_t r, std::size_t c) {
+      assert(GetIndex(r, c) < elements_.size());
+      return elements_[GetIndex(r, c)];
+    }
+
+    inline const SR& At(std::size_t r, std::size_t c) const {
+      assert(GetIndex(r, c) < elements_.size());
+      return elements_[GetIndex(r, c)];
+    }
+
     Matrix& operator=(const Matrix &matrix) = default;
     Matrix& operator=(Matrix &&matrix) = default;
 
@@ -45,26 +65,23 @@ class Matrix {
         result.emplace_back(elements_[i] + mat.elements_[i]);
       }
 
-      return Matrix(columns_, rows_, std::move(result));
+      return Matrix{columns_, rows_, std::move(result)};
     };
 
     Matrix operator*(const Matrix &rhs) const {
       assert(columns_ == rhs.rows_);
-      // TODO: naive implementation, tune this
-      std::vector<SR> result(rows_ * rhs.columns_, SR::null());
+      Matrix result{rhs.columns_, rows_, SR::null()};
       for (std::size_t r = 0; r < rows_; ++r) {
         for (std::size_t c = 0; c < rhs.columns_; ++c) {
-          SR tmp = SR::null();
           for (std::size_t i = 0; i < columns_; ++i) {
-            assert(i * rhs.columns_ + c < rhs.elements_.size());
-            assert(r * columns_ + i < elements_.size());
-            tmp += elements_[r * columns_ + i] * rhs.elements_[i * rhs.columns_ + c];
+            assert(GetIndex(r, i) < elements_.size());
+            assert(rhs.GetIndex(i, c) < rhs.elements_.size());
+            assert(result.GetIndex(r, c) < result.elements_.size());
+            result.At(r, c) += At(r, i) * rhs.At(i, c);
           }
-          assert(r * rhs.columns_ + c < result.size());
-          result[r * rhs.columns_ + c] = tmp;
         }
       }
-      return Matrix(rhs.columns_, rows_, std::move(result));
+      return result;
     };
 
     bool operator==(const Matrix &rhs) {
@@ -73,21 +90,36 @@ class Matrix {
       return elements_ == rhs.elements_;
     }
 
+    Matrix FloydWarshall() const {
+      assert(columns_ == rows_);
+      Matrix result = *this;
+      for (std::size_t k = 0; k < rows_; ++k) {
+        for (std::size_t i = 0; i < rows_; ++i) {
+          for (std::size_t j = 0; j < rows_; ++j) {
+            result.At(i, j) +=
+              result.At(i, k) * result.At(k, k).star() * result.At(k, j);
+          }
+        }
+      }
+      /* Add element 1, i.e., Floyd-Warshall will give us A+ matrix, so
+       *   1 + A+ = A*
+       * Reusing one() and operator+ would be much slower (additional
+       * allocations and unnecessary traersals). */
+      for (std::size_t i = 0; i < rows_; ++i) {
+        result.At(i, i) += SR::one();
+      }
+      return result;
+    }
+
+    Matrix star2() const {
+      assert(columns_ == rows_);
+      return FloydWarshall();
+    }
+
     Matrix star() const {
       assert(columns_ == rows_);
       return recursive_star(*this);
-    };
-
-    Matrix transpose() const {
-      std::vector<SR> result;
-      result.reserve(elements_.size());
-      for (std::size_t c = 0; c < columns_; ++c) {
-        for (std::size_t r = 0; r < rows_; ++r) {
-          result.push_back(elements_[r * columns_ + c]);
-        }
-      }
-      return Matrix(rows_, columns_, std::move(result));
-    };
+    }
 
     std::size_t getRows() const {
       return rows_;
@@ -105,18 +137,18 @@ class Matrix {
       std::stringstream ss;
       for (std::size_t r = 0; r < rows_; ++r) {
         for (std::size_t c = 0; c < columns_; ++c) {
-          ss << elements_[r * columns_ + c] << " ";
+          ss << At(r, c) << " | ";
         }
         ss << std::endl;
       }
       return ss.str();
     }
 
-    static Matrix<SR> const null(std::size_t size) {
-      return Matrix(size, size, SR::null());
+    static Matrix const null(std::size_t size) {
+      return Matrix{size, size, SR::null()};
     }
 
-    static Matrix<SR> const one(std::size_t size) {
+    static Matrix const one(std::size_t size) {
       std::vector<SR> result;
       result.reserve(size * size);
       for (std::size_t i = 0; i < size * size; ++i) {
@@ -126,7 +158,7 @@ class Matrix {
         else
           result.emplace_back(SR::null());
       }
-      return Matrix(size, size, std::move(result));
+      return Matrix{size, size, std::move(result)};
     }
 
   private:
@@ -161,10 +193,14 @@ class Matrix {
       Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
       Matrix A_12 = as_11 * a_12 * A_22;
       Matrix A_21 = as_22 * a_21 * A_11;
+      // FIXME: should be:
+      // Matrix A_12 = as_11 * a_12 * as_22;
+      // Matrix A_21 = as_22 * a_21 * as_11;
       return block_matrix(A_11,A_12,A_21,A_22);
     }
 
-    static Matrix block_matrix(Matrix a_11, Matrix a_12, Matrix a_21, Matrix a_22) {
+    static Matrix block_matrix(const Matrix &a_11, const Matrix &a_12,
+                               const Matrix &a_21, const Matrix &a_22) {
       std::vector<SR> ret;
       assert(a_11.rows_ == a_12.rows_ && a_21.rows_ == a_22.rows_);
       assert(a_11.columns_ == a_21.columns_ && a_12.columns_ == a_22.columns_);
@@ -184,11 +220,13 @@ class Matrix {
             a_22.elements_.begin()+(r*a_22.columns_),
             a_22.elements_.begin()+((r+1)*a_22.columns_));
       }
-      return Matrix(a_11.columns_+a_12.columns_, a_11.rows_+a_21.rows_, ret);
+      return Matrix{a_11.columns_+a_12.columns_, a_11.rows_+a_21.rows_,
+                    std::move(ret)};
     }
 
     // get the submatrix starting from colum cs,...
-    Matrix submatrix(std::size_t cs, std::size_t ce, std::size_t rs, std::size_t re) {
+    Matrix submatrix(std::size_t cs, std::size_t ce,
+                     std::size_t rs, std::size_t re) const {
       assert(cs >= 0 && cs < columns_ && ce <= columns_ && ce > cs);
       assert(rs >= 0 && rs < rows_ && re <= rows_ && re > rs);
       std::size_t nc = ce-cs; // new column count
