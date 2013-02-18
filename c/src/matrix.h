@@ -6,38 +6,32 @@
 #include <string>
 #include <vector>
 
-/*
- * FIXME:
- * - unify handling of rows and columns: rows _always_ should be passed before
- *   columns
- */
-
 template <typename SR>
 class Matrix {
   public:
     Matrix(const Matrix &m) = default;
     Matrix(Matrix &&m) = default;
 
-    Matrix(std::size_t c, std::size_t r, const std::vector<SR> &es)
-        : columns_(c), rows_(r), elements_(es) {
+    Matrix(std::size_t r, const std::vector<SR> &es)
+        : rows_(r), columns_(es.size() / r), elements_(es) {
       assert(Sanity());
     }
 
-    Matrix(std::size_t c, std::size_t r, std::vector<SR> &&es)
-      : columns_(c), rows_(r), elements_(std::move(es)) {
+    Matrix(std::size_t r, std::vector<SR> &&es)
+      : rows_(r), columns_(es.size() / r), elements_(std::move(es)) {
       assert(Sanity());
     }
 
-    Matrix(std::size_t c, std::size_t r, std::initializer_list<SR> es)
-        : columns_(c), rows_(r), elements_(es) {
+    Matrix(std::size_t r, std::initializer_list<SR> es)
+        : rows_(r), columns_(es.size() / r), elements_(es) {
       assert(Sanity());
     }
 
-    Matrix(std::size_t c, std::size_t r)
-        : columns_(c), rows_(r), elements_(columns_ * rows_, SR::null()) {}
+    Matrix(std::size_t r, std::size_t c)
+        : rows_(r), columns_(c), elements_(rows_ * columns_, SR::null()) {}
 
-    Matrix(std::size_t c, std::size_t r, const SR &elem)
-        : columns_(c), rows_(r), elements_(columns_ * rows_, elem) {}
+    Matrix(std::size_t r, std::size_t c, const SR &elem)
+        : rows_(r), columns_(c), elements_(rows_ * columns_, elem) {}
 
     inline std::size_t GetIndex(std::size_t r, std::size_t c) const {
       return r * columns_ + c;
@@ -65,12 +59,12 @@ class Matrix {
         result.emplace_back(elements_[i] + mat.elements_[i]);
       }
 
-      return Matrix{columns_, rows_, std::move(result)};
+      return Matrix{rows_, std::move(result)};
     };
 
     Matrix operator*(const Matrix &rhs) const {
       assert(columns_ == rhs.rows_);
-      Matrix result{rhs.columns_, rows_, SR::null()};
+      Matrix result{rows_, rhs.columns_, SR::null()};
       for (std::size_t r = 0; r < rows_; ++r) {
         for (std::size_t c = 0; c < rhs.columns_; ++c) {
           for (std::size_t i = 0; i < columns_; ++i) {
@@ -158,12 +152,12 @@ class Matrix {
         else
           result.emplace_back(SR::null());
       }
-      return Matrix{size, size, std::move(result)};
+      return Matrix{size, std::move(result)};
     }
 
   private:
-    std::size_t columns_;
     std::size_t rows_;
+    std::size_t columns_;
     std::vector<SR> elements_;
 
     bool Sanity() const {
@@ -220,7 +214,7 @@ class Matrix {
             a_22.elements_.begin()+(r*a_22.columns_),
             a_22.elements_.begin()+((r+1)*a_22.columns_));
       }
-      return Matrix{a_11.columns_+a_12.columns_, a_11.rows_+a_21.rows_,
+      return Matrix{a_11.rows_+a_21.rows_,
                     std::move(ret)};
     }
 
@@ -229,7 +223,7 @@ class Matrix {
                      std::size_t rs, std::size_t re) const {
       assert(cs >= 0 && cs < columns_ && ce <= columns_ && ce > cs);
       assert(rs >= 0 && rs < rows_ && re <= rows_ && re > rs);
-      std::size_t nc = ce-cs; // new column count
+      // std::size_t nc = ce-cs; // new column count
       std::size_t nr = re-rs; // new row count
       std::vector<SR> ret;
       for (std::size_t r = rs; r < re; r++) {
@@ -239,7 +233,7 @@ class Matrix {
           ret.push_back(elements_[columns_*r+c]);
         }
       }
-      return Matrix(nc, nr, std::move(ret));
+      return Matrix{nr, std::move(ret)};
     }
 
 
