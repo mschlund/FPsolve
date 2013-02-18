@@ -265,9 +265,8 @@ class Polynomial : public Semiring< Polynomial<SR> > {
         }
       }
       // FIXME: Clean up Matrix and then remove the casts...
-      return Matrix< Polynomial<SR> >{ static_cast<int>(variables.size()),
-                                       static_cast<int>(polynomials.size()),
-                                       std::move(result_vector) };
+      return Matrix< Polynomial<SR> >{polynomials.size(),
+                                      std::move(result_vector)};
     };
 
     SR eval(const std::map<VarPtr, SR> &values) const {
@@ -310,8 +309,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
       }
-      return Matrix<SR>{poly_matrix.getColumns(), poly_matrix.getRows(),
-                        std::move(result)};
+      return Matrix<SR>{poly_matrix.getRows(), std::move(result)};
     }
 
     // FIXME: Why values is passed by value???
@@ -322,8 +320,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
       }
-      return Matrix< Polynomial<SR> >{poly_matrix.getColumns(),
-                                      poly_matrix.getRows(), result};
+      return Matrix< Polynomial<SR> >{poly_matrix.getRows(), result};
     }
 
     /* Convert this polynomial to an element of the free semiring.  Note that
@@ -380,8 +377,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.make_free(valuation));
       }
-      return Matrix<FreeSemiring>{poly_matrix.getColumns(),
-                                  poly_matrix.getRows(), std::move(result)};
+      return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
     }
 
     Degree get_degree() {

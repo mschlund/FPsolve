@@ -15,17 +15,17 @@ void MatrixTest::setUp()
 	q = new FreeSemiring(Var::getVar("q"));r = new FreeSemiring(Var::getVar("r"));
 	null = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::null(3));
 	one = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::one(3));
-	first = new Matrix<FreeSemiring>(3,2,{
+	first = new Matrix<FreeSemiring>(2,{
 			*a,*b,*c,
 			*d,*e,*f});
-	second = new Matrix<FreeSemiring>(3,2,{
+	second = new Matrix<FreeSemiring>(2,{
 			*g,*h,*i,
 			*j,*k,*l});
-	third = new Matrix<FreeSemiring>(2,3,{
+	third = new Matrix<FreeSemiring>(3,{
 			*m,*n,
 			*o,*p,
 			*q,*r});
-	fourth = new Matrix<FreeSemiring>(3,3,{
+	fourth = new Matrix<FreeSemiring>(3,{
 			*a,*b,*a,
 			*b,*a,*b,
 			*a,*b,*a});
@@ -50,7 +50,7 @@ void MatrixTest::testAddition()
 	// matrix + null = matrix
 	CPPUNIT_ASSERT( *fourth + *null  == *fourth);
 
-	Matrix<FreeSemiring> result(3,2,{
+	Matrix<FreeSemiring> result(2,{
 			*a + *g, *b + *h, *c + *i,
 			*d + *j, *e + *k, *f + *l});
 	CPPUNIT_ASSERT( ((*first) + (*second)) == result );
@@ -67,7 +67,7 @@ void MatrixTest::testMultiplication()
 	// matrix * null = null
 	CPPUNIT_ASSERT( *fourth * *null  == *null);
 
-	Matrix<FreeSemiring> result(2,2,{
+	Matrix<FreeSemiring> result(2,{
 			*a * *m + *b * *o + *c * *q,
 			*a * *n + *b * *p + *c * *r,
 			*d * *m + *e * *o + *f * *q,
@@ -88,7 +88,7 @@ void MatrixTest::testStar()
 	*/
 
 	// this result was created with the c++-algorithm of svn-revision 115
-	Matrix<FreeSemiring> result(2,2,{
+	Matrix<FreeSemiring> result(2,{
 			(((((*a * *m) + (*b * *o)) + (*c * *q)) + (((((*a * *n) + (*b * *p)) + (*c * *r)) * ((((*d * *n) + (*e * *p)) + (*f * *r)).star())) * (((*d * *m) + (*e * *o)) + (*f * *q)))).star()),
 			((((((*a * *m) + (*b * *o)) + (*c * *q)).star()) * (((*a * *n) + (*b * *p)) + (*c * *r))) * (((((*d * *n) + (*e * *p)) + (*f * *r)) + (((((*d * *m) + (*e * *o)) + (*f * *q)) * ((((*a * *m) + (*b * *o)) + (*c * *q)).star())) * (((*a * *n) + (*b * *p)) + (*c * *r)))).star())),
 			((((((*d * *n) + (*e * *p)) + (*f * *r)).star()) * (((*d * *m) + (*e * *o)) + (*f * *q))) * (((((*a * *m) + (*b * *o)) + (*c * *q)) + (((((*a * *n) + (*b * *p)) + (*c * *r)) * ((((*d * *n) + (*e * *p)) + (*f * *r)).star())) * (((*d * *m) + (*e * *o)) + (*f * *q)))).star())),

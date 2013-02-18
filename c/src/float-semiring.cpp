@@ -41,6 +41,7 @@ bool FloatSemiring::operator==(const FloatSemiring& elem) const
 FloatSemiring FloatSemiring::star() const
 {
 	// if this->val == 1 this returns inf
+        assert(0 < 1 - this->val);
 	return FloatSemiring(1/(1-this->val));
 }
 
