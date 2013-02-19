@@ -9,7 +9,8 @@
 template <typename SR>
 class Semiring {
 public:
-        virtual ~Semiring() = default;
+  virtual ~Semiring(){};
+
 	friend SR operator * (const SR& lhs, const SR& rhs)
 	{
 		SR result = lhs;
