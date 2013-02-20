@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <vector>
+
 /* Taken from Boost. */
 template <typename A>
 inline void HashCombine(std::size_t &seed, const A &a) {
@@ -18,6 +21,19 @@ struct hash< std::pair<A, B> > {
     HashCombine(h, pair.second);
     return h;
   }
+
 };
+
+template<typename A>
+struct hash< std::vector<A> > {
+  inline std::size_t operator()(const std::vector<A> &vec) const {
+    std::size_t h = 0;
+    for (auto &x : vec) {
+      HashCombine(h, x);
+    }
+    return h;
+  }
+};
+
 
 }  /* namespace std */
