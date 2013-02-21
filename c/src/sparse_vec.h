@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -23,7 +25,7 @@ template <typename V>
 using VarVectorPtr = VarVector<V>*;
 
 template <typename V>
-class SparseVecFactory;
+class VarVectorFactory;
 
 }  /* Anonymous namespace. */
 
@@ -68,8 +70,15 @@ class SparseVec {
     SparseVec(std::initializer_list< std::pair<V, Counter> > list)
         : SparseVec(VarVector<V>{list}) {}
 
+    SparseVec(const V &v, Counter c)
+      : SparseVec({ std::pair<V, Counter>{v, c} }) {}
+
     bool operator==(const SparseVec &rhs) const {
       return vector_ptr_ == rhs.vector_ptr_;
+    }
+
+    bool operator!=(const SparseVec &rhs) const {
+      return vector_ptr_ != rhs.vector_ptr_;
     }
 
     bool operator<(const SparseVec &rhs) const {
@@ -128,29 +137,29 @@ class SparseVec {
     SparseVec(VarVectorPtr<V> v) : vector_ptr_(v) {}
 
     VarVectorPtr<V> vector_ptr_;
-    static SparseVecFactory<V> factory_;
+    static VarVectorFactory<V> factory_;
 };
 
 template <typename V>
-SparseVecFactory<V> SparseVec<V>::factory_;
+VarVectorFactory<V> SparseVec<V>::factory_;
 
 namespace {
 
 template <typename V>
-class SparseVecFactory {
+class VarVectorFactory {
   public:
-    SparseVecFactory() = default;
+    VarVectorFactory() = default;
 
-    ~SparseVecFactory() {
+    ~VarVectorFactory() {
       std::cout << "Number of SparseVec objects: " << map_.size() << std::endl;
       for (auto &key_value : map_) { delete key_value.second; }
     }
 
-    SparseVecFactory(const SparseVecFactory &f) = delete;
-    SparseVecFactory(SparseVecFactory &&f) = delete;
+    VarVectorFactory(const VarVectorFactory &f) = delete;
+    VarVectorFactory(VarVectorFactory &&f) = delete;
 
-    SparseVecFactory& operator=(const SparseVecFactory &f) = delete;
-    SparseVecFactory& operator=(SparseVecFactory &&f) = delete;
+    VarVectorFactory& operator=(const VarVectorFactory &f) = delete;
+    VarVectorFactory& operator=(VarVectorFactory &&f) = delete;
 
     VarVectorPtr<V> NewVarVector(const VarVectorPtr<V> vector_ptr) {
       assert(vector_ptr);
