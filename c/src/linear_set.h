@@ -1,25 +1,51 @@
+#pragma once
+
 #include <cassert>
 #include <set>
+#include <unordered_map>
+#include <utility>
 
-/*
- * Note that this should be std::set since we use the fact that inserting
- * doesn't invalidate any iterators and erase doesn't invalidate any iterators
- * except for the erased one.
- */
+#include "key_wrapper.h"
+#include "sparse_vec.h"
+
+// FIXME: this should be a class
 template <typename V>
-using SparseVecSet = std::set< SparseVec<V> >;
+using OffsetGenerators = std::pair< SparseVec<V>, std::set< SparseVec<V> > >;
+
+template <typename V>
+using OffsetGeneratorsPtr = OffsetGenerators<V>*;
+
+namespace {
+
+template <typename V>
+class OffsetGeneratorsFactory;
+
+}  /* Anonymous namespace. */
 
 template <typename Simplifier, typename V>
 class LinearSet {
   public:
-    LinearSet() = default;
-    LinearSet(const SparseVec<V> &o, const SparseVecSet<V> &vs)
-        : offset_(o), generators_(vs) {}
-    LinearSet(SparseVec<V> &&o, SparseVecSet<V> &&vs)
-        : offset_(std::move(o)), generators_(std::move(vs)) {}
+    LinearSet() {
+      off_gens_ = factory_.NewOffsetGenerators(new OffsetGenerators<V>{
+          SparseVec<V>{}, std::set< SparseVec<V> >{}});
+    }
 
-    LinearSet(const SparseVec<V> &v) : offset_(v) {}
-    LinearSet(SparseVec<V> &&v) : offset_(std::move(v)) {}
+    LinearSet(const SparseVec<V> &o, const std::set< SparseVec<V> > &vs) {
+      off_gens_ = factory_.NewOffsetGenerators(new OffsetGenerators<V>{o, vs});
+    }
+
+    LinearSet(SparseVec<V> &&o, std::set< SparseVec<V> > &&vs) {
+      off_gens_ = factory_.NewOffsetGenerators(
+          new OffsetGenerators<V>{std::move(o), std::move(vs)});
+    }
+
+    LinearSet(const SparseVec<V> &v) {
+      off_gens_ = factory_.NewOffsetGenerators(new OffsetGenerators<V>{v, {}});
+    }
+    LinearSet(SparseVec<V> &&v) {
+      off_gens_ = factory_.NewOffsetGenerators(
+          new OffsetGenerators<V>{std::move(v), {}});
+    }
 
     // FIXME: do we need this?
     // LinearSet& operator=(const LinearSet &s) = default;
@@ -27,51 +53,74 @@ class LinearSet {
 
     ~LinearSet() = default;
 
+    bool operator==(const LinearSet &rhs) const {
+      return off_gens_ == rhs.off_gens_;
+    }
+
+    bool operator<(const LinearSet &rhs) const {
+      return off_gens_ < rhs.off_gens_;
+    }
+
+
     LinearSet operator+(const LinearSet &rhs) const {
-      SparseVec<V> result_offset{offset_ + rhs.offset_};
+      auto result = std::unique_ptr< OffsetGenerators<V> >{
+        new OffsetGenerators<V>{GetOffset() + rhs.GetOffset(),
+                                std::set< SparseVec<V> >{}}};
 
-      SparseVecSet<V> result_generators;
-      std::insert_iterator< SparseVecSet<V> >
-        inserter(result_generators, result_generators.begin());
-
-      std::set_union(generators_.begin(), generators_.end(),
-                     rhs.generators_.begin(), rhs.generators_.end(), inserter);
-
-
-      // FIXME: disable the whole following loop if the simplifier is dummy...
+      std::set_union(GetGenerators().begin(), GetGenerators().end(),
+                     rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
+                     inserter(result->second, result->second.begin()));
 
       /* This is a bit tricky.  We use here the fact that erase will return the
        * iterator to the next element (i.e., it's erase that's advancing iter).
        * Morevore std::set has the property that erase(iter) only invalidates
        * iter and insert doesn't invalidate any iterators. */
       if (simplifier_.IsActive()) {
-        for (auto iter = result_generators.begin();
-             iter != result_generators.end(); ) {
-          auto vec = *iter;
-          iter = result_generators.erase(iter);
-          if (!simplifier_.IsCovered(vec, result_generators)) {
-            result_generators.insert(std::move(vec));
+        for (auto iter = result->second.begin();
+             iter != result->second.end(); ) {
+          auto tmp_vec = std::move(*iter);
+          iter = result->second.erase(iter);
+          if (!simplifier_.IsCovered(tmp_vec, result->second)) {
+            // FIXME: GCC 4.7 does not have emplace
+            result->second.insert(std::move(tmp_vec));
           }
         }
       }
 
-      return LinearSet{std::move(result_offset), std::move(result_generators)};
+      return LinearSet{factory_.NewOffsetGenerators(result.release())};
+    }
+
+    std::size_t Hash() const {
+      std::hash< OffsetGeneratorsPtr<V> > h;
+      return h(off_gens_);
     }
 
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
-      out << lset.offset_;
-      out << " : ";
+      out << "<";
+      out << lset.GetOffset();
+      out << " ";
       out << "{ ";
-      for (const auto &v : lset.generators_) {
+      for (const auto &v : lset.GetGenerators()) {
         out << v << " ";
       }
       out << " }";
+      out << ">";
       return out;
     }
 
+    const SparseVec<V>& GetOffset() const { return off_gens_->first; }
+    const std::set< SparseVec<V> >& GetGenerators() const {
+      return off_gens_->second;
+    }
+
   private:
-    SparseVec<V> offset_;
-    SparseVecSet<V> generators_;
+    LinearSet(OffsetGeneratorsPtr<V> ogs) : off_gens_(ogs) {}
+
+    /* Note that this should be std::set since we use the fact that inserting
+     * doesn't invalidate any iterators and erase doesn't invalidate any
+     * iterators except for the erased one. */
+    OffsetGeneratorsPtr<V> off_gens_;
+    static OffsetGeneratorsFactory<V> factory_;
     static Simplifier simplifier_;
 };
 
@@ -82,8 +131,58 @@ class DummySimplifier {
   public:
     bool IsActive() const { return false; }
     template <typename V>
-    bool IsCovered(const SparseVec<V> &lhs, const SparseVecSet<V> &rhs_set) {
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
       return false;
     }
 };
 
+namespace {
+
+template <typename V>
+class OffsetGeneratorsFactory {
+  public:
+    OffsetGeneratorsFactory() = default;
+
+    ~OffsetGeneratorsFactory() {
+      std::cout << "Number of OffsetGenerators objects: " << map_.size() << std::endl;
+      for (auto &key_value : map_) { delete key_value.second; }
+    }
+
+    OffsetGeneratorsFactory(const OffsetGeneratorsFactory &f) = delete;
+    OffsetGeneratorsFactory(OffsetGeneratorsFactory &&f) = delete;
+
+    OffsetGeneratorsFactory& operator=(const OffsetGeneratorsFactory &f) = delete;
+    OffsetGeneratorsFactory& operator=(OffsetGeneratorsFactory &&f) = delete;
+
+    OffsetGeneratorsPtr<V> NewOffsetGenerators(const OffsetGeneratorsPtr<V> off_gens) {
+      assert(off_gens);
+      auto iter_inserted =
+        map_.emplace(KeyWrapper< OffsetGenerators<V> >{off_gens}, off_gens);
+      /* Sanity check -- the actual vectors must be the same. */
+      assert(*iter_inserted.first->second == *off_gens);
+      return iter_inserted.first->second;
+    }
+
+  private:
+    std::unordered_map< KeyWrapper< OffsetGenerators<V> >,
+                        OffsetGeneratorsPtr<V> > map_;
+};
+
+}  /* Anonymous namespace. */
+
+
+template <typename Simplifier, typename V>
+OffsetGeneratorsFactory<V> LinearSet<Simplifier, V>::factory_;
+
+
+namespace std {
+
+template<typename S, typename V>
+struct hash< LinearSet<S, V> > {
+  inline std::size_t operator()(const LinearSet<S, V> &set) const {
+    return set.Hash();
+  }
+
+};
+
+}  /* namespace std */

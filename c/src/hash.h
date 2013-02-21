@@ -35,5 +35,16 @@ struct hash< std::vector<A> > {
   }
 };
 
+template<typename A>
+struct hash< std::set<A> > {
+  inline std::size_t operator()(const std::set<A> &set) const {
+    std::size_t h = 0;
+    for (auto &x : set) {
+      HashCombine(h, x);
+    }
+    return h;
+  }
+};
+
 
 }  /* namespace std */
