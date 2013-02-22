@@ -64,6 +64,10 @@ else(${LPSOLVE})
   set(LPSOLVE_LIBRARIES "")
 endif(${LPSOLVE})
 
+if(${OLD_SEMILINEAR_SET})
+  add_definitions(-DOLD_SEMILINEAR_SET)
+endif(${OLD_SEMILINEAR_SET})
+
 link_directories(${LPSOLVE_LIBRARY_DIRS})
 include_directories(${LPSOLVE_INCLUDE_DIRS})
 

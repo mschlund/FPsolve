@@ -5,7 +5,13 @@
 #include "float-semiring.h"
 #include "commutativeRExp.h"
 #include "polynomial.h"
+
+#ifdef OLD_SEMILINEAR_SET
 #include "semilinSetExp.h"
+#else
+#include "semilinear_set.h"
+#endif
+
 
 class Parser
 {
