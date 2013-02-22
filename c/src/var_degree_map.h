@@ -12,7 +12,7 @@
  *   wrapper around the std::map<VarPtr, Degree>...
  */
 
-typedef std::uint16_t Degree;
+typedef std::uint_fast16_t Degree;
 
 /*
 Degree GetDegreeOf(const std::map<VarPtr, Degree> &map,

@@ -8,12 +8,18 @@
 #include <boost/graph/graphviz.hpp>
 #include <boost/program_options.hpp>
 #include "float-semiring.h"
-#include "semilinSetExp.h"
 #include "matrix.h"
 #include "polynomial.h"
 #include "newton.h"
 #include "commutativeRExp.h"
 #include "parser.h"
+
+#ifdef OLD_SEMILINEAR_SET
+#include "semilinSetExp.h"
+#else
+#include "semilinear_set.h"
+#endif
+
 
 template <typename SR>
 struct VertexProp {
