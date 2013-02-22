@@ -30,6 +30,9 @@ class LinearSet {
           SparseVec<V>{}, std::set< SparseVec<V> >{}});
     }
 
+    LinearSet(const LinearSet &lset) = default;
+    LinearSet(LinearSet &&lset) = default;
+
     LinearSet(const SparseVec<V> &o, const std::set< SparseVec<V> > &vs) {
       off_gens_ = factory_.NewOffsetGenerators(new OffsetGenerators<V>{o, vs});
     }
@@ -98,12 +101,12 @@ class LinearSet {
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
       out << "<";
       out << lset.GetOffset();
-      out << " ";
-      out << "{ ";
+      out << ":";
+      out << "{";
       for (const auto &v : lset.GetGenerators()) {
-        out << v << " ";
+        out << v;
       }
-      out << " }";
+      out << "}";
       out << ">";
       return out;
     }
@@ -116,16 +119,27 @@ class LinearSet {
   private:
     LinearSet(OffsetGeneratorsPtr<V> ogs) : off_gens_(ogs) {}
 
-    /* Note that this should be std::set since we use the fact that inserting
-     * doesn't invalidate any iterators and erase doesn't invalidate any
-     * iterators except for the erased one. */
     OffsetGeneratorsPtr<V> off_gens_;
+
+    /* TODO: Try to get rid of static... */
     static OffsetGeneratorsFactory<V> factory_;
     static Simplifier simplifier_;
+
+    template <typename S2, typename S1, typename VV>
+    friend LinearSet<S2, VV> ChangeLinearSimplifier(const LinearSet<S1, VV> &lset);
+
 };
 
 template <typename Simplifier, typename V>
+OffsetGeneratorsFactory<V> LinearSet<Simplifier, V>::factory_;
+
+template <typename Simplifier, typename V>
 Simplifier LinearSet<Simplifier, V>::simplifier_;
+
+template <typename S2, typename S1, typename V>
+LinearSet<S2, V> ChangeLinearSimplifier(const LinearSet<S1, V> &lset) {
+  return LinearSet<S2, V>{lset.off_gens_};
+}
 
 class DummySimplifier {
   public:
@@ -136,15 +150,39 @@ class DummySimplifier {
     }
 };
 
+
+template <typename V>
+class NaiveSimplifier {
+  public:
+    bool IsActive() const { return true; }
+
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      for (const auto &rhs_gen : rhs_set) {
+        if (rhs_gen.Divides(lhs)) {
+          return true;
+        }
+      }
+      return false;
+    }
+};
+
+
 namespace {
 
+/*
+ * FIXME: Currently we don't handle removing unused VarVectors.  This should be
+ * pretty easy:
+ * - make OffsetGenerators a class with ref counter and pointer to the factory,
+ * - use intrusive pointer in the LinearSet, which when counter gets to 0 calls
+ *   the factory to delete the mapping and then deletes the object.
+ */
 template <typename V>
 class OffsetGeneratorsFactory {
   public:
     OffsetGeneratorsFactory() = default;
 
     ~OffsetGeneratorsFactory() {
-      std::cout << "Number of OffsetGenerators objects: " << map_.size() << std::endl;
+      // std::cout << "Number of OffsetGenerator objects: " << map_.size() << std::endl;
       for (auto &key_value : map_) { delete key_value.second; }
     }
 
@@ -170,9 +208,6 @@ class OffsetGeneratorsFactory {
 
 }  /* Anonymous namespace. */
 
-
-template <typename Simplifier, typename V>
-OffsetGeneratorsFactory<V> LinearSet<Simplifier, V>::factory_;
 
 
 namespace std {

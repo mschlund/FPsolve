@@ -10,6 +10,7 @@
 
 #include "hash.h"
 #include "key_wrapper.h"
+#include "var.h"
 
 typedef std::uint_fast32_t Counter;
 
@@ -119,6 +120,48 @@ class SparseVec {
       return SparseVec{factory_.NewVarVector(result.release())};
     }
 
+    typename VarVector<V>::const_iterator Find(const V &var) const {
+      struct Cmp {
+        bool operator()(const std::pair<VarPtr, Counter> &lhs, const VarPtr &rhs)
+          const { return lhs.first < rhs; }
+      };
+      return std::lower_bound(vector_ptr_->begin(), vector_ptr_->end(),
+                              var, Cmp{});
+    }
+
+    bool Divides(const SparseVec &rhs) const {
+      if (vector_ptr_->size() != rhs.vector_ptr_->size()) {
+        return false;
+      }
+
+      unsigned int k = 0;
+
+      for (auto &pair : *rhs.vector_ptr_) {
+
+        auto iter = Find(pair.first);
+
+        if (iter == vector_ptr_->end()) {
+          /* Domains are different! => this does not divide rhs. */
+          return false;
+        }
+
+        // have we already obtained a candidate for a multiple?
+        if (0 != k && pair.second != k * iter->second) {
+            return false;
+        }
+        // no candidate for k yet
+        else if (pair.second % iter->second != 0) {
+          return false;
+        }
+        // division leaves no remainder -> candidate k found
+        else {
+          k = pair.second / iter->second;
+        }
+      }
+      return true;
+    }
+
+
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
       out << "[";
       for (const auto &pair : *svector.vector_ptr_) {
@@ -145,13 +188,20 @@ VarVectorFactory<V> SparseVec<V>::factory_;
 
 namespace {
 
+/*
+ * FIXME: Currently we don't handle removing unused VarVectors.  This should be
+ * pretty easy:
+ * - make VarVector a class with ref counter and pointer to the factory,
+ * - use intrusive pointer in the LinearSet, which when counter gets to 0 calls
+ *   the factory to delete the mapping and then deletes the object.
+ */
 template <typename V>
 class VarVectorFactory {
   public:
     VarVectorFactory() = default;
 
     ~VarVectorFactory() {
-      std::cout << "Number of SparseVec objects: " << map_.size() << std::endl;
+      // std::cout << "Number of VarVector objects: " << map_.size() << std::endl;
       for (auto &key_value : map_) { delete key_value.second; }
     }
 

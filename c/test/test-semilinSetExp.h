@@ -9,7 +9,13 @@
 #define TEST_SEMILINSETEXP_H_
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/semilinSetExp.h"
+
+#ifdef OLD_SEMILINEAR_SET
+#include "semilinSetExp.h"
+#else
+#include "semilinear_set.h"
+#endif
+
 
 class SemilinSetExpTest : public CppUnit::TestFixture
 {
