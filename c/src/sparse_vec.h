@@ -10,7 +10,6 @@
 
 #include "hash.h"
 #include "key_wrapper.h"
-#include "var.h"
 
 typedef std::uint_fast32_t Counter;
 
@@ -75,18 +74,28 @@ class SparseVec {
       : SparseVec({ std::pair<V, Counter>{v, c} }) {}
 
     bool operator==(const SparseVec &rhs) const {
+      assert(Sanity() && rhs.Sanity());
       return vector_ptr_ == rhs.vector_ptr_;
     }
 
     bool operator!=(const SparseVec &rhs) const {
+      assert(Sanity() && rhs.Sanity());
       return vector_ptr_ != rhs.vector_ptr_;
     }
 
     bool operator<(const SparseVec &rhs) const {
+      assert(Sanity() && rhs.Sanity());
       return vector_ptr_ < rhs.vector_ptr_;
     }
 
     SparseVec operator+(const SparseVec &rhs) const {
+      assert(Sanity() && rhs.Sanity());
+
+      /* Propagate invalid SparseVec. */
+      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+        return SparseVec{nullptr};
+      }
+
       std::unique_ptr< VarVector<V> > result{new VarVector<V>};
 
       auto lhs_iter = vector_ptr_->begin();
@@ -120,9 +129,84 @@ class SparseVec {
       return SparseVec{factory_.NewVarVector(result.release())};
     }
 
+    /*
+     * IMPORTANT: This might create an _invalid_ SparseVec.  Whenever you use
+     * operator- you should check that SparseVec.IsValid()!
+     */
+    SparseVec operator-(const SparseVec &rhs) const {
+
+      assert(Sanity() && rhs.Sanity());
+
+      /* Propagate invalid SparseVec. */
+      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+        return SparseVec{nullptr};
+      }
+
+
+      if (vector_ptr_->size() < rhs.vector_ptr_->size()) {
+        return SparseVec{nullptr};
+      }
+
+      std::unique_ptr< VarVector<V> > result{new VarVector<V>};
+
+      auto lhs_iter = vector_ptr_->begin();
+      auto rhs_iter = rhs.vector_ptr_->begin();
+      const auto lhs_iter_end = vector_ptr_->end();
+      const auto rhs_iter_end = rhs.vector_ptr_->end();
+
+      /* We must go through all the elements of rhs (but not neccesarily
+       * lhs). */
+      while (rhs_iter != rhs_iter_end) {
+
+        /* If there's nothing left in lhs, or there is unmatched variable in
+         * rhs, return invalid SparseVec. */
+        if (lhs_iter == lhs_iter_end || lhs_iter->first > rhs_iter->first) {
+          return SparseVec{nullptr};
+        }
+
+        if (lhs_iter->first < rhs_iter->first) {
+          result->emplace_back(*lhs_iter);
+          ++lhs_iter;
+          continue;
+        }
+
+        /* lhs_iter->first == rhs_iter->first */
+        if (lhs_iter->second < rhs_iter->second) {
+          return SparseVec{nullptr};
+        }
+
+        /* If the lhs value is greater, subtract the value from rhs, if they're
+         * equal, do nothing (i.e., the result is zero so we don't add anything
+         * to the vector. */
+        if (lhs_iter->second > rhs_iter->second) {
+          result->emplace_back(lhs_iter->first,
+                               lhs_iter->second - rhs_iter->second);
+        }
+
+        ++lhs_iter;
+        ++rhs_iter;
+      }
+
+      /* If we didn't go through the whole lhs, add what remained. */
+      for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
+        result->emplace_back(*lhs_iter);
+      }
+
+      return SparseVec{factory_.NewVarVector(result.release())};
+    }
+
+    bool IsZero() const {
+      assert(Sanity());
+      return vector_ptr_ == nullptr ? false : vector_ptr_->empty();
+    }
+
+    bool IsValid() const {
+      return vector_ptr_ != nullptr;
+    }
+
     typename VarVector<V>::const_iterator Find(const V &var) const {
       struct Cmp {
-        bool operator()(const std::pair<VarPtr, Counter> &lhs, const VarPtr &rhs)
+        bool operator()(const std::pair<V, Counter> &lhs, const V &rhs)
           const { return lhs.first < rhs; }
       };
       return std::lower_bound(vector_ptr_->begin(), vector_ptr_->end(),
@@ -130,6 +214,13 @@ class SparseVec {
     }
 
     bool Divides(const SparseVec &rhs) const {
+      assert(Sanity() && rhs.Sanity());
+
+      /* Propagate invalid SparseVec. */
+      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+        return false;
+      }
+
       if (vector_ptr_->size() != rhs.vector_ptr_->size()) {
         return false;
       }
@@ -163,6 +254,13 @@ class SparseVec {
 
 
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
+      assert(svector.Sanity());
+
+      /* Propagate invalid SparseVec. */
+      if (svector.vector_ptr_ == nullptr) {
+        return out;
+      }
+
       out << "[";
       for (const auto &pair : *svector.vector_ptr_) {
         out << "(" << pair.first << ", " << pair.second << ")";
@@ -178,6 +276,18 @@ class SparseVec {
 
   private:
     SparseVec(VarVectorPtr<V> v) : vector_ptr_(v) {}
+
+    bool Sanity() const {
+      if (vector_ptr_ == nullptr) {
+        return false;
+      }
+      for (auto &var_count : *vector_ptr_) {
+        if (var_count.second == 0) {
+          return false;
+        }
+      }
+      return true;
+    }
 
     VarVectorPtr<V> vector_ptr_;
     static VarVectorFactory<V> factory_;

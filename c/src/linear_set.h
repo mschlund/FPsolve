@@ -3,6 +3,7 @@
 #include <cassert>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "key_wrapper.h"
@@ -21,6 +22,32 @@ template <typename V>
 class OffsetGeneratorsFactory;
 
 }  /* Anonymous namespace. */
+
+
+
+template <typename Simplifier, typename Elem>
+void SimplifySet(Simplifier &simplifier, std::set<Elem> &set) {
+
+  /* This is a bit tricky.  We use here the fact that erase will return the
+   * iterator to the next element (i.e., it's erase that's advancing iter).
+   * Morevore std::set has the property that erase(iter) only invalidates
+   * iter and insert doesn't invalidate any iterators. */
+  if (simplifier.IsActive() && 1 < set.size()) {
+    for (auto iter = set.begin(); iter != set.end(); ) {
+      auto tmp_elem = std::move(*iter);
+      /* Erase automatically advances the iterator to the next element. */
+      iter = set.erase(iter);
+      /* Add it back only if it's not "covered" by the set. */
+      if (!simplifier.IsCovered(tmp_elem, set)) {
+        // FIXME: GCC 4.7 does not have emplace
+        set.insert(std::move(tmp_elem));
+      }
+    }
+  }
+}
+
+
+
 
 template <typename Simplifier, typename V>
 class LinearSet {
@@ -74,21 +101,7 @@ class LinearSet {
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
                      inserter(result->second, result->second.begin()));
 
-      /* This is a bit tricky.  We use here the fact that erase will return the
-       * iterator to the next element (i.e., it's erase that's advancing iter).
-       * Morevore std::set has the property that erase(iter) only invalidates
-       * iter and insert doesn't invalidate any iterators. */
-      if (simplifier_.IsActive()) {
-        for (auto iter = result->second.begin();
-             iter != result->second.end(); ) {
-          auto tmp_vec = std::move(*iter);
-          iter = result->second.erase(iter);
-          if (!simplifier_.IsCovered(tmp_vec, result->second)) {
-            // FIXME: GCC 4.7 does not have emplace
-            result->second.insert(std::move(tmp_vec));
-          }
-        }
-      }
+      SimplifySet(simplifier_, result->second);
 
       return LinearSet{factory_.NewOffsetGenerators(result.release())};
     }
@@ -157,6 +170,9 @@ class NaiveSimplifier {
     bool IsActive() const { return true; }
 
     bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      if (rhs_set.count(lhs) > 0) {
+        return true;
+      }
       for (const auto &rhs_gen : rhs_set) {
         if (rhs_gen.Divides(lhs)) {
           return true;
@@ -165,6 +181,47 @@ class NaiveSimplifier {
       return false;
     }
 };
+
+template <typename V>
+class SmartSimplifier : public NaiveSimplifier<V> {
+  public:
+    bool IsActive() const { return true; }
+
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      /* Check the cheap and naive simplifier. */
+      if (NaiveSimplifier<V>::IsCovered(lhs, rhs_set)) {
+        return true;
+      }
+      std::unordered_set< SparseVec<V> > failed;
+      return IsCovered_(lhs, rhs_set, failed);
+    }
+  private:
+    /* Dynamic programming/memoization */
+    bool IsCovered_(const SparseVec<V> &lhs,
+        const std::set< SparseVec<V> > &rhs_set,
+        std::unordered_set< SparseVec<V> > &failed) {
+      // std::cout << "-> IsCovered_" << std::endl;
+      // std::cout << lhs << std::endl;
+      if (0 < failed.count(lhs)) {
+        // std::cout << "<- IsCovered_: false: already failed" << std::endl;
+        return false;
+      }
+      /* Should we go from the back? */
+      for (auto &rhs : rhs_set) {
+        // std::cout << "try subtracting " << rhs << std::endl;
+        auto new_lhs = lhs - rhs;
+        if (new_lhs.IsValid() && (new_lhs.IsZero() ||
+                                  IsCovered_(new_lhs, rhs_set, failed))) {
+          // std::cout << "<- IsCovered_: true" << std::endl;
+          return true;
+        }
+      }
+      failed.insert(lhs);
+      // std::cout << "<- IsCovered_: false: new failed" << std::endl;
+      return false;
+    }
+};
+
 
 
 namespace {
