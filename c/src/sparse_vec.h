@@ -9,25 +9,9 @@
 #include <vector>
 
 #include "hash.h"
-#include "key_wrapper.h"
+#include "unique_vector_map.h"
 
 typedef std::uint_fast32_t Counter;
-
-template <typename V>
-class SparseVec;
-
-namespace {
-
-template <typename V>
-using VarVector = std::vector< std::pair<V, Counter> >;
-
-template <typename V>
-using VarVectorPtr = VarVector<V>*;
-
-template <typename V>
-class VarVectorFactory;
-
-}  /* Anonymous namespace. */
 
 /*
  * Sparse vector representing the mapping from variables to counters.  We never
@@ -38,9 +22,13 @@ class VarVectorFactory;
  */
 template <typename V>
 class SparseVec {
+  typedef UniqueVMap<V, Counter> UniqueVMap_;
+  typedef UniqueVMapPtr<V, Counter> UniqueVMapPtr_;
+  typedef UniqueVMapBuilder<V, Counter> UniqueVMapBuilder_;
+
   public:
     SparseVec() {
-      vector_ptr_ = factory_.NewVarVector(new VarVector<V>);
+      vmap_ = builder_.New({});
     }
 
     SparseVec(const SparseVec &v) = default;
@@ -49,84 +37,44 @@ class SparseVec {
     SparseVec& operator=(const SparseVec &v) = default;
     SparseVec& operator=(SparseVec &&v) = default;
 
-    SparseVec(VarVector<V> &&vector) {
-      std::sort(vector.begin(), vector.end());
-      std::unique_ptr< VarVector<V> > result{new VarVector<V>};
-
-      for (auto &pair : vector) {
-        if (result->empty()) {
-          result->emplace_back(pair);
-        } else if (result->back().first < pair.first) {
-          result->emplace_back(pair);
-        } else {
-          assert(result->back().first == pair.first);
-          result->back().second += pair.second;
-        }
-      }
-
-      vector_ptr_ = factory_.NewVarVector(result.release());
+    SparseVec(std::vector< std::pair<V, Counter> > &&vector) {
+      vmap_ = builder_.New(std::move(vector));
     }
 
     SparseVec(std::initializer_list< std::pair<V, Counter> > list)
-        : SparseVec(VarVector<V>{list}) {}
+        : SparseVec(std::vector< std::pair<V, Counter> >{list}) {}
 
     SparseVec(const V &v, Counter c)
-      : SparseVec({ std::pair<V, Counter>{v, c} }) {}
+      : SparseVec({ std::make_pair(v, c) }) {}
 
     bool operator==(const SparseVec &rhs) const {
       assert(Sanity() && rhs.Sanity());
-      return vector_ptr_ == rhs.vector_ptr_;
+      if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
+        return false;
+      }
+      return vmap_ == rhs.vmap_;
     }
 
     bool operator!=(const SparseVec &rhs) const {
-      assert(Sanity() && rhs.Sanity());
-      return vector_ptr_ != rhs.vector_ptr_;
+      return !(*this == rhs);
     }
 
+    /* Note that this is _not_ the lexicographical ordering of the contents of
+     * the vectors! */
     bool operator<(const SparseVec &rhs) const {
       assert(Sanity() && rhs.Sanity());
-      return vector_ptr_ < rhs.vector_ptr_;
+      if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
+        return false;
+      }
+      return vmap_ < rhs.vmap_;
     }
 
     SparseVec operator+(const SparseVec &rhs) const {
       assert(Sanity() && rhs.Sanity());
-
-      /* Propagate invalid SparseVec. */
-      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+      if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
         return SparseVec{nullptr};
       }
-
-      std::unique_ptr< VarVector<V> > result{new VarVector<V>};
-
-      auto lhs_iter = vector_ptr_->begin();
-      auto rhs_iter = rhs.vector_ptr_->begin();
-      const auto lhs_iter_end = vector_ptr_->end();
-      const auto rhs_iter_end = rhs.vector_ptr_->end();
-
-      while (lhs_iter != lhs_iter_end && rhs_iter != rhs_iter_end) {
-        if (lhs_iter->first < rhs_iter->first) {
-          result->emplace_back(*lhs_iter);
-          ++lhs_iter;
-        } else if (lhs_iter->first > rhs_iter->first) {
-          result->emplace_back(*rhs_iter);
-          ++rhs_iter;
-        } else {
-          /* lhs_iter->first == rhs_iter->first */
-          result->emplace_back(lhs_iter->first, lhs_iter->second + rhs_iter->second);
-          ++lhs_iter;
-          ++rhs_iter;
-        }
-      }
-
-      for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
-        result->emplace_back(*lhs_iter);
-      }
-
-      for (; rhs_iter != rhs_iter_end; ++rhs_iter) {
-        result->emplace_back(*rhs_iter);
-      }
-
-      return SparseVec{factory_.NewVarVector(result.release())};
+      return builder_.NewSum(*vmap_, *rhs.vmap_);
     }
 
     /*
@@ -134,104 +82,41 @@ class SparseVec {
      * operator- you should check that SparseVec.IsValid()!
      */
     SparseVec operator-(const SparseVec &rhs) const {
-
       assert(Sanity() && rhs.Sanity());
-
-      /* Propagate invalid SparseVec. */
-      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+      if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
         return SparseVec{nullptr};
       }
-
-
-      if (vector_ptr_->size() < rhs.vector_ptr_->size()) {
-        return SparseVec{nullptr};
-      }
-
-      std::unique_ptr< VarVector<V> > result{new VarVector<V>};
-
-      auto lhs_iter = vector_ptr_->begin();
-      auto rhs_iter = rhs.vector_ptr_->begin();
-      const auto lhs_iter_end = vector_ptr_->end();
-      const auto rhs_iter_end = rhs.vector_ptr_->end();
-
-      /* We must go through all the elements of rhs (but not neccesarily
-       * lhs). */
-      while (rhs_iter != rhs_iter_end) {
-
-        /* If there's nothing left in lhs, or there is unmatched variable in
-         * rhs, return invalid SparseVec. */
-        if (lhs_iter == lhs_iter_end || lhs_iter->first > rhs_iter->first) {
-          return SparseVec{nullptr};
-        }
-
-        if (lhs_iter->first < rhs_iter->first) {
-          result->emplace_back(*lhs_iter);
-          ++lhs_iter;
-          continue;
-        }
-
-        /* lhs_iter->first == rhs_iter->first */
-        if (lhs_iter->second < rhs_iter->second) {
-          return SparseVec{nullptr};
-        }
-
-        /* If the lhs value is greater, subtract the value from rhs, if they're
-         * equal, do nothing (i.e., the result is zero so we don't add anything
-         * to the vector. */
-        if (lhs_iter->second > rhs_iter->second) {
-          result->emplace_back(lhs_iter->first,
-                               lhs_iter->second - rhs_iter->second);
-        }
-
-        ++lhs_iter;
-        ++rhs_iter;
-      }
-
-      /* If we didn't go through the whole lhs, add what remained. */
-      for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
-        result->emplace_back(*lhs_iter);
-      }
-
-      return SparseVec{factory_.NewVarVector(result.release())};
+      return builder_.NewDiff(*vmap_, *rhs.vmap_);
     }
 
     bool IsZero() const {
       assert(Sanity());
-      return vector_ptr_ == nullptr ? false : vector_ptr_->empty();
+      return vmap_ == nullptr ? false : vmap_->empty();
     }
 
     bool IsValid() const {
-      return vector_ptr_ != nullptr;
-    }
-
-    typename VarVector<V>::const_iterator Find(const V &var) const {
-      struct Cmp {
-        bool operator()(const std::pair<V, Counter> &lhs, const V &rhs)
-          const { return lhs.first < rhs; }
-      };
-      return std::lower_bound(vector_ptr_->begin(), vector_ptr_->end(),
-                              var, Cmp{});
+      return vmap_ != nullptr;
     }
 
     bool Divides(const SparseVec &rhs) const {
       assert(Sanity() && rhs.Sanity());
 
       /* Propagate invalid SparseVec. */
-      if (vector_ptr_ == nullptr || rhs.vector_ptr_ == nullptr) {
+      if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
         return false;
       }
 
-      if (vector_ptr_->size() != rhs.vector_ptr_->size()) {
+      if (vmap_->size() != rhs.vmap_->size()) {
         return false;
       }
 
       unsigned int k = 0;
 
-      for (auto &pair : *rhs.vector_ptr_) {
+      for (auto &pair : *rhs.vmap_) {
 
-        auto iter = Find(pair.first);
+        auto iter = vmap_->Find(pair.first);
 
-        if (iter == vector_ptr_->end()) {
+        if (iter == vmap_->end()) {
           /* Domains are different! => this does not divide rhs. */
           return false;
         }
@@ -255,86 +140,31 @@ class SparseVec {
 
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
       assert(svector.Sanity());
-
-      /* Propagate invalid SparseVec. */
-      if (svector.vector_ptr_ == nullptr) {
-        return out;
-      }
-
-      out << "[";
-      for (const auto &pair : *svector.vector_ptr_) {
-        out << "(" << pair.first << ", " << pair.second << ")";
-      }
-      out << "]";
+      out << *svector.vmap_;
       return out;
     }
 
     std::size_t Hash() const {
-      std::hash< VarVectorPtr<V> > h;
-      return h(vector_ptr_);
+      std::hash<UniqueVMapPtr_> h;
+      return h(vmap_);
     }
 
   private:
-    SparseVec(VarVectorPtr<V> v) : vector_ptr_(v) {}
+    SparseVec(UniqueVMapPtr_ v) : vmap_(v) {}
 
     bool Sanity() const {
-      if (vector_ptr_ == nullptr) {
+      if (vmap_ == nullptr) {
         return false;
-      }
-      for (auto &var_count : *vector_ptr_) {
-        if (var_count.second == 0) {
-          return false;
-        }
       }
       return true;
     }
 
-    VarVectorPtr<V> vector_ptr_;
-    static VarVectorFactory<V> factory_;
+    UniqueVMapPtr_ vmap_;
+    static UniqueVMapBuilder_ builder_;
 };
 
 template <typename V>
-VarVectorFactory<V> SparseVec<V>::factory_;
-
-namespace {
-
-/*
- * FIXME: Currently we don't handle removing unused VarVectors.  This should be
- * pretty easy:
- * - make VarVector a class with ref counter and pointer to the factory,
- * - use intrusive pointer in the LinearSet, which when counter gets to 0 calls
- *   the factory to delete the mapping and then deletes the object.
- */
-template <typename V>
-class VarVectorFactory {
-  public:
-    VarVectorFactory() = default;
-
-    ~VarVectorFactory() {
-      // std::cout << "Number of VarVector objects: " << map_.size() << std::endl;
-      for (auto &key_value : map_) { delete key_value.second; }
-    }
-
-    VarVectorFactory(const VarVectorFactory &f) = delete;
-    VarVectorFactory(VarVectorFactory &&f) = delete;
-
-    VarVectorFactory& operator=(const VarVectorFactory &f) = delete;
-    VarVectorFactory& operator=(VarVectorFactory &&f) = delete;
-
-    VarVectorPtr<V> NewVarVector(const VarVectorPtr<V> vector_ptr) {
-      assert(vector_ptr);
-      auto iter_inserted =
-        map_.emplace(KeyWrapper< VarVector<V> >{vector_ptr}, vector_ptr);
-      /* Sanity check -- the actual vectors must be the same. */
-      assert(*iter_inserted.first->second == *vector_ptr);
-      return iter_inserted.first->second;
-    }
-
-  private:
-    std::unordered_map< KeyWrapper< VarVector<V> >, VarVectorPtr<V> > map_;
-};
-
-}  /* Anonymous namespace. */
+UniqueVMapBuilder<V, Counter> SparseVec<V>::builder_;
 
 namespace std {
 
@@ -347,5 +177,3 @@ struct hash< SparseVec<V> > {
 };
 
 }  /* namespace std */
-
-

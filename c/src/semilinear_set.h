@@ -1,6 +1,7 @@
 #pragma once
 
 #include <initializer_list>
+#include <iostream>
 #include <set>
 
 #include "linear_set.h"
@@ -53,6 +54,9 @@ class SemilinearSet : public Semiring<
     }
 
     SemilinearSet& operator*=(const SemilinearSet &rhs) {
+      // std::cout << "-> SemilinearSet::operator*" << std::endl;
+      // std::cout << *this << std::endl;
+      // std::cout << rhs << std::endl;
       std::set< LinearSet<Simplifier2, V> > result;
       for(auto &lin_set_rhs : rhs.set_) {
         for(auto &lin_set_lhs : set_) {
@@ -61,6 +65,8 @@ class SemilinearSet : public Semiring<
       }
       set_ = std::move(result);
 
+      // std::cout << *this << std::endl;
+      // std::cout << "<- SemilinearSet::operator*" << std::endl;
       return *this;
     }
 
@@ -140,5 +146,6 @@ SemilinearSet<S21, S22, V> ChangeSimplifiers(
 }
 
 /* Compatibility with old implementation. */
-typedef SemilinearSet<DummySimplifier, NaiveSimplifier<VarPtr>, VarPtr> SemilinSetExp;
+typedef SemilinearSet<DummySimplifier, SmartSimplifier<VarPtr>, VarPtr> SemilinSetExp;
+// typedef SemilinearSet<DummySimplifier, NaiveSimplifier<VarPtr>, VarPtr> SemilinSetExp;
 // typedef SemilinearSet<DummySimplifier, DummySimplifier, VarPtr> SemilinSetExp;
