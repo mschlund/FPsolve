@@ -122,7 +122,7 @@ class SparseVec {
         }
 
         // have we already obtained a candidate for a multiple?
-        if (0 != k && pair.second != k * iter->second) {
+        if (k != 0 && pair.second != k * iter->second) {
             return false;
         }
         // no candidate for k yet
@@ -177,3 +177,78 @@ struct hash< SparseVec<V> > {
 };
 
 }  /* namespace std */
+
+
+class DummySimplifier {
+  public:
+    bool IsActive() const { return false; }
+    template <typename V>
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      return false;
+    }
+};
+
+
+template <typename V>
+class NaiveSimplifier {
+  public:
+    bool IsActive() const { return true; }
+
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      if (rhs_set.count(lhs) > 0) {
+        return true;
+      }
+      for (const auto &rhs_gen : rhs_set) {
+        if (rhs_gen.Divides(lhs)) {
+          return true;
+        }
+      }
+      return false;
+    }
+};
+
+/*
+ * TODO: This simplifier assumes that we can use any of the elements of the set
+ * arbitrary many times.  We should also have one that uses every element of the
+ * set only once...
+ */
+
+template <typename V>
+class SmartSimplifier : public NaiveSimplifier<V> {
+  public:
+    bool IsActive() const { return true; }
+
+    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+      /* Check the cheap and naive simplifier. */
+      if (NaiveSimplifier<V>::IsCovered(lhs, rhs_set)) {
+        return true;
+      }
+      std::unordered_set< SparseVec<V> > failed;
+      return IsCovered_(lhs, rhs_set, failed);
+    }
+  private:
+    /* Dynamic programming/memoization */
+    bool IsCovered_(const SparseVec<V> &lhs,
+        const std::set< SparseVec<V> > &rhs_set,
+        std::unordered_set< SparseVec<V> > &failed) {
+      // std::cout << "-> IsCovered_" << std::endl;
+      // std::cout << lhs << std::endl;
+      if (0 < failed.count(lhs)) {
+        // std::cout << "<- IsCovered_: false: already failed" << std::endl;
+        return false;
+      }
+      /* Should we go from the back? */
+      for (auto &rhs : rhs_set) {
+        // std::cout << "try subtracting " << rhs << std::endl;
+        auto new_lhs = lhs - rhs;
+        if (new_lhs.IsValid() && (new_lhs.IsZero() ||
+                                  IsCovered_(new_lhs, rhs_set, failed))) {
+          // std::cout << "<- IsCovered_: true" << std::endl;
+          return true;
+        }
+      }
+      failed.insert(lhs);
+      // std::cout << "<- IsCovered_: false: new failed" << std::endl;
+      return false;
+    }
+};
