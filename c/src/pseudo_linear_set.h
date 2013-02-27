@@ -1,7 +1,21 @@
 #pragma once
 
-#include "sparse_vec.h"
+#include <set>
+#include <sstream>
+
 #include "semilinear_util.h"
+#include "sparse_vec.h"
+
+
+/* TODO:
+ * - The simplification could be a bit better -- we currently only check if
+ *   something (offset or generator) can be is included in the (remaining)
+ *   generators.  What we could improve is to use the offsets in this
+ *   calculation.  The challenge is that the current code for simplifiers
+ *   assumes every element of the set can be used arbitrary many times, whereas
+ *   we can only use offset once.
+ */
+
 
 /*
  * An abstraction of semilinear sets that is quite similar to a linear set, but
@@ -25,6 +39,13 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 
     PseudoLinearSet(const PseudoLinearSet &s) = default;
     PseudoLinearSet(PseudoLinearSet &&s) = default;
+
+    template <typename Simpl2>
+    PseudoLinearSet(const LinearSet<Simpl2, Var> &lset)
+        : generators_(lset.GetGenerators()) {
+      offsets_.insert(lset.GetOffset());
+      // FIXME: Should we try to simplify?
+    }
 
     PseudoLinearSet& operator=(const PseudoLinearSet &s) = default;
     PseudoLinearSet& operator=(PseudoLinearSet &&s) = default;
@@ -132,7 +153,22 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 
     // FIXME: Should that be static, pointer or just object???
     static Simpl simplifier_;
+
+    template <typename Simpl1, typename Simpl2, typename Simpl3, typename V>
+    friend PseudoLinearSet<Simpl1, V> SemilinearToPseudoLinear(
+        const SemilinearSet<Simpl2, Simpl3, V> &semilinear);
 };
 
 template <typename Simpl, typename Var>
 Simpl PseudoLinearSet<Simpl, Var>::simplifier_;
+
+
+template <typename Simpl1, typename Simpl2, typename Simpl3, typename Var>
+PseudoLinearSet<Simpl1, Var> SemilinearToPseudoLinear(
+    const SemilinearSet<Simpl2, Simpl3, Var> &semilinear) {
+  PseudoLinearSet<Simpl1, Var> pseudo_lset;
+  semilinear.Iterate([&](const LinearSet<Simpl3, Var> &lset) -> void {
+    pseudo_lset += PseudoLinearSet<Simpl1, Var>{lset};
+  });
+  return pseudo_lset;
+}

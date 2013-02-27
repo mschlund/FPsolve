@@ -120,6 +120,13 @@ class SemilinearSet : public Semiring<
       return std::move(sout.str());
     }
 
+    template <typename F>
+    void Iterate(F fun) const {
+      for (const auto &lset : set_) {
+        fun(lset);
+      }
+    }
+
     static const bool is_idempotent = true;
     static const bool is_commutative = true;
 
