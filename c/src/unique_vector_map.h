@@ -123,8 +123,6 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder() = default;
 
     ~UniqueVMapBuilder() {
-      /* All references should be already removed. */
-      assert(map_.empty());
       for (auto &key_value : map_) { delete key_value.second; }
     }
 
