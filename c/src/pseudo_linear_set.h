@@ -8,7 +8,7 @@
  * with multiple offsets.  This allows to over-approximate the semilinear set.
  */
 template <typename Simpl, typename Var>
-class PseudoLinearSet {
+class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
   typedef SparseVec<Var> SparseVec_;
   public:
     PseudoLinearSet() = default;
@@ -34,7 +34,7 @@ class PseudoLinearSet {
     static PseudoLinearSet null() { return PseudoLinearSet{}; }
     static PseudoLinearSet one() { return PseudoLinearSet{{}}; }
 
-    bool operator==(const PseudoLinearSet &rhs) {
+    bool operator==(const PseudoLinearSet &rhs) const {
       return offsets_ == rhs.offsets_ && generators_ == rhs.generators_;
     }
 
@@ -50,7 +50,7 @@ class PseudoLinearSet {
                      rhs.generators_.begin(), rhs.generators_.end(),
                      std::inserter(result_generators, result_generators.begin()));
 
-      SimplifySet(simplifier_, result_offsets);
+      SimplifySet(simplifier_, result_offsets, result_generators);
       SimplifySet(simplifier_, result_generators);
 
       offsets_ = std::move(result_offsets);
@@ -77,7 +77,7 @@ class PseudoLinearSet {
                      std::inserter(result_generators, result_generators.begin()));
 
 
-      SimplifySet(simplifier_, result_offsets);
+      SimplifySet(simplifier_, result_offsets, result_generators);
       SimplifySet(simplifier_, result_generators);
 
       offsets_ = std::move(result_offsets);
@@ -86,16 +86,6 @@ class PseudoLinearSet {
       // std::cout << *this << std::endl;
       // std::cout << "<- SemilinearSet::operator*" << std::endl;
       return *this;
-    }
-
-    PseudoLinearSet operator+(const PseudoLinearSet &rhs) const {
-      PseudoLinearSet tmp = *this;
-      return tmp += rhs;
-    }
-
-    PseudoLinearSet operator*(const PseudoLinearSet &rhs) const {
-      PseudoLinearSet tmp = *this;
-      return tmp *= rhs;
     }
 
     PseudoLinearSet star() const {
@@ -118,7 +108,7 @@ class PseudoLinearSet {
       for (auto &vec : offsets_) {
         ss << " " << vec;
       }
-      ss << " : ";
+      ss << " :";
       for (auto &vec : generators_) {
         ss << " " << vec;
       }
@@ -146,5 +136,3 @@ class PseudoLinearSet {
 
 template <typename Simpl, typename Var>
 Simpl PseudoLinearSet<Simpl, Var>::simplifier_;
-
-

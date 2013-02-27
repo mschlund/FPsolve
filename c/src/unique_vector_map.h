@@ -123,7 +123,8 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder() = default;
 
     ~UniqueVMapBuilder() {
-      std::cout << "Number of UniqueVMap objects: " << map_.size() << std::endl;
+      /* All references should be already removed. */
+      assert(map_.empty());
       for (auto &key_value : map_) { delete key_value.second; }
     }
 
