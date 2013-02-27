@@ -20,11 +20,11 @@ typedef std::uint_fast32_t Counter;
  * Moreover we never modify a vector, so copy constructor, assignment operator,
  * etc. are really only copying a pointer (which is again very efficient).
  */
-template <typename V>
+template <typename Var, typename Value = Counter>
 class SparseVec {
-  typedef UniqueVMap<V, Counter> UniqueVMap_;
-  typedef UniqueVMapPtr<V, Counter> UniqueVMapPtr_;
-  typedef UniqueVMapBuilder<V, Counter> UniqueVMapBuilder_;
+  typedef UniqueVMap<Var, Value> UniqueVMap_;
+  typedef UniqueVMapPtr<Var, Value> UniqueVMapPtr_;
+  typedef UniqueVMapBuilder<Var, Value> UniqueVMapBuilder_;
 
   public:
     SparseVec() {
@@ -37,14 +37,14 @@ class SparseVec {
     SparseVec& operator=(const SparseVec &v) = default;
     SparseVec& operator=(SparseVec &&v) = default;
 
-    SparseVec(std::vector< std::pair<V, Counter> > &&vector) {
+    SparseVec(std::vector< std::pair<Var, Value> > &&vector) {
       vmap_ = builder_.New(std::move(vector));
     }
 
-    SparseVec(std::initializer_list< std::pair<V, Counter> > list)
-        : SparseVec(std::vector< std::pair<V, Counter> >{list}) {}
+    SparseVec(std::initializer_list< std::pair<Var, Value> > list)
+        : SparseVec(std::vector< std::pair<Var, Value> >{list}) {}
 
-    SparseVec(const V &v, Counter c)
+    SparseVec(const Var &v, Value c)
       : SparseVec({ std::make_pair(v, c) }) {}
 
     bool operator==(const SparseVec &rhs) const {
@@ -163,14 +163,14 @@ class SparseVec {
     static UniqueVMapBuilder_ builder_;
 };
 
-template <typename V>
-UniqueVMapBuilder<V, Counter> SparseVec<V>::builder_;
+template <typename Var, typename Value>
+UniqueVMapBuilder<Var, Value> SparseVec<Var, Value>::builder_;
 
 namespace std {
 
-template<typename V>
-struct hash< SparseVec<V> > {
-  inline std::size_t operator()(const SparseVec<V> &vec) const {
+template<typename Var, typename Value>
+struct hash< SparseVec<Var, Value> > {
+  inline std::size_t operator()(const SparseVec<Var, Value> &vec) const {
     return vec.Hash();
   }
 
@@ -182,19 +182,21 @@ struct hash< SparseVec<V> > {
 class DummySimplifier {
   public:
     bool IsActive() const { return false; }
-    template <typename V>
-    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+    template <typename Var, typename Value>
+    bool IsCovered(const SparseVec<Var, Value> &lhs,
+        const std::set< SparseVec<Var, Value> > &rhs_set) {
       return false;
     }
 };
 
 
-template <typename V>
+template <typename Var, typename Value = Counter>
 class NaiveSimplifier {
   public:
     bool IsActive() const { return true; }
 
-    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+    bool IsCovered(const SparseVec<Var, Value> &lhs,
+        const std::set< SparseVec<Var, Value> > &rhs_set) {
       if (rhs_set.count(lhs) > 0) {
         return true;
       }
@@ -213,24 +215,25 @@ class NaiveSimplifier {
  * set only once...
  */
 
-template <typename V>
-class SmartSimplifier : public NaiveSimplifier<V> {
+template <typename Var, typename Value = Counter>
+class SmartSimplifier : public NaiveSimplifier<Var, Value> {
   public:
     bool IsActive() const { return true; }
 
-    bool IsCovered(const SparseVec<V> &lhs, const std::set< SparseVec<V> > &rhs_set) {
+    bool IsCovered(const SparseVec<Var, Value> &lhs,
+        const std::set< SparseVec<Var, Value> > &rhs_set) {
       /* Check the cheap and naive simplifier. */
-      if (NaiveSimplifier<V>::IsCovered(lhs, rhs_set)) {
+      if (NaiveSimplifier<Var, Value>::IsCovered(lhs, rhs_set)) {
         return true;
       }
-      std::unordered_set< SparseVec<V> > failed;
+      std::unordered_set< SparseVec<Var, Value> > failed;
       return IsCovered_(lhs, rhs_set, failed);
     }
   private:
     /* Dynamic programming/memoization */
-    bool IsCovered_(const SparseVec<V> &lhs,
-        const std::set< SparseVec<V> > &rhs_set,
-        std::unordered_set< SparseVec<V> > &failed) {
+    bool IsCovered_(const SparseVec<Var, Value> &lhs,
+        const std::set< SparseVec<Var, Value> > &rhs_set,
+        std::unordered_set< SparseVec<Var, Value> > &failed) {
       // std::cout << "-> IsCovered_" << std::endl;
       // std::cout << lhs << std::endl;
       if (0 < failed.count(lhs)) {
