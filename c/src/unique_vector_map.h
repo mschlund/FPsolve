@@ -31,7 +31,7 @@ class UniqueVMap {
     }
 
     bool empty() const { return vector_.empty(); }
-    bool size() const { return vector_.size(); }
+    typename Vector_::size_type size() const { return vector_.size(); }
 
     typename Vector_::const_iterator begin() const { return vector_.begin(); }
 

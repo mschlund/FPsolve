@@ -110,29 +110,26 @@ class SparseVec {
         return false;
       }
 
-      unsigned int k = 0;
+      Counter k = 0;
 
-      for (auto &pair : *rhs.vmap_) {
+      for (auto lhs_iter = vmap_->begin(), rhs_iter = rhs.vmap_->begin();
+           lhs_iter != vmap_->end();
+           ++lhs_iter, ++rhs_iter) {
 
-        auto iter = vmap_->Find(pair.first);
+        assert(rhs_iter != rhs.vmap_->end());
 
-        if (iter == vmap_->end()) {
-          /* Domains are different! => this does not divide rhs. */
+        if (/* If the domains are different. */
+            lhs_iter->first != rhs_iter->first ||
+            /* Or we have a multiple and it doesn't work here. */
+            (k != 0 && rhs_iter->second != k * lhs_iter->second) ||
+            /* Or we can't divide. */
+            rhs_iter->second % lhs_iter->second != 0) {
           return false;
         }
 
-        // have we already obtained a candidate for a multiple?
-        if (k != 0 && pair.second != k * iter->second) {
-            return false;
-        }
-        // no candidate for k yet
-        else if (pair.second % iter->second != 0) {
-          return false;
-        }
-        // division leaves no remainder -> candidate k found
-        else {
-          k = pair.second / iter->second;
-        }
+        /* Otherwise we have a candidate for the multiple. */
+        k = rhs_iter->second / lhs_iter->second;
+
       }
       return true;
     }
@@ -182,9 +179,9 @@ struct hash< SparseVec<Var, Value> > {
 class DummySimplifier {
   public:
     bool IsActive() const { return false; }
-    template <typename Var, typename Value>
-    bool IsCovered(const SparseVec<Var, Value> &lhs,
-        const std::set< SparseVec<Var, Value> > &rhs_set) {
+
+    template <typename Elem>
+    bool IsCovered(const Elem &lhs, const std::set<Elem> &rhs_set) {
       return false;
     }
 };
