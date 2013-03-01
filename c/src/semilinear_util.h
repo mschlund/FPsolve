@@ -14,14 +14,27 @@ void SimplifySet(Simplifier &simplifier, std::set<Elem> &to_simpl,
    * Morevore std::set has the property that erase(iter) only invalidates
    * iter and insert doesn't invalidate any iterators. */
   if (simplifier.IsActive() && 1 < to_simpl.size()) {
+
+    std::cout << "-- SimplifySet" << std::endl;
+    for (auto &x : to_simpl) {
+      std::cout << "Lhs: " << x << std::endl;
+    }
+    if (to_simpl != available) {
+      for (auto &x : available) {
+        std::cout << "Rhs: " << x << std::endl;
+      }
+    }
+
     for (auto iter = to_simpl.begin(); iter != to_simpl.end(); ) {
-      auto tmp_elem = std::move(*iter);
+      Elem tmp_elem = std::move(*iter);
       /* Erase automatically advances the iterator to the next element. */
       iter = to_simpl.erase(iter);
       /* Add it back only if it's not "covered" by the set. */
       if (!simplifier.IsCovered(tmp_elem, available)) {
         // FIXME: GCC 4.7 does not have emplace
         to_simpl.insert(std::move(tmp_elem));
+      } else {
+        std::cout << "SimplifySet: Removed " << tmp_elem << std::endl;
       }
     }
   }

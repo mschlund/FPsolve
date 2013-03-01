@@ -9,21 +9,21 @@
 #include "sparse_vec.h"
 #include "var.h"
 
-template <typename Simplifier1, typename Simplifier2, typename V>
+template <typename SemiSimpl, typename LinSimpl, typename V>
 class SemilinearSet : public Semiring<
-                               SemilinearSet<Simplifier1, Simplifier2, V> > {
+                               SemilinearSet<SemiSimpl, LinSimpl, V> > {
   public:
     SemilinearSet() = default;
-    SemilinearSet(std::initializer_list< LinearSet<Simplifier2, V> > list)
+    SemilinearSet(std::initializer_list< LinearSet<LinSimpl, V> > list)
         : set_(list) {}
     SemilinearSet(const SemilinearSet &slset) = default;
     SemilinearSet(SemilinearSet &&slset) = default;
 
-    SemilinearSet(const LinearSet<Simplifier2, V> &lset) : set_({lset}) {}
-    SemilinearSet(LinearSet<Simplifier2, V> &&lset) : set_({std::move(lset)}) {}
+    SemilinearSet(const LinearSet<LinSimpl, V> &lset) : set_({lset}) {}
+    SemilinearSet(LinearSet<LinSimpl, V> &&lset) : set_({std::move(lset)}) {}
 
     SemilinearSet(const V &v, Counter c)
-      : set_({ LinearSet<Simplifier2, V>{ SparseVec<V>{v, c} } }) {}
+      : set_({ LinearSet<LinSimpl, V>{ SparseVec<V>{v, c} } }) {}
     SemilinearSet(const V &v) : SemilinearSet(v, 1) {}
 
     ~SemilinearSet() = default;
@@ -37,19 +37,22 @@ class SemilinearSet : public Semiring<
     }
 
     static SemilinearSet one() {
-      return SemilinearSet{LinearSet<Simplifier2, V>{}};
+      return SemilinearSet{LinearSet<LinSimpl, V>{}};
     }
 
     SemilinearSet& operator=(const SemilinearSet &slset) = default;
     SemilinearSet& operator=(SemilinearSet &&slset) = default;
 
     SemilinearSet& operator+=(const SemilinearSet &rhs) {
-      std::set< LinearSet<Simplifier2, V> > result;
+      std::set< LinearSet<LinSimpl, V> > result;
       std::set_union(set_.begin(), set_.end(),
                      rhs.set_.begin(), rhs.set_.end(),
                      std::inserter(result, result.begin()));
+
       set_ = std::move(result);
-      // FIXME: run Simplifier1
+
+      Simplify();
+
       return *this;
     }
 
@@ -57,20 +60,23 @@ class SemilinearSet : public Semiring<
       // std::cout << "-> SemilinearSet::operator*" << std::endl;
       // std::cout << *this << std::endl;
       // std::cout << rhs << std::endl;
-      std::set< LinearSet<Simplifier2, V> > result;
+      std::set< LinearSet<LinSimpl, V> > result;
       for(auto &lin_set_rhs : rhs.set_) {
         for(auto &lin_set_lhs : set_) {
           result.insert(lin_set_lhs + lin_set_rhs);
         }
       }
+
       set_ = std::move(result);
+
+      Simplify();
 
       // std::cout << *this << std::endl;
       // std::cout << "<- SemilinearSet::operator*" << std::endl;
       return *this;
     }
 
-    SemilinearSet star(const LinearSet<Simplifier2, V> &lset) const {
+    SemilinearSet star(const LinearSet<LinSimpl, V> &lset) const {
 
       /* If we do not have any generators, i.e.,
        *   ls = w  (for some word w)
@@ -83,7 +89,7 @@ class SemilinearSet : public Semiring<
         if (lset.GetOffset() != SparseVec<V>{}) {
           result_gens.insert(lset.GetOffset());
         }
-        return SemilinearSet{ LinearSet<Simplifier2, V>{
+        return SemilinearSet{ LinearSet<LinSimpl, V>{
                                 SparseVec<V>{}, std::move(result_gens)} };
       }
 
@@ -93,11 +99,11 @@ class SemilinearSet : public Semiring<
       std::set< SparseVec<V> > result_gens = lset.GetGenerators();
       result_gens.insert(lset.GetOffset());
 
-      SemilinearSet result{ LinearSet<Simplifier2, V>{
+      SemilinearSet result{ LinearSet<LinSimpl, V>{
                               lset.GetOffset(), std::move(result_gens)} };
 
       /* Insert one.  We're inlining the definition for efficiency. */
-      result.set_.insert(LinearSet<Simplifier2, V>{});
+      result.set_.insert(LinearSet<LinSimpl, V>{});
 
       return result;
     }
@@ -107,6 +113,7 @@ class SemilinearSet : public Semiring<
       for (auto &ls : set_) {
         result *= star(ls);
       }
+
       return result;
     }
 
@@ -131,10 +138,14 @@ class SemilinearSet : public Semiring<
     static const bool is_commutative = true;
 
   private:
-    SemilinearSet(std::set< LinearSet<Simplifier2, V> > &&s) : set_(s) {}
+    SemilinearSet(std::set< LinearSet<LinSimpl, V> > &&s) : set_(s) {}
 
-    std::set< LinearSet<Simplifier2, V> > set_;
-    Simplifier1 simplifier_;
+    void Simplify() {
+      SimplifySet(simplifier_, set_);
+    }
+
+    std::set< LinearSet<LinSimpl, V> > set_;
+    SemiSimpl simplifier_;
 
     template <typename S21, typename S22, typename S11, typename S12, typename VV>
     friend SemilinearSet<S21, S22, VV> ChangeSimplifiers(
@@ -152,7 +163,58 @@ SemilinearSet<S21, S22, V> ChangeSimplifiers(
   return SemilinearSet<S21, S22, V>{std::move(result_set)};
 }
 
+template <typename LinearSimpl, typename Var>
+class SemilinearSimplifier {
+  public:
+    bool IsActive() const { return true; }
+    bool IsCovered(LinearSet<LinearSimpl, Var> &lset,
+                   const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets) {
+      for (auto &rhs_lset : rhs_lsets) {
+        auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
+        if (!new_offset.IsValid() ||
+            !linear_simpl_.IsCovered(new_offset, rhs_lset.GetGenerators())) {
+          continue;
+        }
+        for (auto &lhs_gen : lset.GetGenerators()) {
+          if (!linear_simpl_.IsCovered(lhs_gen, rhs_lset.GetGenerators())) {
+            continue;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+  private:
+    LinearSimpl linear_simpl_;
+};
+
+template <typename LinearSimpl, typename Var>
+class SemilinearSubsetSimplifier {
+  public:
+    bool IsActive() const { return true; }
+    bool IsCovered(LinearSet<LinearSimpl, Var> &lset,
+                   const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets) {
+      for (auto &rhs_lset : rhs_lsets) {
+        auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
+        if (new_offset.IsValid() &&
+            linear_simpl_.IsCovered(new_offset, rhs_lset.GetGenerators()) &&
+            std::includes(rhs_lset.GetGenerators().begin(),
+                          rhs_lset.GetGenerators().end(),
+                          lset.GetGenerators().begin(),
+                          lset.GetGenerators().end())) {
+          return true;
+        }
+      }
+      return false;
+    }
+  private:
+    LinearSimpl linear_simpl_;
+};
+
 /* Compatibility with old implementation. */
-typedef SemilinearSet<DummySimplifier, SmartSimplifier<VarPtr>, VarPtr> SemilinSetExp;
+typedef SemilinearSet<SemilinearSimplifier< SmartSimplifier<VarPtr>, VarPtr >,
+                      SmartSimplifier<VarPtr>,
+                      VarPtr> SemilinSetExp;
+// typedef SemilinearSet<DummySimplifier, SmartSimplifier<VarPtr>, VarPtr> SemilinSetExp;
 // typedef SemilinearSet<DummySimplifier, NaiveSimplifier<VarPtr>, VarPtr> SemilinSetExp;
 // typedef SemilinearSet<DummySimplifier, DummySimplifier, VarPtr> SemilinSetExp;
