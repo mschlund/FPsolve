@@ -6,6 +6,8 @@
 #include "semilinear_util.h"
 #include "sparse_vec.h"
 
+#include "debug_output.h"
+
 
 /* TODO:
  * - The simplification could be a bit better -- we currently only check if
@@ -44,7 +46,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     PseudoLinearSet(const LinearSet<Simpl2, Var> &lset)
         : generators_(lset.GetGenerators()) {
       offsets_.insert(lset.GetOffset());
-      // FIXME: Should we try to simplify?
+
+      Simplify();
     }
 
     PseudoLinearSet& operator=(const PseudoLinearSet &s) = default;
@@ -71,11 +74,10 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
                      rhs.generators_.begin(), rhs.generators_.end(),
                      std::inserter(result_generators, result_generators.begin()));
 
-      SimplifySet(simplifier_, result_offsets, result_generators);
-      SimplifySet(simplifier_, result_generators);
-
       offsets_ = std::move(result_offsets);
       generators_ = std::move(result_generators);
+
+      Simplify();
 
       return *this;
     }
@@ -97,12 +99,10 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
                      rhs.generators_.begin(), rhs.generators_.end(),
                      std::inserter(result_generators, result_generators.begin()));
 
-
-      SimplifySet(simplifier_, result_offsets, result_generators);
-      SimplifySet(simplifier_, result_generators);
-
       offsets_ = std::move(result_offsets);
       generators_ = std::move(result_generators);
+
+      Simplify();
 
       // std::cout << *this << std::endl;
       // std::cout << "<- SemilinearSet::operator*" << std::endl;
@@ -143,10 +143,45 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
       return out;
     }
 
+    static const bool is_idempotent = true;
+    static const bool is_commutative = true;
+
   private:
     PseudoLinearSet(std::set<SparseVec_> &&os, std::set<SparseVec_> &&gs)
         : offsets_(os), generators_(gs) {}
 
+    void Simplify() {
+      DMSG("-> PseudoLinearSet::Simplify");
+      DMSG(offsets_);
+      DMSG(generators_);
+
+      /* Simplify generators. */
+      SimplifySet(simplifier_, generators_);
+
+      /* Simplify offsets.  This uses the same trick as SimplifySet -- erase in
+       * std::set does not invalidate any iterators (except for the removed). */
+      for (auto offset1_iter = offsets_.begin(); offset1_iter != offsets_.end(); ) {
+        auto offset1 = std::move(*offset1_iter);
+        /* Erase automatically advances the iterator to the next element. */
+        offset1_iter = offsets_.erase(offset1_iter);
+
+        bool necessary = true;
+        for (auto &offset2 : offsets_) {
+          auto new_offset = offset1 - offset2;
+          if (new_offset.IsValid() &&
+              simplifier_.IsCovered(new_offset, generators_)) {
+            necessary = false;
+            break;
+          }
+        }
+
+        if (necessary) {
+          offsets_.insert(std::move(offset1));
+        } else {
+          DMSG("Removed offset: " << offset1);
+        }
+      }
+    }
 
     std::set<SparseVec_> offsets_;
     std::set<SparseVec_> generators_;
@@ -172,3 +207,5 @@ PseudoLinearSet<Simpl1, Var> SemilinearToPseudoLinear(
   });
   return pseudo_lset;
 }
+
+typedef PseudoLinearSet<SmartSimplifier<VarPtr>, VarPtr> DefaultPseudoLinearSet;
