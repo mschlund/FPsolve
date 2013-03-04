@@ -442,8 +442,9 @@ class Polynomial : public Semiring< Polynomial<SR> > {
 
     template <typename SR2, typename F>
     Polynomial<SR2> Map(F fun) const {
+      /* Variables don't change, so just copy them over. */
+      VarDegreeMap result_variables = variables_;
       std::map<Monomial, SR2> result_monomials;
-      VarDegreeMap result_variables;
 
       std::transform(
         monomials_.begin(), monomials_.end(),
