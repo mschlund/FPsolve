@@ -4,11 +4,14 @@
 
 /*
  * Debugging output -- should be used for any information that helps in
- * debugging (it's ok if it slows things down).
+ * debugging (i.e., it's ok if it slows things down).
+ *
+ * Note that __FUNCTION__ is not part of the standard, but it seems to work fine
+ * with GCC and Clang.
  */
 
 #ifdef DEBUG_OUTPUT
-#define DEBUG_LOCATION "(" << __FILE__ << ":" << __LINE__ << "):"
+#define DEBUG_LOCATION "(" << __FUNCTION__ << ":" << __LINE__ << "):"
 #define DMSG(msg) std::cerr << DEBUG_LOCATION << " " << msg << std::endl;
 #define DOUT(x) std::cerr << DEBUG_LOCATION << " " << x;
 #else
