@@ -213,7 +213,7 @@ class NaiveSimplifier {
  */
 
 template <typename Var, typename Value = Counter>
-class SmartSimplifier : public NaiveSimplifier<Var, Value> {
+class SparseVecSimplifier : public NaiveSimplifier<Var, Value> {
   public:
     bool IsActive() const { return true; }
 
@@ -231,24 +231,22 @@ class SmartSimplifier : public NaiveSimplifier<Var, Value> {
     bool IsCovered_(const SparseVec<Var, Value> &lhs,
         const std::set< SparseVec<Var, Value> > &rhs_set,
         std::unordered_set< SparseVec<Var, Value> > &failed) {
-      // std::cout << "-> IsCovered_" << std::endl;
-      // std::cout << lhs << std::endl;
       if (0 < failed.count(lhs)) {
-        // std::cout << "<- IsCovered_: false: already failed" << std::endl;
         return false;
       }
       /* Should we go from the back? */
       for (auto &rhs : rhs_set) {
-        // std::cout << "try subtracting " << rhs << std::endl;
+        if (rhs.IsZero()) {
+          assert(false);
+          continue;
+        }
         auto new_lhs = lhs - rhs;
         if (new_lhs.IsValid() && (new_lhs.IsZero() ||
                                   IsCovered_(new_lhs, rhs_set, failed))) {
-          // std::cout << "<- IsCovered_: true" << std::endl;
           return true;
         }
       }
       failed.insert(lhs);
-      // std::cout << "<- IsCovered_: false: new failed" << std::endl;
       return false;
     }
 };
