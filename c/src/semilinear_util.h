@@ -1,5 +1,7 @@
 #pragma once
 
+#include "debug_output.h"
+
 /*
  * Try removing elements from the first set that are included in the second one.
  * If you want to simplify just one set, it is ok to pass the same std::set for
@@ -15,15 +17,20 @@ void SimplifySet(Simplifier &simplifier, std::set<Elem> &to_simpl,
    * iter and insert doesn't invalidate any iterators. */
   if (simplifier.IsActive() && 1 < to_simpl.size()) {
 
-    std::cout << "-- SimplifySet" << std::endl;
+#ifdef DEBUG_OUTPUT
+    DMSG("Lhs: {");
     for (auto &x : to_simpl) {
-      std::cout << "Lhs: " << x << std::endl;
+      DMSG(x);
     }
+    DMSG("}");
     if (to_simpl != available) {
+      DMSG("Rhs: {");
       for (auto &x : available) {
-        std::cout << "Rhs: " << x << std::endl;
+        DMSG(x);
       }
+      DMSG("}");
     }
+#endif
 
     for (auto iter = to_simpl.begin(); iter != to_simpl.end(); ) {
       Elem tmp_elem = std::move(*iter);
@@ -34,7 +41,7 @@ void SimplifySet(Simplifier &simplifier, std::set<Elem> &to_simpl,
         // FIXME: GCC 4.7 does not have emplace
         to_simpl.insert(std::move(tmp_elem));
       } else {
-        std::cout << "SimplifySet: Removed " << tmp_elem << std::endl;
+        DMSG("Removing " << tmp_elem);
       }
     }
   }

@@ -57,9 +57,6 @@ class SemilinearSet : public Semiring<
     }
 
     SemilinearSet& operator*=(const SemilinearSet &rhs) {
-      // std::cout << "-> SemilinearSet::operator*" << std::endl;
-      // std::cout << *this << std::endl;
-      // std::cout << rhs << std::endl;
       std::set< LinearSet<LinSimpl, V> > result;
       for(auto &lin_set_rhs : rhs.set_) {
         for(auto &lin_set_lhs : set_) {
@@ -71,8 +68,6 @@ class SemilinearSet : public Semiring<
 
       Simplify();
 
-      // std::cout << *this << std::endl;
-      // std::cout << "<- SemilinearSet::operator*" << std::endl;
       return *this;
     }
 
@@ -188,6 +183,10 @@ class SemilinearSimplifier {
     LinearSimpl linear_simpl_;
 };
 
+/*
+ * This is the older idea of simplification where we only tested subset
+ * inclusion of generators.
+ */
 template <typename LinearSimpl, typename Var>
 class SemilinearSubsetSimplifier {
   public:
@@ -212,9 +211,9 @@ class SemilinearSubsetSimplifier {
 };
 
 /* Compatibility with old implementation. */
-typedef SemilinearSet<SemilinearSimplifier< SmartSimplifier<VarPtr>, VarPtr >,
-                      SmartSimplifier<VarPtr>,
+typedef SemilinearSet<SemilinearSimplifier< SparseVecSimplifier<VarPtr>, VarPtr >,
+                      SparseVecSimplifier<VarPtr>,
                       VarPtr> SemilinSetExp;
-// typedef SemilinearSet<DummySimplifier, SmartSimplifier<VarPtr>, VarPtr> SemilinSetExp;
+// typedef SemilinearSet<DummySimplifier, SparseVecSimplifier<VarPtr>, VarPtr> SemilinSetExp;
 // typedef SemilinearSet<DummySimplifier, NaiveSimplifier<VarPtr>, VarPtr> SemilinSetExp;
 // typedef SemilinearSet<DummySimplifier, DummySimplifier, VarPtr> SemilinSetExp;
