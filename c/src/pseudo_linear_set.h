@@ -83,9 +83,6 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
-      // std::cout << "-> SemilinearSet::operator*" << std::endl;
-      // std::cout << *this << std::endl;
-      // std::cout << rhs << std::endl;
       std::set<SparseVec_> result_offsets;
       std::set<SparseVec_> result_generators;
 
@@ -104,8 +101,6 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 
       Simplify();
 
-      // std::cout << *this << std::endl;
-      // std::cout << "<- SemilinearSet::operator*" << std::endl;
       return *this;
     }
 
@@ -151,12 +146,24 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
         : offsets_(os), generators_(gs) {}
 
     void Simplify() {
-      DMSG("-> PseudoLinearSet::Simplify");
-      DMSG(offsets_);
-      DMSG(generators_);
+#ifdef DEBUG_OUTPUT
+      DMSG("Offsets: {");
+      for (auto &x : offsets_) {
+        DMSG(x);
+      }
+      DMSG("}");
+      DMSG("Generators: {");
+      for (auto &x : generators_) {
+        DMSG(x);
+      }
+      DMSG("}");
+#endif
 
       /* Simplify generators. */
       SimplifySet(simplifier_, generators_);
+
+      // TODO: We could try a bit smarter approach by using IsCovered with an
+      // additional set of elements that can be used only once (i.e., offsets)
 
       /* Simplify offsets.  This uses the same trick as SimplifySet -- erase in
        * std::set does not invalidate any iterators (except for the removed). */
@@ -208,4 +215,4 @@ PseudoLinearSet<Simpl1, Var> SemilinearToPseudoLinear(
   return pseudo_lset;
 }
 
-typedef PseudoLinearSet<SmartSimplifier<VarPtr>, VarPtr> DefaultPseudoLinearSet;
+typedef PseudoLinearSet<SparseVecSimplifier<VarPtr>, VarPtr> DefaultPseudoLinearSet;
