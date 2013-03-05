@@ -10,7 +10,7 @@ if(DEFINED ENV{BOOST_ROOT})
   set(Boost_NO_SYSTEM_PATHS true)
 endif(DEFINED ENV{BOOST_ROOT})
 
-find_package(Boost COMPONENTS program_options REQUIRED)
+find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
@@ -53,7 +53,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -Wall -pedantic-errors -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -g -Wall -pedantic-errors -O0")
+
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 
 if(${LPSOLVE})

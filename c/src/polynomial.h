@@ -37,6 +37,9 @@ class Polynomial : public Semiring< Polynomial<SR> > {
      * polynomial. */
     VarDegreeMap variables_;
 
+    template <typename SR2>
+    friend class Polynomial;
+
     static void InsertMonomial(std::map<Monomial, SR> &map, const Monomial &m,
         const SR &c) {
       if (c == SR::null()) {
@@ -435,6 +438,22 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       }
 
       return ss.str();
+    }
+
+    template <typename SR2, typename F>
+    Polynomial<SR2> Map(F fun) const {
+      /* Variables don't change, so just copy them over. */
+      VarDegreeMap result_variables = variables_;
+      std::map<Monomial, SR2> result_monomials;
+
+      std::transform(
+        monomials_.begin(), monomials_.end(),
+        std::inserter(result_monomials, result_monomials.begin()),
+        [&fun](const std::pair< Monomial, SR > &pair) {
+          return std::make_pair(pair.first, fun(pair.second));
+        });
+      return Polynomial<SR2>{std::move(result_monomials),
+                             std::move(result_variables)};
     }
 };
 
