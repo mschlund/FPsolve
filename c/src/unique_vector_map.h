@@ -5,6 +5,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "key_wrapper.h"
+#include "debug_output.h"
 
 typedef std::uint_fast32_t RefCounter;
 
@@ -16,6 +17,11 @@ class UniqueVMap {
   typedef std::vector< std::pair<K, V> > Vector_;
   public:
     UniqueVMap() = delete;
+    UniqueVMap(const UniqueVMap &vmap) = delete;
+    UniqueVMap(UniqueVMap &&vmap) = delete;
+
+    UniqueVMap& operator=(const UniqueVMap &vmap) = delete;
+    UniqueVMap& operator=(UniqueVMap &&vmap) = delete;
 
     typename Vector_::const_iterator Find(const K &key) const {
       auto iter = std::lower_bound(vector_.begin(), vector_.end(), key, Less{});
@@ -51,6 +57,7 @@ class UniqueVMap {
     }
 
     friend inline void intrusive_ptr_release(const UniqueVMap *vec_map) {
+      assert(vec_map->ref_count_ > 0);
       --vec_map->ref_count_;
       if (vec_map->ref_count_ == 0) {
         vec_map->builder_.Delete(vec_map);
@@ -94,7 +101,6 @@ class UniqueVMap {
     UniqueVMapBuilder<K, V> &builder_;
     mutable RefCounter ref_count_ = 0;
 
-    // FIXME: should that be const?
     Vector_ vector_;
 };
 
@@ -115,7 +121,7 @@ template <typename A>
 using IntrPtr = boost::intrusive_ptr<A>;
 
 template <typename K, typename V>
-using UniqueVMapPtr = IntrPtr< UniqueVMap<K, V> >;
+using UniqueVMapPtr = IntrPtr< const UniqueVMap<K, V> >;
 
 template <typename K, typename V>
 class UniqueVMapBuilder {
@@ -123,7 +129,9 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder() = default;
 
     ~UniqueVMapBuilder() {
-      for (auto &key_value : map_) { delete key_value.second; }
+      /* At this point there shouldn't be any outstanding pointers left... */
+      assert(map_.empty());
+      for (auto &key_value : map_) { DMSG(*key_value.second); delete key_value.second; }
     }
 
     UniqueVMapBuilder(const UniqueVMapBuilder &f) = delete;
@@ -132,12 +140,18 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder& operator=(const UniqueVMapBuilder &f) = delete;
     UniqueVMapBuilder& operator=(UniqueVMapBuilder &&f) = delete;
 
-    UniqueVMapPtr<K, V> TryLookup(UniqueVMap<K, V> *vmap) {
+    UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V> > &&vmap) {
       assert(vmap);
+      assert(vmap->ref_count_ == 0);
       auto iter_inserted =
-        map_.emplace(KeyWrapper< UniqueVMap<K, V> >{vmap}, vmap);
+        map_.emplace(KeyWrapper< UniqueVMap<K, V> >{vmap.get()}, vmap.get());
       /* Sanity check -- the actual vectors must be the same. */
       assert(*iter_inserted.first->second == *vmap);
+
+      if (iter_inserted.second) {
+        vmap.release();
+      }
+
       return UniqueVMapPtr<K, V>{iter_inserted.first->second};
     }
 
@@ -155,7 +169,7 @@ class UniqueVMapBuilder {
         }
       }
 
-      return TryLookup(result.release());
+      return TryLookup(std::move(result));
     }
 
     UniqueVMapPtr<K, V> NewSum(const UniqueVMap<K, V> &lhs,
@@ -192,7 +206,7 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*rhs_iter);
       }
 
-      return TryLookup(result.release());
+      return TryLookup(std::move(result));
     }
 
     UniqueVMapPtr<K, V> NewDiff(const UniqueVMap<K, V> &lhs,
@@ -247,16 +261,14 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*lhs_iter);
       }
 
-      return TryLookup(result.release());
+      return TryLookup(std::move(result));
     }
 
     void Delete(const UniqueVMap<K, V> *vector_ptr) {
       auto iter = map_.find(KeyWrapper< UniqueVMap<K, V> >{vector_ptr});
       if (iter != map_.end()) {
-        auto tmp_ptr = iter->second;
-        assert(tmp_ptr == vector_ptr);
+        delete iter->second;
         map_.erase(iter);
-        delete tmp_ptr;
       } else {
         assert(false);
       }
@@ -271,7 +283,7 @@ namespace std {
 template<typename K, typename V>
 struct hash< UniqueVMapPtr<K, V> > {
   inline std::size_t operator()(const UniqueVMapPtr<K, V> &ptr) const {
-    std::hash<UniqueVMap<K, V>*> h;
+    std::hash<const UniqueVMap<K, V>*> h;
     return h(ptr.get());
   }
 };
