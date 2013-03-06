@@ -9,42 +9,49 @@
 #include "key_wrapper.h"
 #include "semilinear_util.h"
 #include "sparse_vec.h"
-#include "unique_linear_set.h"
+#include "unique_set.h"
 
 template <typename Simplifier, typename V>
 class LinearSet {
   public:
-    LinearSet() : set_ptr_(builder_.New(SparseVec<V>{}, std::set< SparseVec<V> >{})) {}
+    LinearSet() : offset_(), generators_(builder_.New({})) {}
 
     LinearSet(const LinearSet &lset) = default;
     LinearSet(LinearSet &&lset) = default;
 
-    LinearSet(const SparseVec<V> &v) : set_ptr_(builder_.New(v, {})) {}
-    LinearSet(SparseVec<V> &&v) : set_ptr_(builder_.New(std::move(v), {})) {}
+    LinearSet(const SparseVec<V> &v)
+        : offset_(builder_.New(v, {})), generators_(builder_.New({})) {}
+
+    LinearSet(SparseVec<V> &&v)
+        : offset_(std::move(v)), generators_(builder_.New({})) {}
 
     LinearSet(const SparseVec<V> &o, const std::set< SparseVec<V> > &vs)
-        : set_ptr_(builder_.New(o, vs)) {}
+        : offset_(o), generators_(builder_.New(vs)) {}
 
     LinearSet(SparseVec<V> &&o, std::set< SparseVec<V> > &&vs)
-        : set_ptr_(builder_.New(std::move(o), std::move(vs))) {}
+        : offset_(std::move(o)), generators_(builder_.New(std::move(vs))) {}
 
-    // FIXME: do we need this?
-    // LinearSet& operator=(const LinearSet &s) = default;
-    // LinearSet& operator=(LinearSet &&s) = default;
+    LinearSet& operator=(const LinearSet &s) = default;
+    LinearSet& operator=(LinearSet &&s) = default;
 
     ~LinearSet() = default;
 
     bool operator==(const LinearSet &rhs) const {
-      return set_ptr_ == rhs.set_ptr_;
+      return offset_ == rhs.offset_ && generators_ == rhs.generators_;
     }
 
     bool operator<(const LinearSet &rhs) const {
-      return set_ptr_ < rhs.set_ptr_;
+      if (offset_ < rhs.offset_) {
+        return true;
+      } else if (offset_ == rhs.offset_) {
+        return generators_ < rhs.generators_;
+      }
+      return false;
     }
 
 
     LinearSet operator+(const LinearSet &rhs) const {
-      auto result_offset = GetOffset() + rhs.GetOffset();
+      auto result_offset = offset_ + rhs.offset_;
       std::set< SparseVec<V> > result_generators;
 
       std::set_union(GetGenerators().begin(), GetGenerators().end(),
@@ -53,32 +60,36 @@ class LinearSet {
 
       SimplifySet(simplifier_, result_generators);
 
-      return LinearSet{builder_.New(std::move(result_offset),
-                                    std::move(result_generators))};
+      return LinearSet{std::move(result_offset),
+                       builder_.New(std::move(result_generators))};
     }
 
     std::size_t Hash() const {
-      std::hash< UniqueLinearSetPtr<V> > h;
-      return h(set_ptr_);
+      std::size_t hash = 0;
+      HashCombine(hash, offset_);
+      HashCombine(hash, generators_);
+      return hash;
     }
 
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
-      out << *lset.set_ptr_;
+      out << "<" << lset.offset_ << " : " << *lset.generators_ << ">";
       return out;
     }
 
-    const SparseVec<V>& GetOffset() const { return set_ptr_->GetOffset(); }
+    const SparseVec<V>& GetOffset() const { return offset_; }
     const std::set< SparseVec<V> >& GetGenerators() const {
-      return set_ptr_->GetGenerators();
+      return generators_->GetSet();
     }
 
   private:
-    LinearSet(UniqueLinearSetPtr<V> s) : set_ptr_(s) {}
+    LinearSet(SparseVec<V> &&o, UniqueSetPtr< SparseVec<V> > s)
+        : offset_(std::move(o)), generators_(s) {}
 
-    UniqueLinearSetPtr<V> set_ptr_;
+    SparseVec<V> offset_;
+    UniqueSetPtr< SparseVec<V> > generators_;
 
     /* TODO: Try to get rid of static... */
-    static UniqueLinearSetBuilder<V> builder_;
+    static UniqueSetBuilder< SparseVec<V> > builder_;
     static Simplifier simplifier_;
 
     template <typename S2, typename S1, typename VV>
@@ -99,7 +110,7 @@ struct hash< LinearSet<S, V> > {
 }  /* namespace std */
 
 template <typename Simplifier, typename V>
-UniqueLinearSetBuilder<V> LinearSet<Simplifier, V>::builder_;
+UniqueSetBuilder< SparseVec<V> > LinearSet<Simplifier, V>::builder_;
 
 template <typename Simplifier, typename V>
 Simplifier LinearSet<Simplifier, V>::simplifier_;

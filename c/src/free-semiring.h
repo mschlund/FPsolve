@@ -120,7 +120,11 @@ class Evaluator : public NodeVisitor {
     ~Evaluator() {
       for (auto &pair : evaled_) { delete pair.second; }
       /* Top level Node will not be in evaled_. */
-      delete result_;
+      if (result_ != nullptr) {
+        /* Why would anyone run the Evaluator and not get the result? */
+        assert(false);
+        delete result_;
+      }
     }
 
     void Visit(const Addition &a) {
@@ -156,8 +160,11 @@ class Evaluator : public NodeVisitor {
       result_ = new SR(SR::null());
     }
 
-    SR& GetResult() {
-      return *result_;
+    SR MoveResult() {
+      SR tmp = std::move(*result_);
+      delete result_;
+      result_ = nullptr;
+      return tmp;
     }
 
     static const bool is_idempotent = false;
@@ -183,13 +190,13 @@ template <typename SR>
 SR FreeSemiring::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
-  return std::move(evaluator.GetResult());
+  return evaluator.MoveResult();
 }
 
 template <typename SR>
 SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
   node_->Accept(evaluator);
-  return std::move(evaluator.GetResult());
+  return evaluator.MoveResult();
 }
 
 template <typename SR>
