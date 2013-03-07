@@ -12,7 +12,7 @@ Degree VarDegreeMap::GetDegreeOf(const VarPtr var) const {
   }
 }
 
-void VarDegreeMap::Insert(const VarPtr var, std::uint16_t deg) {
+void VarDegreeMap::Insert(const VarPtr var, Degree deg) {
   if (deg == 0) {
     return;
   }
@@ -25,7 +25,7 @@ void VarDegreeMap::Insert(const VarPtr var, std::uint16_t deg) {
   assert(SanityCheck());
 }
 
-void VarDegreeMap::Erase(const VarPtr var, std::uint16_t deg) {
+void VarDegreeMap::Erase(const VarPtr var, Degree deg) {
   auto var_iter = map_.find(var);
   assert(var_iter != map_.end());
   if (deg >= var_iter->second) {

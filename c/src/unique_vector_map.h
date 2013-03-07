@@ -251,6 +251,9 @@ class UniqueVMapBuilder {
           result->vector_.emplace_back(lhs_iter->first,
                                        lhs_iter->second - rhs_iter->second);
         }
+        /*
+         * If lhs value is equal to rhs value we just advance to the next variable
+         */
 
         ++lhs_iter;
         ++rhs_iter;

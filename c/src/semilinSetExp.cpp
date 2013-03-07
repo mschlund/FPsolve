@@ -250,7 +250,6 @@ bool is_spanned_by(const VecSparse& v, const std::set<VecSparse>& gens) {
 }
 
 
-
 // simple inclusion check: just check if offset of ls1 is reachable in ls2 and if generators of ls1
 // are included (set inclusion) in those of ls2
 // TODO: even simpler: check if offsets are the SAME and if generators are subsets

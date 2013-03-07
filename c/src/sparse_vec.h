@@ -194,7 +194,7 @@ class NaiveSimplifier {
 
     bool IsCovered(const SparseVec<Var, Value> &lhs,
         const std::set< SparseVec<Var, Value> > &rhs_set) {
-      if (rhs_set.count(lhs) > 0) {
+      if (lhs.IsZero() || rhs_set.count(lhs) > 0) {
         return true;
       }
       for (const auto &rhs_gen : rhs_set) {
@@ -217,6 +217,9 @@ class SparseVecSimplifier : public NaiveSimplifier<Var, Value> {
   public:
     bool IsActive() const { return true; }
 
+    /*
+     * check, if lhs is a non-negative integer linear combination of the vectors in rhs_set
+    */
     bool IsCovered(const SparseVec<Var, Value> &lhs,
         const std::set< SparseVec<Var, Value> > &rhs_set) {
       /* Check the cheap and naive simplifier. */

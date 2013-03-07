@@ -35,9 +35,10 @@ void SimplifySet(Simplifier &simplifier, std::set<Elem> &to_simpl,
     for (auto iter = to_simpl.begin(); iter != to_simpl.end(); ) {
       Elem tmp_elem = std::move(*iter);
       /* Erase automatically advances the iterator to the next element. */
-      iter = to_simpl.erase(iter);
-      /* Add it back only if it's not "covered" by the set. */
+     iter = to_simpl.erase(iter);
+      // Add it back only if it's not "covered" by the set.
       if (!simplifier.IsCovered(tmp_elem, available)) {
+        DMSG("Cannot remove " << tmp_elem);
         // FIXME: GCC 4.7 does not have emplace
         to_simpl.insert(std::move(tmp_elem));
       } else {
