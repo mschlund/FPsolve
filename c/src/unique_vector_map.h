@@ -81,6 +81,10 @@ class UniqueVMap {
       assert(Sanity());
     }
 
+    void Clear() {
+      vector_.clear();
+    }
+
 
     bool Sanity() const {
       for (auto &var_count : vector_) {
@@ -125,10 +129,18 @@ using UniqueVMapPtr = IntrPtr< const UniqueVMap<K, V> >;
 
 template <typename K, typename V>
 class UniqueVMapBuilder {
+
+  struct Deleter {
+    void operator()(UniqueVMap<K, V> *vmap) {
+      vmap->builder_.Deallocate(vmap);
+    }
+  };
+
   public:
     UniqueVMapBuilder() = default;
 
     ~UniqueVMapBuilder() {
+      for (auto &ptr : allocated_) { delete ptr; }
       /* At this point there shouldn't be any outstanding pointers left... */
       assert(map_.empty());
       for (auto &key_value : map_) { DMSG(*key_value.second); delete key_value.second; }
@@ -140,14 +152,20 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder& operator=(const UniqueVMapBuilder &f) = delete;
     UniqueVMapBuilder& operator=(UniqueVMapBuilder &&f) = delete;
 
-    UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V> > &&vmap) {
+    UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V>, Deleter > &&vmap) {
       assert(vmap);
       assert(vmap->ref_count_ == 0);
+
+      /* Note that the unique_ptr vmap still owns ptr. */
+      auto ptr = vmap.get();
+
       auto iter_inserted =
-        map_.emplace(KeyWrapper< UniqueVMap<K, V> >{vmap.get()}, vmap.get());
+        map_.emplace(KeyWrapper< UniqueVMap<K, V> >{ptr}, ptr);
       /* Sanity check -- the actual vectors must be the same. */
       assert(*iter_inserted.first->second == *vmap);
 
+      /* If we actually inserted the ptr, vmap should release its ownership.
+       * Otherwise the ~unique_ptr will call Deallocate. */
       if (iter_inserted.second) {
         vmap.release();
       }
@@ -157,8 +175,7 @@ class UniqueVMapBuilder {
 
     UniqueVMapPtr<K, V> New(std::vector< std::pair<K, V> > &&input_vector) {
       std::sort(input_vector.begin(), input_vector.end());
-      auto result =
-        std::unique_ptr< UniqueVMap<K, V> >{new UniqueVMap<K, V>(*this)};
+      auto result = Allocate();
 
       for (auto &pair : input_vector) {
         if (result->vector_.empty() || result->vector_.back().first < pair.first) {
@@ -175,7 +192,7 @@ class UniqueVMapBuilder {
     UniqueVMapPtr<K, V> NewSum(const UniqueVMap<K, V> &lhs,
                                const UniqueVMap<K, V> &rhs) {
 
-      std::unique_ptr< UniqueVMap<K, V> > result{new UniqueVMap<K, V>(*this)};
+      auto result = Allocate();
 
       auto lhs_iter = lhs.vector_.begin();
       auto rhs_iter = rhs.vector_.begin();
@@ -216,7 +233,7 @@ class UniqueVMapBuilder {
         return UniqueVMapPtr<K, V>{nullptr};
       }
 
-      std::unique_ptr< UniqueVMap<K, V> > result{new UniqueVMap<K, V>(*this)};
+      auto result = Allocate();
 
       auto lhs_iter = lhs.vector_.begin();
       auto rhs_iter = rhs.vector_.begin();
@@ -270,7 +287,7 @@ class UniqueVMapBuilder {
     void Delete(const UniqueVMap<K, V> *vector_ptr) {
       auto iter = map_.find(KeyWrapper< UniqueVMap<K, V> >{vector_ptr});
       if (iter != map_.end()) {
-        delete iter->second;
+        Deallocate(iter->second);
         map_.erase(iter);
       } else {
         assert(false);
@@ -278,7 +295,32 @@ class UniqueVMapBuilder {
     }
 
   private:
+    std::unique_ptr< UniqueVMap<K, V>, Deleter > Allocate() {
+      if (allocated_.empty()) {
+        return std::unique_ptr< UniqueVMap<K, V>, Deleter >(
+                 new UniqueVMap<K, V>(*this));
+      }
+      std::unique_ptr< UniqueVMap<K, V>, Deleter > ptr{allocated_.back()};
+      allocated_.pop_back();
+      return ptr;
+    }
+
+    void Deallocate(UniqueVMap<K, V> *ptr) {
+      assert(ptr->ref_count_ == 0);
+      /* Clear the vector so there's no garbage left.  This should _not_
+       * deallocate the buffer. */
+      ptr->Clear();
+
+      if (allocated_.size() < 1024) {
+        allocated_.push_back(ptr);
+      } else {
+        delete ptr;
+      }
+    }
+
+
     std::unordered_map< KeyWrapper< UniqueVMap<K, V> >, UniqueVMap<K, V>* > map_;
+    std::vector<UniqueVMap<K, V>*> allocated_;
 };
 
 namespace std {
@@ -292,4 +334,3 @@ struct hash< UniqueVMapPtr<K, V> > {
 };
 
 }  /* namespace std */
-
