@@ -161,7 +161,7 @@ SemilinearSet<S21, S22, V> ChangeSimplifiers(
 template <typename LinearSimpl, typename Var>
 class SemilinearSimplifier {
   public:
-    bool IsActive() const { return true; }
+    static bool IsActive() { return true; }
     bool IsCovered(LinearSet<LinearSimpl, Var> &lset,
                    const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets) {
       for (auto &rhs_lset : rhs_lsets) {
@@ -190,7 +190,7 @@ class SemilinearSimplifier {
 template <typename LinearSimpl, typename Var>
 class SemilinearSubsetSimplifier {
   public:
-    bool IsActive() const { return true; }
+    static bool IsActive() { return true; }
     bool IsCovered(LinearSet<LinearSimpl, Var> &lset,
                    const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets) {
       for (auto &rhs_lset : rhs_lsets) {

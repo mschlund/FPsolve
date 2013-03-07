@@ -178,7 +178,7 @@ struct hash< SparseVec<Var, Value> > {
 
 class DummySimplifier {
   public:
-    bool IsActive() const { return false; }
+    static bool IsActive() { return false; }
 
     template <typename Elem>
     bool IsCovered(const Elem &lhs, const std::set<Elem> &rhs_set) {
@@ -190,7 +190,7 @@ class DummySimplifier {
 template <typename Var, typename Value = Counter>
 class NaiveSimplifier {
   public:
-    bool IsActive() const { return true; }
+    static bool IsActive() { return true; }
 
     bool IsCovered(const SparseVec<Var, Value> &lhs,
         const std::set< SparseVec<Var, Value> > &rhs_set) {
@@ -215,7 +215,7 @@ class NaiveSimplifier {
 template <typename Var, typename Value = Counter>
 class SparseVecSimplifier : public NaiveSimplifier<Var, Value> {
   public:
-    bool IsActive() const { return true; }
+    static bool IsActive() { return true; }
 
     /*
      * check, if lhs is a non-negative integer linear combination of the vectors in rhs_set

@@ -6,7 +6,7 @@ template <typename Simpl, typename Elem>
 void SimplifySet(Simpl &simplifier, std::set<Elem> &to_simpl) {
 
 
-  if (simplifier.IsActive() && 1 < to_simpl.size()) {
+  if (Simpl::IsActive() && 1 < to_simpl.size()) {
 
 #ifdef DEBUG_OUTPUT
     DMSG("SimplifySet: {");
