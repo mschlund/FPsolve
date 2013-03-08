@@ -260,11 +260,11 @@ class SparseVecSimplifier {
         auto new_lhs = lhs - rhs;
         if (new_lhs.IsValid() && (new_lhs.IsZero() ||
                                   IsCovered_(new_lhs))) {
-          computed_[lhs] = true;
+          computed_.emplace(lhs, true);
           return true;
         }
       }
-      computed_[lhs] = false;
+      computed_.emplace(lhs, false);
       return false;
     }
 
