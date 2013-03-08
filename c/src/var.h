@@ -25,10 +25,23 @@ public:
 	static VarPtr getVar();
 	static VarPtr getVar(std::string name);
 	static VarPtr getVar(VarPtr var);
-	bool operator<(const Var& rhs) const;
-	friend bool operator==(const VarPtr& l, const VarPtr& r);
-	friend bool operator!=(const VarPtr& l, const VarPtr& r);
-	friend bool operator<(const VarPtr& l, const VarPtr& r);
+
+        inline bool operator<(const Var& rhs) const {
+          return id < rhs.id;
+        }
+
+        friend inline bool operator==(const VarPtr &l, const VarPtr &r) {
+          return l->id == r->id;
+        }
+
+        friend inline bool operator!=(const VarPtr &l, const VarPtr &r) {
+          return l->id != r->id;
+        }
+
+        friend inline bool operator<(const VarPtr &l, const VarPtr &r) {
+          return l->id < r->id;
+        }
+
 	std::string string() const;
 };
 

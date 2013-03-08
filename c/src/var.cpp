@@ -50,26 +50,6 @@ VarPtr Var::getVar(VarPtr var)
 	return var;
 }
 
-bool Var::operator<(const Var& rhs) const
-{
-	return this->id < rhs.id;
-}
-
-bool operator==(const VarPtr& l, const VarPtr& r)
-{
-	return l->id == r->id;
-}
-
-bool operator!=(const VarPtr& l, const VarPtr& r)
-{
-	return l->id != r->id;
-}
-
-bool operator<(const VarPtr& l, const VarPtr& r)
-{
-	return l->id < r->id;
-}
-
 std::string Var::string() const
 {
 	//std::stringstream ss;
