@@ -440,8 +440,10 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       return ss.str();
     }
 
-    template <typename SR2, typename F>
-    Polynomial<SR2> Map(F fun) const {
+    template <typename F>
+    auto Map(F fun) const -> Polynomial<typename std::result_of<F(SR)>::type> {
+      typedef typename std::result_of<F(SR)>::type SR2;
+
       /* Variables don't change, so just copy them over. */
       VarDegreeMap result_variables = variables_;
       std::map<Monomial, SR2> result_monomials;
