@@ -52,6 +52,8 @@ class SparseVec {
       if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
         return false;
       }
+      assert((vmap_ == rhs.vmap_ && Equal(rhs)) ||
+             (vmap_ != rhs.vmap_ && !Equal(rhs)));
       return vmap_ == rhs.vmap_;
     }
 
@@ -149,6 +151,10 @@ class SparseVec {
   private:
     SparseVec(UniqueVMapPtr_ v) : vmap_(v) {}
 
+    bool Equal(const SparseVec &rhs) const {
+      return *vmap_ == *rhs.vmap_;
+    }
+
     bool Sanity() const {
       if (vmap_ == nullptr) {
         return false;
@@ -190,20 +196,25 @@ class DummySimplifier {
 template <typename Var, typename Value = Counter>
 class NaiveSimplifier {
   public:
+    NaiveSimplifier(const std::set< SparseVec<Var, Value > > &s)
+        : rhs_set_(s) {}
+
     static bool IsActive() { return true; }
 
-    bool IsCovered(const SparseVec<Var, Value> &lhs,
-        const std::set< SparseVec<Var, Value> > &rhs_set) {
-      if (lhs.IsZero() || rhs_set.count(lhs) > 0) {
+    bool IsCovered(const SparseVec<Var, Value> &lhs) {
+      if (lhs.IsZero() || rhs_set_.count(lhs) > 0) {
         return true;
       }
-      for (const auto &rhs_gen : rhs_set) {
+      for (const auto &rhs_gen : rhs_set_) {
         if (rhs_gen.Divides(lhs)) {
           return true;
         }
       }
       return false;
     }
+
+  private:
+    const std::set< SparseVec<Var, Value> > &rhs_set_;
 };
 
 /*
@@ -213,7 +224,7 @@ class NaiveSimplifier {
  */
 
 template <typename Var, typename Value = Counter>
-class SparseVecSimplifier : public NaiveSimplifier<Var, Value> {
+class SparseVecSimplifier {
   public:
     static bool IsActive() { return true; }
 
@@ -223,12 +234,14 @@ class SparseVecSimplifier : public NaiveSimplifier<Var, Value> {
     bool IsCovered(const SparseVec<Var, Value> &lhs,
         const std::set< SparseVec<Var, Value> > &rhs_set) {
       /* Check the cheap and naive simplifier. */
-      if (NaiveSimplifier<Var, Value>::IsCovered(lhs, rhs_set)) {
+      NaiveSimplifier<Var, Value> naive{rhs_set};
+      if (naive.IsCovered(lhs)) {
         return true;
       }
       std::unordered_set< SparseVec<Var, Value> > failed;
       return IsCovered_(lhs, rhs_set, failed);
     }
+
   private:
     /* Dynamic programming/memoization */
     bool IsCovered_(const SparseVec<Var, Value> &lhs,
