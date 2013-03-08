@@ -7,6 +7,7 @@
 #include "sparse_vec.h"
 
 #include "debug_output.h"
+#include "equations.h"
 
 
 /* TODO:
@@ -160,15 +161,16 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 #endif
 
       /* Simplify generators. */
-      SimplifySet(simplifier_, generators_);
+      SimplifySet<Simpl>(generators_);
 
       // TODO: We could try a bit smarter approach by using IsCovered with an
       // additional set of elements that can be used only once (i.e., offsets)
 
       /* Simplify offsets.  This uses the same trick as SimplifySet -- erase in
        * std::set does not invalidate any iterators (except for the removed). */
+      Simpl simplifier{generators_};
       for (auto offset1_iter = offsets_.begin(); offset1_iter != offsets_.end(); ) {
-        auto offset1 = std::move(*offset1_iter);
+        auto offset1 = *offset1_iter;
         /* Erase automatically advances the iterator to the next element. */
         offset1_iter = offsets_.erase(offset1_iter);
 
@@ -176,7 +178,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
         for (auto &offset2 : offsets_) {
           auto new_offset = offset1 - offset2;
           if (new_offset.IsValid() &&
-              simplifier_.IsCovered(new_offset, generators_)) {
+              simplifier.IsCovered(new_offset)) {
             necessary = false;
             break;
           }
@@ -193,16 +195,10 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     std::set<SparseVec_> offsets_;
     std::set<SparseVec_> generators_;
 
-    // FIXME: Should that be static, pointer or just object???
-    static Simpl simplifier_;
-
     template <typename Simpl1, typename Simpl2, typename Simpl3, typename V>
     friend PseudoLinearSet<Simpl1, V> SemilinearToPseudoLinear(
         const SemilinearSet<Simpl2, Simpl3, V> &semilinear);
 };
-
-template <typename Simpl, typename Var>
-Simpl PseudoLinearSet<Simpl, Var>::simplifier_;
 
 
 template <typename Simpl1, typename Simpl2, typename Simpl3, typename Var>
@@ -214,5 +210,17 @@ PseudoLinearSet<Simpl1, Var> SemilinearToPseudoLinear(
   });
   return pseudo_lset;
 }
+
+template <typename Simpl1 = SparseVecSimplifier<VarPtr>,
+          typename Simpl2, typename Simpl3, typename Var>
+Equations< PseudoLinearSet<Simpl1, Var> > SemilinearToPseudoLinearEquations(
+    const Equations< SemilinearSet<Simpl2, Simpl3, Var> > &semi_equations) {
+  return MapEquations(semi_equations,
+    [](const SemilinearSet<Simpl2, Simpl3, Var> &s) {
+      return SemilinearToPseudoLinear<Simpl1>(s);
+    });
+}
+
+
 
 typedef PseudoLinearSet<SparseVecSimplifier<VarPtr>, VarPtr> DefaultPseudoLinearSet;
