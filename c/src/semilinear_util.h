@@ -3,7 +3,7 @@
 #include "debug_output.h"
 
 template <typename Simpl, typename Elem>
-void SimplifySet(Simpl &simplifier, std::set<Elem> &to_simpl) {
+void SimplifySet(std::set<Elem> &to_simpl) {
 
 
   if (Simpl::IsActive() && 1 < to_simpl.size()) {
@@ -30,9 +30,9 @@ void SimplifySet(Simpl &simplifier, std::set<Elem> &to_simpl) {
 
       /* Note that we cannot create the simplifier earlier, since it might be
        * the case that to_simpl and available are the same sets! */
-      // Simpl simplifier{available};
+      Simpl simplifier{to_simpl};
 
-      if (!simplifier.IsCovered(tmp_elem, to_simpl)) {
+      if (!simplifier.IsCovered(tmp_elem)) {
         DMSG("Cannot remove " << tmp_elem);
         // FIXME: GCC 4.7 does not have emplace
         to_simpl.insert(std::move(tmp_elem));

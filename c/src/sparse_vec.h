@@ -226,43 +226,48 @@ class NaiveSimplifier {
 template <typename Var, typename Value = Counter>
 class SparseVecSimplifier {
   public:
+    SparseVecSimplifier(const std::set< SparseVec<Var, Value> > &s)
+        : rhs_set_(s) {}
+
     static bool IsActive() { return true; }
 
     /*
-     * check, if lhs is a non-negative integer linear combination of the vectors in rhs_set
-    */
-    bool IsCovered(const SparseVec<Var, Value> &lhs,
-        const std::set< SparseVec<Var, Value> > &rhs_set) {
+     * Check, if lhs is a non-negative integer linear combination of the vectors
+     * in rhs_set_
+     */
+    bool IsCovered(const SparseVec<Var, Value> &lhs) {
       /* Check the cheap and naive simplifier. */
-      NaiveSimplifier<Var, Value> naive{rhs_set};
+      NaiveSimplifier<Var, Value> naive{rhs_set_};
       if (naive.IsCovered(lhs)) {
         return true;
       }
-      std::unordered_set< SparseVec<Var, Value> > failed;
-      return IsCovered_(lhs, rhs_set, failed);
+      return IsCovered_(lhs);
     }
 
   private:
     /* Dynamic programming/memoization */
-    bool IsCovered_(const SparseVec<Var, Value> &lhs,
-        const std::set< SparseVec<Var, Value> > &rhs_set,
-        std::unordered_set< SparseVec<Var, Value> > &failed) {
-      if (0 < failed.count(lhs)) {
-        return false;
+    bool IsCovered_(const SparseVec<Var, Value> &lhs) {
+      auto iter = computed_.find(lhs);
+      if (iter != computed_.end()) {
+        return iter->second;
       }
       /* Should we go from the back? */
-      for (auto &rhs : rhs_set) {
+      for (auto &rhs : rhs_set_) {
         if (rhs.IsZero()) {
           assert(false);
           continue;
         }
         auto new_lhs = lhs - rhs;
         if (new_lhs.IsValid() && (new_lhs.IsZero() ||
-                                  IsCovered_(new_lhs, rhs_set, failed))) {
+                                  IsCovered_(new_lhs))) {
+          computed_[lhs] = true;
           return true;
         }
       }
-      failed.insert(lhs);
+      computed_[lhs] = false;
       return false;
     }
+
+    const std::set< SparseVec<Var, Value> > &rhs_set_;
+    std::unordered_map< SparseVec<Var, Value>, bool > computed_;
 };

@@ -11,7 +11,7 @@
 #include "sparse_vec.h"
 #include "unique_set.h"
 
-template <typename Simplifier, typename V>
+template <typename Simpl, typename V>
 class LinearSet {
   public:
     LinearSet() : offset_(), generators_(builder_.New({})) {}
@@ -58,7 +58,7 @@ class LinearSet {
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
                      inserter(result_generators, result_generators.begin()));
 
-      SimplifySet(simplifier_, result_generators);
+      SimplifySet<Simpl>(result_generators);
 
       return LinearSet{std::move(result_offset),
                        builder_.New(std::move(result_generators))};
@@ -90,7 +90,6 @@ class LinearSet {
 
     /* TODO: Try to get rid of static... */
     static UniqueSetBuilder< SparseVec<V> > builder_;
-    static Simplifier simplifier_;
 
     template <typename S2, typename S1, typename VV>
     friend LinearSet<S2, VV> ChangeLinearSimplifier(const LinearSet<S1, VV> &lset);
@@ -109,11 +108,8 @@ struct hash< LinearSet<S, V> > {
 
 }  /* namespace std */
 
-template <typename Simplifier, typename V>
-UniqueSetBuilder< SparseVec<V> > LinearSet<Simplifier, V>::builder_;
-
-template <typename Simplifier, typename V>
-Simplifier LinearSet<Simplifier, V>::simplifier_;
+template <typename Simpl, typename V>
+UniqueSetBuilder< SparseVec<V> > LinearSet<Simpl, V>::builder_;
 
 template <typename S2, typename S1, typename V>
 LinearSet<S2, V> ChangeLinearSimplifier(const LinearSet<S1, V> &lset) {
