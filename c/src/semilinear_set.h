@@ -162,20 +162,25 @@ template <typename LinearSimpl, typename Var>
 class SemilinearSimplifier {
   public:
     static bool IsActive() { return true; }
-    bool IsCovered(LinearSet<LinearSimpl, Var> &lset,
+    bool IsCovered(const LinearSet<LinearSimpl, Var> &lset,
                    const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets) {
       for (auto &rhs_lset : rhs_lsets) {
         auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
-        if (!new_offset.IsValid() ||
-            !linear_simpl_.IsCovered(new_offset, rhs_lset.GetGenerators())) {
+        bool covered = new_offset.IsValid() &&
+          linear_simpl_.IsCovered(new_offset, rhs_lset.GetGenerators());
+        if (!covered) {
           continue;
         }
         for (auto &lhs_gen : lset.GetGenerators()) {
-          if (!linear_simpl_.IsCovered(lhs_gen, rhs_lset.GetGenerators())) {
-            continue;
+          assert(covered);
+          covered = linear_simpl_.IsCovered(lhs_gen, rhs_lset.GetGenerators());
+          if (!covered) {
+            break;
           }
         }
-        return true;
+        if (covered) {
+          return true;
+        }
       }
       return false;
     }
