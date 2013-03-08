@@ -1,5 +1,3 @@
-#include <cassert>
-
 #include "free-structure.h"
 
 
@@ -152,8 +150,6 @@ NodePtr NodeFactory::NewStar(NodePtr node) {
 }
 
 NodePtr NodeFactory::NewElement(VarPtr var) {
-  assert(var);
-
   auto iter = elems_.find(var);
   if (iter != elems_.end()) {
     return iter->second;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <set>
 #include <vector>
 
 /* Taken from Boost. */

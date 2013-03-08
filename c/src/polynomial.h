@@ -350,7 +350,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
           if (value_iter == valuation->end()) {
             /* Use a fresh constant - the constructor of Var::getVar() will take
              * care of this. */
-            VarPtr tmp_var = Var::getVar();
+            VarPtr tmp_var = Var::GetVarId();
             FreeSemiring tmp_var_free{tmp_var};
             valuation->emplace(monomial_coeff.second, tmp_var);
             result += tmp_var_free * monomial_coeff.first.make_free();

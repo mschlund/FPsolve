@@ -22,7 +22,7 @@ CommutativeRExp::CommutativeRExp(int zero)
 CommutativeRExp::CommutativeRExp(VarPtr var)
 {
 	this->type = Element;
-	this->elem = Var::getVar(var);
+	this->elem = var;
 }
 
 CommutativeRExp::CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta)
@@ -468,7 +468,7 @@ CommutativeRExp CommutativeRExp::null()
 CommutativeRExp CommutativeRExp::one()
 {
 	if(!CommutativeRExp::elem_one)
-		CommutativeRExp::elem_one = std::shared_ptr<CommutativeRExp>(new CommutativeRExp(Var::getVar("ε")));
+		CommutativeRExp::elem_one = std::shared_ptr<CommutativeRExp>(new CommutativeRExp(Var::GetVarId("ε")));
 	return *CommutativeRExp::elem_one;
 }
 
@@ -497,7 +497,7 @@ std::string CommutativeRExp::generateString() const
 {
 	std::stringstream ss;
 	if(this->type == Element)
-		ss << this->elem;
+		ss << Var::GetVar(this->elem);
 	else if(this->type == Addition)
 		ss << "(" << *this->seta << ")";
 	else if(this->type == Multiplication)
