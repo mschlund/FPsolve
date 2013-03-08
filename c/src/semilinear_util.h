@@ -22,7 +22,7 @@ void SimplifySet(Simpl &simplifier, std::set<Elem> &to_simpl) {
      * and insert doesn't invalidate any iterators. */
 
     for (auto iter = to_simpl.begin(); iter != to_simpl.end(); ) {
-      Elem tmp_elem = std::move(*iter);
+      Elem tmp_elem = *iter;
       /* Erase automatically advances the iterator to the next element. */
       iter = to_simpl.erase(iter);
 

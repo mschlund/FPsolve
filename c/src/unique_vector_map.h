@@ -23,6 +23,7 @@ class UniqueVMap {
     UniqueVMap& operator=(const UniqueVMap &vmap) = delete;
     UniqueVMap& operator=(UniqueVMap &&vmap) = delete;
 
+
     typename Vector_::const_iterator Find(const K &key) const {
       auto iter = std::lower_bound(vector_.begin(), vector_.end(), key, Less{});
       if (iter != vector_.end() && iter->first == key) {
@@ -84,7 +85,6 @@ class UniqueVMap {
     void Clear() {
       vector_.clear();
     }
-
 
     bool Sanity() const {
       for (auto &var_count : vector_) {
@@ -207,7 +207,7 @@ class UniqueVMapBuilder {
           result->vector_.emplace_back(*rhs_iter);
           ++rhs_iter;
         } else {
-          /* lhs_iter->first == rhs_iter->first */
+          assert(lhs_iter->first == rhs_iter->first);
           result->vector_.emplace_back(lhs_iter->first,
                                        lhs_iter->second + rhs_iter->second);
           ++lhs_iter;
