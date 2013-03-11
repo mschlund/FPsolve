@@ -9,22 +9,57 @@
 #include "sparse_vec.h"
 #include "var.h"
 
-template <typename SemiSimpl, typename LinSimpl, typename V>
-class SemilinearSet : public Semiring<
-                               SemilinearSet<SemiSimpl, LinSimpl, V> > {
+template <typename Var = VarPtr,
+          typename Value = Counter,
+          typename VecDivider = DummyDivider,
+          typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider>,
+          typename LinSimpl = LinearSetSimplifier< Var, Value, VecDivider, VecSimpl> >
+class SemilinearSet;
+
+/* Compatibility with the old implementation. */
+typedef SemilinearSet<> SemilinSetExp;
+
+/* SimpleLinearSet performs no simplification at all. */
+typedef SemilinearSet<VarPtr, Counter, DummyDivider,
+                      DummySimplifier, DummySimplifier
+                      > SimpleSemilinearSet;
+
+/* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
+ * is an over-approximation, the result might no longer be precise. */
+typedef SemilinearSet< VarPtr, Counter,
+                       GcdDivider<VarPtr, Counter> > DivSemilinearSet;
+
+template <typename Var,
+          typename Value,
+          typename VecDivider,
+          typename VecSimpl,
+          typename LinSimpl>
+class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
+                                                     VecSimpl, LinSimpl> > {
   public:
+    typedef SparseVec<Var, Value, VecDivider> SparseVecType;
+    typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
+
     SemilinearSet() = default;
-    SemilinearSet(std::initializer_list< LinearSet<LinSimpl, V> > list)
+    SemilinearSet(std::initializer_list< LinearSetType > list)
         : set_(list) {}
     SemilinearSet(const SemilinearSet &slset) = default;
     SemilinearSet(SemilinearSet &&slset) = default;
 
-    SemilinearSet(const LinearSet<LinSimpl, V> &lset) : set_({lset}) {}
-    SemilinearSet(LinearSet<LinSimpl, V> &&lset) : set_({std::move(lset)}) {}
+    SemilinearSet(const LinearSetType &lset) : set_({lset}) {}
+    SemilinearSet(LinearSetType &&lset) : set_({std::move(lset)}) {}
 
-    SemilinearSet(const V &v, Counter c)
-      : set_({ LinearSet<LinSimpl, V>{ SparseVec<V>{v, c} } }) {}
-    SemilinearSet(const V &v) : SemilinearSet(v, 1) {}
+    SemilinearSet(const Var &v, Counter c)
+      : set_({ LinearSetType{ SparseVecType{v, c} } }) {}
+    SemilinearSet(const Var &v) : SemilinearSet(v, 1) {}
+
+    template <typename OldVecDivider, typename OldVecSimpl, typename OldLinSimpl>
+    SemilinearSet(const SemilinearSet<Var, Value, OldVecDivider,
+                                      OldVecSimpl, OldLinSimpl> &slset) {
+      for (const auto &lset : slset) {
+        set_.insert(LinearSetType{lset});
+      }
+    }
 
     ~SemilinearSet() = default;
 
@@ -37,27 +72,27 @@ class SemilinearSet : public Semiring<
     }
 
     static SemilinearSet one() {
-      return SemilinearSet{LinearSet<LinSimpl, V>{}};
+      return SemilinearSet{LinearSetType{}};
     }
 
     SemilinearSet& operator=(const SemilinearSet &slset) = default;
     SemilinearSet& operator=(SemilinearSet &&slset) = default;
 
     SemilinearSet& operator+=(const SemilinearSet &rhs) {
-      std::set< LinearSet<LinSimpl, V> > result;
+      std::set<LinearSetType> result;
       std::set_union(set_.begin(), set_.end(),
                      rhs.set_.begin(), rhs.set_.end(),
                      std::inserter(result, result.begin()));
 
       set_ = std::move(result);
 
-      SimplifySet<SemiSimpl>(set_);
+      SimplifySet<LinSimpl>(set_);
 
       return *this;
     }
 
     SemilinearSet& operator*=(const SemilinearSet &rhs) {
-      std::set< LinearSet<LinSimpl, V> > result;
+      std::set< LinearSetType > result;
       for(auto &lin_set_rhs : rhs.set_) {
         for(auto &lin_set_lhs : set_) {
           result.insert(lin_set_lhs + lin_set_rhs);
@@ -66,12 +101,12 @@ class SemilinearSet : public Semiring<
 
       set_ = std::move(result);
 
-      SimplifySet<SemiSimpl>(set_);
+      SimplifySet<LinSimpl>(set_);
 
       return *this;
     }
 
-    SemilinearSet star(const LinearSet<LinSimpl, V> &lset) const {
+    SemilinearSet star(const LinearSetType &lset) const {
 
       /* If we do not have any generators, i.e.,
        *   ls = w  (for some word w)
@@ -79,26 +114,26 @@ class SemilinearSet : public Semiring<
        *   w*
        * instead of 1 + ww*. */
       if (lset.GetGenerators().empty()) {
-        std::set< SparseVec<V> > result_gens;
+        std::set< SparseVecType > result_gens;
         /* If w is not the one-element, move w to the generators. */
-        if (lset.GetOffset() != SparseVec<V>{}) {
+        if (lset.GetOffset() != SparseVecType{}) {
           result_gens.insert(lset.GetOffset());
         }
-        return SemilinearSet{ LinearSet<LinSimpl, V>{
-                                SparseVec<V>{}, std::move(result_gens)} };
+        return SemilinearSet{ LinearSetType{
+                                SparseVecType{}, std::move(result_gens)} };
       }
 
       /* Star of a linear set is a semilinear set:
        * (w_0.w_1*.w_2*...w_n*)* = 1 + (w_0.w_0*.w_1*.w_2*...w_n*) */
 
-      std::set< SparseVec<V> > result_gens = lset.GetGenerators();
+      std::set<SparseVecType> result_gens = lset.GetGenerators();
       result_gens.insert(lset.GetOffset());
 
-      SemilinearSet result{ LinearSet<LinSimpl, V>{
+      SemilinearSet result{ LinearSetType{
                               lset.GetOffset(), std::move(result_gens)} };
 
       /* Insert one.  We're inlining the definition for efficiency. */
-      result.set_.insert(LinearSet<LinSimpl, V>{});
+      result.set_.insert(LinearSetType{});
 
       return result;
     }
@@ -122,106 +157,16 @@ class SemilinearSet : public Semiring<
       return std::move(sout.str());
     }
 
-    template <typename F>
-    void Iterate(F fun) const {
-      for (const auto &lset : set_) {
-        fun(lset);
-      }
-    }
+    typedef typename std::set<LinearSetType>::const_iterator const_iterator;
+
+    const_iterator begin() const { return set_.begin(); }
+    const_iterator end() const { return set_.end(); }
 
     static const bool is_idempotent = true;
     static const bool is_commutative = true;
 
   private:
-    SemilinearSet(std::set< LinearSet<LinSimpl, V> > &&s) : set_(s) {}
+    SemilinearSet(std::set<LinearSetType> &&s) : set_(s) {}
 
-    std::set< LinearSet<LinSimpl, V> > set_;
-
-    template <typename S21, typename S22, typename S11, typename S12, typename VV>
-    friend SemilinearSet<S21, S22, VV> ChangeSimplifiers(
-      const SemilinearSet<S11, S12, VV> &slset);
+    std::set<LinearSetType> set_;
 };
-
-template <typename S21, typename S22, typename S11, typename S12, typename V>
-SemilinearSet<S21, S22, V> ChangeSimplifiers(
-    const SemilinearSet<S11, S12, V> &slset) {
-  std::set< LinearSet<S22, V> > result_set;
-  for (const auto &x : slset.set_) {
-    // FIXME: GCC 4.7 doesn't have emplace.
-    result_set.insert(ChangeLinearSimplifier<S22>(x));
-  }
-  return SemilinearSet<S21, S22, V>{std::move(result_set)};
-}
-
-template <typename LinearSimpl, typename Var>
-class SemilinearSimplifier {
-  public:
-    SemilinearSimplifier(const std::set< LinearSet<LinearSimpl, Var> > &s)
-        : rhs_lsets_(s) {}
-
-    static bool IsActive() { return true; }
-
-    bool IsCovered(const LinearSet<LinearSimpl, Var> &lset) {
-      for (auto &rhs_lset : rhs_lsets_) {
-        LinearSimpl linear_simpl{rhs_lset.GetGenerators()};
-        auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
-        bool covered = new_offset.IsValid() &&
-          linear_simpl.IsCovered(new_offset);
-        if (!covered) {
-          continue;
-        }
-        for (auto &lhs_gen : lset.GetGenerators()) {
-          assert(covered);
-          covered = linear_simpl.IsCovered(lhs_gen);
-          if (!covered) {
-            break;
-          }
-        }
-        if (covered) {
-          return true;
-        }
-      }
-      return false;
-    }
-  private:
-    const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets_;
-};
-
-/*
- * This is the older idea of simplification where we only tested subset
- * inclusion of generators.
- */
-template <typename LinearSimpl, typename Var>
-class SemilinearSubsetSimplifier {
-  public:
-    SemilinearSubsetSimplifier(const std::set< LinearSet<LinearSimpl, Var> > &s)
-        : rhs_lsets_(s) {}
-
-    static bool IsActive() { return true; }
-
-    bool IsCovered(const LinearSet<LinearSimpl, Var> &lset) {
-      for (auto &rhs_lset : rhs_lsets_) {
-        auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
-        LinearSimpl linear_simpl{rhs_lset.GetGenerators()};
-        if (new_offset.IsValid() &&
-            linear_simpl.IsCovered(new_offset) &&
-            std::includes(rhs_lset.GetGenerators().begin(),
-                          rhs_lset.GetGenerators().end(),
-                          lset.GetGenerators().begin(),
-                          lset.GetGenerators().end())) {
-          return true;
-        }
-      }
-      return false;
-    }
-  private:
-    const std::set< LinearSet<LinearSimpl, Var> > &rhs_lsets_;
-};
-
-/* Compatibility with old implementation. */
-typedef SemilinearSet<SemilinearSimplifier< SparseVecSimplifier<VarPtr>, VarPtr >,
-                      SparseVecSimplifier<VarPtr>,
-                      VarPtr> SemilinSetExp;
-// typedef SemilinearSet<DummySimplifier, SparseVecSimplifier<VarPtr>, VarPtr> SemilinSetExp;
-// typedef SemilinearSet<DummySimplifier, NaiveSimplifier<VarPtr>, VarPtr> SemilinSetExp;
-// typedef SemilinearSet<DummySimplifier, DummySimplifier, VarPtr> SemilinSetExp;

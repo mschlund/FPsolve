@@ -13,6 +13,12 @@ template <typename K, typename V>
 class UniqueVMapBuilder;
 
 template <typename K, typename V>
+class UniqueVMapDivider;
+
+template <typename K, typename V>
+class GcdDivider;
+
+template <typename K, typename V>
 class UniqueVMap {
   typedef std::vector< std::pair<K, V> > Vector_;
   public:
@@ -101,6 +107,7 @@ class UniqueVMap {
     };
 
     friend UniqueVMapBuilder<K, V>;
+    friend GcdDivider<K, V>;
 
     UniqueVMapBuilder<K, V> &builder_;
     mutable RefCounter ref_count_ = 0;
@@ -119,6 +126,60 @@ struct hash< UniqueVMap<K, V> > {
 };
 
 }  /* namespace std */
+
+class DummyDivider {
+  public:
+    template <typename K, typename V>
+    void operator()(const UniqueVMap<K, V> &vec) const {}
+};
+
+
+template <typename K, typename V>
+class GcdDivider {
+  public:
+    void operator()(UniqueVMap<K, V> &vec) const {
+      if (vec.empty()) {
+        return;
+      }
+      V divisor = vec.vector_.front().second;
+      if (divisor == 1) {
+        return;
+      }
+      DMSG("Gcd: Before: " << vec);
+      // FIXME: When dealing with long vectors, maybe we could do something like
+      // logarithmic number of Gcd calls -- first for every pair of numbers,
+      // then for every pair of previous results, etc.
+      // Make sure that this is sound...
+      for (auto iter = vec.begin() + 1; iter != vec.end(); ++iter) {
+        divisor = Gcd(divisor, iter->second);
+        if (divisor == 1) {
+          DMSG("Gcd: Nothing happens...");
+          return;
+        }
+      }
+      assert(divisor > 1);
+      for (auto &x : vec.vector_) {
+        assert(x.second % divisor == 0);
+        x.second = x.second / divisor;
+      }
+      DMSG("Gcd: After: " << vec);
+    }
+
+  private:
+    V Gcd(V a, V b) const {
+      if (a < b) {
+        std::swap(a, b);
+      }
+      V tmp;
+      while (b != 0) {
+        tmp = b;
+        b = a % b;
+        a = tmp;
+      }
+      return a;
+    }
+};
+
 
 
 template <typename A>
@@ -152,9 +213,13 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder& operator=(const UniqueVMapBuilder &f) = delete;
     UniqueVMapBuilder& operator=(UniqueVMapBuilder &&f) = delete;
 
+    template <typename Simpl = DummyDivider>
     UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V>, Deleter > &&vmap) {
       assert(vmap);
       assert(vmap->ref_count_ == 0);
+
+      Simpl simplifier;
+      simplifier(*vmap);
 
       /* Note that the unique_ptr vmap still owns ptr. */
       auto ptr = vmap.get();
@@ -173,6 +238,7 @@ class UniqueVMapBuilder {
       return UniqueVMapPtr<K, V>{iter_inserted.first->second};
     }
 
+    template <typename Simpl = DummyDivider>
     UniqueVMapPtr<K, V> New(std::vector< std::pair<K, V> > &&input_vector) {
       std::sort(input_vector.begin(), input_vector.end());
       auto result = Allocate();
@@ -186,9 +252,10 @@ class UniqueVMapBuilder {
         }
       }
 
-      return TryLookup(std::move(result));
+      return TryLookup<Simpl>(std::move(result));
     }
 
+    template <typename Simpl = DummyDivider>
     UniqueVMapPtr<K, V> NewSum(const UniqueVMap<K, V> &lhs,
                                const UniqueVMap<K, V> &rhs) {
 
@@ -223,9 +290,10 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*rhs_iter);
       }
 
-      return TryLookup(std::move(result));
+      return TryLookup<Simpl>(std::move(result));
     }
 
+    template <typename Simpl = DummyDivider>
     UniqueVMapPtr<K, V> NewDiff(const UniqueVMap<K, V> &lhs,
                                 const UniqueVMap<K, V> &rhs) {
 
@@ -245,7 +313,7 @@ class UniqueVMapBuilder {
       while (rhs_iter != rhs_iter_end) {
 
         /* If there's nothing left in lhs, or there is unmatched variable in
-         * rhs, return invalid SparseVec. */
+         * rhs, return null pointer. */
         if (lhs_iter == lhs_iter_end || lhs_iter->first > rhs_iter->first) {
           return UniqueVMapPtr<K, V>{nullptr};
         }
@@ -256,7 +324,7 @@ class UniqueVMapBuilder {
           continue;
         }
 
-        /* lhs_iter->first == rhs_iter->first */
+        assert(lhs_iter->first == rhs_iter->first);
         if (lhs_iter->second < rhs_iter->second) {
           return UniqueVMapPtr<K, V>{nullptr};
         }
@@ -281,7 +349,7 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*lhs_iter);
       }
 
-      return TryLookup(std::move(result));
+      return TryLookup<Simpl>(std::move(result));
     }
 
     void Delete(const UniqueVMap<K, V> *vector_ptr) {
@@ -332,5 +400,8 @@ struct hash< UniqueVMapPtr<K, V> > {
     return h(ptr.get());
   }
 };
+
+
+
 
 }  /* namespace std */

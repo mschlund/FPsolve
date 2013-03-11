@@ -20,21 +20,35 @@
  */
 
 
+template <typename Var = VarPtr,
+          typename Value = Counter,
+          typename VecDivider = DummyDivider,
+          typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider> >
+class PseudoLinearSet;
+
+typedef PseudoLinearSet<VarPtr, Counter, GcdDivider<VarPtr, Counter> >
+        DivPseudoLinearSet;
+
 /*
  * An abstraction of semilinear sets that is quite similar to a linear set, but
  * with multiple offsets.  This allows to over-approximate the semilinear set.
  */
-template <typename Simpl, typename Var>
-class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
-  typedef SparseVec<Var> SparseVec_;
+template <typename Var,
+          typename Value,
+          typename VecDivider,
+          typename VecSimpl>
+class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
+                                                         VecSimpl> > {
   public:
+    typedef SparseVec<Var, Value, VecDivider> SparseVecType;
+
     PseudoLinearSet() = default;
 
     PseudoLinearSet(const Var &v, const Counter &c) {
-      offsets_.insert(SparseVec_(v, c));
+      offsets_.insert(SparseVecType(v, c));
     }
 
-    PseudoLinearSet(std::initializer_list<SparseVec_> list) {
+    PseudoLinearSet(std::initializer_list<SparseVecType> list) {
       for (auto &vec : list) {
         offsets_.insert(vec);
       }
@@ -43,11 +57,14 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     PseudoLinearSet(const PseudoLinearSet &s) = default;
     PseudoLinearSet(PseudoLinearSet &&s) = default;
 
-    template <typename Simpl2>
-    PseudoLinearSet(const LinearSet<Simpl2, Var> &lset)
-        : generators_(lset.GetGenerators()) {
-      offsets_.insert(lset.GetOffset());
-
+    /* Allow construction from a LinearSet with a different divider and
+     * simplifier. */
+    template <typename OldVecDivider, typename OldVecSimpl>
+    PseudoLinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &lset) {
+      offsets_.insert(SparseVecType{lset.GetOffset()});
+      for (const auto &g : lset.GetGenerators()) {
+        generators_.insert(SparseVecType{g});
+      }
       Simplify();
     }
 
@@ -64,8 +81,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     }
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
-      std::set<SparseVec_> result_offsets;
-      std::set<SparseVec_> result_generators;
+      std::set<SparseVecType> result_offsets;
+      std::set<SparseVecType> result_generators;
 
       std::set_union(offsets_.begin(), offsets_.end(),
                      rhs.offsets_.begin(), rhs.offsets_.end(),
@@ -84,8 +101,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
-      std::set<SparseVec_> result_offsets;
-      std::set<SparseVec_> result_generators;
+      std::set<SparseVecType> result_offsets;
+      std::set<SparseVecType> result_generators;
 
       for (auto &vec_rhs : rhs.offsets_) {
         for (auto &vec_lhs : offsets_) {
@@ -107,8 +124,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 
     PseudoLinearSet star() const {
 
-      std::set<SparseVec_> result_offsets = { SparseVec_{} };
-      std::set<SparseVec_> result_generators;
+      std::set<SparseVecType> result_offsets = { SparseVecType{} };
+      std::set<SparseVecType> result_generators;
 
       std::set_union(offsets_.begin(), offsets_.end(),
                      generators_.begin(), generators_.end(),
@@ -143,7 +160,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
     static const bool is_commutative = true;
 
   private:
-    PseudoLinearSet(std::set<SparseVec_> &&os, std::set<SparseVec_> &&gs)
+    PseudoLinearSet(std::set<SparseVecType> &&os, std::set<SparseVecType> &&gs)
         : offsets_(os), generators_(gs) {}
 
     void Simplify() {
@@ -161,14 +178,11 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
 #endif
 
       /* Simplify generators. */
-      SimplifySet<Simpl>(generators_);
-
-      // TODO: We could try a bit smarter approach by using IsCovered with an
-      // additional set of elements that can be used only once (i.e., offsets)
+      SimplifySet<VecSimpl>(generators_);
 
       /* Simplify offsets.  This uses the same trick as SimplifySet -- erase in
        * std::set does not invalidate any iterators (except for the removed). */
-      Simpl simplifier{generators_};
+      VecSimpl simplifier{generators_};
       for (auto offset1_iter = offsets_.begin(); offset1_iter != offsets_.end(); ) {
         auto offset1 = *offset1_iter;
         /* Erase automatically advances the iterator to the next element. */
@@ -192,35 +206,41 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Simpl, Var> > {
       }
     }
 
-    std::set<SparseVec_> offsets_;
-    std::set<SparseVec_> generators_;
+    std::set<SparseVecType> offsets_;
+    std::set<SparseVecType> generators_;
 
-    template <typename Simpl1, typename Simpl2, typename Simpl3, typename V>
-    friend PseudoLinearSet<Simpl1, V> SemilinearToPseudoLinear(
-        const SemilinearSet<Simpl2, Simpl3, V> &semilinear);
+    template <typename OldVecDivider, typename OldVecSimpl>
+    PseudoLinearSet SemilinearToPseudoLinear(
+        const SemilinearSet<Var, Value, OldVecDivider, OldVecSimpl> &semilinear);
 };
 
 
-template <typename Simpl1, typename Simpl2, typename Simpl3, typename Var>
-PseudoLinearSet<Simpl1, Var> SemilinearToPseudoLinear(
-    const SemilinearSet<Simpl2, Simpl3, Var> &semilinear) {
-  PseudoLinearSet<Simpl1, Var> pseudo_lset;
-  semilinear.Iterate([&](const LinearSet<Simpl3, Var> &lset) -> void {
-    pseudo_lset += PseudoLinearSet<Simpl1, Var>{lset};
-  });
+template <typename NewVecDivider,
+          typename NewVecSimpl,
+          typename Var,
+          typename Value,
+          typename VecDivider,
+          typename VecSimpl>
+PseudoLinearSet<Var, Value, NewVecDivider, NewVecSimpl> SemilinearToPseudoLinear(
+    const SemilinearSet<Var, Value, VecDivider, VecSimpl> &semilinear) {
+  PseudoLinearSet<Var, Value, NewVecDivider, NewVecSimpl> pseudo_lset;
+  for (const auto &lset : semilinear) {
+    pseudo_lset += PseudoLinearSet<Var, Value, NewVecDivider, NewVecSimpl>{lset};
+  };
   return pseudo_lset;
 }
 
-template <typename Simpl1 = SparseVecSimplifier<VarPtr>,
-          typename Simpl2, typename Simpl3, typename Var>
-Equations< PseudoLinearSet<Simpl1, Var> > SemilinearToPseudoLinearEquations(
-    const Equations< SemilinearSet<Simpl2, Simpl3, Var> > &semi_equations) {
-  return MapEquations(semi_equations,
-    [](const SemilinearSet<Simpl2, Simpl3, Var> &s) {
-      return SemilinearToPseudoLinear<Simpl1>(s);
+template <typename NewVecDivider,
+          typename NewVecSimpl,
+          typename Var,
+          typename Value,
+          typename VecDivider,
+          typename VecSimpl>
+Equations< PseudoLinearSet<Var, Value, NewVecDivider, NewVecSimpl> >
+SemilinearToPseudoLinearEquations(
+    const Equations< SemilinearSet<Var, Value, VecDivider, VecSimpl> > &equations) {
+  return MapEquations(equations,
+    [](const SemilinearSet<Var, Value, VecDivider, VecSimpl> &s) {
+      return SemilinearToPseudoLinear<NewVecDivider, NewVecSimpl>(s);
     });
 }
-
-
-
-typedef PseudoLinearSet<SparseVecSimplifier<VarPtr>, VarPtr> DefaultPseudoLinearSet;
