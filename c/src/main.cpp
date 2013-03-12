@@ -13,6 +13,7 @@
 #include "newton.h"
 #include "commutativeRExp.h"
 #include "parser.h"
+#include "pseudo_linear_set.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semilinSetExp.h"
@@ -169,6 +170,7 @@ int main(int argc, char* argv[])
 		( "float", "float semiring" )
 		( "rexp", "commutative regular expression semiring" )
 		( "slset", "explicit semilinear sets semiring (as vectors)" )
+		( "pseudolin", "abstraction over semilinear sets" )
 		( "graphviz", "create the file graph.dot with the equation graph" )
 		;
 
@@ -221,7 +223,10 @@ int main(int argc, char* argv[])
 		iterations = vm["iterations"].as<int>();
 
 	// check if we can do something useful
-	if(!vm.count("float") && !vm.count("rexp") && !vm.count("slset")) // check for all compatible parameters
+	if(!vm.count("float") &&
+           !vm.count("rexp") &&
+           !vm.count("slset") &&
+           !vm.count("pseudolin")) // check for all compatible parameters
 	{
 		std::cout << "Please supply a supported semiring :)" << std::endl;
 		return 0;
@@ -257,14 +262,27 @@ int main(int argc, char* argv[])
 		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> equations(p.slset_parser(input_all));
 		if(equations.empty()) return -1;
 
-		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		for (auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
 		{
-			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+			DMSG("* " << eq_it->first << " → " << eq_it->second);
 		}
 
 		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
-
 		std::cout << result_string(result) << std::endl;
+        } else if (vm.count("pseudolin")) {
+		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>>
+                  equations(p.slset_parser(input_all));
+                auto pseudo_equations =
+                  SemilinearToPseudoLinearEquations<
+                    DummyDivider,
+                    SparseVecSimplifier<VarPtr, Counter, DummyDivider>
+                  >(equations);
+		auto pseudo_result = apply_newton(pseudo_equations,
+                                                  vm.count("scc"),
+                                                  vm.count("iterations"),
+                                                  iterations,
+                                                  vm.count("graphviz"));
+		std::cout << result_string(pseudo_result) << std::endl;
 	}
 	else if(vm.count("rexp")) {
 		// parse the input into a list of (Var → Polynomial[SR])
