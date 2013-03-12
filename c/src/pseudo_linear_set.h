@@ -10,16 +10,6 @@
 #include "equations.h"
 
 
-/* TODO:
- * - The simplification could be a bit better -- we currently only check if
- *   something (offset or generator) can be is included in the (remaining)
- *   generators.  What we could improve is to use the offsets in this
- *   calculation.  The challenge is that the current code for simplifiers
- *   assumes every element of the set can be used arbitrary many times, whereas
- *   we can only use offset once.
- */
-
-
 template <typename Var = VarPtr,
           typename Value = Counter,
           typename VecDivider = DummyDivider,
