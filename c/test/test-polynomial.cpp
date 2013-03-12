@@ -9,25 +9,25 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
 void PolynomialTest::setUp() {
   std::cout << "Poly-Test:" << std::endl;
-  a = new FreeSemiring(Var::getVar("a"));
-  b = new FreeSemiring(Var::getVar("b"));
-  c = new FreeSemiring(Var::getVar("c"));
-  d = new FreeSemiring(Var::getVar("d"));
-  e = new FreeSemiring(Var::getVar("e"));
+  a = new FreeSemiring(Var::GetVarId("a"));
+  b = new FreeSemiring(Var::GetVarId("b"));
+  c = new FreeSemiring(Var::GetVarId("c"));
+  d = new FreeSemiring(Var::GetVarId("d"));
+  e = new FreeSemiring(Var::GetVarId("e"));
   null = new Polynomial<FreeSemiring>(FreeSemiring::null());
   one = new Polynomial<FreeSemiring>(FreeSemiring::one());
   first = new Polynomial<FreeSemiring>({
-    {*a, {Var::getVar("x"),Var::getVar("x")}},
-    {*b, {Var::getVar("z")}}
+    {*a, {Var::GetVarId("x"),Var::GetVarId("x")}},
+    {*b, {Var::GetVarId("z")}}
   }); // a*xx+b*z
   second = new Polynomial<FreeSemiring>({
-    {*c, {Var::getVar("x"),Var::getVar("x")}},
-    {*d, {Var::getVar("x"),Var::getVar("y")}},
-    {*e, {Var::getVar("y"),Var::getVar("y")}}
+    {*c, {Var::GetVarId("x"),Var::GetVarId("x")}},
+    {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
+    {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
   }); // c*xx+d*xy+e*yy
   p1 = new Polynomial<FreeSemiring>({
-    {*a, {Var::getVar("x")}},
-    {*b, {Var::getVar("x")}}
+    {*a, {Var::GetVarId("x")}},
+    {*b, {Var::GetVarId("x")}}
   }); // should be a*x+b*x
 }
 
@@ -47,10 +47,10 @@ void PolynomialTest::testAddition() {
   CPPUNIT_ASSERT( *first + *null == *first);
 
   Polynomial<FreeSemiring> result({
-    {*a + *c, {Var::getVar("x"),Var::getVar("x")}},
-    {*b, {Var::getVar("z")}},
-    {*d, {Var::getVar("x"),Var::getVar("y")}},
-    {*e, {Var::getVar("y"),Var::getVar("y")}}
+    {*a + *c, {Var::GetVarId("x"),Var::GetVarId("x")}},
+    {*b, {Var::GetVarId("z")}},
+    {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
+    {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
   });
   CPPUNIT_ASSERT( (*first) + (*second) == result );
 }
@@ -66,29 +66,29 @@ void PolynomialTest::testMultiplication() {
   CPPUNIT_ASSERT( *first * *null == *null);
 
   Polynomial<FreeSemiring> result({
-      {*a * *c, {Var::getVar("x"),Var::getVar("x"),Var::getVar("x"),Var::getVar("x")}},
-      {*a * *d, {Var::getVar("x"),Var::getVar("x"),Var::getVar("x"),Var::getVar("y")}},
-      {*b * *c, {Var::getVar("x"),Var::getVar("x"),Var::getVar("z")}},
-      {*a * *e, {Var::getVar("x"),Var::getVar("x"),Var::getVar("y"),Var::getVar("y")}},
-      {*b * *d, {Var::getVar("x"),Var::getVar("z"),Var::getVar("y")}},
-      {*b * *e, {Var::getVar("z"),Var::getVar("y"),Var::getVar("y")}}
+      {*a * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x")}},
+      {*a * *d, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("y")}},
+      {*b * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("z")}},
+      {*a * *e, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("y")}},
+      {*b * *d, {Var::GetVarId("x"),Var::GetVarId("z"),Var::GetVarId("y")}},
+      {*b * *e, {Var::GetVarId("z"),Var::GetVarId("y"),Var::GetVarId("y")}}
   });
   CPPUNIT_ASSERT( (*first) * (*second) == result );
 }
 
 void PolynomialTest::testJacobian() {
   std::vector<Polynomial<FreeSemiring> > polys = {*first, *second};
-  std::vector<VarPtr> vars = {Var::getVar("x"),Var::getVar("y"),Var::getVar("z")};
+  std::vector<VarPtr> vars = {Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("z")};
 
   std::vector<Polynomial<FreeSemiring> > polys2 = {
-    Polynomial<FreeSemiring>({ {*a+*a, {Var::getVar("x")}} }),
+    Polynomial<FreeSemiring>({ {*a+*a, {Var::GetVarId("x")}} }),
     Polynomial<FreeSemiring>({ {FreeSemiring::null(), {}} }),
     Polynomial<FreeSemiring>({ {*b, {}} }),
     Polynomial<FreeSemiring>({
-      {*c+*c, {Var::getVar("x")}}, {*d, {Var::getVar("y")}}
+      {*c+*c, {Var::GetVarId("x")}}, {*d, {Var::GetVarId("y")}}
     }),
     Polynomial<FreeSemiring>({
-        {*d, {Var::getVar("x")}}, {*e+*e, {Var::getVar("y")}}
+        {*d, {Var::GetVarId("x")}}, {*e+*e, {Var::GetVarId("y")}}
     }),
     Polynomial<FreeSemiring>({ {FreeSemiring::null(), {}} })
   };
@@ -98,7 +98,7 @@ void PolynomialTest::testJacobian() {
   CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
 
   polys = {*p1};
-  vars = {Var::getVar("x")};
+  vars = {Var::GetVarId("x")};
   polys2 = { Polynomial<FreeSemiring>({ {*a+*b, {}} }) };
   result = Matrix<Polynomial<FreeSemiring> >(1,polys2);
   CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
@@ -107,9 +107,9 @@ void PolynomialTest::testJacobian() {
 
 void PolynomialTest::testEvaluation() {
   std::map<VarPtr,FreeSemiring> values = {
-    { Var::getVar("x"), FreeSemiring(Var::getVar("a")) },
-    { Var::getVar("y"), FreeSemiring(Var::getVar("b")) },
-    { Var::getVar("z"), FreeSemiring(Var::getVar("c")) }
+    { Var::GetVarId("x"), FreeSemiring(Var::GetVarId("a")) },
+    { Var::GetVarId("y"), FreeSemiring(Var::GetVarId("b")) },
+    { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("c")) }
   };
   /* This test is a bit fragile, since it FreeSemiring distinguishes between
    *   ((a + b) + c) and (a + (b + c))
@@ -142,16 +142,16 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
     {
     std::cout << "valuation: " << v_it->first << " → " << v_it->second << std::endl;
     }*/
-  r_valuation[Var::getVar("x")] = *a;
-  r_valuation[Var::getVar("y")] = *b;
-  r_valuation[Var::getVar("z")] = *c;
+  r_valuation[Var::GetVarId("x")] = *a;
+  r_valuation[Var::GetVarId("y")] = *b;
+  r_valuation[Var::GetVarId("z")] = *c;
 
   FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
 
   std::map<VarPtr,FreeSemiring> values = {
-    std::pair<VarPtr,FreeSemiring>(Var::getVar("x"),FreeSemiring(Var::getVar("a"))),
-    std::pair<VarPtr,FreeSemiring>(Var::getVar("y"),FreeSemiring(Var::getVar("b"))),
-    std::pair<VarPtr,FreeSemiring>(Var::getVar("z"),FreeSemiring(Var::getVar("c")))};
+    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("x"),FreeSemiring(Var::GetVarId("a"))),
+    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("y"),FreeSemiring(Var::GetVarId("b"))),
+    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("z"),FreeSemiring(Var::GetVarId("c")))};
   FreeSemiring eval_elem2 = second->eval(values);
   //std::cout << "evaluated: " << eval_elem << " vs. " << eval_elem2 << std::endl;
 

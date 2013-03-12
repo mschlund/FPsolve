@@ -13,6 +13,7 @@
 #include "newton.h"
 #include "commutativeRExp.h"
 #include "parser.h"
+#include "pseudo_linear_set.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semilinSetExp.h"
@@ -45,7 +46,7 @@ std::vector<std::vector<std::pair<VarPtr, Polynomial<SR>>>> group_by_scc(std::ve
 			var_key.insert(var_key.begin(), std::pair<VarPtr,int>(e_it->first,var_key.size()));
 		int a = var_key.find(e_it->first)->second; // variable key
 		graph[a].var = e_it->first; // store VarPtr to the vertex
-		graph[a].name = e_it->first->string(); // store the name to the vertex
+		graph[a].name = Var::GetVar(e_it->first).string(); // store the name to the vertex
 		graph[a].rex = e_it->second; // store the regular expression to the vertex
 
 		auto v = e_it->second.get_variables(); // all variables of this rule;
@@ -169,6 +170,7 @@ int main(int argc, char* argv[])
 		( "float", "float semiring" )
 		( "rexp", "commutative regular expression semiring" )
 		( "slset", "explicit semilinear sets semiring (as vectors)" )
+		( "pseudolin", "abstraction over semilinear sets" )
 		( "graphviz", "create the file graph.dot with the equation graph" )
 		;
 
@@ -179,28 +181,28 @@ int main(int argc, char* argv[])
 	if(vm.count("test")) {
 		Newton<SemilinSetExp> newton;
 		std::vector<VarPtr> variables;
-		variables.push_back(Var::getVar("x"));
+		variables.push_back(Var::GetVarId("x"));
 		std::cout << "- newton (cnt-SR):" << std::endl;
 
 		std::vector<Polynomial<SemilinSetExp> > polynomials;
 		Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-		  { SemilinSetExp(Var::getVar("a")), Monomial{ {Var::getVar("x"),Var::getVar("x")} } },
-		  { SemilinSetExp(Var::getVar("c")), Monomial{} } });
+		  { SemilinSetExp(Var::GetVarId("a")), Monomial{ {Var::GetVarId("x"),Var::GetVarId("x")} } },
+		  { SemilinSetExp(Var::GetVarId("c")), Monomial{} } });
 
 		polynomials.push_back(f1);
 
 		Matrix<SemilinSetExp> result = newton.solve_fixpoint(polynomials, variables, 2);
 		std::cout << result << std::endl;
 
-/*		auto s1 = CommutativeRExp(Var::getVar("a"));
-		auto s2 = CommutativeRExp(Var::getVar("b"));
+/*		auto s1 = CommutativeRExp(Var::GetVarId("a"));
+		auto s2 = CommutativeRExp(Var::GetVarId("b"));
 		auto m1 = Matrix<CommutativeRExp>(1,1,{s1});
 		auto m2 = Matrix<CommutativeRExp>(1,1,{s2});
 */
 
 		// this actually led to a strange bug with the ublas-matrix implementation!!
-/*		auto s1 = SemilinSetExp(Var::getVar("a"));
-		auto s2 = SemilinSetExp(Var::getVar("b"));
+/*		auto s1 = SemilinSetExp(Var::GetVarId("a"));
+		auto s2 = SemilinSetExp(Var::GetVarId("b"));
 		auto m1 = Matrix<SemilinSetExp>(1,1,{s1});
 		auto m2 = Matrix<SemilinSetExp>(1,1,{s2});
 
@@ -221,7 +223,10 @@ int main(int argc, char* argv[])
 		iterations = vm["iterations"].as<int>();
 
 	// check if we can do something useful
-	if(!vm.count("float") && !vm.count("rexp") && !vm.count("slset")) // check for all compatible parameters
+	if(!vm.count("float") &&
+           !vm.count("rexp") &&
+           !vm.count("slset") &&
+           !vm.count("pseudolin")) // check for all compatible parameters
 	{
 		std::cout << "Please supply a supported semiring :)" << std::endl;
 		return 0;
@@ -257,14 +262,27 @@ int main(int argc, char* argv[])
 		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> equations(p.slset_parser(input_all));
 		if(equations.empty()) return -1;
 
-		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+		for (auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
 		{
-			std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+			DMSG("* " << eq_it->first << " → " << eq_it->second);
 		}
 
 		auto result = apply_newton<SemilinSetExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
-
 		std::cout << result_string(result) << std::endl;
+        } else if (vm.count("pseudolin")) {
+		std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>>
+                  equations(p.slset_parser(input_all));
+                auto pseudo_equations =
+                  SemilinearToPseudoLinearEquations<
+                    DummyDivider,
+                    SparseVecSimplifier<VarPtr, Counter, DummyDivider>
+                  >(equations);
+		auto pseudo_result = apply_newton(pseudo_equations,
+                                                  vm.count("scc"),
+                                                  vm.count("iterations"),
+                                                  iterations,
+                                                  vm.count("graphviz"));
+		std::cout << result_string(pseudo_result) << std::endl;
 	}
 	else if(vm.count("rexp")) {
 		// parse the input into a list of (Var → Polynomial[SR])
