@@ -68,7 +68,7 @@ PrefixSemiring PrefixSemiring::null()
 PrefixSemiring PrefixSemiring::one()
 {
 	if(!PrefixSemiring::elem_one)
-		PrefixSemiring::elem_one = std::shared_ptr<PrefixSemiring>(new PrefixSemiring({Var::getVar("")}));
+		PrefixSemiring::elem_one = std::shared_ptr<PrefixSemiring>(new PrefixSemiring({Var::GetVarId("")}));
 	return *PrefixSemiring::elem_one;
 }
 

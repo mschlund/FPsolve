@@ -49,7 +49,7 @@ struct rexp_var_impl
 	const CommutativeRExp operator()(std::string& s) const
 	{
 		// create an element with the given var
-		return CommutativeRExp(Var::getVar(s));
+		return CommutativeRExp(Var::GetVarId(s));
 	}
 };
 const phx::function<rexp_var_impl> rexp_var;
@@ -62,7 +62,7 @@ struct slset_var_impl
 	const SemilinSetExp operator()(std::string& s, unsigned int& cnt) const
 	{
 		// create an element with the given var
-		return SemilinSetExp(Var::getVar(s), cnt);
+		return SemilinSetExp(Var::GetVarId(s), cnt);
 	}
 };
 const phx::function<slset_var_impl> slset_var;
@@ -76,7 +76,7 @@ struct var_impl
 
 	const VarPtr operator()(std::string& var) const
 	{
-		return Var::getVar(var);
+		return Var::GetVarId(var);
 	}
 };
 const phx::function<var_impl> variable;
@@ -89,7 +89,7 @@ struct new_var_impl
 	template <typename T>
 	const VarPtr operator()(T t) const // TODO: why has there to be an argument??? compiling fails without dummy argument... overloading???
 	{
-		return Var::getVar(); // return a fresh anonymous variable
+		return Var::GetVarId(); // return a fresh anonymous variable
 	}
 };
 const phx::function<new_var_impl> new_var;

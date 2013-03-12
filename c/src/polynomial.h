@@ -350,7 +350,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
           if (value_iter == valuation->end()) {
             /* Use a fresh constant - the constructor of Var::getVar() will take
              * care of this. */
-            VarPtr tmp_var = Var::getVar();
+            VarPtr tmp_var = Var::GetVarId();
             FreeSemiring tmp_var_free{tmp_var};
             valuation->emplace(monomial_coeff.second, tmp_var);
             result += tmp_var_free * monomial_coeff.first.make_free();
@@ -440,8 +440,10 @@ class Polynomial : public Semiring< Polynomial<SR> > {
       return ss.str();
     }
 
-    template <typename SR2, typename F>
-    Polynomial<SR2> Map(F fun) const {
+    template <typename F>
+    auto Map(F fun) const -> Polynomial<typename std::result_of<F(SR)>::type> {
+      typedef typename std::result_of<F(SR)>::type SR2;
+
       /* Variables don't change, so just copy them over. */
       VarDegreeMap result_variables = variables_;
       std::map<Monomial, SR2> result_monomials;

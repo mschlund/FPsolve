@@ -4,15 +4,15 @@ CPPUNIT_TEST_SUITE_REGISTRATION(MatrixTest);
 
 void MatrixTest::setUp()
 {
-	a = new FreeSemiring(Var::getVar("a"));b = new FreeSemiring(Var::getVar("b"));
-	c = new FreeSemiring(Var::getVar("c"));d = new FreeSemiring(Var::getVar("d"));
-	e = new FreeSemiring(Var::getVar("e"));f = new FreeSemiring(Var::getVar("f"));
-	g = new FreeSemiring(Var::getVar("g"));h = new FreeSemiring(Var::getVar("h"));
-	i = new FreeSemiring(Var::getVar("i"));j = new FreeSemiring(Var::getVar("j"));
-	k = new FreeSemiring(Var::getVar("k"));l = new FreeSemiring(Var::getVar("l"));
-	m = new FreeSemiring(Var::getVar("m"));n = new FreeSemiring(Var::getVar("n"));
-	o = new FreeSemiring(Var::getVar("o"));p = new FreeSemiring(Var::getVar("p"));
-	q = new FreeSemiring(Var::getVar("q"));r = new FreeSemiring(Var::getVar("r"));
+	a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
+	c = new FreeSemiring(Var::GetVarId("c"));d = new FreeSemiring(Var::GetVarId("d"));
+	e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));
+	g = new FreeSemiring(Var::GetVarId("g"));h = new FreeSemiring(Var::GetVarId("h"));
+	i = new FreeSemiring(Var::GetVarId("i"));j = new FreeSemiring(Var::GetVarId("j"));
+	k = new FreeSemiring(Var::GetVarId("k"));l = new FreeSemiring(Var::GetVarId("l"));
+	m = new FreeSemiring(Var::GetVarId("m"));n = new FreeSemiring(Var::GetVarId("n"));
+	o = new FreeSemiring(Var::GetVarId("o"));p = new FreeSemiring(Var::GetVarId("p"));
+	q = new FreeSemiring(Var::GetVarId("q"));r = new FreeSemiring(Var::GetVarId("r"));
 	null = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::null(3));
 	one = new Matrix<FreeSemiring>(Matrix<FreeSemiring>::one(3));
 	first = new Matrix<FreeSemiring>(2,{

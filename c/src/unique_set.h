@@ -115,7 +115,7 @@ class UniqueSetBuilder {
     UniqueSetBuilder& operator=(const UniqueSetBuilder &b) = delete;
     UniqueSetBuilder& operator=(UniqueSetBuilder &&b) = delete;
 
-    UniqueSetPtr<A> TryLookup(std::unique_ptr< UniqueSet<A> > set) {
+    UniqueSetPtr<A> TryLookup(std::unique_ptr< UniqueSet<A> > &&set) {
       assert(set);
       assert(set->ref_count_ == 0);
       auto iter_inserted =

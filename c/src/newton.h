@@ -212,7 +212,7 @@ class Newton {
       {
         std::stringstream ss;
         ss << prefix << "_" << i;
-        ret.push_back(Var::getVar(ss.str()));
+        ret.push_back(Var::GetVarId(ss.str()));
       }
       return ret;
     }

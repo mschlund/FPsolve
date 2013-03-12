@@ -21,7 +21,6 @@ class FreeSemiring : public Semiring<FreeSemiring> {
     }
 
     FreeSemiring(const VarPtr var) {
-      assert(var);
       node_ = factory_.NewElement(var);
     }
 
