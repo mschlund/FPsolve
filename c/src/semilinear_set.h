@@ -11,7 +11,7 @@
 
 template <typename Var = VarPtr,
           typename Value = Counter,
-          typename VecDivider = DummyDivider,
+          typename VecDivider = GcdDivider<Var, Value>,
           typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider>,
           typename LinSimpl = LinearSetSimplifier< Var, Value, VecDivider, VecSimpl> >
 class SemilinearSet;
@@ -37,11 +37,12 @@ template <typename Var,
 class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
                                                      VecSimpl, LinSimpl> > {
   public:
-    typedef SparseVec<Var, Value, VecDivider> SparseVecType;
+    typedef SparseVec<Var, Value, DummyDivider> OffsetType;
+    typedef SparseVec<Var, Value, VecDivider> GeneratorType;
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
     SemilinearSet() = default;
-    SemilinearSet(std::initializer_list< LinearSetType > list)
+    SemilinearSet(std::initializer_list<LinearSetType> list)
         : set_(list) {}
     SemilinearSet(const SemilinearSet &slset) = default;
     SemilinearSet(SemilinearSet &&slset) = default;
@@ -50,7 +51,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
     SemilinearSet(LinearSetType &&lset) : set_({std::move(lset)}) {}
 
     SemilinearSet(const Var &v, Counter c)
-      : set_({ LinearSetType{ SparseVecType{v, c} } }) {}
+      : set_({ LinearSetType{ OffsetType{v, c} } }) {}
     SemilinearSet(const Var &v) : SemilinearSet(v, 1) {}
 
     template <typename OldVecDivider, typename OldVecSimpl, typename OldLinSimpl>
@@ -114,20 +115,20 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
        *   w*
        * instead of 1 + ww*. */
       if (lset.GetGenerators().empty()) {
-        std::set< SparseVecType > result_gens;
+        std::set<GeneratorType> result_gens;
         /* If w is not the one-element, move w to the generators. */
-        if (lset.GetOffset() != SparseVecType{}) {
-          result_gens.insert(lset.GetOffset());
+        if (lset.GetOffset() != OffsetType{}) {
+          result_gens.insert(GeneratorType{lset.GetOffset()});
         }
         return SemilinearSet{ LinearSetType{
-                                SparseVecType{}, std::move(result_gens)} };
+                                OffsetType{}, std::move(result_gens)} };
       }
 
       /* Star of a linear set is a semilinear set:
        * (w_0.w_1*.w_2*...w_n*)* = 1 + (w_0.w_0*.w_1*.w_2*...w_n*) */
 
-      std::set<SparseVecType> result_gens = lset.GetGenerators();
-      result_gens.insert(lset.GetOffset());
+      std::set<GeneratorType> result_gens = lset.GetGenerators();
+      result_gens.insert(GeneratorType{lset.GetOffset()});
 
       SemilinearSet result{ LinearSetType{
                               lset.GetOffset(), std::move(result_gens)} };

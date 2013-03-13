@@ -34,33 +34,34 @@ template <typename Var,
           typename VecSimpl>
 class LinearSet {
   public:
-    typedef SparseVec<Var, Value, VecDivider> SparseVecType;
+    typedef SparseVec<Var, Value, DummyDivider> OffsetType;
+    typedef SparseVec<Var, Value, VecDivider> GeneratorType;
 
     LinearSet() : offset_(), generators_(builder_.New({})) {}
 
     LinearSet(const LinearSet &lset) = default;
     LinearSet(LinearSet &&lset) = default;
 
-    LinearSet(const SparseVecType &v)
-        : offset_(builder_.New(v, {})), generators_(builder_.New({})) {}
+    LinearSet(const OffsetType &o)
+        : offset_(o), generators_(builder_.New({})) {}
 
-    LinearSet(SparseVecType &&v)
-        : offset_(std::move(v)), generators_(builder_.New({})) {}
+    LinearSet(OffsetType &&o)
+        : offset_(std::move(o)), generators_(builder_.New({})) {}
 
-    LinearSet(const SparseVecType &o, const std::set<SparseVecType> &vs)
+    LinearSet(const OffsetType &o, const std::set<GeneratorType> &vs)
         : offset_(o), generators_(builder_.New(vs)) {}
 
-    LinearSet(SparseVecType &&o, std::set< SparseVecType > &&vs)
+    LinearSet(OffsetType &&o, std::set<GeneratorType> &&vs)
         : offset_(std::move(o)), generators_(builder_.New(std::move(vs))) {}
 
-    LinearSet(const SparseVecType &o, std::set< SparseVecType > &&vs)
+    LinearSet(const OffsetType &o, std::set<GeneratorType> &&vs)
         : offset_(o), generators_(builder_.New(std::move(vs))) {}
 
     template <typename OldVecDivider, typename OldVecSimpl>
     LinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &s) {
-      std::set<SparseVecType> generators;
+      std::set<GeneratorType> generators;
       for (const auto &g : s.GetGenerators()) {
-        generators.insert(SparseVecType{g});
+        generators.insert(GeneratorType{g});
       }
       LinearSet(s.GetOffset(), std::move(generators));
     }
@@ -86,7 +87,7 @@ class LinearSet {
 
     LinearSet operator+(const LinearSet &rhs) const {
       auto result_offset = offset_ + rhs.offset_;
-      std::set< SparseVecType > result_generators;
+      std::set<GeneratorType> result_generators;
 
       std::set_union(GetGenerators().begin(), GetGenerators().end(),
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
@@ -110,20 +111,20 @@ class LinearSet {
       return out;
     }
 
-    const SparseVecType& GetOffset() const { return offset_; }
-    const std::set< SparseVecType >& GetGenerators() const {
+    const OffsetType& GetOffset() const { return offset_; }
+    const std::set<GeneratorType>& GetGenerators() const {
       return generators_->GetSet();
     }
 
   private:
-    LinearSet(SparseVecType &&o, UniqueSetPtr< SparseVecType > s)
+    LinearSet(OffsetType &&o, UniqueSetPtr<GeneratorType> s)
         : offset_(std::move(o)), generators_(s) {}
 
-    SparseVecType offset_;
-    UniqueSetPtr<SparseVecType> generators_;
+    OffsetType offset_;
+    UniqueSetPtr<GeneratorType> generators_;
 
     /* TODO: Try to get rid of static... */
-    static UniqueSetBuilder<SparseVecType> builder_;
+    static UniqueSetBuilder<GeneratorType> builder_;
 };
 
 namespace std {
