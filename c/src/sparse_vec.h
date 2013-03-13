@@ -30,7 +30,9 @@ class SparseVec {
   typedef UniqueVMapBuilder<Var, Value> UniqueVMapBuilder_;
 
   public:
-    SparseVec() : vmap_(builder_.New({})) {}
+    SparseVec()
+        : vmap_(builder_.template New<Divider>(
+            std::vector< std::pair<Var, Value> >{})) {}
 
     SparseVec(const SparseVec &v) = default;
     SparseVec(SparseVec &&v) = default;
