@@ -35,16 +35,6 @@ class SparseVec {
     SparseVec(const SparseVec &v) = default;
     SparseVec(SparseVec &&v) = default;
 
-    template <typename OldDivider>
-    SparseVec(const SparseVec<Var, Value, OldDivider> &v) : vmap_(v.vmap_) {}
-
-    template <typename OldDivider>
-    SparseVec(SparseVec<Var, Value, OldDivider> &&v) : vmap_(v.vmap_) {}
-
-
-    SparseVec& operator=(const SparseVec &v) = default;
-    SparseVec& operator=(SparseVec &&v) = default;
-
     SparseVec(std::vector< std::pair<Var, Value> > &&vector)
         : vmap_(builder_.template New<Divider>(std::move(vector))) {}
 
@@ -53,6 +43,25 @@ class SparseVec {
 
     SparseVec(const Var &v, Value c)
       : SparseVec({ std::make_pair(v, c) }) {}
+
+    /* Make it possible to construct a SparseVec from one with a different
+     * divider.  For that we need to use builder_ to actually invoke the
+     * new Divider.  Make it explicit since we don't want to do those
+     * convertions by accident. */
+    template <typename OldDivider>
+    explicit SparseVec(const SparseVec<Var, Value, OldDivider> &v)
+        : vmap_(builder_.template New<Divider>(*v.vmap_)) {}
+
+    /* Allow casting a SparseVec to one with a different Divider, but without
+     * actually invoking the new Divider.  This is useful for simplifires that
+     * just need to check set membership or subtract vectors... */
+    template <typename AnyDivider>
+    SparseVec<Var, Value, AnyDivider> Cast() const {
+      return SparseVec<Var, Value, AnyDivider>{vmap_};
+    }
+
+    SparseVec& operator=(const SparseVec &v) = default;
+    SparseVec& operator=(SparseVec &&v) = default;
 
     bool operator==(const SparseVec &rhs) const {
       assert(Sanity() && rhs.Sanity());
@@ -219,7 +228,10 @@ class NaiveSimplifier {
 
     static bool IsActive() { return true; }
 
-    bool IsCovered(const SparseVecType &lhs) {
+    template <typename AnyDivider>
+    bool IsCovered(const SparseVec<Var, Value, AnyDivider> &lhs_any) {
+      /* Cast the vector without actually invoking the Divider. */
+      auto lhs = lhs_any.template Cast<Divider>();
       if (lhs.IsZero() || rhs_set_.count(lhs) > 0) {
         return true;
       }
@@ -241,6 +253,7 @@ template <typename Var = VarPtr,
 class SparseVecSimplifier {
   public:
     typedef SparseVec<Var, Value, Divider> SparseVecType;
+    typedef SparseVec<Var, Value, DummyDivider> SparseVecTypeNoDiv;
 
     SparseVecSimplifier(const std::set<SparseVecType> &s)
         : rhs_set_(s) {}
@@ -251,7 +264,9 @@ class SparseVecSimplifier {
      * Check, if lhs is a non-negative integer linear combination of the vectors
      * in rhs_set_
      */
-    bool IsCovered(const SparseVecType &lhs) {
+    template <typename AnyDivider>
+    bool IsCovered(const SparseVec<Var, Value, AnyDivider> &lhs_any) {
+      auto lhs = lhs_any.template Cast<DummyDivider>();
       /* Check the cheap and naive simplifier. */
       NaiveSimplifier<Var, Value, Divider> naive{rhs_set_};
       if (naive.IsCovered(lhs)) {
@@ -262,7 +277,7 @@ class SparseVecSimplifier {
 
   private:
     /* Dynamic programming/memoization */
-    bool IsCovered_(const SparseVecType &lhs) {
+    bool IsCovered_(const SparseVecTypeNoDiv &lhs) {
       auto iter = computed_.find(lhs);
       if (iter != computed_.end()) {
         return iter->second;
@@ -273,7 +288,8 @@ class SparseVecSimplifier {
           assert(false);
           continue;
         }
-        auto new_lhs = lhs - rhs;
+        /* We don't want to do any simplification/division of the vector. */
+        auto new_lhs = lhs - rhs.template Cast<DummyDivider>();
         if (new_lhs.IsValid() && (new_lhs.IsZero() ||
                                   IsCovered_(new_lhs))) {
           computed_.emplace(lhs, true);
@@ -285,5 +301,5 @@ class SparseVecSimplifier {
     }
 
     const std::set<SparseVecType> &rhs_set_;
-    std::unordered_map<SparseVecType, bool> computed_;
+    std::unordered_map<SparseVecTypeNoDiv, bool> computed_;
 };

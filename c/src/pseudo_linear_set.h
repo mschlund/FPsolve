@@ -30,19 +30,15 @@ template <typename Var,
 class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
                                                          VecSimpl> > {
   public:
-    typedef SparseVec<Var, Value, VecDivider> SparseVecType;
+    typedef SparseVec<Var, Value, DummyDivider> OffsetType;
+    typedef SparseVec<Var, Value, VecDivider> GeneratorType;
 
     PseudoLinearSet() = default;
 
-    PseudoLinearSet(const Var &v, const Counter &c) {
-      offsets_.insert(SparseVecType(v, c));
-    }
+    PseudoLinearSet(const Var &v, const Counter &c)
+        : offsets_({ OffsetType{v, c} }) {}
 
-    PseudoLinearSet(std::initializer_list<SparseVecType> list) {
-      for (auto &vec : list) {
-        offsets_.insert(vec);
-      }
-    }
+    PseudoLinearSet(std::initializer_list<OffsetType> l) : offsets_(l) {}
 
     PseudoLinearSet(const PseudoLinearSet &s) = default;
     PseudoLinearSet(PseudoLinearSet &&s) = default;
@@ -51,9 +47,9 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
      * simplifier. */
     template <typename OldVecDivider, typename OldVecSimpl>
     PseudoLinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &lset) {
-      offsets_.insert(SparseVecType{lset.GetOffset()});
+      offsets_.insert(OffsetType{lset.GetOffset()});
       for (const auto &g : lset.GetGenerators()) {
-        generators_.insert(SparseVecType{g});
+        generators_.insert(GeneratorType{g});
       }
       Simplify();
     }
@@ -71,8 +67,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
-      std::set<SparseVecType> result_offsets;
-      std::set<SparseVecType> result_generators;
+      std::set<OffsetType> result_offsets;
+      std::set<GeneratorType> result_generators;
 
       std::set_union(offsets_.begin(), offsets_.end(),
                      rhs.offsets_.begin(), rhs.offsets_.end(),
@@ -91,8 +87,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
-      std::set<SparseVecType> result_offsets;
-      std::set<SparseVecType> result_generators;
+      std::set<OffsetType> result_offsets;
+      std::set<GeneratorType> result_generators;
 
       for (auto &vec_rhs : rhs.offsets_) {
         for (auto &vec_lhs : offsets_) {
@@ -114,12 +110,13 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
 
     PseudoLinearSet star() const {
 
-      std::set<SparseVecType> result_offsets = { SparseVecType{} };
-      std::set<SparseVecType> result_generators;
+      std::set<OffsetType> result_offsets = { OffsetType{} };
+      std::set<GeneratorType> result_generators = generators_;
 
-      std::set_union(offsets_.begin(), offsets_.end(),
-                     generators_.begin(), generators_.end(),
-                     std::inserter(result_generators, result_generators.begin()));
+      for (auto &offset : offsets_) {
+        /* Convert from OffsetType to GeneratorType. */
+        result_generators.insert(GeneratorType{offset});
+      }
 
       return PseudoLinearSet{ std::move(result_offsets),
                               std::move(result_generators) };
@@ -150,7 +147,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     static const bool is_commutative = true;
 
   private:
-    PseudoLinearSet(std::set<SparseVecType> &&os, std::set<SparseVecType> &&gs)
+    PseudoLinearSet(std::set<OffsetType> &&os, std::set<GeneratorType> &&gs)
         : offsets_(os), generators_(gs) {}
 
     void Simplify() {
@@ -196,8 +193,8 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
       }
     }
 
-    std::set<SparseVecType> offsets_;
-    std::set<SparseVecType> generators_;
+    std::set<OffsetType> offsets_;
+    std::set<GeneratorType> generators_;
 
     template <typename OldVecDivider, typename OldVecSimpl>
     PseudoLinearSet SemilinearToPseudoLinear(

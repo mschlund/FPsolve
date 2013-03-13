@@ -213,13 +213,13 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder& operator=(const UniqueVMapBuilder &f) = delete;
     UniqueVMapBuilder& operator=(UniqueVMapBuilder &&f) = delete;
 
-    template <typename Simpl = DummyDivider>
+    template <typename Divider = DummyDivider>
     UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V>, Deleter > &&vmap) {
       assert(vmap);
       assert(vmap->ref_count_ == 0);
 
-      Simpl simplifier;
-      simplifier(*vmap);
+      Divider divider;
+      divider(*vmap);
 
       /* Note that the unique_ptr vmap still owns ptr. */
       auto ptr = vmap.get();
@@ -238,7 +238,16 @@ class UniqueVMapBuilder {
       return UniqueVMapPtr<K, V>{iter_inserted.first->second};
     }
 
-    template <typename Simpl = DummyDivider>
+    template <typename Divider = DummyDivider>
+    UniqueVMapPtr<K, V> New(const UniqueVMap<K, V> &vmap) {
+      auto result = Allocate();
+      /* Copy over the vector, since it might be modified in-place by
+       * the Divider. */
+      result->vector_ = vmap.vector_;
+      return TryLookup<Divider>(std::move(result));
+    }
+
+    template <typename Divider = DummyDivider>
     UniqueVMapPtr<K, V> New(std::vector< std::pair<K, V> > &&input_vector) {
       std::sort(input_vector.begin(), input_vector.end());
       auto result = Allocate();
@@ -252,10 +261,10 @@ class UniqueVMapBuilder {
         }
       }
 
-      return TryLookup<Simpl>(std::move(result));
+      return TryLookup<Divider>(std::move(result));
     }
 
-    template <typename Simpl = DummyDivider>
+    template <typename Divider = DummyDivider>
     UniqueVMapPtr<K, V> NewSum(const UniqueVMap<K, V> &lhs,
                                const UniqueVMap<K, V> &rhs) {
 
@@ -290,10 +299,10 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*rhs_iter);
       }
 
-      return TryLookup<Simpl>(std::move(result));
+      return TryLookup<Divider>(std::move(result));
     }
 
-    template <typename Simpl = DummyDivider>
+    template <typename Divider = DummyDivider>
     UniqueVMapPtr<K, V> NewDiff(const UniqueVMap<K, V> &lhs,
                                 const UniqueVMap<K, V> &rhs) {
 
@@ -349,7 +358,7 @@ class UniqueVMapBuilder {
         result->vector_.emplace_back(*lhs_iter);
       }
 
-      return TryLookup<Simpl>(std::move(result));
+      return TryLookup<Divider>(std::move(result));
     }
 
     void Delete(const UniqueVMap<K, V> *vector_ptr) {
