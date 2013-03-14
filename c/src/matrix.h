@@ -185,11 +185,8 @@ class Matrix {
       Matrix as_22 = recursive_star(a_22);
       Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
       Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
-      Matrix A_12 = as_11 * a_12 * A_22;
-      Matrix A_21 = as_22 * a_21 * A_11;
-      // FIXME: should be:
-      // Matrix A_12 = as_11 * a_12 * as_22;
-      // Matrix A_21 = as_22 * a_21 * as_11;
+      Matrix A_12 = as_11 * a_12 * as_22;
+      Matrix A_21 = as_22 * a_21 * as_11;
       return block_matrix(A_11,A_12,A_21,A_22);
     }
 

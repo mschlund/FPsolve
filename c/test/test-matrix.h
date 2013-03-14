@@ -4,6 +4,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "free-semiring.h"
+#include "tropical-semiring.h"
 #include "matrix.h"
 
 

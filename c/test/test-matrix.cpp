@@ -2,6 +2,8 @@
 
 CPPUNIT_TEST_SUITE_REGISTRATION(MatrixTest);
 
+typedef TropicalSemiring TS;
+
 void MatrixTest::setUp()
 {
 	a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
@@ -75,23 +77,31 @@ void MatrixTest::testMultiplication()
 	CPPUNIT_ASSERT( (*first) * (*third) == result );
 }
 
+// test the star by solving an all-pairs-shortest path problem (over the tropical semiring)
 void MatrixTest::testStar()
 {
-	// calculate (first.third)*
-	Matrix<FreeSemiring> star(((*first)*(*third)).star());
-/* this result is translated from the output of sage, check later with commutativity and associativity
-	Matrix<FreeSemiring> result(2,2,{
-			((*d**m + *e**o + *f**q)*(*a**n + *b**p + *c**r)*(*d**n + *e**p + *f**r).star() + *a**m + *b**o + *c**q).star(),
-			(*a**n + *b**p + *c**r)*(*a**m + *b**o + *c**q).star()*((*d**m + *e**o + *f**q)*(*a**n + *b**p + *c**r)*(*a**m + *b**o + *c**q).star() + *d**n + *e**p + *f**r).star(),
-			(*d**m + *e**o + *f**q)*(*d**n + *e**p + *f**r).star()*((*d**m + *e**o + *f**q)*(*a**n + *b**p + *c**r)*(*d**n + *e**p + *f**r).star() + *a**m + *b**o + *c**q).star(),
-			((*d**m + *e**o + *f**q)*(*a**n + *b**p + *c**r)*(*a**m + *b**o + *c**q).star() + *d**n + *e**p + *f**r).star()});
-	*/
 
-	// this result was created with the c++-algorithm of svn-revision 115
-	Matrix<FreeSemiring> result(2,{
-			(((((*a * *m) + (*b * *o)) + (*c * *q)) + (((((*a * *n) + (*b * *p)) + (*c * *r)) * ((((*d * *n) + (*e * *p)) + (*f * *r)).star())) * (((*d * *m) + (*e * *o)) + (*f * *q)))).star()),
-			((((((*a * *m) + (*b * *o)) + (*c * *q)).star()) * (((*a * *n) + (*b * *p)) + (*c * *r))) * (((((*d * *n) + (*e * *p)) + (*f * *r)) + (((((*d * *m) + (*e * *o)) + (*f * *q)) * ((((*a * *m) + (*b * *o)) + (*c * *q)).star())) * (((*a * *n) + (*b * *p)) + (*c * *r)))).star())),
-			((((((*d * *n) + (*e * *p)) + (*f * *r)).star()) * (((*d * *m) + (*e * *o)) + (*f * *q))) * (((((*a * *m) + (*b * *o)) + (*c * *q)) + (((((*a * *n) + (*b * *p)) + (*c * *r)) * ((((*d * *n) + (*e * *p)) + (*f * *r)).star())) * (((*d * *m) + (*e * *o)) + (*f * *q)))).star())),
-			(((((*d * *n) + (*e * *p)) + (*f * *r)) + (((((*d * *m) + (*e * *o)) + (*f * *q)) * ((((*a * *m) + (*b * *o)) + (*c * *q)).star())) * (((*a * *n) + (*b * *p)) + (*c * *r)))).star())});
-	CPPUNIT_ASSERT( star == result );
+  Matrix<TS> A(4,
+      {
+      TS(INFTY), TS(2), TS(7), TS(INFTY),
+      TS(INFTY), TS(1), TS(4), TS(2),
+      TS(INFTY), TS(3), TS(INFTY), TS(INFTY),
+      TS(INFTY), TS(INFTY), TS(1), TS(INFTY)
+      });
+
+  //std::cout << A <<std::endl;
+  //std::cout << A.star() <<std::endl;
+
+  Matrix<TS> result(4,
+      {
+      TS(0), TS(2), TS(5), TS(4),
+      TS(INFTY), TS(0), TS(3), TS(2),
+      TS(INFTY), TS(3), TS(0), TS(5),
+      TS(INFTY), TS(4), TS(1), TS(0)
+      });
+
+  //std::cout << result <<std::endl;
+
+  CPPUNIT_ASSERT( A.star() == result );
+
 }
