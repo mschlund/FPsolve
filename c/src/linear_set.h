@@ -86,6 +86,11 @@ class LinearSet {
 
 
     LinearSet operator+(const LinearSet &rhs) const {
+      if (IsZero()) {
+        return rhs;
+      } else if (rhs.IsZero()) {
+        return *this;
+      }
       auto result_offset = offset_ + rhs.offset_;
       std::set<GeneratorType> result_generators;
 
@@ -115,6 +120,8 @@ class LinearSet {
     const std::set<GeneratorType>& GetGenerators() const {
       return generators_->GetSet();
     }
+
+    bool IsZero() const { return offset_.IsZero() && generators_->empty(); }
 
   private:
     LinearSet(OffsetType &&o, UniqueSetPtr<GeneratorType> s)

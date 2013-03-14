@@ -80,29 +80,37 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
     SemilinearSet& operator=(SemilinearSet &&slset) = default;
 
     SemilinearSet& operator+=(const SemilinearSet &rhs) {
-      std::set<LinearSetType> result;
-      std::set_union(set_.begin(), set_.end(),
-                     rhs.set_.begin(), rhs.set_.end(),
-                     std::inserter(result, result.begin()));
+      if (IsZero()) {
+        set_ = rhs.set_;
+      } else if (!rhs.IsZero()) {
+        std::set<LinearSetType> result;
+        std::set_union(set_.begin(), set_.end(),
+                       rhs.set_.begin(), rhs.set_.end(),
+                       std::inserter(result, result.begin()));
 
-      set_ = std::move(result);
+        set_ = std::move(result);
 
-      SimplifySet<LinSimpl>(set_);
+        SimplifySet<LinSimpl>(set_);
+      }
 
       return *this;
     }
 
     SemilinearSet& operator*=(const SemilinearSet &rhs) {
-      std::set< LinearSetType > result;
-      for(auto &lin_set_rhs : rhs.set_) {
-        for(auto &lin_set_lhs : set_) {
-          result.insert(lin_set_lhs + lin_set_rhs);
+      if (IsZero() || rhs.IsZero()) {
+        *this = null();
+      } else if (IsOne()) {
+        set_ = rhs.set_;
+      } else if (!rhs.IsOne()) {
+        std::set< LinearSetType > result;
+        for(auto &lin_set_rhs : rhs.set_) {
+          for(auto &lin_set_lhs : set_) {
+            result.insert(lin_set_lhs + lin_set_rhs);
+          }
         }
+        set_ = std::move(result);
+        SimplifySet<LinSimpl>(set_);
       }
-
-      set_ = std::move(result);
-
-      SimplifySet<LinSimpl>(set_);
 
       return *this;
     }
@@ -146,6 +154,14 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       }
 
       return result;
+    }
+
+    bool IsZero() const {
+      return set_.size() == 0;
+    }
+
+    bool IsOne() const {
+      return set_.size() == 1 && set_.begin()->IsZero();
     }
 
     std::string string() const {
