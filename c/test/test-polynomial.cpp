@@ -78,7 +78,7 @@ void PolynomialTest::testMultiplication() {
 
 void PolynomialTest::testJacobian() {
   std::vector<Polynomial<FreeSemiring> > polys = {*first, *second};
-  std::vector<VarPtr> vars = {Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("z")};
+  std::vector<VarId> vars = {Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("z")};
 
   std::vector<Polynomial<FreeSemiring> > polys2 = {
     Polynomial<FreeSemiring>({ {*a+*a, {Var::GetVarId("x")}} }),
@@ -106,7 +106,7 @@ void PolynomialTest::testJacobian() {
 }
 
 void PolynomialTest::testEvaluation() {
-  std::map<VarPtr,FreeSemiring> values = {
+  std::map<VarId,FreeSemiring> values = {
     { Var::GetVarId("x"), FreeSemiring(Var::GetVarId("a")) },
     { Var::GetVarId("y"), FreeSemiring(Var::GetVarId("b")) },
     { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("c")) }
@@ -131,10 +131,10 @@ void PolynomialTest::testMatrixEvaluation() { }
 
 void PolynomialTest::testPolynomialToFreeSemiring() {
   // auto valuation = new std::unordered_map<FreeSemiring, FreeSemiring, FreeSemiring>();
-  std::unordered_map<FreeSemiring, VarPtr, FreeSemiring> valuation;
+  std::unordered_map<FreeSemiring, VarId, FreeSemiring> valuation;
   FreeSemiring elem = second->make_free(&valuation);
   //std::cout << "poly2free: " << std::endl << (*second) << " → " << elem << std::endl;
-  std::unordered_map<VarPtr, FreeSemiring> r_valuation;
+  std::unordered_map<VarId, FreeSemiring> r_valuation;
   for (auto &pair : valuation) {
     r_valuation.emplace(pair.second, pair.first);
   }
@@ -148,10 +148,10 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
 
   FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
 
-  std::map<VarPtr,FreeSemiring> values = {
-    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("x"),FreeSemiring(Var::GetVarId("a"))),
-    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("y"),FreeSemiring(Var::GetVarId("b"))),
-    std::pair<VarPtr,FreeSemiring>(Var::GetVarId("z"),FreeSemiring(Var::GetVarId("c")))};
+  std::map<VarId,FreeSemiring> values = {
+    std::pair<VarId,FreeSemiring>(Var::GetVarId("x"),FreeSemiring(Var::GetVarId("a"))),
+    std::pair<VarId,FreeSemiring>(Var::GetVarId("y"),FreeSemiring(Var::GetVarId("b"))),
+    std::pair<VarId,FreeSemiring>(Var::GetVarId("z"),FreeSemiring(Var::GetVarId("c")))};
   FreeSemiring eval_elem2 = second->eval(values);
   //std::cout << "evaluated: " << eval_elem << " vs. " << eval_elem2 << std::endl;
 

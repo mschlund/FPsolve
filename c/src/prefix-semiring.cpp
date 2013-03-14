@@ -8,7 +8,7 @@ PrefixSemiring::PrefixSemiring()
 	this->val = {{}};
 }
 
-PrefixSemiring::PrefixSemiring(const std::vector<VarPtr>& val)
+PrefixSemiring::PrefixSemiring(const std::vector<VarId>& val)
 {
 	assert(val.size() <= max_length);
 	this->val = {val};
@@ -25,7 +25,7 @@ PrefixSemiring PrefixSemiring::operator+=(const PrefixSemiring& elem)
 	return *this;
 }
 
-std::vector<VarPtr> PrefixSemiring::concatenate(std::vector<VarPtr> l, std::vector<VarPtr> r)
+std::vector<VarId> PrefixSemiring::concatenate(std::vector<VarId> l, std::vector<VarId> r)
 {
 	int to_copy = (max_length-l.size()) >= r.size() ? r.size() : (max_length-l.size());
 	auto ret = l;
@@ -35,7 +35,7 @@ std::vector<VarPtr> PrefixSemiring::concatenate(std::vector<VarPtr> l, std::vect
 
 PrefixSemiring PrefixSemiring::operator*=(const PrefixSemiring& elem)
 {
-	std::set<std::vector<VarPtr>> ret;
+	std::set<std::vector<VarId>> ret;
 	// element-wise concatenation
 	for(auto v : this->val)
 		for(auto u : elem.val)

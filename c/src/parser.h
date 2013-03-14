@@ -2,9 +2,6 @@
 #define PARSER_H
 
 #include <string>
-#include "float-semiring.h"
-#include "commutativeRExp.h"
-#include "polynomial.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semilinSetExp.h"
@@ -12,15 +9,21 @@
 #include "semilinear_set.h"
 #endif
 
+template <typename SR>
+class Polynomial;
+
+class FloatSemiring;
+class CommutativeRExp;
+
 
 class Parser
 {
 private:
 public:
 	Parser();
-	std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> float_parser(std::string input);
-	std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
-	std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
+	std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> float_parser(std::string input);
+	std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
+	std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
 };
 
 #endif

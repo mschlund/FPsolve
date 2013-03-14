@@ -1,15 +1,15 @@
 #pragma once
 
 #include <initializer_list>
-#include <iostream>
 #include <set>
 
 #include "linear_set.h"
 #include "semiring.h"
 #include "sparse_vec.h"
-#include "var.h"
 
-template <typename Var = VarPtr,
+class VarId;
+
+template <typename Var = VarId,
           typename Value = Counter,
           typename VecDivider = GcdDivider<Var, Value>,
           typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider>,
@@ -20,14 +20,14 @@ class SemilinearSet;
 typedef SemilinearSet<> SemilinSetExp;
 
 /* SimpleLinearSet performs no simplification at all. */
-typedef SemilinearSet<VarPtr, Counter, DummyDivider,
+typedef SemilinearSet<VarId, Counter, DummyDivider,
                       DummySimplifier, DummySimplifier
                       > SimpleSemilinearSet;
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * is an over-approximation, the result might no longer be precise. */
-typedef SemilinearSet< VarPtr, Counter,
-                       GcdDivider<VarPtr, Counter> > DivSemilinearSet;
+typedef SemilinearSet< VarId, Counter,
+                       GcdDivider<VarId, Counter> > DivSemilinearSet;
 
 template <typename Var,
           typename Value,

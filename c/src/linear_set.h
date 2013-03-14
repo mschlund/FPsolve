@@ -2,30 +2,27 @@
 
 #include <cassert>
 #include <set>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
 
-#include "key_wrapper.h"
 #include "semilinear_util.h"
 #include "sparse_vec.h"
 #include "unique_set.h"
-#include "var.h"
+
+class VarId;
 
 /* Default LinearSet includes the simplification with SparseVecSimplifier and
- * uses VarPtr and Counter for variable identifier and counter. */
-template <typename Var = VarPtr,
+ * uses VarId and Counter for variable identifier and counter. */
+template <typename Var = VarId,
           typename Value = Counter,
           typename VecDivider = DummyDivider,
           typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider> >
 class LinearSet;
 
 /* SimpleLinearSet does no simplification. */
-typedef LinearSet<VarPtr, Counter, DummyDivider, DummySimplifier> SimpleLinearSet;
+typedef LinearSet<VarId, Counter, DummyDivider, DummySimplifier> SimpleLinearSet;
 
 /* DivLinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * over-approximates and does not give a precise answer anymore.  */
-typedef LinearSet<VarPtr, Counter, GcdDivider<VarPtr, Counter> > DivLinearSet;
+typedef LinearSet<VarId, Counter, GcdDivider<VarId, Counter> > DivLinearSet;
 
 
 template <typename Var,

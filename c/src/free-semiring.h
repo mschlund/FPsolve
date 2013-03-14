@@ -1,9 +1,9 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <unordered_map>
 
+#include "hash.h"
 #include "matrix.h"
 #include "semiring.h"
 #include "var.h"
@@ -20,7 +20,7 @@ class FreeSemiring : public Semiring<FreeSemiring> {
       node_ = factory_.GetEmpty();
     }
 
-    FreeSemiring(const VarPtr var) {
+    FreeSemiring(const VarId var) {
       node_ = factory_.NewElement(var);
     }
 
@@ -65,7 +65,7 @@ class FreeSemiring : public Semiring<FreeSemiring> {
     }
 
     template <typename SR>
-    SR Eval(const std::unordered_map<VarPtr, SR> &valuation) const;
+    SR Eval(const std::unordered_map<VarId, SR> &valuation) const;
 
     template <typename SR>
     SR Eval(Evaluator<SR> &evaluator) const;
@@ -107,13 +107,12 @@ struct hash<FreeSemiring> {
  * reach the same node (and thus the same subgraph) many times.  So only the
  * first one we will actually perform the computation, in all subsequent visits
  * we will reuse the memoized reslt.  Note that this is ok, because we never
- * modify the actual semiring values.  We use shared_ptrs to avoid any
- * unnecessary copying of temporary values, etc.
+ * modify the actual semiring values.
  */
 template <typename SR>
 class Evaluator : public NodeVisitor {
   public:
-    Evaluator(const std::unordered_map<VarPtr, SR> &v)
+    Evaluator(const std::unordered_map<VarId, SR> &v)
         : val_(v), evaled_(), result_() {}
 
     ~Evaluator() {
@@ -180,13 +179,13 @@ class Evaluator : public NodeVisitor {
       }
     }
 
-    const std::unordered_map<VarPtr, SR> &val_;
+    const std::unordered_map<VarId, SR> &val_;
     std::unordered_map<NodePtr, SR*> evaled_;
     SR* result_;
 };
 
 template <typename SR>
-SR FreeSemiring::Eval(const std::unordered_map<VarPtr, SR> &valuation) const {
+SR FreeSemiring::Eval(const std::unordered_map<VarId, SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
   return evaluator.MoveResult();
@@ -200,7 +199,7 @@ SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
 
 template <typename SR>
 Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
-    const std::unordered_map<VarPtr, SR> &valuation) {
+    const std::unordered_map<VarId, SR> &valuation) {
 
   const std::vector<FreeSemiring> &elements = matrix.getElements();
   std::vector<SR> result;
@@ -220,13 +219,13 @@ Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
 /* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
 SR FreeSemiring_eval(FreeSemiring elem,
-    std::unordered_map<VarPtr, SR> *valuation) {
+    std::unordered_map<VarId, SR> *valuation) {
   return elem.Eval(*valuation);
 }
 
 /* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
 Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix,
-    std::unordered_map<VarPtr, SR> *valuation) {
+    std::unordered_map<VarId, SR> *valuation) {
   return FreeSemiringMatrixEval(matrix, *valuation);
 }

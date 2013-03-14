@@ -29,7 +29,7 @@ class Monomial {
     Monomial& operator=(const Monomial &m) = default;
     Monomial& operator=(Monomial &&m) = default;
 
-    Monomial(std::initializer_list<VarPtr> vs) {
+    Monomial(std::initializer_list<VarId> vs) {
       for (auto var : vs) {
         variables_.Insert(var);
       }
@@ -37,7 +37,7 @@ class Monomial {
 
     /* std::vector seems to be a neutral data type and does not leak internal
      * data structure. */
-    Monomial(std::vector< std::pair<VarPtr, Degree> > vs) {
+    Monomial(std::vector< std::pair<VarId, Degree> > vs) {
       for (auto var_degree : vs) {
         variables_.Insert(var_degree.first, var_degree.second);
       }
@@ -53,14 +53,14 @@ class Monomial {
     }
 
     /* Multiply a monomial with a variable. */
-    Monomial operator*(const VarPtr &var) const {
+    Monomial operator*(const VarId &var) const {
       auto tmp_variables = variables_;
       tmp_variables.Insert(var);
       return Monomial{std::move(tmp_variables)};
     }
 
     /* Commutative version of derivative. */
-    std::pair<Degree, Monomial> derivative(const VarPtr &var) const {
+    std::pair<Degree, Monomial> derivative(const VarId &var) const {
 
       auto var_degree_iter = variables_.find(var);
 
@@ -80,7 +80,7 @@ class Monomial {
 
     /* Evaluate the monomial given the map from variables to values. */
     template <typename SR>
-    SR eval(const std::map<VarPtr, SR> &values) const {
+    SR eval(const std::map<VarId, SR> &values) const {
       auto result = SR::one();
 
       for (auto var_degree : variables_) {
@@ -98,7 +98,7 @@ class Monomial {
     /* Partially evaluate the monomial. */
     template <typename SR>
     std::pair<SR, Monomial> partial_eval(
-        const std::map<VarPtr, SR> &values) const {
+        const std::map<VarId, SR> &values) const {
 
       SR result_value = SR::one();
       Monomial result_monomial;
@@ -120,7 +120,7 @@ class Monomial {
     }
 
     /* Variable substitution. */
-    Monomial subst(const std::map<VarPtr, VarPtr> &mapping) const {
+    Monomial subst(const std::map<VarId, VarId> &mapping) const {
       VarDegreeMap tmp_variables;
 
       for (const auto &var_degree : variables_) {
@@ -164,8 +164,8 @@ class Monomial {
     }
 
     // FIXME: modify or remove
-    std::set<VarPtr> get_variables() const {
-      std::set<VarPtr> set;
+    std::set<VarId> get_variables() const {
+      std::set<VarId> set;
       for (auto var_degree : variables_) {
         set.insert(var_degree.first);
       }

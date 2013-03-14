@@ -40,7 +40,7 @@
 // where star((v_00,{v_10,...,v_n0})) = 1 +  (v_00,{v_00,v_10,...,v_n0})
 
 
-typedef std::map<VarPtr, unsigned int> VecSparse;
+typedef std::map<VarId, unsigned int> VecSparse;
 
 /* At some point we used
  *   typedef std::list<VecSparse> LinSet;
@@ -61,8 +61,8 @@ class SemilinSetExp : public Semiring<SemilinSetExp> {
   public:
     SemilinSetExp();
     SemilinSetExp(const std::set<LinSet> &val);
-    SemilinSetExp(VarPtr v);
-    SemilinSetExp(VarPtr var, unsigned int cnt);
+    SemilinSetExp(VarId v);
+    SemilinSetExp(VarId var, unsigned int cnt);
 
     virtual ~SemilinSetExp();
 

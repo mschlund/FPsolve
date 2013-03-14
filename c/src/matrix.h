@@ -218,8 +218,8 @@ class Matrix {
     // get the submatrix starting from colum cs,...
     Matrix submatrix(std::size_t cs, std::size_t ce,
                      std::size_t rs, std::size_t re) const {
-      assert(cs >= 0 && cs < columns_ && ce <= columns_ && ce > cs);
-      assert(rs >= 0 && rs < rows_ && re <= rows_ && re > rs);
+      assert(cs < columns_ && ce <= columns_ && ce > cs);
+      assert(rs < rows_ && re <= rows_ && re > rs);
       // std::size_t nc = ce-cs; // new column count
       std::size_t nr = re-rs; // new row count
       std::vector<SR> ret;
