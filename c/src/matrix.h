@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <initializer_list>
 #include <sstream>
@@ -164,6 +165,8 @@ class Matrix {
       return columns_ * rows_ == elements_.size();
     }
 
+    std::size_t Size() const { return elements_.size(); }
+
     // this is a naive implementation which creates lots of matrices
     // maybe we can work directly on the elements_ (but then multiplication etc. are harder)
     static Matrix recursive_star(Matrix matrix) {
@@ -176,43 +179,48 @@ class Matrix {
       // peel mode if n%2 != 0, split in middle otherwise
       std::size_t split = matrix.rows_%2 == 0 ? matrix.columns_/2 : matrix.columns_-1;
 
-      // TODO: this might be slightly inefficient
-      Matrix a_11 = matrix.submatrix(0,split,0,split);
-      Matrix a_12 = matrix.submatrix(split,matrix.columns_,0,split);
-      Matrix a_21 = matrix.submatrix(0,split,split,matrix.rows_);
-      Matrix a_22 = matrix.submatrix(split,matrix.columns_,split,matrix.rows_);
+      // TODO: This will create copies of the submatrices, but we don't really
+      // know how to avoid it, since we use them in a few places later on...
+      Matrix a_11 = matrix.submatrix(0, split, 0, split);
+      Matrix a_12 = matrix.submatrix(split, matrix.columns_, 0, split);
+      Matrix a_21 = matrix.submatrix(0, split, split, matrix.rows_);
+      Matrix a_22 = matrix.submatrix(split, matrix.columns_, split, matrix.rows_);
       Matrix as_11 = recursive_star(a_11);
       Matrix as_22 = recursive_star(a_22);
       Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
       Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
       Matrix A_12 = as_11 * a_12 * as_22;
       Matrix A_21 = as_22 * a_21 * as_11;
-      return block_matrix(A_11,A_12,A_21,A_22);
+      return block_matrix(std::move(A_11), std::move(A_12),
+                          std::move(A_21), std::move(A_22));
     }
 
-    static Matrix block_matrix(const Matrix &a_11, const Matrix &a_12,
-                               const Matrix &a_21, const Matrix &a_22) {
-      std::vector<SR> ret;
+    static Matrix block_matrix(Matrix &&a_11, Matrix &&a_12,
+                               Matrix &&a_21, Matrix &&a_22) {
+      std::vector<SR> result;
+      result.reserve(a_11.Size() + a_12.Size() + a_21.Size() + a_22.Size());
       assert(a_11.rows_ == a_12.rows_ && a_21.rows_ == a_22.rows_);
       assert(a_11.columns_ == a_21.columns_ && a_12.columns_ == a_22.columns_);
-      for (int r=0; r < a_11.rows_; r++) {
-        ret.insert(     ret.end(),
-            a_11.elements_.begin()+(r*a_11.columns_),
-            a_11.elements_.begin()+((r+1)*a_11.columns_));
-        ret.insert(     ret.end(),
-            a_12.elements_.begin()+(r*a_12.columns_),
-            a_12.elements_.begin()+((r+1)*a_12.columns_));
+
+      for (std::size_t r = 0; r < a_11.rows_; ++r) {
+        auto row_11_iter_begin = a_11.elements_.begin() + (r * a_11.columns_);
+        auto row_11_iter_end = row_11_iter_begin + a_11.columns_;
+        std::move(row_11_iter_begin, row_11_iter_end, std::back_inserter(result));
+
+        auto row_12_iter_begin = a_12.elements_.begin() + (r * a_12.columns_);
+        auto row_12_iter_end = row_12_iter_begin + a_12.columns_;
+        std::move(row_12_iter_begin, row_12_iter_end, std::back_inserter(result));
       }
-      for (int r=0; r < a_21.rows_; r++) {
-        ret.insert(     ret.end(),
-            a_21.elements_.begin()+(r*a_21.columns_),
-            a_21.elements_.begin()+((r+1)*a_21.columns_));
-        ret.insert(     ret.end(),
-            a_22.elements_.begin()+(r*a_22.columns_),
-            a_22.elements_.begin()+((r+1)*a_22.columns_));
+      for (std::size_t r = 0; r < a_21.rows_; ++r) {
+        auto row_21_iter_begin = a_21.elements_.begin() + (r * a_21.columns_);
+        auto row_21_iter_end = row_21_iter_begin + a_21.columns_;
+        std::move(row_21_iter_begin, row_21_iter_end, std::back_inserter(result));
+
+        auto row_22_iter_begin = a_22.elements_.begin() + (r * a_22.columns_);
+        auto row_22_iter_end = row_22_iter_begin + a_22.columns_;
+        std::move(row_22_iter_begin, row_22_iter_end, std::back_inserter(result));
       }
-      return Matrix{a_11.rows_+a_21.rows_,
-                    std::move(ret)};
+      return Matrix{a_11.rows_ + a_21.rows_, std::move(result)};
     }
 
     // get the submatrix starting from colum cs,...
@@ -222,15 +230,16 @@ class Matrix {
       assert(rs < rows_ && re <= rows_ && re > rs);
       // std::size_t nc = ce-cs; // new column count
       std::size_t nr = re-rs; // new row count
-      std::vector<SR> ret;
+      std::vector<SR> result;
+      result.reserve((re - rs) * (ce - cs));
       for (std::size_t r = rs; r < re; r++) {
         for (std::size_t c = cs; c < ce; c++) {
-          // copy the needed values from elements_ to ret
-          //ret[nc*(r-rs)+cs-c] = elements_[columns_*r+c];
-          ret.push_back(elements_[columns_*r+c]);
+          // copy the needed values from elements_ to result
+          //result[nc*(r-rs)+cs-c] = elements_[columns_*r+c];
+          result.emplace_back(elements_[columns_ * r + c]);
         }
       }
-      return Matrix{nr, std::move(ret)};
+      return Matrix{nr, std::move(result)};
     }
 
 
