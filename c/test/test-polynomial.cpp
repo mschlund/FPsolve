@@ -2,7 +2,8 @@
 #include <vector>
 #include <map>
 
-#include "../src/matrix.h"
+#include "matrix.h"
+#include "matrix_free_semiring.h"
 #include "test-polynomial.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);

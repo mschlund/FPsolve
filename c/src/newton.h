@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "free-semiring.h"
 #include "matrix.h"
+#include "matrix_free_semiring.h"
 #include "polynomial.h"
 #include "var_degree_map.h"
 

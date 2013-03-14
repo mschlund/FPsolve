@@ -196,36 +196,3 @@ SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
   node_->Accept(evaluator);
   return evaluator.MoveResult();
 }
-
-template <typename SR>
-Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
-    const std::unordered_map<VarId, SR> &valuation) {
-
-  const std::vector<FreeSemiring> &elements = matrix.getElements();
-  std::vector<SR> result;
-
-  /* We have a single Evaluator that is used for all evaluations of the elements
-   * of the original matrix.  This way if different elements refer to the same
-   * FreeSemiring subexpression, we memoize the result and reuse it. */
-  Evaluator<SR> evaluator{valuation};
-
-  for(auto &elem : elements) {
-    result.emplace_back(elem.Eval(evaluator));
-  }
-
-  return Matrix<SR>(matrix.getRows(), std::move(result));
-}
-
-/* FIXME: Temporary wrapper for compatibility with the old implementation. */
-template <typename SR>
-SR FreeSemiring_eval(FreeSemiring elem,
-    std::unordered_map<VarId, SR> *valuation) {
-  return elem.Eval(*valuation);
-}
-
-/* FIXME: Temporary wrapper for compatibility with the old implementation. */
-template <typename SR>
-Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix,
-    std::unordered_map<VarId, SR> *valuation) {
-  return FreeSemiringMatrixEval(matrix, *valuation);
-}
