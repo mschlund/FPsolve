@@ -11,7 +11,7 @@ class VarId;
 
 template <typename Var = VarId,
           typename Value = Counter,
-          typename VecDivider = GcdDivider<Var, Value>,
+          typename VecDivider = DummyDivider,
           typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider>,
           typename LinSimpl = LinearSetSimplifier< Var, Value, VecDivider, VecSimpl> >
 class SemilinearSet;
