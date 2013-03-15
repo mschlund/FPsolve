@@ -49,7 +49,7 @@ public:
 	enum optype {Empty, Element, Addition, Multiplication, Star, Plus};
 	enum optype type;
 private:
-	VarPtr elem;
+	VarId elem;
 	std::shared_ptr<std::set<CommutativeRExp>> seta;
 	std::shared_ptr<std::multiset<CommutativeRExp>> setm;
 	std::shared_ptr<CommutativeRExp> rexp;
@@ -63,7 +63,7 @@ public:
 
 	CommutativeRExp();
 	CommutativeRExp(int zero);
-	CommutativeRExp(VarPtr var);
+	CommutativeRExp(VarId var);
 	CommutativeRExp(enum optype type, std::shared_ptr<std::set<CommutativeRExp>> seta);
 	CommutativeRExp(enum optype type, std::shared_ptr<std::multiset<CommutativeRExp>> setm);
 	CommutativeRExp(enum optype type, std::shared_ptr<CommutativeRExp> term);

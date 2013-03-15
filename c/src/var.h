@@ -71,9 +71,6 @@ struct hash<VarId> {
 }  /* namespace std */
 
 
-
-typedef VarId VarPtr;
-
 class Var {
   public:
 

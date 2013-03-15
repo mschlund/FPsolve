@@ -1,11 +1,11 @@
 #ifndef NEWTON_H
 #define NEWTON_H
 
-#include <cstdint>
 #include <algorithm>
+#include <cstdint>
 
-#include "free-semiring.h"
 #include "matrix.h"
+#include "matrix_free_semiring.h"
 #include "polynomial.h"
 #include "var_degree_map.h"
 
@@ -150,10 +150,10 @@ template <typename SR>
 class Newton {
   private:
     Matrix<Polynomial<SR> > compute_symbolic_delta(
-        const std::vector<VarPtr> &v,
-        const std::vector<VarPtr> &v_upd,
+        const std::vector<VarId> &v,
+        const std::vector<VarId> &v_upd,
         const std::vector<Polynomial<SR> > &F,
-        const std::vector<VarPtr> &poly_vars) {
+        const std::vector<VarId> &poly_vars) {
 
       auto num_variables = v.size();
       assert(num_variables == v_upd.size() &&
@@ -177,7 +177,7 @@ class Newton {
         Generator generator{current_max_degree, 2, poly_max_degree};
 
         while (generator.NextCombination()) {
-          std::vector<VarPtr> dx;
+          std::vector<VarId> dx;
           Polynomial<SR> prod{SR::one()};
 
           for (std::size_t index = 0; index < num_variables; ++index) {
@@ -188,7 +188,7 @@ class Newton {
           }
 
           // eval f.derivative(dx) at v
-          std::map<VarPtr, VarPtr> values;
+          std::map<VarId, VarId> values;
           for (std::size_t index = 0; index < v.size(); ++index) {
             // FIXME: GCC 4.7 is missing emplace
             // values.emplace(poly_vars[index], v[index]);
@@ -205,9 +205,9 @@ class Newton {
       return Matrix<Polynomial<SR> >(delta.size(), delta);
     }
 
-    std::vector<VarPtr> get_symbolic_vector(int size, std::string prefix) {
+    std::vector<VarId> get_symbolic_vector(int size, std::string prefix) {
       // define new symbolic vector [u1,u2,...,un] TODO: this is ugly...
-      std::vector<VarPtr> ret;
+      std::vector<VarId> ret;
       for (int i=0; i<size; i++)
       {
         std::stringstream ss;
@@ -219,18 +219,18 @@ class Newton {
 
   public:
     // calculate the next newton iterand
-    Matrix<SR> step(const std::vector<VarPtr> &poly_vars,
+    Matrix<SR> step(const std::vector<VarId> &poly_vars,
         const Matrix<FreeSemiring> &J_s,
-        std::unordered_map<VarPtr, SR> *valuation,
+        std::unordered_map<VarId, SR> *valuation,
         const Matrix<SR> &v, const Matrix<SR> &delta) {
       assert(poly_vars.size() == (unsigned int)v.getRows());
       int i = 0;
-      for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
+      for (std::vector<VarId>::const_iterator poly_var = poly_vars.begin();
            poly_var != poly_vars.end(); ++poly_var) {
         SR sr_elem = v.getElements().at(i++);
         valuation->erase(*poly_var); // clean the old variables from the map
         valuation->insert(valuation->begin(),
-            std::pair<VarPtr,SR>(*poly_var,sr_elem));
+            std::pair<VarId,SR>(*poly_var,sr_elem));
       }
       Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
 
@@ -242,11 +242,11 @@ class Newton {
     }
 
     // this is just a wrapper function at the moment
-    std::map<VarPtr,SR> solve_fixpoint(
-        const std::vector<std::pair<VarPtr, Polynomial<SR>>>& equations,
+    std::map<VarId,SR> solve_fixpoint(
+        const std::vector<std::pair<VarId, Polynomial<SR>>>& equations,
         int max_iter) {
       std::vector<Polynomial<SR>> F;
-      std::vector<VarPtr> poly_vars;
+      std::vector<VarId> poly_vars;
       for (auto equation_it = equations.begin(); equation_it != equations.end(); ++equation_it) {
         poly_vars.push_back(equation_it->first);
         F.push_back(equation_it->second);
@@ -254,13 +254,13 @@ class Newton {
       Matrix<SR> result = this->solve_fixpoint(F, poly_vars, max_iter);
 
       // repack everything and return it
-      std::map<VarPtr,SR> solution;
+      std::map<VarId,SR> solution;
       auto result_vec = result.getElements();
       auto var_it = poly_vars.begin();
       for (auto result_it = result_vec.begin(); result_it != result_vec.end();
            ++result_it) {
         solution.insert(solution.begin(),
-                        std::pair<VarPtr,SR>(*var_it, *result_it));
+                        std::pair<VarId,SR>(*var_it, *result_it));
         ++var_it;
       }
       return solution;
@@ -269,20 +269,20 @@ class Newton {
     // iterate until convergence
     // TODO: seems to be 2 iterations off compared to sage-impl..
     Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F,
-                              const std::vector<VarPtr>& poly_vars, int max_iter) {
+                              const std::vector<VarId>& poly_vars, int max_iter) {
       Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(F.size(),F);
       Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
-      auto valuation_tmp = new std::unordered_map<SR, VarPtr, SR>();
+      auto valuation_tmp = new std::unordered_map<SR, VarId, SR>();
       Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
 
-      auto valuation = new std::unordered_map<VarPtr, SR>();
+      auto valuation = new std::unordered_map<VarId, SR>();
       // insert null and one valuations into the map
       // valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::null(), SR::null()));
       // valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::one(), SR::one()));
       for (auto v_it = valuation_tmp->begin(); v_it != valuation_tmp->end();
            ++v_it) {
         valuation->insert(valuation->begin(),
-                          std::pair<VarPtr, SR>(v_it->second, v_it->first));
+                          std::pair<VarId, SR>(v_it->second, v_it->first));
       }
 
       // std::cout << "Jacobian (with vars): " << std::endl;
@@ -291,17 +291,17 @@ class Newton {
       Matrix<FreeSemiring> J_s = J_free.star();
 
       // define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
-      std::vector<VarPtr> u = this->get_symbolic_vector(poly_vars.size(), "u");
-      std::vector<VarPtr> u_upd =
+      std::vector<VarId> u = this->get_symbolic_vector(poly_vars.size(), "u");
+      std::vector<VarId> u_upd =
         this->get_symbolic_vector(poly_vars.size(), "u_upd");
 
       Matrix<SR> v = Matrix<SR>((int)F.size(),1); // v^0 = 0
 
       // d^0 = F(0)
-      std::map<VarPtr,SR> values;
-      for (std::vector<VarPtr>::const_iterator poly_var = poly_vars.begin();
+      std::map<VarId,SR> values;
+      for (std::vector<VarId>::const_iterator poly_var = poly_vars.begin();
            poly_var != poly_vars.end(); ++poly_var) {
-        values.insert(values.begin(), std::pair<VarPtr,SR>(*poly_var, SR::null()));
+        values.insert(values.begin(), std::pair<VarId,SR>(*poly_var, SR::null()));
       }
       Matrix<SR> delta_new = Polynomial<SR>::eval(F_mat, values);
 
@@ -320,9 +320,9 @@ class Newton {
           values.clear();
           for (unsigned int i = 0; i<u.size(); i++) {
             values.insert(values.begin(),
-                std::pair<VarPtr,SR>(u_upd.at(i), v_upd.getElements().at(i)));
+                std::pair<VarId,SR>(u_upd.at(i), v_upd.getElements().at(i)));
             values.insert(values.begin(),
-                std::pair<VarPtr,SR>(u.at(i), v.getElements().at(i)));
+                std::pair<VarId,SR>(u.at(i), v.getElements().at(i)));
           }
           delta_new = Polynomial<SR>::eval(delta,values);
         }

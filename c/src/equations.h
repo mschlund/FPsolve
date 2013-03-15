@@ -2,7 +2,7 @@
 
 
 template <typename A>
-using Equations = std::vector< std::pair< VarPtr, Polynomial<A> > >;
+using Equations = std::vector< std::pair< VarId, Polynomial<A> > >;
 
 template <typename A, typename F>
 auto MapEquations(const Equations<A> &equations, F fun)

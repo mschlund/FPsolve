@@ -9,14 +9,15 @@
 #include "debug_output.h"
 #include "equations.h"
 
+class VarId;
 
-template <typename Var = VarPtr,
+template <typename Var = VarId,
           typename Value = Counter,
           typename VecDivider = DummyDivider,
           typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider> >
 class PseudoLinearSet;
 
-typedef PseudoLinearSet<VarPtr, Counter, GcdDivider<VarPtr, Counter> >
+typedef PseudoLinearSet<VarId, Counter, GcdDivider<VarId, Counter> >
         DivPseudoLinearSet;
 
 /*

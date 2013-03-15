@@ -20,6 +20,7 @@
 class SemilinSetExpTest : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(SemilinSetExpTest);
+	CPPUNIT_TEST(testBasic);
 	CPPUNIT_TEST(testAddition);
 	CPPUNIT_TEST(testMultiplication);
 	CPPUNIT_TEST(testStar);
@@ -31,6 +32,7 @@ public:
 	void tearDown();
 
 protected:
+	void testBasic();
 	void testAddition();
 	void testMultiplication();
 	void testStar();

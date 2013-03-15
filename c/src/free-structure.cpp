@@ -1,3 +1,5 @@
+#include "hash.h"
+
 #include "free-structure.h"
 
 
@@ -149,7 +151,7 @@ NodePtr NodeFactory::NewStar(NodePtr node) {
   return node_ptr;
 }
 
-NodePtr NodeFactory::NewElement(VarPtr var) {
+NodePtr NodeFactory::NewElement(VarId var) {
   auto iter = elems_.find(var);
   if (iter != elems_.end()) {
     return iter->second;

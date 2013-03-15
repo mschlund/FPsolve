@@ -3,6 +3,7 @@
 
 #include <string>
 #include <memory>
+
 #include "semiring.h"
 
 class FloatSemiring : public Semiring<FloatSemiring>

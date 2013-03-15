@@ -21,7 +21,7 @@ typedef std::uint_fast32_t Counter;
  * Moreover we never modify a vector, so copy constructor, assignment operator,
  * etc. are really only copying a pointer (which is again very efficient).
  */
-template <typename Var = VarPtr,
+template <typename Var = VarId,
           typename Value = Counter,
           typename Divider = DummyDivider>
 class SparseVec {
@@ -218,7 +218,7 @@ class DummySimplifier {
 };
 
 
-template <typename Var = VarPtr,
+template <typename Var = VarId,
           typename Value = Counter,
           typename Divider = DummyDivider>
 class NaiveSimplifier {
@@ -249,7 +249,7 @@ class NaiveSimplifier {
     const std::set<SparseVecType> &rhs_set_;
 };
 
-template <typename Var = VarPtr,
+template <typename Var = VarId,
           typename Value = Counter,
           typename Divider = DummyDivider>
 class SparseVecSimplifier {

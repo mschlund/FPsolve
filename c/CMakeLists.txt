@@ -50,10 +50,11 @@ endif(DEFINED ENV{LPSOLVE_ROOT})
 # to optimizations getting rid of some of the code (and not pushing it through
 # the backend)...
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
-
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
-set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -g -Wall -pedantic-errors -O0")
+set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
 

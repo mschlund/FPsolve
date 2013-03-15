@@ -19,7 +19,7 @@ CommutativeRExp::CommutativeRExp(int zero)
 	this->type = Empty;
 }
 
-CommutativeRExp::CommutativeRExp(VarPtr var)
+CommutativeRExp::CommutativeRExp(VarId var)
 {
 	this->type = Element;
 	this->elem = var;
