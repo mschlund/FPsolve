@@ -5,11 +5,13 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 
+#include "float-semiring.h"
+#include "commutativeRExp.h"
+#include "polynomial.h"
+
 #include "parser.h"
 
-Parser::Parser()
-{
-}
+Parser::Parser() {}
 
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
@@ -19,12 +21,12 @@ namespace phx = boost::phoenix;
 // a new equation with the given new variable is created and returned
 struct star_impl
 {
-	template <typename T, typename SR> struct result { typedef std::pair<VarPtr, SR> type; }; // needed because this is how boost knows of what type the result will be
+	template <typename T, typename SR> struct result { typedef std::pair<VarId, SR> type; }; // needed because this is how boost knows of what type the result will be
 
 	template <typename SR>
-	std::pair<VarPtr, SR> operator()(VarPtr var, SR& s) const // var → 1 + var×s
+	std::pair<VarId, SR> operator()(VarId var, SR& s) const // var → 1 + var×s
 	{
-		return std::pair<VarPtr, SR>(var, (SR::one() + SR(var)*s));
+		return std::pair<VarId, SR>(var, (SR::one() + SR(var)*s));
 	}
 };
 const phx::function<star_impl> star_equation;
@@ -72,9 +74,9 @@ const phx::function<slset_var_impl> slset_var;
 struct var_impl
 {
 	template <typename T>
-	struct result { typedef VarPtr type; }; // this tells Boost the return type
+	struct result { typedef VarId type; }; // this tells Boost the return type
 
-	const VarPtr operator()(std::string& var) const
+	const VarId operator()(std::string& var) const
 	{
 		return Var::GetVarId(var);
 	}
@@ -84,10 +86,10 @@ const phx::function<var_impl> variable;
 struct new_var_impl
 {
 	template <typename T>
-	struct result { typedef VarPtr type; }; // this tells Boost the return type
+	struct result { typedef VarId type; }; // this tells Boost the return type
 
 	template <typename T>
-	const VarPtr operator()(T t) const // TODO: why has there to be an argument??? compiling fails without dummy argument... overloading???
+	const VarId operator()(T t) const // TODO: why has there to be an argument??? compiling fails without dummy argument... overloading???
 	{
 		return Var::GetVarId(); // return a fresh anonymous variable
 	}
@@ -151,9 +153,9 @@ struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space
 
 // use the given parser and return a list of equations of SR polynomials
 template <typename SR_Parser, typename SR>
-struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarPtr, Polynomial<SR>>>(), qi::space_type>
+struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId, Polynomial<SR>>>(), qi::space_type>
 {
-	std::vector<std::pair<VarPtr, Polynomial<SR>>> new_rules; // accumulate generated rules in this vector
+	std::vector<std::pair<VarId, Polynomial<SR>>> new_rules; // accumulate generated rules in this vector
 	equation_parser() : equation_parser::base_type(equations)
 	{
 		// the first rule combines the generated equations with the read equations and returns them in one vector
@@ -174,19 +176,19 @@ struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarPtr
 					[_val = _a]; // continue with the new variable
 		varidentifier = qi::as_string[lexeme['<' >> +(ascii::char_ - '>') >> '>']];
 	}
-	qi::rule<iterator_type, std::vector<std::pair<VarPtr, Polynomial<SR>>>(), qi::space_type> equations;
-	qi::rule<iterator_type, std::pair<VarPtr, Polynomial<SR>>(), qi::space_type> equation;
+	qi::rule<iterator_type, std::vector<std::pair<VarId, Polynomial<SR>>>(), qi::space_type> equations;
+	qi::rule<iterator_type, std::pair<VarId, Polynomial<SR>>(), qi::space_type> equation;
 	qi::rule<iterator_type, Polynomial<SR>(), qi::space_type> polynomial;
 	qi::rule<iterator_type, Polynomial<SR>(), qi::space_type> summand;
 	qi::rule<iterator_type, std::string()> varidentifier;
-	qi::rule<iterator_type, VarPtr(), qi::locals<VarPtr>, qi::space_type> kstar;
-	qi::rule<iterator_type, VarPtr()> var;
+	qi::rule<iterator_type, VarId(), qi::locals<VarId>, qi::space_type> kstar;
+	qi::rule<iterator_type, VarId()> var;
 	SR_Parser sr_elem;
 };
 
 // generic function for using the parser
 template <typename SR_Parser, typename SR> 
-std::vector<std::pair<VarPtr, Polynomial<SR>>> parser(std::string input)
+std::vector<std::pair<VarId, Polynomial<SR>>> parser(std::string input)
 {
 	typedef equation_parser<SR_Parser, SR> equation_parser;
 	equation_parser equation;
@@ -194,7 +196,7 @@ std::vector<std::pair<VarPtr, Polynomial<SR>>> parser(std::string input)
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
-	std::vector<std::pair<VarPtr, Polynomial<SR>>> result;
+	std::vector<std::pair<VarId, Polynomial<SR>>> result;
 	if(!(qi::phrase_parse(iter, end, equation, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
@@ -202,19 +204,19 @@ std::vector<std::pair<VarPtr, Polynomial<SR>>> parser(std::string input)
 }
 
 // wrapper function for float equations
-std::vector<std::pair<VarPtr, Polynomial<FloatSemiring>>> Parser::float_parser(std::string input)
+std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> Parser::float_parser(std::string input)
 {
 	return parser<float_elem_parser, FloatSemiring>(input);
 }
 
 // wrapper function for regular expression equations
-std::vector<std::pair<VarPtr, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
+std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
 {
 	return parser<rexp_elem_parser, CommutativeRExp>(input);
 }
 
 // wrapper function for explicit semilinear set equations
-std::vector<std::pair<VarPtr, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
+std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
 {
 	return parser<slset_elem_parser, SemilinSetExp>(input);
 }

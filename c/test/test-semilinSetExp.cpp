@@ -24,6 +24,12 @@ void SemilinSetExpTest::tearDown()
 	delete c;
 }
 
+void SemilinSetExpTest::testBasic()
+{
+  CPPUNIT_ASSERT(SemilinSetExp::null().IsZero());
+  CPPUNIT_ASSERT(SemilinSetExp::one().IsOne());
+}
+
 void SemilinSetExpTest::testTerms()
 {
 /*	(a+(b.c+c.b).(a.b + c + b.a)*) = a + (b.c).(ab + c)*

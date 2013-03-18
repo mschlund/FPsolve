@@ -27,6 +27,8 @@ class UniqueSet {
 
     const std::set<A>& GetSet() const { return set_; }
 
+    bool empty() const { return set_.empty(); }
+
     bool operator==(const UniqueSet &rhs) const {
       return set_ == rhs.set_;
     }

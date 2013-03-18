@@ -10,14 +10,14 @@
 class PrefixSemiring : public Semiring<PrefixSemiring>
 {
 private:
-	std::set<std::vector<VarPtr>> val;
+	std::set<std::vector<VarId>> val;
 	static unsigned int max_length;
-	static std::vector<VarPtr> concatenate(std::vector<VarPtr> l, std::vector<VarPtr> r);
+	static std::vector<VarId> concatenate(std::vector<VarId> l, std::vector<VarId> r);
 	static std::shared_ptr<PrefixSemiring> elem_null;
 	static std::shared_ptr<PrefixSemiring> elem_one;
 public:
 	PrefixSemiring();
-	PrefixSemiring(const std::vector<VarPtr>& val);
+	PrefixSemiring(const std::vector<VarId>& val);
 	virtual ~PrefixSemiring();
 	PrefixSemiring operator += (const PrefixSemiring& elem);
 	PrefixSemiring operator *= (const PrefixSemiring& elem);

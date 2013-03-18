@@ -1,10 +1,8 @@
 #pragma once
 
-#include <memory>
 #include <unordered_map>
 
 #include "var.h"
-#include "hash.h"
 
 
 class Node;
@@ -102,11 +100,11 @@ class Element : public Node {
 
     void Accept(NodeVisitor &visitor) const { visitor.Visit(*this); }
 
-    VarPtr GetVar() const { return var; }
+    VarId GetVar() const { return var; }
 
   private:
-    Element(VarPtr v) : var(v) {}
-    const VarPtr var;
+    Element(VarId v) : var(v) {}
+    const VarId var;
     friend class NodeFactory;
 };
 
@@ -143,7 +141,7 @@ class NodeFactory {
     virtual NodePtr NewAddition(NodePtr lhs, NodePtr rhs);
     virtual NodePtr NewMultiplication(NodePtr lhs, NodePtr rhs);
     virtual NodePtr NewStar(NodePtr node);
-    virtual NodePtr NewElement(VarPtr var);
+    virtual NodePtr NewElement(VarId var);
     virtual NodePtr GetEmpty() const { return empty_; }
     virtual NodePtr GetEpsilon() const { return epsilon_; }
 
@@ -154,7 +152,7 @@ class NodeFactory {
     std::unordered_map< std::pair<NodePtr, NodePtr>, NodePtr > additions_;
     std::unordered_map< std::pair<NodePtr, NodePtr>, NodePtr > multiplications_;
     std::unordered_map< NodePtr, NodePtr > stars_;
-    std::unordered_map< VarPtr, NodePtr > elems_;
+    std::unordered_map< VarId, NodePtr > elems_;
     NodePtr empty_;
     NodePtr epsilon_;
 };

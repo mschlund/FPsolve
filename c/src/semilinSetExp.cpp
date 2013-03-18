@@ -145,7 +145,7 @@ bool is_spanned_by(const VecSparse& v, const std::set<VecSparse>& gens) {
 
   //collect the variables of all the sparse vectors (v and gens) and number them
   unsigned int num_vars = 1; //we start counting at 1, since the 0-th row will be the values of the objective function
-  std::map<VarPtr, unsigned int> vars;
+  std::map<VarId, unsigned int> vars;
 
   for(auto &pair : v) {
     if(vars.find(pair.first) == vars.end()) {
@@ -373,14 +373,14 @@ LinSet operator*(const LinSet &ls1, const LinSet &ls2) {
 
 SemilinSetExp::SemilinSetExp() : val() { }
 
-SemilinSetExp::SemilinSetExp(VarPtr var) : val() {
+SemilinSetExp::SemilinSetExp(VarId var) : val() {
   VecSparse offset = { std::make_pair(var, 1) };
   LinSet ls{};
   ls.first = offset;
   val.insert(std::move(ls));
 }
 
-SemilinSetExp::SemilinSetExp(VarPtr var, unsigned int cnt) : val() {
+SemilinSetExp::SemilinSetExp(VarId var, unsigned int cnt) : val() {
   if(0 != cnt) {
     VecSparse offset = { std::make_pair(var, cnt) };
     LinSet ls{};

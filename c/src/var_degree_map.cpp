@@ -3,7 +3,7 @@
 
 #include "var_degree_map.h"
 
-Degree VarDegreeMap::GetDegreeOf(const VarPtr var) const {
+Degree VarDegreeMap::GetDegreeOf(const VarId var) const {
   auto var_iter = map_.find(var);
   if (var_iter != map_.end()) {
     return var_iter->second;
@@ -12,7 +12,7 @@ Degree VarDegreeMap::GetDegreeOf(const VarPtr var) const {
   }
 }
 
-void VarDegreeMap::Insert(const VarPtr var, Degree deg) {
+void VarDegreeMap::Insert(const VarId var, Degree deg) {
   if (deg == 0) {
     return;
   }
@@ -25,7 +25,7 @@ void VarDegreeMap::Insert(const VarPtr var, Degree deg) {
   assert(SanityCheck());
 }
 
-void VarDegreeMap::Erase(const VarPtr var, Degree deg) {
+void VarDegreeMap::Erase(const VarId var, Degree deg) {
   auto var_iter = map_.find(var);
   assert(var_iter != map_.end());
   if (deg >= var_iter->second) {

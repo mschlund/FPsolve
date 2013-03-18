@@ -1,7 +1,5 @@
 #pragma once
 
-#include <iostream>
-
 #include <boost/filesystem.hpp>
 
 /*
@@ -9,10 +7,10 @@
  * debugging (i.e., it's ok if it slows things down).
  */
 
-#define FILE boost::filesystem::path(__FILE__).filename().c_str()
+#define BETTER_FILE boost::filesystem::path(__FILE__).filename().c_str()
 
 #ifdef DEBUG_OUTPUT
-#define DEBUG_LOCATION "(" << FILE << ":" << __LINE__ << ")"
+#define DEBUG_LOCATION "(" << BETTER_FILE << ":" << __LINE__ << ")"
 #define DMSG(msg) std::cerr << DEBUG_LOCATION << "  " << msg << std::endl;
 #define DOUT(x) std::cerr << DEBUG_LOCATION << "  " << x;
 #else
