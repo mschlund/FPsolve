@@ -7,6 +7,9 @@
 #include "key_wrapper.h"
 #include "debug_output.h"
 
+
+#define DIVIDER_TEMPLATE_TYPE template <typename, typename> class
+
 typedef std::uint_fast32_t RefCounter;
 
 template <typename K, typename V>
@@ -127,10 +130,10 @@ struct hash< UniqueVMap<K, V> > {
 
 }  /* namespace std */
 
+template <typename K, typename V>
 class DummyDivider {
   public:
-    template <typename K, typename V>
-    void operator()(const UniqueVMap<K, V> &vec) const {}
+    inline void operator()(const UniqueVMap<K, V> &vec) const {}
 };
 
 
@@ -213,12 +216,12 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder& operator=(const UniqueVMapBuilder &f) = delete;
     UniqueVMapBuilder& operator=(UniqueVMapBuilder &&f) = delete;
 
-    template <typename Divider = DummyDivider>
+    template <DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>
     UniqueVMapPtr<K, V> TryLookup(std::unique_ptr< UniqueVMap<K, V>, Deleter > &&vmap) {
       assert(vmap);
       assert(vmap->ref_count_ == 0);
 
-      Divider divider;
+      Divider<K, V> divider;
       divider(*vmap);
 
       /* Note that the unique_ptr vmap still owns ptr. */
@@ -238,7 +241,7 @@ class UniqueVMapBuilder {
       return UniqueVMapPtr<K, V>{iter_inserted.first->second};
     }
 
-    template <typename Divider = DummyDivider>
+    template <DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>
     UniqueVMapPtr<K, V> New(const UniqueVMap<K, V> &vmap) {
       auto result = Allocate();
       /* Copy over the vector, since it might be modified in-place by
@@ -247,7 +250,7 @@ class UniqueVMapBuilder {
       return TryLookup<Divider>(std::move(result));
     }
 
-    template <typename Divider = DummyDivider>
+    template <DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>
     UniqueVMapPtr<K, V> New(std::vector< std::pair<K, V> > &&input_vector) {
       std::sort(input_vector.begin(), input_vector.end());
       auto result = Allocate();
@@ -264,7 +267,7 @@ class UniqueVMapBuilder {
       return TryLookup<Divider>(std::move(result));
     }
 
-    template <typename Divider = DummyDivider>
+    template <DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>
     UniqueVMapPtr<K, V> NewSum(const UniqueVMap<K, V> &lhs,
                                const UniqueVMap<K, V> &rhs) {
 
@@ -302,7 +305,7 @@ class UniqueVMapBuilder {
       return TryLookup<Divider>(std::move(result));
     }
 
-    template <typename Divider = DummyDivider>
+    template <DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>
     UniqueVMapPtr<K, V> NewDiff(const UniqueVMap<K, V> &lhs,
                                 const UniqueVMap<K, V> &rhs) {
 

@@ -7,32 +7,43 @@
 #include "sparse_vec.h"
 #include "unique_set.h"
 
+
+#define LIN_SIMPL_TEMPLATE_TYPE \
+  template < \
+    typename, typename, \
+    template <typename, typename> class, \
+    template <typename, typename, \
+              template <typename, typename> class> class \
+  > class
+
+
 class VarId;
 
 /* Default LinearSet includes the simplification with SparseVecSimplifier and
  * uses VarId and Counter for variable identifier and counter. */
 template <typename Var = VarId,
           typename Value = Counter,
-          typename VecDivider = DummyDivider,
-          typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider> >
+          DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier>
 class LinearSet;
 
 /* SimpleLinearSet does no simplification. */
-typedef LinearSet<VarId, Counter, DummyDivider, DummySimplifier> SimpleLinearSet;
+typedef LinearSet<VarId, Counter, DummyDivider, DummyVecSimplifier> SimpleLinearSet;
 
 /* DivLinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * over-approximates and does not give a precise answer anymore.  */
-typedef LinearSet<VarId, Counter, GcdDivider<VarId, Counter> > DivLinearSet;
+typedef LinearSet<VarId, Counter, GcdDivider> DivLinearSet;
 
 
 template <typename Var,
           typename Value,
-          typename VecDivider,
-          typename VecSimpl>
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
 class LinearSet {
   public:
     typedef SparseVec<Var, Value, DummyDivider> OffsetType;
     typedef SparseVec<Var, Value, VecDivider> GeneratorType;
+    typedef VecSimpl<Var, Value, VecDivider> VecSimplType;
 
     LinearSet() : offset_(), generators_(builder_.New({})) {}
 
@@ -54,7 +65,8 @@ class LinearSet {
     LinearSet(const OffsetType &o, std::set<GeneratorType> &&vs)
         : offset_(o), generators_(builder_.New(std::move(vs))) {}
 
-    template <typename OldVecDivider, typename OldVecSimpl>
+    template <DIVIDER_TEMPLATE_TYPE OldVecDivider,
+              VEC_SIMPL_TEMPLATE_TYPE OldVecSimpl>
     LinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &s) {
       std::set<GeneratorType> generators;
       for (const auto &g : s.GetGenerators()) {
@@ -95,7 +107,7 @@ class LinearSet {
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
                      inserter(result_generators, result_generators.begin()));
 
-      SimplifySet<VecSimpl>(result_generators);
+      SimplifySet<VecSimplType>(result_generators);
 
       return LinearSet{std::move(result_offset),
                        builder_.New(std::move(result_generators))};
@@ -143,14 +155,17 @@ struct hash< LinearSet<S, V> > {
 
 }  /* namespace std */
 
-template <typename Var, typename Value, typename VecDivider, typename VecSimpl>
+template <typename Var,
+          typename Value,
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
 UniqueSetBuilder< SparseVec<Var, Value, VecDivider> >
   LinearSet<Var, Value, VecDivider, VecSimpl>::builder_;
 
 template <typename Var,
           typename Value,
-          typename VecDivider,
-          typename VecSimpl>
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
 class LinearSetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
@@ -161,7 +176,7 @@ class LinearSetSimplifier {
 
     bool IsCovered(const LinearSetType &lset) {
       for (auto &rhs_lset : rhs_lsets_) {
-        VecSimpl vec_simpl{rhs_lset.GetGenerators()};
+        VecSimpl<Var, Value, VecDivider> vec_simpl{rhs_lset.GetGenerators()};
         auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
         bool covered = new_offset.IsValid() &&
           vec_simpl.IsCovered(new_offset);
@@ -185,11 +200,30 @@ class LinearSetSimplifier {
     const std::set<LinearSetType> &rhs_lsets_;
 };
 
+template <typename Var,
+          typename Value,
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
+class DummyLinSimplifier {
+  public:
+    typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
+
+    DummyLinSimplifier(const std::set<LinearSetType> &s) {}
+
+    static bool IsActive() { return false; }
+
+    bool IsCovered(const LinearSetType &lset) { return false; }
+};
+
+
 /*
  * This is the older idea of simplification where we only tested subset
  * inclusion of generators.
  */
-template <typename Var, typename Value, typename VecDivider, typename VecSimpl>
+template <typename Var,
+          typename Value,
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
 class LinearSubsetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
@@ -201,7 +235,7 @@ class LinearSubsetSimplifier {
     bool IsCovered(const LinearSetType &lset) {
       for (auto &rhs_lset : rhs_lsets_) {
         auto new_offset = lset.GetOffset() - rhs_lset.GetOffset();
-        VecSimpl vec_simpl{rhs_lset.GetGenerators()};
+        VecSimpl<Var, Value, VecDivider> vec_simpl{rhs_lset.GetGenerators()};
         if (new_offset.IsValid() &&
             vec_simpl.IsCovered(new_offset) &&
             std::includes(rhs_lset.GetGenerators().begin(),

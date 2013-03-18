@@ -275,8 +275,8 @@ int main(int argc, char* argv[])
                 auto pseudo_equations =
                   SemilinearToPseudoLinearEquations<
                     DummyDivider,
-                    SparseVecSimplifier<VarId, Counter, DummyDivider>
-                  >(equations);
+                    // DummySimplifier
+                    SparseVecSimplifier>(equations);
 		auto pseudo_result = apply_newton(pseudo_equations,
                                                   vm.count("scc"),
                                                   vm.count("iterations"),

@@ -9,11 +9,12 @@
 
 class VarId;
 
-template <typename Var = VarId,
-          typename Value = Counter,
-          typename VecDivider = DummyDivider,
-          typename VecSimpl = SparseVecSimplifier<Var, Value, VecDivider>,
-          typename LinSimpl = LinearSetSimplifier< Var, Value, VecDivider, VecSimpl> >
+template <
+  typename Var = VarId,
+  typename Value = Counter,
+  DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
+  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier,
+  LIN_SIMPL_TEMPLATE_TYPE LinSimpl = LinearSetSimplifier>
 class SemilinearSet;
 
 /* Compatibility with the old implementation. */
@@ -21,25 +22,26 @@ typedef SemilinearSet<> SemilinSetExp;
 
 /* SimpleLinearSet performs no simplification at all. */
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      DummySimplifier, DummySimplifier
+                      DummyVecSimplifier, DummyLinSimplifier
                       > SimpleSemilinearSet;
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * is an over-approximation, the result might no longer be precise. */
-typedef SemilinearSet< VarId, Counter,
-                       GcdDivider<VarId, Counter> > DivSemilinearSet;
+typedef SemilinearSet< VarId, Counter, GcdDivider> DivSemilinearSet;
+
 
 template <typename Var,
           typename Value,
-          typename VecDivider,
-          typename VecSimpl,
-          typename LinSimpl>
+          DIVIDER_TEMPLATE_TYPE VecDivider,
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl,
+          LIN_SIMPL_TEMPLATE_TYPE LinSimpl>
 class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
                                                      VecSimpl, LinSimpl> > {
   public:
     typedef SparseVec<Var, Value, DummyDivider> OffsetType;
     typedef SparseVec<Var, Value, VecDivider> GeneratorType;
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
+    typedef LinSimpl<Var, Value, VecDivider, VecSimpl> LinSimplType;
 
     SemilinearSet() = default;
     SemilinearSet(std::initializer_list<LinearSetType> list)
@@ -54,7 +56,9 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       : set_({ LinearSetType{ OffsetType{v, c} } }) {}
     SemilinearSet(const Var &v) : SemilinearSet(v, 1) {}
 
-    template <typename OldVecDivider, typename OldVecSimpl, typename OldLinSimpl>
+    template <DIVIDER_TEMPLATE_TYPE OldVecDivider,
+              VEC_SIMPL_TEMPLATE_TYPE OldVecSimpl,
+              LIN_SIMPL_TEMPLATE_TYPE OldLinSimpl>
     SemilinearSet(const SemilinearSet<Var, Value, OldVecDivider,
                                       OldVecSimpl, OldLinSimpl> &slset) {
       for (const auto &lset : slset) {
@@ -90,7 +94,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
 
         set_ = std::move(result);
 
-        SimplifySet<LinSimpl>(set_);
+        SimplifySet<LinSimplType>(set_);
       }
 
       return *this;
@@ -109,7 +113,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
           }
         }
         set_ = std::move(result);
-        SimplifySet<LinSimpl>(set_);
+        SimplifySet<LinSimplType>(set_);
       }
 
       return *this;
