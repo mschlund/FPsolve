@@ -11,6 +11,7 @@
 #include "hash.h"
 #include "unique_vector_map.h"
 #include "var.h"
+#include "string_util.h"
 
 
 #define VEC_SIMPL_TEMPLATE_TYPE \
@@ -112,7 +113,7 @@ class SparseVec {
        * divider.  This is probably both unnecessary and would probably make the
        * simplification (SparseVecSimplifier) less likely to optimize away
        * unnecessary vector. */
-      return builder_.NewDiff(*vmap_, *rhs.vmap_);
+      return builder_.template NewDiff<DummyDivider>(*vmap_, *rhs.vmap_);
     }
 
     bool IsZero() const {
@@ -163,8 +164,14 @@ class SparseVec {
 
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
       assert(svector.Sanity());
-      out << *svector.vmap_;
+      out << "[";
+      out << ToStringSorted(*svector.vmap_);
+      out << "]";
       return out;
+    }
+
+    void RawString(std::ostream &out) const {
+      out << *vmap_;
     }
 
     std::size_t Hash() const {
@@ -172,12 +179,13 @@ class SparseVec {
       return h(vmap_);
     }
 
-  private:
-    SparseVec(UniqueVMapPtr_ v) : vmap_(v) {}
-
     bool Equal(const SparseVec &rhs) const {
       return *vmap_ == *rhs.vmap_;
     }
+
+
+  private:
+    SparseVec(UniqueVMapPtr_ v) : vmap_(v) {}
 
     bool Sanity() const {
       if (vmap_ == nullptr) {

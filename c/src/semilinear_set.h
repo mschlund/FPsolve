@@ -6,6 +6,7 @@
 #include "linear_set.h"
 #include "semiring.h"
 #include "sparse_vec.h"
+#include "string_util.h"
 
 class VarId;
 
@@ -170,11 +171,9 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
 
     std::string string() const {
       std::stringstream sout;
-      sout << "{ " << std::endl;
-      for (const auto &ls : set_) {
-        sout << ls << std::endl;
-      }
-      sout << "}" << std::endl;
+      sout << "{ " << std::endl
+           << ToStringSorted(set_, "\n")
+           << "}" << std::endl;
       return std::move(sout.str());
     }
 

@@ -8,6 +8,7 @@
 
 #include "debug_output.h"
 #include "equations.h"
+#include "string_util.h"
 
 class VarId;
 
@@ -133,13 +134,9 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     std::string string() const {
       std::stringstream ss;
       ss << "{";
-      for (auto &vec : offsets_) {
-        ss << " " << vec;
-      }
-      ss << " :";
-      for (auto &vec : generators_) {
-        ss << " " << vec;
-      }
+      ss << ToStringSorted(offsets_, " ");
+      ss << " : ";
+      ss << ToStringSorted(generators_, " ");
       ss << " }";
       return ss.str();
     }

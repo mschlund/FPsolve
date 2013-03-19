@@ -6,6 +6,7 @@
 #include "semilinear_util.h"
 #include "sparse_vec.h"
 #include "unique_set.h"
+#include "string_util.h"
 
 
 #define LIN_SIMPL_TEMPLATE_TYPE \
@@ -121,7 +122,9 @@ class LinearSet {
     }
 
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
-      out << "<" << lset.offset_ << " : " << *lset.generators_ << ">";
+      out << "<" << lset.offset_
+          << " : "
+          << ToStringSorted(lset.generators_->GetSet()) << ">";
       return out;
     }
 
