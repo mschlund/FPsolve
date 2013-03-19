@@ -20,7 +20,7 @@ class PseudoLinearSet;
 
 typedef PseudoLinearSet<VarId, Counter, GcdDivider> DivPseudoLinearSet;
 
-static const std::uint_fast16_t simpl_freq = 1;
+static const std::uint_fast16_t simpl_freq = 0;
 
 /*
  * An abstraction of semilinear sets that is quite similar to a linear set, but
