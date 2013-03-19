@@ -15,12 +15,22 @@ class VarId;
 template <typename Var = VarId,
           typename Value = Counter,
           DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier>
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier2>
 class PseudoLinearSet;
 
 typedef PseudoLinearSet<VarId, Counter, GcdDivider> DivPseudoLinearSet;
 
+namespace {
+
 static const std::uint_fast16_t simpl_freq = 0;
+
+template <typename A>
+using SetType = VecSet<A>;
+
+}  /* Anonymous namespace */
+
+
+
 
 /*
  * An abstraction of semilinear sets that is quite similar to a linear set, but
@@ -53,10 +63,12 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     template <DIVIDER_TEMPLATE_TYPE OldVecDivider,
               VEC_SIMPL_TEMPLATE_TYPE OldVecSimpl>
     PseudoLinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &lset) {
-      offsets_.insert(OffsetType{lset.GetOffset()});
+      offsets_.emplace_back(OffsetType{lset.GetOffset()});
+      std::vector<GeneratorType> gens;
       for (const auto &g : lset.GetGenerators()) {
-        generators_.insert(GeneratorType{g});
+        gens.emplace_back(GeneratorType{g});
       }
+      generators_ = VecSet<GeneratorType>{std::move(gens)};
       Simplify();
     }
 
@@ -73,59 +85,55 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
-      std::set<OffsetType> result_offsets;
-      std::set<GeneratorType> result_generators;
+      SetType<OffsetType> result_offsets;
+      SetType<GeneratorType> result_generators;
 
       std::set_union(offsets_.begin(), offsets_.end(),
                      rhs.offsets_.begin(), rhs.offsets_.end(),
-                     std::inserter(result_offsets, result_offsets.begin()));
+                     std::back_inserter(result_offsets));
 
       std::set_union(generators_.begin(), generators_.end(),
                      rhs.generators_.begin(), rhs.generators_.end(),
-                     std::inserter(result_generators, result_generators.begin()));
+                     std::back_inserter(result_generators));
 
       offsets_ = std::move(result_offsets);
       generators_ = std::move(result_generators);
 
       without_simpl = std::max(without_simpl, rhs.without_simpl) + 1;
       Simplify();
-
       return *this;
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
-      std::set<OffsetType> result_offsets;
-      std::set<GeneratorType> result_generators;
+      std::vector<OffsetType> result_offsets_vec;
+      SetType<GeneratorType> result_generators;
 
       for (auto &vec_rhs : rhs.offsets_) {
         for (auto &vec_lhs : offsets_) {
-          result_offsets.insert(vec_lhs + vec_rhs);
+          DMSG("offset iteration");
+          result_offsets_vec.emplace_back(vec_lhs + vec_rhs);
         }
       }
 
       std::set_union(generators_.begin(), generators_.end(),
                      rhs.generators_.begin(), rhs.generators_.end(),
-                     std::inserter(result_generators, result_generators.begin()));
+                     std::back_inserter(result_generators));
 
-      offsets_ = std::move(result_offsets);
+      offsets_ = VecSet<OffsetType>{std::move(result_offsets_vec)};
       generators_ = std::move(result_generators);
 
       without_simpl = std::max(without_simpl, rhs.without_simpl) + 1;
       Simplify();
-
       return *this;
     }
 
     PseudoLinearSet star() const {
+      DMSG("-> star");
+      SetType<OffsetType> result_offsets = { OffsetType{} };
 
-      std::set<OffsetType> result_offsets = { OffsetType{} };
-      std::set<GeneratorType> result_generators = generators_;
+      auto result_generators = VecSetUnion(generators_, offsets_);
 
-      for (auto &offset : offsets_) {
-        /* Convert from OffsetType to GeneratorType. */
-        result_generators.insert(GeneratorType{offset});
-      }
-
+      DMSG("<- star");
       return PseudoLinearSet{ std::move(result_offsets),
                               std::move(result_generators) };
     }
@@ -151,7 +159,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     static const bool is_commutative = true;
 
   private:
-    PseudoLinearSet(std::set<OffsetType> &&os, std::set<GeneratorType> &&gs)
+    PseudoLinearSet(SetType<OffsetType> &&os, SetType<GeneratorType> &&gs)
         : offsets_(os), generators_(gs) {}
 
     void Simplify() {
@@ -179,31 +187,49 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
       /* Simplify offsets.  This uses the same trick as SimplifySet -- erase in
        * std::set does not invalidate any iterators (except for the removed). */
       VecSimpl<Var, Value, VecDivider> simplifier{generators_};
+
       for (auto offset1_iter = offsets_.begin(); offset1_iter != offsets_.end(); ) {
         auto offset1 = *offset1_iter;
         /* Erase automatically advances the iterator to the next element. */
-        offset1_iter = offsets_.erase(offset1_iter);
+        offset1_iter = offsets_.MarkErased(offset1_iter);
+        DMSG("offset1: " << offset1);
 
         bool necessary = true;
         for (auto &offset2 : offsets_) {
+          DMSG("offset2: " << offset2);
           auto new_offset = offset1 - offset2;
-          if (new_offset.IsValid() &&
-              simplifier.IsCovered(new_offset)) {
+          if (new_offset.IsValid() && simplifier.IsCovered(new_offset)) {
             necessary = false;
             break;
           }
         }
 
         if (necessary) {
-          offsets_.insert(std::move(offset1));
+          offsets_.AbortErase();
+          DMSG("AbortErase: " << offset1);
         } else {
-          DMSG("Removed offset: " << offset1);
+          offsets_.CommitErase();
+          DMSG("CommitErase: " << offset1);
         }
       }
+
+#ifdef DEBUG_OUTPUT
+      DMSG("Offsets: {");
+      for (auto &x : offsets_) {
+        DMSG(x);
+      }
+      DMSG("}");
+      DMSG("Generators: {");
+      for (auto &x : generators_) {
+        DMSG(x);
+      }
+      DMSG("}");
+#endif
+
     }
 
-    std::set<OffsetType> offsets_;
-    std::set<GeneratorType> generators_;
+    SetType<OffsetType> offsets_;
+    SetType<GeneratorType> generators_;
 
     std::uint_fast16_t without_simpl = 0;
 

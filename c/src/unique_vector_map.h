@@ -320,8 +320,8 @@ class UniqueVMapBuilder {
       const auto lhs_iter_end = lhs.vector_.end();
       const auto rhs_iter_end = rhs.vector_.end();
 
-      /* We must go through all the elements of rhs (but not neccesarily
-       * lhs). */
+      /* We must go through all the elements of rhs (but not neccesarily of
+       * lhs, i.e., lhs might be "larger"). */
       while (rhs_iter != rhs_iter_end) {
 
         /* If there's nothing left in lhs, or there is unmatched variable in
@@ -356,7 +356,9 @@ class UniqueVMapBuilder {
         ++rhs_iter;
       }
 
-      /* If we didn't go through the whole lhs, add what remained. */
+      /* If we didn't go through the whole lhs, copy whatever remained. */
+      // FIXME: should probably be:
+      // std::copy(lhs_iter, lhs_iter_end, std::back_inserter(result->vector_));
       for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
         result->vector_.emplace_back(*lhs_iter);
       }
