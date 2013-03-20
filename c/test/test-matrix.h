@@ -3,9 +3,9 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "free-semiring.h"
-#include "tropical-semiring.h"
-#include "matrix.h"
+#include "../src/semirings/free-semiring.h"
+#include "../src/semirings/tropical-semiring.h"
+#include "../src/datastructs/matrix.h"
 
 
 class MatrixTest : public CppUnit::TestFixture

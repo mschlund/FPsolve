@@ -2,7 +2,7 @@
 #define TEST_COMMUTATIVEREXP_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/commutativeRExp.h"
+#include "../src/semirings/commutativeRExp.h"
 
 class CommutativeRExpTest : public CppUnit::TestFixture
 {

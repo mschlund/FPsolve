@@ -3,12 +3,12 @@
 #include <string>
 #include <unordered_map>
 
-#include "hash.h"
-#include "matrix.h"
-#include "semiring.h"
-#include "var.h"
+#include "../datastructs/hash.h"
+#include "../datastructs/matrix.h"
+#include "../datastructs/var.h"
+#include "../datastructs/free-structure.h"
 
-#include "free-structure.h"
+#include "semiring.h"
 
 template <typename SR>
 class Evaluator;

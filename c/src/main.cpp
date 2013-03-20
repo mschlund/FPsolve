@@ -7,20 +7,24 @@
 #include <boost/graph/strong_components.hpp>
 #include <boost/graph/graphviz.hpp>
 #include <boost/program_options.hpp>
-#include "float-semiring.h"
-#include "matrix.h"
-#include "polynomial.h"
-#include "newton.h"
-#include "commutativeRExp.h"
-#include "parser.h"
-#include "pseudo_linear_set.h"
-#include "non_commutative_polynomial.h"
+
+#include "datastructs/matrix.h"
+
+#include "polynomials/polynomial.h"
+#include "polynomials/non_commutative_polynomial.h"
+
+#include "semirings/commutativeRExp.h"
+#include "semirings/float-semiring.h"
+#include "semirings/pseudo_linear_set.h"
 
 #ifdef OLD_SEMILINEAR_SET
-#include "semilinSetExp.h"
+#include "semirings/semilinSetExp.h"
 #else
-#include "semilinear_set.h"
+#include "semirings/semilinear_set.h"
 #endif
+
+#include "newton.h"
+#include "parser.h"
 
 
 template <typename SR>

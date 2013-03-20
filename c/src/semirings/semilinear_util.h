@@ -1,7 +1,7 @@
 #pragma once
 
-#include "debug_output.h"
-#include "vec_set.h"
+#include "../debug_output.h"
+#include "../datastructs/vec_set.h"
 
 template <typename Simpl, typename Elem>
 void SimplifySet(std::set<Elem> &to_simpl) {

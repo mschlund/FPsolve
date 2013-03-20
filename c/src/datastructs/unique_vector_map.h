@@ -5,7 +5,7 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "key_wrapper.h"
-#include "debug_output.h"
+#include "../debug_output.h"
 
 
 #define DIVIDER_TEMPLATE_TYPE template <typename, typename> class

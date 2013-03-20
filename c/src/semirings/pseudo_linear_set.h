@@ -3,12 +3,15 @@
 #include <set>
 #include <sstream>
 
-#include "semilinear_util.h"
-#include "sparse_vec.h"
+#include "../datastructs/sparse_vec.h"
 
-#include "debug_output.h"
-#include "equations.h"
-#include "string_util.h"
+#include "../debug_output.h"
+#include "../datastructs/equations.h"
+#include "../string_util.h"
+
+#include "semilinear_util.h"
+#include "linear_set.h"
+#include "semilinear_set.h"
 
 class VarId;
 

@@ -5,7 +5,7 @@
 #include <vector>
 #include <set>
 #include "semiring.h"
-#include "var.h"
+#include "../datastructs/var.h"
 
 class PrefixSemiring : public Semiring<PrefixSemiring, Commutativity::NonCommutative, Idempotence::Idempotent>
 {

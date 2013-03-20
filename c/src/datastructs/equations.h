@@ -1,5 +1,9 @@
 #pragma once
 
+#include <vector>
+
+#include "../polynomials/polynomial.h"
+#include "../semirings/semilinear_set.h"
 
 template <typename A>
 using Equations = std::vector< std::pair< VarId, Polynomial<A> > >;

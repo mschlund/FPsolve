@@ -5,8 +5,8 @@
 
 #include "linear_set.h"
 #include "semiring.h"
-#include "sparse_vec.h"
-#include "string_util.h"
+#include "../datastructs/sparse_vec.h"
+#include "../string_util.h"
 
 class VarId;
 

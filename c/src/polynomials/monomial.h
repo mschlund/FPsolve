@@ -2,8 +2,8 @@
 
 #include <iosfwd>
 
-#include "free-semiring.h"
-#include "var_degree_map.h"
+#include "../semirings/free-semiring.h"
+#include "../datastructs/var_degree_map.h"
 
 
 template <typename SR>

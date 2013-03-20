@@ -9,7 +9,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "tropical-semiring.h"
+#include "../src/semirings/tropical-semiring.h"
 
 
 class TropicalSemiringTest : public CppUnit::TestFixture

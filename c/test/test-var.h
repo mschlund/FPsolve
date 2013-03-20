@@ -2,7 +2,7 @@
 #define TEST_VAR_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/var.h"
+#include "../src/datastructs/var.h"
 
 class VarTest : public CppUnit::TestFixture
 {

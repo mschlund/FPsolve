@@ -1,7 +1,7 @@
 #pragma once
 
-#include "free-semiring.h"
-#include "matrix.h"
+#include "semirings/free-semiring.h"
+#include "datastructs/matrix.h"
 
 template <typename SR>
 Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,

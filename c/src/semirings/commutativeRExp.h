@@ -10,7 +10,7 @@
 #include <set>
 #include <string>
 #include <memory>
-#include "var.h"
+#include "../datastructs/var.h"
 #include "semiring.h"
 
 /* commutative RegExp (commutative, associative, idempotent (CAI) addition and CA multiplication)

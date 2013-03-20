@@ -9,13 +9,14 @@
 #include <string>
 #include <unordered_map>
 
-#include "free-semiring.h"
-#include "matrix.h"
-#include "monomial.h"
-#include "semiring.h"
-#include "var.h"
-#include "var_degree_map.h"
+#include "../semirings/semiring.h"
+#include "../semirings/free-semiring.h"
 
+#include "../datastructs/matrix.h"
+#include "../datastructs/var.h"
+#include "../datastructs/var_degree_map.h"
+
+#include "monomial.h"
 
 /* FIXME: Polynomials are no semiring in our definition (not starable). */
 /* FIXME: Idempotence should be inherited from the SR ... is that possible?*/

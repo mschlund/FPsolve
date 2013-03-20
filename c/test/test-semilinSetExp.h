@@ -11,9 +11,9 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #ifdef OLD_SEMILINEAR_SET
-#include "semilinSetExp.h"
+#include "../src/semirings/semilinSetExp.h"
 #else
-#include "semilinear_set.h"
+#include "../src/semirings/semilinear_set.h"
 #endif
 
 

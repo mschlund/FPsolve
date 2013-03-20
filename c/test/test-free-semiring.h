@@ -3,7 +3,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "free-semiring.h"
+#include "../src/semirings/free-semiring.h"
 
 class FreeSemiringTest : public CppUnit::TestFixture
 {

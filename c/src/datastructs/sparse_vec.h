@@ -11,7 +11,8 @@
 #include "hash.h"
 #include "unique_vector_map.h"
 #include "var.h"
-#include "string_util.h"
+#include "vec_set.h"
+#include "../string_util.h"
 
 
 #define VEC_SIMPL_TEMPLATE_TYPE \

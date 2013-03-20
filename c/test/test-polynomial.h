@@ -3,8 +3,10 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "free-semiring.h"
-#include "polynomial.h"
+#include "../src/semirings/free-semiring.h"
+#include "../src/polynomials/polynomial.h"
+#include "../src/datastructs/matrix.h"
+#include "../src/matrix_free_semiring.h"
 
 class PolynomialTest : public CppUnit::TestFixture
 {

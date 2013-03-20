@@ -5,10 +5,6 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/std_pair.hpp>
 
-#include "float-semiring.h"
-#include "commutativeRExp.h"
-#include "polynomial.h"
-
 #include "parser.h"
 
 Parser::Parser() {}

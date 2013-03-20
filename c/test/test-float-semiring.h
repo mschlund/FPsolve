@@ -2,7 +2,7 @@
 #define TEST_FLOAT_SEMIRING_H
 
 #include <cppunit/extensions/HelperMacros.h>
-#include "../src/float-semiring.h"
+#include "../src/semirings/float-semiring.h"
 
 class FloatSemiringTest : public CppUnit::TestFixture
 {

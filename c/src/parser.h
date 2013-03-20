@@ -3,10 +3,14 @@
 
 #include <string>
 
+#include "semirings/float-semiring.h"
+#include "semirings/commutativeRExp.h"
+#include "polynomials/polynomial.h"
+
 #ifdef OLD_SEMILINEAR_SET
-#include "semilinSetExp.h"
+#include "semirings/semilinSetExp.h"
 #else
-#include "semilinear_set.h"
+#include "semirings/semilinear_set.h"
 #endif
 
 template <typename SR>

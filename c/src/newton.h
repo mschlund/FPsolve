@@ -4,10 +4,13 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "matrix.h"
+#include "datastructs/matrix.h"
+#include "datastructs/var_degree_map.h"
+#include "polynomials/polynomial.h"
+
 #include "matrix_free_semiring.h"
-#include "polynomial.h"
-#include "var_degree_map.h"
+
+
 
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum

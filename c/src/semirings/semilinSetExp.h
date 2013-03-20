@@ -12,7 +12,7 @@
 #include <memory>
 #include <set>
 
-#include "var.h"
+#include "../datastructs/var.h"
 #include "semiring.h"
 
 /* TODO:
@@ -50,7 +50,7 @@ typedef std::map<VarId, unsigned int> VecSparse;
 typedef std::pair< VecSparse, std::set<VecSparse> > LinSet;
 
 
-class SemilinSetExp : public Semiring<SemilinSetExp> {
+class SemilinSetExp : public Semiring<SemilinSetExp, Commutativity::Commutative, Idempotence::Idempotent> {
   private:
     std::set<LinSet> val;
     /* null = {} (empty set) */
