@@ -32,6 +32,12 @@ FloatSemiring FloatSemiring::operator*=(const FloatSemiring& elem)
 	return *this;
 }
 
+FloatSemiring FloatSemiring::operator*=(const std::uint_fast16_t& cnt)
+{
+  this->val *= cnt;
+  return *this;
+}
+
 bool FloatSemiring::operator==(const FloatSemiring& elem) const
 {
 	// comparing floating point has to be done like this. (see Knuth TAoCP Vol.2 p. 233)

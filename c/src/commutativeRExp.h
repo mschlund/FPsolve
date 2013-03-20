@@ -71,6 +71,7 @@ public:
 	virtual ~CommutativeRExp();
 	CommutativeRExp operator += (const CommutativeRExp& term);
 	CommutativeRExp operator *= (const CommutativeRExp& term);
+  CommutativeRExp operator *= (const std::uint_fast16_t &cnt);
 	bool operator < (const CommutativeRExp& term) const;
 	bool operator == (const CommutativeRExp& term) const;
 	CommutativeRExp star () const;

@@ -29,6 +29,7 @@ public:
   virtual ~TropicalSemiring();
   TropicalSemiring operator += (const TropicalSemiring& elem); // minimum
   TropicalSemiring operator *= (const TropicalSemiring& elem); // plus
+  TropicalSemiring operator *= (const std::uint_fast16_t& cnt); // Tropical SR is idempotent
   bool operator == (const TropicalSemiring& elem) const;
   TropicalSemiring star () const; // this is always the one-element (=0)
   static TropicalSemiring null(); // infinity

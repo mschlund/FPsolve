@@ -17,12 +17,19 @@ public:
 		result *= rhs;
 		return result;
 	}
+  friend SR operator * (const SR& lhs, const std::uint_fast16_t& rhs)
+  {
+    SR result = lhs;
+    result *= rhs;
+    return result;
+  }
 	friend SR operator + (const SR& lhs, const SR& rhs)
 	{
 		SR result = lhs;
 		result += rhs;
 		return result;
 	}
+
 	virtual SR star () const = 0;
 	virtual bool operator ==(const SR& elem) const = 0;
 	static bool is_idempotent;
@@ -42,6 +49,8 @@ public:
 
 template <typename SR>
 SR operator *= (SR& lhs, const SR& rhs);
+template <typename SR>
+SR operator *= (SR& lhs, const std::uint_fast16_t& rhs);
 template <typename SR>
 SR operator += (SR& lhs, const SR& rhs);
 

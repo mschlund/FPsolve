@@ -14,6 +14,7 @@
 #include "commutativeRExp.h"
 #include "parser.h"
 #include "pseudo_linear_set.h"
+#include "non_commutative_polynomial.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semilinSetExp.h"

@@ -18,6 +18,7 @@ public:
 	virtual ~FloatSemiring();
 	FloatSemiring operator += (const FloatSemiring& elem);
 	FloatSemiring operator *= (const FloatSemiring& elem);
+	FloatSemiring operator *= (const std::uint_fast16_t& cnt);
 	bool operator == (const FloatSemiring& elem) const;
 	FloatSemiring star () const;
 	static FloatSemiring null();

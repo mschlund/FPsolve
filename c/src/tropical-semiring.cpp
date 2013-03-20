@@ -48,6 +48,13 @@ TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem)
   return *this;
 }
 
+TropicalSemiring TropicalSemiring::operator*=(const std::uint_fast16_t& cnt) {
+  if(cnt==0)
+    *this = null();
+  return *this;
+}
+
+
 bool TropicalSemiring::operator==(const TropicalSemiring& elem) const
 {
   return (this->val == elem.val);

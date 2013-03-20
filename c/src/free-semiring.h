@@ -54,6 +54,13 @@ class FreeSemiring : public Semiring<FreeSemiring> {
       return *this;
     }
 
+    FreeSemiring& operator*=(const std::uint_fast16_t &cnt) {
+      for (std::uint_fast16_t i = 1; i < cnt; ++i) {
+        *this += *this;
+      }
+      return *this;
+    }
+
     bool operator==(const FreeSemiring &x) const {
       return node_ == x.node_;
     }

@@ -115,6 +115,14 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       return *this;
     }
 
+    // for any n in Nat: n*S = S if n>0 and 0 otherwise (the counting-SR is idempotent)
+    SemilinearSet& operator*=(const std::uint_fast16_t &rhs) {
+      if(rhs == 0){
+        *this = null();
+      }
+      return *this;
+    }
+
     SemilinearSet star(const LinearSetType &lset) const {
 
       /* If we do not have any generators, i.e.,

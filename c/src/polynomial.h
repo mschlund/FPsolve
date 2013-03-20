@@ -228,10 +228,8 @@ class Polynomial : public Semiring< Polynomial<SR> > {
         /* Take the derivative of every monomial and add it to the result. */
         auto count_derivative = monomial_coeff.first.derivative(var);
         auto iter = tmp_monomials.find(count_derivative.second);
-        SR tmp_coeff = SR::null();
-        for (Degree i = 0; i < count_derivative.first; ++i) {
-          tmp_coeff += monomial_coeff.second;
-        }
+        SR tmp_coeff = monomial_coeff.second;
+        tmp_coeff *= count_derivative.first;
         if (iter == tmp_monomials.end()) {
           tmp_variables.Merge(count_derivative.second.variables_);
           InsertMonomial(tmp_monomials, count_derivative.second,
@@ -453,7 +451,7 @@ class Polynomial : public Semiring< Polynomial<SR> > {
     }
 };
 
-template <typename SR> bool Polynomial<SR>::is_commutative = false;
+template <typename SR> bool Polynomial<SR>::is_commutative = false; // FIXME: shouldn't this be true?
 template <typename SR> bool Polynomial<SR>::is_idempotent = false;
 
 template <typename SR>

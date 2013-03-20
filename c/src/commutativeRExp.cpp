@@ -345,6 +345,13 @@ CommutativeRExp CommutativeRExp::operator *=(const CommutativeRExp& expr)
 	return *this;
 }
 
+CommutativeRExp CommutativeRExp::operator *=(const std::uint_fast16_t &cnt) {
+  if(cnt==0)
+    *this = null();
+
+  return *this;
+}
+
 bool CommutativeRExp::operator <(const CommutativeRExp& rhs) const
 {
 	// compare the expression type

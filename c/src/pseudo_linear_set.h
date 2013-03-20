@@ -109,6 +109,13 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
       return *this;
     }
 
+    PseudoLinearSet& operator*=(const std::uint_fast16_t &cnt) {
+      if(cnt==0){
+        *this = null();
+      }
+      return *this;
+    }
+
     PseudoLinearSet star() const {
 
       std::set<OffsetType> result_offsets = { OffsetType{} };
