@@ -357,11 +357,7 @@ class UniqueVMapBuilder {
       }
 
       /* If we didn't go through the whole lhs, copy whatever remained. */
-      // FIXME: should probably be:
-      // std::copy(lhs_iter, lhs_iter_end, std::back_inserter(result->vector_));
-      for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
-        result->vector_.emplace_back(*lhs_iter);
-      }
+      std::copy(lhs_iter, lhs_iter_end, std::back_inserter(result->vector_));
 
       return TryLookup<Divider>(std::move(result));
     }

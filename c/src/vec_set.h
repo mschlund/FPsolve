@@ -359,17 +359,21 @@ VecSet<A> VecSetUnion(const VecSet<A> &lhs, const VecSet<B> &rhs) {
       std::copy(lhs_iter, lhs_iter_end, output);
       return result;
     }
-    if (*rhs_iter < *lhs_iter) {
-      *output = A{*rhs_iter++};
+    auto rhs_elem = A{*rhs_iter};
+    if (rhs_elem < *lhs_iter) {
+      *output = rhs_elem;
+      ++rhs_iter;
     } else {
       *output = *lhs_iter;
-      if (!(*lhs_iter < A{*rhs_iter})) {
+      if (!(*lhs_iter < rhs_elem)) {
         ++rhs_iter;
       }
       ++lhs_iter;
     }
   }
-  std::copy(rhs_iter, rhs_iter_end, output);
+  for (; rhs_iter != rhs_iter_end; ++rhs_iter) {
+    *output = A{*rhs_iter};
+  }
   return result;
 }
 

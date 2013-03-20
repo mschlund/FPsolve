@@ -19,6 +19,27 @@
 
 typedef std::uint_fast32_t Counter;
 
+
+/*
+ * Since SparseVec has a template parameter Divider, then we can't simply have a
+ * static UniqueVMapBuilder there, because if there are SparseVec's with
+ * different Dividers they will have different UniqueVMapBuilders.  We want
+ * UniqueVMapBuilders to be global (and be able to easily change the Dividers
+ * without modifying the underlying UniqueVMap).  Having this proxy
+ * GlobalVMapBuilder solves the problem.
+ */
+template <typename Var, typename Value>
+class GlobalVMapBuilder {
+  public:
+    static UniqueVMapBuilder<Var, Value>& Get() { return builder_; }
+  private:
+    static UniqueVMapBuilder<Var, Value> builder_;
+};
+
+template <typename Var, typename Value>
+UniqueVMapBuilder<Var, Value> GlobalVMapBuilder<Var, Value>::builder_;
+
+
 /*
  * Sparse vector representing the mapping from variables to counters.  We never
  * create a vector that has already be created, therefore operations such as
@@ -33,17 +54,18 @@ class SparseVec {
   typedef UniqueVMap<Var, Value> UniqueVMap_;
   typedef UniqueVMapPtr<Var, Value> UniqueVMapPtr_;
   typedef UniqueVMapBuilder<Var, Value> UniqueVMapBuilder_;
+  typedef GlobalVMapBuilder<Var, Value> GlobalVMapBuilder_;
 
   public:
     SparseVec()
-        : vmap_(builder_.template New<Divider>(
+        : vmap_(GlobalVMapBuilder_::Get().template New<Divider>(
             std::vector< std::pair<Var, Value> >{})) {}
 
     SparseVec(const SparseVec &v) = default;
     SparseVec(SparseVec &&v) = default;
 
     SparseVec(std::vector< std::pair<Var, Value> > &&vector)
-        : vmap_(builder_.template New<Divider>(std::move(vector))) {}
+        : vmap_(GlobalVMapBuilder_::Get().template New<Divider>(std::move(vector))) {}
 
     SparseVec(std::initializer_list< std::pair<Var, Value> > list)
         : SparseVec(std::vector< std::pair<Var, Value> >{list}) {}
@@ -57,7 +79,7 @@ class SparseVec {
      * convertions by accident. */
     template <DIVIDER_TEMPLATE_TYPE OldDivider>
     explicit SparseVec(const SparseVec<Var, Value, OldDivider> &v)
-        : vmap_(builder_.template New<Divider>(*v.vmap_)) {}
+        : vmap_(GlobalVMapBuilder_::Get().template New<Divider>(*v.vmap_)) {}
 
     /* Allow casting a SparseVec to one with a different Divider, but without
      * actually invoking the new Divider.  This is useful for simplifires that
@@ -97,7 +119,7 @@ class SparseVec {
       if (vmap_ == nullptr || rhs.vmap_ == nullptr) {
         return SparseVec{nullptr};
       }
-      return builder_.template NewSum<Divider>(*vmap_, *rhs.vmap_);
+      return GlobalVMapBuilder_::Get().template NewSum<Divider>(*vmap_, *rhs.vmap_);
     }
 
     /*
@@ -113,7 +135,7 @@ class SparseVec {
        * divider.  This is probably both unnecessary and would probably make the
        * simplification (SparseVecSimplifier) less likely to optimize away
        * unnecessary vector. */
-      return builder_.template NewDiff<DummyDivider>(*vmap_, *rhs.vmap_);
+      return GlobalVMapBuilder_::Get().template NewDiff<DummyDivider>(*vmap_, *rhs.vmap_);
     }
 
     bool IsZero() const {
@@ -195,7 +217,6 @@ class SparseVec {
     }
 
     UniqueVMapPtr_ vmap_;
-    static UniqueVMapBuilder_ builder_;
 
     /* Make other SparseVec a friend so that we can convert between them, e.g.,
      * when changing the divider. */
@@ -203,9 +224,6 @@ class SparseVec {
               DIVIDER_TEMPLATE_TYPE SomeDivider>
     friend class SparseVec;
 };
-
-template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
-UniqueVMapBuilder<Var, Value> SparseVec<Var, Value, Divider>::builder_;
 
 namespace std {
 
