@@ -78,13 +78,26 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     ~PseudoLinearSet() = default;
 
     static PseudoLinearSet null() { return PseudoLinearSet{}; }
+    bool IsZero() const { return offsets_.empty() && generators_.empty(); }
     static PseudoLinearSet one() { return PseudoLinearSet{{}}; }
+    bool IsOne() const {
+      return generators_.empty() &&
+             offsets_.size() == 1 &&
+             offsets_.begin()->IsZero();
+    }
 
     bool operator==(const PseudoLinearSet &rhs) const {
       return offsets_ == rhs.offsets_ && generators_ == rhs.generators_;
     }
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
+      if (rhs.IsZero()) {
+        return *this;
+      } else if (IsZero()) {
+        *this = rhs;
+        return *this;
+      }
+
       SetType<OffsetType> result_offsets;
       SetType<GeneratorType> result_generators;
 
@@ -105,12 +118,23 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
+      if (IsZero() || rhs.IsZero()) {
+        *this = null();
+        return *this;
+      }
+
+      if (rhs.IsOne()) {
+        return *this;
+      } else if (IsOne()) {
+        *this = rhs;
+        return *this;
+      }
+
       std::vector<OffsetType> result_offsets_vec;
       SetType<GeneratorType> result_generators;
 
       for (auto &vec_rhs : rhs.offsets_) {
         for (auto &vec_lhs : offsets_) {
-          DMSG("offset iteration");
           result_offsets_vec.emplace_back(vec_lhs + vec_rhs);
         }
       }
