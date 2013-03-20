@@ -7,7 +7,7 @@
 #include "semiring.h"
 #include "var.h"
 
-class PrefixSemiring : public Semiring<PrefixSemiring>
+class PrefixSemiring : public Semiring<PrefixSemiring, Commutativity::NonCommutative, Idempotence::Idempotent>
 {
 private:
 	std::set<std::vector<VarId>> val;
@@ -26,8 +26,6 @@ public:
 	static PrefixSemiring null();
 	static PrefixSemiring one();
 	std::string string() const;
-	static bool is_idempotent;
-	static bool is_commutative;
 };
 
 #endif

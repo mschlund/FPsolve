@@ -88,8 +88,6 @@ std::string PrefixSemiring::string() const
 	return ss.str();
 }
 
-bool PrefixSemiring::is_idempotent = false;
-bool PrefixSemiring::is_commutative = false;
 std::shared_ptr<PrefixSemiring> PrefixSemiring::elem_null;
 std::shared_ptr<PrefixSemiring> PrefixSemiring::elem_one;
 unsigned int PrefixSemiring::max_length = 7;

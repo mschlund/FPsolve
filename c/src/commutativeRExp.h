@@ -10,8 +10,8 @@
 #include <set>
 #include <string>
 #include <memory>
-#include "counting-semiring.h"
 #include "var.h"
+#include "semiring.h"
 
 /* commutative RegExp (commutative, associative, idempotent (CAI) addition and CA multiplication)
  storing them fully expanded might be a really bad idea (??) (huge blowup expected just because of applying the distributive law..?)
@@ -43,7 +43,7 @@
 
 
 
-class CommutativeRExp : public Semiring<CommutativeRExp>
+class CommutativeRExp : public Semiring<CommutativeRExp, Commutativity::Commutative, Idempotence::Idempotent>
 {
 public:
 	enum optype {Empty, Element, Addition, Multiplication, Star, Plus};
@@ -71,7 +71,6 @@ public:
 	virtual ~CommutativeRExp();
 	CommutativeRExp operator += (const CommutativeRExp& term);
 	CommutativeRExp operator *= (const CommutativeRExp& term);
-  CommutativeRExp operator *= (const std::uint_fast16_t &cnt);
 	bool operator < (const CommutativeRExp& term) const;
 	bool operator == (const CommutativeRExp& term) const;
 	CommutativeRExp star () const;

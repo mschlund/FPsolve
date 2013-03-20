@@ -41,7 +41,8 @@ template <typename Var,
           DIVIDER_TEMPLATE_TYPE VecDivider,
           VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
 class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
-                                                         VecSimpl> > {
+                                                         VecSimpl>,
+                                                         Commutativity::Commutative, Idempotence::Idempotent > {
   public:
     typedef VecSimpl<Var, Value, VecDivider> VecSimplType;
 
@@ -148,13 +149,6 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
 
       without_simpl = std::max(without_simpl, rhs.without_simpl) + 1;
       Simplify();
-      return *this;
-    }
-
-    PseudoLinearSet& operator*=(const std::uint_fast16_t &cnt) {
-      if(cnt==0){
-        *this = null();
-      }
       return *this;
     }
 

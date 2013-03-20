@@ -13,7 +13,7 @@
 template <typename SR>
 class Evaluator;
 
-class FreeSemiring : public Semiring<FreeSemiring> {
+class FreeSemiring : public Semiring<FreeSemiring, Commutativity::NonCommutative, Idempotence::NonIdempotent> {
   public:
     /* Default constructor creates zero element. */
     FreeSemiring() {
@@ -51,13 +51,6 @@ class FreeSemiring : public Semiring<FreeSemiring> {
 
     FreeSemiring& operator*=(const FreeSemiring &x) {
       node_ = factory_.NewMultiplication(node_, x.node_);
-      return *this;
-    }
-
-    FreeSemiring& operator*=(const std::uint_fast16_t &cnt) {
-      for (std::uint_fast16_t i = 1; i < cnt; ++i) {
-        *this += *this;
-      }
       return *this;
     }
 

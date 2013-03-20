@@ -15,7 +15,7 @@
 
 #define INFTY (std::numeric_limits<unsigned int>::max())
 
-class TropicalSemiring : public Semiring<TropicalSemiring>{
+class TropicalSemiring : public Semiring<TropicalSemiring, Commutativity::Commutative, Idempotence::Idempotent>{
 private:
   /*
    * val == UINT_MAX is interpreted as infinity
@@ -29,14 +29,12 @@ public:
   virtual ~TropicalSemiring();
   TropicalSemiring operator += (const TropicalSemiring& elem); // minimum
   TropicalSemiring operator *= (const TropicalSemiring& elem); // plus
-  TropicalSemiring operator *= (const std::uint_fast16_t& cnt); // Tropical SR is idempotent
   bool operator == (const TropicalSemiring& elem) const;
   TropicalSemiring star () const; // this is always the one-element (=0)
   static TropicalSemiring null(); // infinity
   static TropicalSemiring one();  // zero (natural number)
   std::string string() const;
-  static bool is_idempotent;
-  static bool is_commutative;
+
   friend bool isInf(const TropicalSemiring& elem) {
     if(INFTY == elem.val)
       return true;

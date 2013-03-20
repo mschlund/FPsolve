@@ -48,13 +48,6 @@ TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem)
   return *this;
 }
 
-TropicalSemiring TropicalSemiring::operator*=(const std::uint_fast16_t& cnt) {
-  if(cnt==0)
-    *this = null();
-  return *this;
-}
-
-
 bool TropicalSemiring::operator==(const TropicalSemiring& elem) const
 {
   return (this->val == elem.val);
@@ -90,7 +83,5 @@ std::string TropicalSemiring::string() const
   return ss.str();
 }
 
-bool TropicalSemiring::is_idempotent = true;
-bool TropicalSemiring::is_commutative = true;
 std::shared_ptr<TropicalSemiring> TropicalSemiring::elem_null;
 std::shared_ptr<TropicalSemiring> TropicalSemiring::elem_one;

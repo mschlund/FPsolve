@@ -311,12 +311,12 @@ class Newton {
       // without any arguments
       Matrix<Polynomial<SR> > delta = Matrix<Polynomial<SR> >(1,1);
 
-      if (!SR::is_idempotent)
+      if (!SR::IsIdempotent())
         delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
 
       //start with i=1 as we have already done one iteration explicitly
       for (int i=1; i<max_iter; ++i) {
-        if (!SR::is_idempotent) {
+        if (!SR::IsIdempotent()) {
           values.clear();
           for (unsigned int i = 0; i<u.size(); i++) {
             values.insert(values.begin(),
@@ -327,7 +327,7 @@ class Newton {
           delta_new = Polynomial<SR>::eval(delta,values);
         }
 
-        if (SR::is_idempotent)
+        if (SR::IsIdempotent())
           // for idempotent SRs we do not have do perform the addition (terms
           // are already accounted for in u_upd)!
           v = v_upd;
@@ -337,7 +337,7 @@ class Newton {
         v_upd = step(poly_vars, J_s, valuation, v, delta_new);
       }
 
-      if (SR::is_idempotent)
+      if (SR::IsIdempotent())
         v = v_upd;
       else
         v = v + v_upd;
