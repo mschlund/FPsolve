@@ -216,11 +216,9 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
         auto offset1 = *offset1_iter;
         /* Erase automatically advances the iterator to the next element. */
         offset1_iter = offsets_.MarkErased(offset1_iter);
-        DMSG("offset1: " << offset1);
 
         bool necessary = true;
         for (auto &offset2 : offsets_) {
-          DMSG("offset2: " << offset2);
           auto new_offset = offset1 - offset2;
           if (new_offset.IsValid() && simplifier.IsCovered(new_offset)) {
             necessary = false;
