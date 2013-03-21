@@ -19,10 +19,13 @@
 #include "monomial.h"
 
 /* FIXME: Polynomials are no semiring in our definition (not starable). */
-/* FIXME: Idempotence should be inherited from the SR ... is that possible?*/
 template <typename SR>
-class Polynomial : public Semiring< Polynomial<SR>, Commutativity::Commutative, Idempotence::NonIdempotent> {
+class Polynomial : public Semiring<Polynomial<SR>,
+                                   Commutativity::Commutative,
+                                   SR::GetIdempotence()> {
   private:
+    static_assert(SR::IsCommutative(),
+        "The semiring SR must be commutative to be used with Polynomial!");
     /* Invariant:  The map is never empty.  In particular the 0 element of
      * Polynomial is represented as singleton map with empty monomial pointing
      * to the 0 element of the semiring. */
