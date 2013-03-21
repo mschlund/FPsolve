@@ -17,10 +17,10 @@
 #include "non_commutative_monomial.h"
 
 /* FIXME: NonCommutativePolynomials are no semiring in our definition (not starable). */
-/* FIXME: Idempotence should be inherited from the SR ... is that possible?*/
-
 template <typename SR>
-class NonCommutativePolynomial : public Semiring< NonCommutativePolynomial<SR>, Commutativity::NonCommutative, Idempotence::NonIdempotent > {
+class NonCommutativePolynomial : public Semiring<NonCommutativePolynomial<SR>,
+                                                 Commutativity::NonCommutative,
+                                                 SR::GetIdempotence()> {
 private:
     std::map<NonCommutativeMonomial<SR>,std::uint_fast16_t> monomials_;
 
