@@ -130,6 +130,7 @@ class NodeFactory {
   public:
     NodeFactory() : empty_(new Empty), epsilon_(new Epsilon) {}
     virtual ~NodeFactory() {
+      //std::cout << "Size (free-struct): " << (additions_.size() + multiplications_.size() + stars_.size() + elems_.size()) << std::endl;
       for (auto &pair : additions_) { delete pair.second; }
       for (auto &pair : multiplications_) { delete pair.second; }
       for (auto &pair : stars_) { delete pair.second; }

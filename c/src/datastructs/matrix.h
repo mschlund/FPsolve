@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <iostream>
+
 template <typename SR>
 class Matrix {
   public:
@@ -92,17 +94,18 @@ class Matrix {
         for (std::size_t i = 0; i < rows_; ++i) {
           for (std::size_t j = 0; j < rows_; ++j) {
             result.At(i, j) +=
-              result.At(i, k) * result.At(k, k).star() * result.At(k, j);
+                 result.At(i, k) * result.At(k, k).star() * result.At(k, j);
           }
         }
       }
       /* Add element 1, i.e., Floyd-Warshall will give us A+ matrix, so
        *   1 + A+ = A*
        * Reusing one() and operator+ would be much slower (additional
-       * allocations and unnecessary traersals). */
+       * allocations and unnecessary traversals). */
       for (std::size_t i = 0; i < rows_; ++i) {
         result.At(i, i) += SR::one();
       }
+
       return result;
     }
 
@@ -176,8 +179,8 @@ class Matrix {
         matrix.elements_[0] = matrix.elements_[0].star(); // use semiring-star
         return matrix;
       }
-      // peel mode if n%2 != 0, split in middle otherwise
-      std::size_t split = matrix.rows_%2 == 0 ? matrix.columns_/2 : matrix.columns_-1;
+      //split in "middle" (approx)
+      std::size_t split = matrix.rows_%2 == 0 ? matrix.columns_/2 : (matrix.columns_+1)/2;
 
       // TODO: This will create copies of the submatrices, but we don't really
       // know how to avoid it, since we use them in a few places later on...
