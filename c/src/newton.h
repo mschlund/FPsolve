@@ -275,6 +275,7 @@ class Newton {
                               const std::vector<VarId>& poly_vars, int max_iter) {
       Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(F.size(),F);
       Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
+
       auto valuation_tmp = new std::unordered_map<SR, VarId, SR>();
       Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
 
@@ -288,8 +289,8 @@ class Newton {
                           std::pair<VarId, SR>(v_it->second, v_it->first));
       }
 
-      // std::cout << "Jacobian (with vars): " << std::endl;
-      // std::cout << J << std::endl;
+      //std::cout << "Jacobian (free): " << std::endl;
+      //std::cout << J_free << std::endl;
 
       Matrix<FreeSemiring> J_s = J_free.star();
 

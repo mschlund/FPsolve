@@ -94,7 +94,7 @@ class Matrix {
         for (std::size_t i = 0; i < rows_; ++i) {
           for (std::size_t j = 0; j < rows_; ++j) {
             result.At(i, j) +=
-                 result.At(i, k) * result.At(k, k).star() * result.At(k, j);
+                result.At(i, k) * result.At(k, k).star() * result.At(k, j);
           }
         }
       }
@@ -174,13 +174,16 @@ class Matrix {
     // maybe we can work directly on the elements_ (but then multiplication etc. are harder)
     static Matrix recursive_star(Matrix matrix) {
       assert(matrix.rows_ == matrix.columns_);
+
+      // TODO: stop at 2x2 for commutative SR and calculate the star of this explicitly?
+
       if (matrix.rows_ == 1) {
         // just a scalar in a matrix
         matrix.elements_[0] = matrix.elements_[0].star(); // use semiring-star
         return matrix;
       }
-      //split in "middle" (approx)
-      std::size_t split = matrix.rows_%2 == 0 ? matrix.columns_/2 : (matrix.columns_+1)/2;
+      //split in the "middle"
+      std::size_t split = matrix.columns_/2;
 
       // TODO: This will create copies of the submatrices, but we don't really
       // know how to avoid it, since we use them in a few places later on...
@@ -188,12 +191,47 @@ class Matrix {
       Matrix a_12 = matrix.submatrix(split, matrix.columns_, 0, split);
       Matrix a_21 = matrix.submatrix(0, split, split, matrix.rows_);
       Matrix a_22 = matrix.submatrix(split, matrix.columns_, split, matrix.rows_);
+
       Matrix as_11 = recursive_star(a_11);
       Matrix as_22 = recursive_star(a_22);
+
+
       Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
       Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
       Matrix A_12 = as_11 * a_12 * as_22;
       Matrix A_21 = as_22 * a_21 * as_11;
+
+      return block_matrix(std::move(A_11), std::move(A_12),
+                          std::move(A_21), std::move(A_22));
+    }
+
+    // this version of the star will use less recursive calls and also less SR-operations
+    // (see "Handbook of Weighted Automata" chapter 2)
+    static Matrix recursive_star2(Matrix matrix) {
+      assert(matrix.rows_ == matrix.columns_);
+
+      if (matrix.rows_ == 1) {
+        // just a scalar in a matrix
+        matrix.elements_[0] = matrix.elements_[0].star(); // use semiring-star
+        return matrix;
+      }
+      //split in the "middle"
+      std::size_t split = matrix.columns_/2;
+
+      Matrix a_11 = matrix.submatrix(0, split, 0, split);
+      Matrix a_12 = matrix.submatrix(split, matrix.columns_, 0, split);
+      Matrix a_21 = matrix.submatrix(0, split, split, matrix.rows_);
+      Matrix a_22 = matrix.submatrix(split, matrix.columns_, split, matrix.rows_);
+
+      Matrix as_11 = recursive_star(a_11);
+      Matrix a = (as_11 * a_12);
+      Matrix b = (a_21 * as_11);
+
+      Matrix A_22 = recursive_star(a_22 + a_21 * a);
+      Matrix A_11 = a * A_22 * b + as_11;
+      Matrix A_12 = as_11 * a_12 * A_22;
+      Matrix A_21 = A_22 * b;
+
       return block_matrix(std::move(A_11), std::move(A_12),
                           std::move(A_21), std::move(A_22));
     }
