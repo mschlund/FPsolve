@@ -137,7 +137,7 @@ std::map<VarId, SR> apply_newton(std::vector<std::pair<VarId, Polynomial<SR>>> e
 
 		// dynamic iterations
 		if(!iteration_flag)
-			// for commutative SRs newton has converged after n+1 iterations, so use this number as default
+			// for commutative and idempotent SRs Newton has converged after n+1 iterations, so use this number as default
 			iterations = equations2[j].size() + 1;
 
 		// do some real work here
@@ -288,6 +288,7 @@ int main(int argc, char* argv[])
                                                   iterations,
                                                   vm.count("graphviz"));
 		std::cout << result_string(pseudo_result) << std::endl;
+
 	}
 	else if(vm.count("rexp")) {
 		// parse the input into a list of (Var → Polynomial[SR])

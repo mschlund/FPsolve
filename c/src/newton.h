@@ -289,6 +289,9 @@ class Newton {
                           std::pair<VarId, SR>(v_it->second, v_it->first));
       }
 
+      //std::cout << "Jacobian: " << std::endl;
+      //std::cout << J << std::endl;
+
       //std::cout << "Jacobian (free): " << std::endl;
       //std::cout << J_free << std::endl;
 

@@ -338,12 +338,12 @@ class Polynomial : public Semiring<Polynomial<SR>,
       auto result = FreeSemiring::null();
       // convert this polynomial by adding all converted monomials
       for (const auto &monomial_coeff : monomials_) {
-
         if (monomial_coeff.second == SR::null()) {
-          result += FreeSemiring::null();
+          assert(false); //coefficients in the monomial are always != 0.. so this should not happen :)
         } else if (monomial_coeff.second == SR::one()) {
-          result += FreeSemiring::one();
-        } else {
+         result += monomial_coeff.first.make_free();
+        }
+      else {
           auto value_iter = valuation->find(monomial_coeff.second);
           if (value_iter == valuation->end()) {
             /* Use a fresh constant - the constructor of Var::getVar() will take
@@ -430,11 +430,11 @@ class Polynomial : public Semiring<Polynomial<SR>,
           ss << " + ";
         ss << iter->second << " * " << iter->first;
       }
-      ss << " degree info: ";
+    /*  ss << " degree info: ";
       for (auto &var_degree : variables_) {
         ss << var_degree.first << " |-> " << var_degree.second;
       }
-
+*/
       return ss.str();
     }
 
