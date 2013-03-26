@@ -33,19 +33,20 @@ private:
       if(iter == monomials.end()) {
         monomials.insert({monomial, 1});
       } else {
-        monomials.erase(monomial);
-        monomials.insert({monomial, iter->second + coeff});
+        auto tmp = *iter;
+        monomials.erase(iter);
+        monomials.insert({tmp.first, tmp.second + coeff});
       }
     }
 
     static void InsertMonomial(
         std::map<NonCommutativeMonomial<SR>, std::uint_fast16_t> &monomials,
-        std::initializer_list<std::pair<elemType,int>> &idx,
-        std::initializer_list<VarId> &variables,
-        std::initializer_list<SR> &srs
+        std::vector<std::pair<elemType,int>> &&idx,
+        std::vector<VarId> &&variables,
+        std::vector<SR> &&srs
         )
     {
-      auto tmp_monomial = NonCommutativeMonomial<SR>(idx, variables, srs);
+      auto tmp_monomial = NonCommutativeMonomial<SR>(std::move(idx), std::move(variables), std::move(srs));
       InsertMonomial(monomials, tmp_monomial, 1);
     };
 
@@ -60,7 +61,7 @@ private:
       InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {elem});
     }
     NonCommutativePolynomial(SR &&elem) {
-      InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {std::move(elem)});
+      InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {elem});
     }
 
     /* Create a polynomial which consists only of one variable. */
@@ -73,16 +74,22 @@ private:
 
     NonCommutativePolynomial<SR>& operator+=(const NonCommutativePolynomial<SR> &polynomial) {
       for (const auto &monomial : polynomial.monomials_) {
-        auto iter = monomials_.find(monomial.first);
-        if(iter == monomials_.end()) {
-          InsertMonomial(monomials_, monomial.first, monomial.second);
-        } else {
-          auto tmp_monomial = *iter;
-          InsertMonomial(monomials_, monomial.first + tmp_monomial.first, monomial.second + tmp_monomial.second);
-        }
+        // InsertMonomial handles monomials which are already in 'this' polynomial
+        InsertMonomial(monomials_, monomial.first, monomial.second);
       }
 
       return *this;
+    }
+
+    NonCommutativePolynomial<SR>& operator+=(const NonCommutativeMonomial<SR> &monomial) {
+      InsertMonomial(monomials_, monomial, 1);
+      return *this;
+    }
+
+    NonCommutativePolynomial<SR>& operator+(const NonCommutativeMonomial<SR> &monomial) const {
+      auto result = *this;
+      result += monomial;
+      return result;
     }
 
     NonCommutativePolynomial<SR>& operator*=(const NonCommutativePolynomial<SR> &rhs) {
@@ -130,19 +137,45 @@ private:
       return monomials_ == polynomial.monomials_;
     }
 
-/*    NonCommutativePolynomial<SR> derivative(const VarId& var) const {
-	    // TODO: implement this
+    /* calculate the delta for this polynomial with the given data at iteration d
+     * de2 is data from newton iterand for d-2
+     * dl1 is data from newton update for d-1 */
+    SR calculate_delta(
+        const std::map<VarId, SR> &de2,
+        const std::map<VarId, SR> &dl1) const {
+      SR result = SR::null();
+      for(auto const &monomial : monomials_) {
+        // FIXME: is the order second * first correct?
+        result += monomial.first.calculate_delta(de2, dl1) * monomial.second;
+      }
+
+      return result;
     }
-*/
-/*    NonCommutativePolynomial<SR> derivative(const std::vector<VarId> &vars) const {
+
+    /* calculates the derivative of this polynomial
+     * return a schema and the used mapping from X to X[d-1]*/
+    std::pair<NonCommutativePolynomial<SR>,std::map<VarId,VarId>> derivative() const {
+      NonCommutativePolynomial<SR> result;
+
+      /* get a mapping for all variables X s.t. X -> X[d-1]
+       * X[d-1] has to be a fresh variable*/
+      auto vars = get_variables();
+      std::map<VarId, VarId> mapping;
+      for(auto const &var : vars) {
+        auto tmp = Var::GetVarId();
+        mapping.insert({var, tmp});
+      }
+
+      /* use the mapping and sum up all derivatives of all monomials */
+      for(auto const &monomial : monomials_) {
+        // FIXME: What about the constant coefficient?!
+        // at the moment we lose the coefficient
+        result += monomial.first.derivative(mapping);
+      }
+
+      return {result, mapping};
     }
-*/
-/*    static Matrix< NonCommutativePolynomial<SR> > jacobian(
-        const std::vector< NonCommutativePolynomial<SR> > &polynomials,
-        const std::vector<VarId> &variables) {
-	    // TODO: implement this
-    };
-*/
+
     SR eval(const std::map<VarId, SR> &values) const {
       SR result = SR::null();
       for (const auto &monomial : monomials_) {
@@ -228,28 +261,16 @@ private:
       return degree;
     }
 
-    Degree GetMaxDegreeOf(const VarId var) {
-      Degree degree = 0;
-/*      auto var_degree_iter = variables_.find(var);
-      if (var_degree_iter == variables_.end()) {
-        return 0;
-      }
-      return var_degree_iter->second;
-*/
-      assert(0); // not implemented yet
-      return degree;
-    }
-
-    /* FIXME: Get rid of this. */
+    // FIXME: get rid of this...
+    // if you use this, make sure, you cache it...
     std::set<VarId> get_variables() const {
-/*      std::set<VarId> vars;
-      for (auto var_degree : variables_) {
-        vars.insert(var_degree.first);
+      std::set<VarId> vars;
+      for(auto const &monomial : monomials_)
+      {
+        auto tmp = monomial.first.get_variables();
+        vars.insert(tmp.begin(), tmp.end());
       }
       return vars;
-*/
-      assert(false); // not implemented yet
-      return {};
     }
 
     // TODO: we cannot star polynomials!
@@ -269,11 +290,18 @@ private:
     static bool is_idempotent;
     static bool is_commutative;
 
-/*    std::string string() const {
+    std::string string() const {
 	    // TODO: implement this
+      std::stringstream ss;
+      for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
+        if(monomial != monomials_.begin())
+          ss << " + ";
+        ss << monomial->second << " * ";
+        ss << monomial->first;
+      }
       return ss.str();
     }
-*/
+
 };
 
 template <typename SR> bool NonCommutativePolynomial<SR>::is_commutative = false;

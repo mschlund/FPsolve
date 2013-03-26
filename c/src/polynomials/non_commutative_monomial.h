@@ -1,7 +1,9 @@
 #pragma once
 
 #include <iosfwd>
+#include <map>
 
+#include "../datastructs/var_degree_map.h"
 #include "../semirings/free-semiring.h"
 
 template <typename SR>
@@ -12,7 +14,7 @@ template <typename SR>
 class NonCommutativeMonomial {
   private:
     friend class NonCommutativePolynomial<SR>;
-    
+
     /* a monomial is represented by three vectors
      * idx_ holds pairs of (type, index), type is either variable or sr
      *   the index gives absolute position inside the chosen type vector
@@ -64,10 +66,9 @@ class NonCommutativeMonomial {
 
       for (auto &p : monomial.idx_) {
         if(p.first == Variable)
-          p.second += offset_variables;
+          tmp_idx.push_back({Variable, p.second + offset_variables});
         else if (p.first == SemiringType)
-          p.second += offset_srs;
-        tmp_idx.push_back(p);
+          tmp_idx.push_back({SemiringType, p.second + offset_srs});
       }
 
       for (auto v : monomial.variables_)
@@ -103,25 +104,65 @@ class NonCommutativeMonomial {
       return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
     }
 
-    /* Commutative version of derivative. */
-/*    std::pair<Degree, NonCommutativeMonomial> derivative(const VarId &var) const {
 
-      auto var_degree_iter = variables_.find(var);
-*/
-      /* If the variable does not appear in the monomial, the derivative
-       * must be 0. */
-/*      if (var_degree_iter == variables_.end()) {
-        return { 0, NonCommutativeMonomial{} };
+    /* derivation function which is used in the polynomial derivative function.
+     * for the variables for the d-1-th iterand we use the given map 'substitution' */
+    NonCommutativePolynomial<SR> derivative(const std::map<VarId, VarId> &substitution) const {
+      NonCommutativePolynomial<SR> result; // empty polynomial
+      auto subst_monomial = this->subst(substitution); // substitute all variables
+      for(unsigned int position = 0; position < variables_.size(); position++) {
+        // the variable at the position is the variable which should not be touched
+        auto tmp = subst_monomial;
+        tmp.variables_.at(position) = this->variables_.at(position); // therefore restore this one...
+        result += tmp;
       }
-*/
-      /* Remove one of these by removing the first of them and then "multiply"
-       * the coefficient with degree_before. */
-/*      auto tmp_variables = variables_;
-      tmp_variables.Erase(var);
-
-      return { var_degree_iter->second, NonCommutativeMonomial{std::move(tmp_variables)} };
+      return result;
     }
-*/
+
+    SR calculate_delta_helper(
+      const std::vector<bool> &permutation,
+      const std::map<VarId, SR> &de2, // [d-2], true
+      const std::map<VarId, SR> &dl1  // (d-1), false
+      ) const {
+      SR tmp = SR::one();
+      for(auto const &p : idx_) {
+        if(p.first == Variable) {
+          if(permutation.at(p.second) == true) { // use [d-2]
+            auto value_iter = de2.find(variables_.at(p.second));
+            assert(value_iter != de2.end());
+            tmp *= value_iter->second;
+          } else { // if (permutation.at(p.second) == false) // use (d-1)
+            auto value_iter = dl1.find(variables_.at(p.second));
+            assert(value_iter != dl1.end());
+            tmp *= value_iter->second;
+          }
+        } else if (p.first == SemiringType)
+          tmp *= srs_.at(p.second);
+      }
+      return tmp;
+    }
+
+    SR calculate_delta(
+      const std::map<VarId, SR> &de2, // [d-2], true
+      const std::map<VarId, SR> &dl1  // (d-1), false
+      ) const {
+      SR result = SR::null();
+
+      /* outer loop handles the different cases (trees with exactly n-times dim == d-1 )
+       * start with n = 2, which means, exactly 2 childs have dimensions exactly d-1 */
+      for(unsigned int n = 2; n <= variables_.size(); n++)
+      {
+        /* order of a vector of bools is [false, true] < [true, false] */
+        std::vector<bool> permutation(n, false); // these are the (d-1) elements
+        std::vector<bool> permutation2(variables_.size()-n, true); // these are the [d-2] elements
+        permutation.insert(permutation.end(), permutation2.begin(), permutation2.end());
+        do {
+          result += calculate_delta_helper(permutation, de2, dl1);
+        } while(std::next_permutation(permutation.begin(), permutation.end()));
+      }
+
+      return result;
+    }
 
     /* Evaluate the monomial given the map from variables to values. */
     SR eval(const std::map<VarId, SR> &values) const {
@@ -165,7 +206,7 @@ class NonCommutativeMonomial {
             result_monomial.idx_.push_back(std::pair<elemType, int>(SemiringType, result_monomial.srs_.size()));
             result_monomial.srs_.push_back(value_iter->second);
           }
-          
+
         } else if (p.first == SemiringType)
         {
           // FIXME: probably possible to multiply with new semiring element in front of this element
@@ -215,9 +256,9 @@ class NonCommutativeMonomial {
           {
             auto tmp_sr = srs_.at(p.second);
             if(tmp_sr == SR::null()) {
-              result *= FreeSemiring::null();
+              assert(false); //coefficients in the monomial are always != 0.. so this should not happen :)
             } else if (tmp_sr == SR::one()) {
-              result *= FreeSemiring::one();
+              // does not do anything
             } else {
               auto value_iter = valuation->find(tmp_sr);
               if (value_iter == valuation->end()) {
@@ -240,13 +281,20 @@ class NonCommutativeMonomial {
     }
 
     bool operator<(const NonCommutativeMonomial &rhs) const {
-      // FIXME
-      return variables_ < rhs.variables_;
+      // lexicographic ordering
+      if(idx_ != rhs.idx_) return idx_ < rhs.idx_;
+      if(variables_ != rhs.variables_) return variables_ < rhs.variables_;
+      if(srs_ != rhs.srs_) return srs_ < rhs.srs_;
+
+      // they are equal
+      return false;
     }
 
     bool operator==(const NonCommutativeMonomial &rhs) const {
-      // FIXME
-      return variables_ == rhs.variables_;
+      return
+        idx_ == rhs.idx_ &&
+        variables_ == rhs.variables_ &&
+        srs_ == rhs.srs_;
     }
 
     Degree get_degree() const {
@@ -254,21 +302,31 @@ class NonCommutativeMonomial {
     }
 
     // FIXME: modify or remove
-    /*std::set<VarId> get_variables() const {
+    std::set<VarId> get_variables() const {
       std::set<VarId> set;
-      for (auto var_degree : variables_) {
-        set.insert(var_degree.first);
+      for (auto var : variables_) {
+        set.insert(var);
       }
       return set;
-    }*/
+    }
 
     std::string string() const {
       std::stringstream ss;
-      // FIXME
-      ss << variables_;
+      //for(auto &p : idx_) {
+      for(auto p = idx_.begin(); p != idx_.end(); p++) {
+        if(p != idx_.begin())
+          ss << " * ";
+
+        if(p->first == Variable)
+          ss << variables_.at(p->second);
+        else
+          ss << srs_.at(p->second);
+      }
       return std::move(ss.str());
     }
 };
 
 template <typename SR>
-std::ostream& operator<<(std::ostream &out, const NonCommutativeMonomial<SR> &monomial);
+std::ostream& operator<<(std::ostream &out, const NonCommutativeMonomial<SR> &monomial) {
+  return out << monomial.string();
+}
