@@ -145,7 +145,6 @@ private:
         const std::map<VarId, SR> &dl1) const {
       SR result = SR::null();
       for(auto const &monomial : monomials_) {
-        // FIXME: is the order second * first correct?
         result += monomial.first.calculate_delta(de2, dl1) * monomial.second;
       }
 
@@ -168,9 +167,7 @@ private:
 
       /* use the mapping and sum up all derivatives of all monomials */
       for(auto const &monomial : monomials_) {
-        // FIXME: What about the constant coefficient?!
-        // at the moment we lose the coefficient
-        result += monomial.first.derivative(mapping);
+        result += monomial.first.derivative(mapping) * monomial.second;
       }
 
       return {result, mapping};

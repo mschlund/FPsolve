@@ -298,6 +298,7 @@ class Newton {
       Matrix<FreeSemiring> J_s = J_free.star();
 
       // define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
+      //FIXME: just generate new variables!
       std::vector<VarId> u = this->get_symbolic_vector(poly_vars.size(), "u");
       std::vector<VarId> u_upd =
         this->get_symbolic_vector(poly_vars.size(), "u_upd");

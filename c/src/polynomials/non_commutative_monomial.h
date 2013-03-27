@@ -149,7 +149,7 @@ class NonCommutativeMonomial {
       SR result = SR::null();
 
       /* outer loop handles the different cases (trees with exactly n-times dim == d-1 )
-       * start with n = 2, which means, exactly 2 childs have dimensions exactly d-1 */
+       * start with n = 2, which means, exactly 2 children have dimensions exactly d-1 */
       for(unsigned int n = 2; n <= variables_.size(); n++)
       {
         /* order of a vector of bools is [false, true] < [true, false] */
