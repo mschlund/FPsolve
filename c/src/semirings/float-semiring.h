@@ -9,12 +9,12 @@
 class FloatSemiring : public Semiring<FloatSemiring, Commutativity::Commutative, Idempotence::NonIdempotent>
 {
 private:
-	float val;
+	double val;
 	static std::shared_ptr<FloatSemiring> elem_null;
 	static std::shared_ptr<FloatSemiring> elem_one;
 public:
 	FloatSemiring();
-	FloatSemiring(const float val);
+	FloatSemiring(const double val);
 	virtual ~FloatSemiring();
 	FloatSemiring operator += (const FloatSemiring& elem);
 	FloatSemiring operator *= (const FloatSemiring& elem);

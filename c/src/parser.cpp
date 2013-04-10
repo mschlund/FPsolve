@@ -112,7 +112,7 @@ struct float_elem_parser : qi::grammar<iterator_type, FloatSemiring()>
 {
 	float_elem_parser() : float_elem_parser::base_type(elem)
 	{
-		elem %= qi::float_;
+		elem %= qi::double_;
 	}
 	qi::rule<iterator_type, FloatSemiring()> elem;
 };

@@ -180,12 +180,13 @@ class Newton {
         Generator generator{current_max_degree, 2, poly_max_degree};
 
         while (generator.NextCombination()) {
-          std::vector<VarId> dx;
+          //std::vector<VarId> dx;
+          std::map<VarId, Degree> dx;
           Polynomial<SR> prod{SR::one()};
 
           for (std::size_t index = 0; index < num_variables; ++index) {
+            dx[poly_vars[index]] = generator.GetVectorRef()[index];
             for (int j = 0; j < generator.GetVectorRef()[index]; ++j) {
-              dx.push_back(poly_vars[index]);
               prod *= v_upd[index];
             }
           }
@@ -197,14 +198,14 @@ class Newton {
             // values.emplace(poly_vars[index], v[index]);
             values.insert(std::make_pair(poly_vars[index], v[index]));
           }
-          Polynomial<SR> f_eval = f.derivative(dx).subst(values);
+          Polynomial<SR> f_eval = f.derivative_binom(dx).subst(values);
 
           delta_i = delta_i + f_eval * prod;
         }
 
         delta.emplace_back(std::move(delta_i));
       }
-
+      std::cout << "Delta: " << Matrix<Polynomial<SR> >(delta.size(), delta)<<std::endl;
       return Matrix<Polynomial<SR> >(delta.size(), delta);
     }
 
@@ -289,11 +290,11 @@ class Newton {
                           std::pair<VarId, SR>(v_it->second, v_it->first));
       }
 
-      //std::cout << "Jacobian: " << std::endl;
-      //std::cout << J << std::endl;
+      std::cout << "Jacobian: " << std::endl;
+      std::cout << J << std::endl;
 
-      //std::cout << "Jacobian (free): " << std::endl;
-      //std::cout << J_free << std::endl;
+      std::cout << "Jacobian (free): " << std::endl;
+      std::cout << J_free << std::endl;
 
       Matrix<FreeSemiring> J_s = J_free.star();
 
@@ -334,6 +335,7 @@ class Newton {
           }
           delta_new = Polynomial<SR>::eval(delta,values);
         }
+        std::cout << "Delta_new: " << delta_new << std::endl;
 
         if (SR::IsIdempotent())
           // for idempotent SRs we do not have do perform the addition (terms
@@ -342,7 +344,10 @@ class Newton {
         else
           v = v + v_upd;
 
+        std::cout << "v: " << v << std::endl;
+
         v_upd = step(poly_vars, J_s, valuation, v, delta_new);
+        std::cout << "v_upd: " << v_upd << std::endl;
       }
 
       if (SR::IsIdempotent())

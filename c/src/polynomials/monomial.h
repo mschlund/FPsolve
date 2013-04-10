@@ -5,6 +5,9 @@
 #include "../semirings/free-semiring.h"
 #include "../datastructs/var_degree_map.h"
 
+#include <boost/math/special_functions/factorials.hpp>
+#include <boost/math/special_functions/binomial.hpp>
+
 
 template <typename SR>
 class Polynomial;
@@ -78,7 +81,58 @@ class Monomial {
       return { var_degree_iter->second, Monomial{std::move(tmp_variables)} };
     }
 
-    /* Evaluate the monomial given the map from variables to values. */
+    /*
+     * take the derivative w.r.t. a "multiindex" of variables (e.g. d/dx^i = d/dx^2y^3 for i=(2,3))
+     *  and divide by i! (= 2!*3! in the example),
+     *  effectively this deletes as many variables as indicated by i and multiplies
+     *  with binom{D}{i} where D is the vector of variable degrees
+     *  i.e. if above operator d/dx^2y^3 is applied to the monomial x^5y^6 the result is (5*4 * 6*5*4) * x^3y^3
+     */
+    std::pair<Degree, Monomial> derivative_binom(const std::map<VarId, Degree> &vars) const {
+      Degree multiplicity = 1;
+      auto tmp_variables = variables_;
+
+      for(const auto var : vars) {
+        auto var_degree_iter = tmp_variables.find(var.first);
+        /* If the variable does not appear in the monomial, the derivative
+         * must be 0. */
+        if (var_degree_iter == tmp_variables.end()) {
+          return { 0, Monomial{} };
+        }
+        else if (var.second > var_degree_iter->second){
+          /* If we derive more often wrt. some var than this variable is present, we get 0.
+           */
+          return { 0, Monomial{} };
+        }
+        /*
+         * this would give the usual derivative:
+         *  multiply the coefficient by (K!) where K is the number of times it is derived
+         *  multiplicity *= (Degree) boost::math::factorial<float>(var_degree_iter->second);
+         */
+
+        // devide automatically by i! if we compute d/dx^i
+        multiplicity *= (Degree) boost::math::binomial_coefficient<double>(var_degree_iter->second, var.second);
+
+        //Reduce the multiplicity of the variable by the number of times K it is derived
+        tmp_variables.Erase(var.first, var.second);
+      }
+
+      /* Remove one of these by removing the first of them and then "multiply"
+       * the coefficient with degree_before. */
+      return {multiplicity, Monomial{std::move(tmp_variables)} };
+    }
+
+    //TODO: avoid creation of temporary objects
+    template <typename SR>
+    SR derivative_binom_at(const std::map<VarId, std::uint_fast32_t> &vars, const std::map<VarId, SR> valuation) const {
+      auto tmp_deriv = derivative_binom(vars);
+      SR res = tmp_deriv.second.eval(valuation);
+      res *= tmp_deriv.first;
+      return res;
+    }
+
+    /* Evaluate the monomial given the map from variables to values,
+     * If a variable is not interpreted the assertion fails !*/
     template <typename SR>
     SR eval(const std::map<VarId, SR> &values) const {
       auto result = SR::one();

@@ -10,7 +10,7 @@ FloatSemiring::FloatSemiring()
 	this->val = 0;
 }
 
-FloatSemiring::FloatSemiring(const float val)
+FloatSemiring::FloatSemiring(const double val)
 {
 	assert(val >= 0);
 	this->val = val;
@@ -35,7 +35,7 @@ FloatSemiring FloatSemiring::operator*=(const FloatSemiring& elem)
 bool FloatSemiring::operator==(const FloatSemiring& elem) const
 {
 	// comparing floating point has to be done like this. (see Knuth TAoCP Vol.2 p. 233)
-	return std::fabs(this->val - elem.val) <= std::numeric_limits<float>::epsilon() * std::min(std::fabs(this->val), std::fabs(elem.val));
+	return std::fabs(this->val - elem.val) <= std::numeric_limits<double>::epsilon() * std::min(std::fabs(this->val), std::fabs(elem.val));
 }
 
 FloatSemiring FloatSemiring::star() const

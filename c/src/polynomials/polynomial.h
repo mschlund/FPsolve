@@ -226,13 +226,31 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
     }
 
-    Polynomial<SR> derivative(const VarId& var) const {
+    Polynomial<SR> derivative(const VarId &var) const {
+      return this->derivative_binom(std::map<VarId,Degree>{std::make_pair(var,1)});
+    }
+
+    Polynomial<SR> derivative(const std::vector<VarId> &vars) const {
+      std::map<VarId, Degree> dx;
+      for(auto v: vars) {
+        auto iter =dx.find(v);
+        if(iter == dx.end()) {
+          dx[v] = 1;
+        }
+        else{
+          dx[v] ++;
+        }
+      }
+      return this->derivative_binom(dx);
+    }
+
+    Polynomial<SR> derivative_binom(const std::map<VarId, Degree> &vars) const {
       std::map<Monomial, SR> tmp_monomials;
       VarDegreeMap tmp_variables;
 
       for (const auto &monomial_coeff : monomials_) {
         /* Take the derivative of every monomial and add it to the result. */
-        auto count_derivative = monomial_coeff.first.derivative(var);
+        auto count_derivative = monomial_coeff.first.derivative_binom(vars);
         auto iter = tmp_monomials.find(count_derivative.second);
         SR tmp_coeff = monomial_coeff.second;
         tmp_coeff *= count_derivative.first;
@@ -244,16 +262,13 @@ class Polynomial : public Semiring<Polynomial<SR>,
           iter->second += std::move(tmp_coeff);
         }
       }
-
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    Polynomial<SR> derivative(const std::vector<VarId> &vars) const {
-      Polynomial<SR> tmp_polynomial = *this;
-      for (auto var : vars) {
-        tmp_polynomial = tmp_polynomial.derivative(var);
-      }
-      return tmp_polynomial;
+    SR derivative_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
+      /*
+       * TODO: check that all variables are interpreted
+       */
     }
 
     static Matrix< Polynomial<SR> > jacobian(
