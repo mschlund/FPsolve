@@ -124,7 +124,7 @@ class Monomial {
 
     //TODO: avoid creation of temporary objects
     template <typename SR>
-    SR derivative_binom_at(const std::map<VarId, std::uint_fast32_t> &vars, const std::map<VarId, SR> valuation) const {
+    SR derivative_binom_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
       auto tmp_deriv = derivative_binom(vars);
       SR res = tmp_deriv.second.eval(valuation);
       res *= tmp_deriv.first;
