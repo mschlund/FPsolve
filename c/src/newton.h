@@ -222,27 +222,31 @@ class Newton {
     }
 
   public:
-    // calculate the next newton iterand
-    Matrix<SR> step(const std::vector<VarId> &poly_vars,
-        const Matrix<FreeSemiring> &J_s,
-        std::unordered_map<VarId, SR> *valuation,
-        const Matrix<SR> &v, const Matrix<SR> &delta) {
-      assert(poly_vars.size() == (unsigned int)v.getRows());
-      int i = 0;
-      for (std::vector<VarId>::const_iterator poly_var = poly_vars.begin();
-           poly_var != poly_vars.end(); ++poly_var) {
-        SR sr_elem = v.getElements().at(i++);
-        valuation->erase(*poly_var); // clean the old variables from the map
-        valuation->insert(valuation->begin(),
-            std::pair<VarId,SR>(*poly_var,sr_elem));
+    void UpdateValuation(const std::vector<VarId> &variables,
+                         const Matrix<SR> &newton_values,
+                         std::unordered_map<VarId, SR> *valuation) {
+      assert(valuation != nullptr);
+      assert(variables.size() == newton_values.getRows());
+      assert(newton_values.getColumns() == 1);
+      for (std::size_t i = 0; i < variables.size(); ++i) {
+        (*valuation)[variables[i]] = newton_values.At(i, 0);
       }
-      Matrix<SR> J_s_new = FreeSemiring_eval<SR>(J_s, valuation);
+    }
 
-      //std::cout << "Jacobian (evaluated): " << std::endl;
-      //std::cout << J_s_new << std::endl;
+    /* Calculate the next newton iterand and update the valuation mapping. */
+    Matrix<SR> step(const std::vector<VarId> &variables,
+                    const Matrix<SR> &newton_values,
+                    const Matrix<FreeSemiring> &jacobian_star,
+                    const Matrix<SR> &delta,
+                    std::unordered_map<VarId, SR> *valuation) {
 
-      Matrix<SR> result = J_s_new * delta;
-      return result;
+      assert(valuation != nullptr);
+      assert(variables.size() == newton_values.getRows());
+      assert(newton_values.getColumns() == 1);
+
+      UpdateValuation(variables, newton_values, valuation);
+
+      return FreeSemiringMatrixEval(jacobian_star, *valuation) * delta;
     }
 
     // this is just a wrapper function at the moment
@@ -272,56 +276,56 @@ class Newton {
 
     // iterate until convergence
     // TODO: seems to be 2 iterations off compared to sage-impl..
-    Matrix<SR> solve_fixpoint(const std::vector<Polynomial<SR> >& F,
-                              const std::vector<VarId>& poly_vars, int max_iter) {
-      Matrix<Polynomial<SR> > F_mat = Matrix<Polynomial<SR> >(F.size(),F);
-      Matrix<Polynomial<SR> > J = Polynomial<SR>::jacobian(F, poly_vars);
+    Matrix<SR> solve_fixpoint(const std::vector< Polynomial<SR> >& polynomials,
+                              const std::vector<VarId>& variables,
+                              int max_iter) {
 
-      auto valuation_tmp = new std::unordered_map<SR, VarId, SR>();
-      Matrix<FreeSemiring> J_free = Polynomial<SR>::make_free(J, valuation_tmp);
+      Matrix< Polynomial<SR> > F_mat{polynomials.size(), polynomials};
+      Matrix< Polynomial<SR> > jacobian =
+        Polynomial<SR>::jacobian(polynomials, variables);
 
-      auto valuation = new std::unordered_map<VarId, SR>();
-      // insert null and one valuations into the map
-      // valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::null(), SR::null()));
-      // valuation->insert(valuation->begin(), std::pair<FreeSemiring,SR>(FreeSemiring::one(), SR::one()));
-      for (auto v_it = valuation_tmp->begin(); v_it != valuation_tmp->end();
-           ++v_it) {
-        valuation->insert(valuation->begin(),
-                          std::pair<VarId, SR>(v_it->second, v_it->first));
+      std::unordered_map<SR, VarId, SR> valuation_tmp;
+      Matrix<FreeSemiring> jacobian_free =
+        Polynomial<SR>::make_free(jacobian, &valuation_tmp);
+      Matrix<FreeSemiring> jacobian_star = jacobian_free.star();
+
+      //std::cout << "Jacobian: " << std::endl;
+      //std::cout << jacobian << std::endl;
+
+      //std::cout << "Jacobian (free): " << std::endl;
+      //std::cout << jacobian_free << std::endl;
+
+      std::unordered_map<VarId, SR> valuation;
+      for (auto &pair : valuation_tmp) {
+        valuation.insert(std::make_pair(pair.second, pair.first));
       }
-
-      std::cout << "Jacobian: " << std::endl;
-      std::cout << J << std::endl;
-
-      std::cout << "Jacobian (free): " << std::endl;
-      std::cout << J_free << std::endl;
-
-      Matrix<FreeSemiring> J_s = J_free.star();
 
       // define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
       //FIXME: just generate new variables!
-      std::vector<VarId> u = this->get_symbolic_vector(poly_vars.size(), "u");
+      std::vector<VarId> u = this->get_symbolic_vector(variables.size(), "u");
       std::vector<VarId> u_upd =
-        this->get_symbolic_vector(poly_vars.size(), "u_upd");
+        this->get_symbolic_vector(variables.size(), "u_upd");
 
-      Matrix<SR> v = Matrix<SR>((int)F.size(),1); // v^0 = 0
+      // newton_values^0 = 0
+      Matrix<SR> newton_values{polynomials.size(), 1};
 
-      // d^0 = F(0)
+      // d^0 = polynomials(0)
       std::map<VarId,SR> values;
-      for (std::vector<VarId>::const_iterator poly_var = poly_vars.begin();
-           poly_var != poly_vars.end(); ++poly_var) {
-        values.insert(values.begin(), std::pair<VarId,SR>(*poly_var, SR::null()));
+      for (auto &variable : variables) {
+        values.insert(std::make_pair(variable, SR::null()));
       }
+
       Matrix<SR> delta_new = Polynomial<SR>::eval(F_mat, values);
 
-      Matrix<SR> v_upd = step(poly_vars, J_s, valuation, v, delta_new);
+      Matrix<SR> newton_update = step(variables, newton_values, jacobian_star,
+                                      delta_new, &valuation);
 
       // FIXME: ugly since we do not have a simple standard Matrix-Constructor
       // without any arguments
-      Matrix<Polynomial<SR> > delta = Matrix<Polynomial<SR> >(1,1);
+      Matrix<Polynomial<SR> > delta{1,1};
 
       if (!SR::IsIdempotent())
-        delta = compute_symbolic_delta(u, u_upd, F, poly_vars);
+        delta = compute_symbolic_delta(u, u_upd, polynomials, variables);
 
       //start with i=1 as we have already done one iteration explicitly
       for (int i=1; i<max_iter; ++i) {
@@ -329,9 +333,9 @@ class Newton {
           values.clear();
           for (unsigned int i = 0; i<u.size(); i++) {
             values.insert(values.begin(),
-                std::pair<VarId,SR>(u_upd.at(i), v_upd.getElements().at(i)));
+                std::pair<VarId,SR>(u_upd.at(i), newton_update.getElements().at(i)));
             values.insert(values.begin(),
-                std::pair<VarId,SR>(u.at(i), v.getElements().at(i)));
+                std::pair<VarId,SR>(u.at(i), newton_values.getElements().at(i)));
           }
           delta_new = Polynomial<SR>::eval(delta,values);
         }
@@ -340,25 +344,22 @@ class Newton {
         if (SR::IsIdempotent())
           // for idempotent SRs we do not have do perform the addition (terms
           // are already accounted for in u_upd)!
-          v = v_upd;
+          newton_values = newton_update;
         else
-          v = v + v_upd;
+          newton_values = newton_values + newton_update;
 
-        std::cout << "v: " << v << std::endl;
-
-        v_upd = step(poly_vars, J_s, valuation, v, delta_new);
-        std::cout << "v_upd: " << v_upd << std::endl;
+        std::cout << "v: " << newton_values << std::endl;
+        newton_update = step(variables, newton_values, jacobian_star,
+                             delta_new, &valuation);
+        std::cout << "v_upd: " << newton_update << std::endl;
       }
 
       if (SR::IsIdempotent())
-        v = v_upd;
+        newton_values = newton_update;
       else
-        v = v + v_upd;
+        newton_values = newton_values + newton_update;
 
-      delete valuation_tmp;
-      delete valuation;
-
-      return v;
+      return newton_values;
     }
 };
 
