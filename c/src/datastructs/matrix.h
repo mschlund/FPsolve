@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+//TODO: += operator
+
 template <typename SR>
 class Matrix {
   public:

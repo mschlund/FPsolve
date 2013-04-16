@@ -23,9 +23,11 @@
 #include "semirings/semilinear_set.h"
 #endif
 
-#include "newton.h"
+
 #include "parser.h"
 
+//#include "newton.h"
+#include "newton_generic.h"
 
 template <typename SR>
 struct VertexProp {

@@ -265,10 +265,16 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR derivative_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
+    SR derivative_binom_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
+      SR result = SR::null();
       /*
-       * TODO: check that all variables are interpreted
+       * sum over all monomials collect the binomial derivative_at
        */
+      for (const auto &monomial_coeff : monomials_) {
+        result += monomial_coeff.second * monomial_coeff.first.derivative_binom_at(vars, valuation);
+      }
+
+      return result;
     }
 
     static Matrix< Polynomial<SR> > jacobian(
@@ -328,9 +334,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Matrix<SR>{poly_matrix.getRows(), std::move(result)};
     }
 
-    // FIXME: Why values is passed by value???
     static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > poly_matrix,
-        std::map<VarId,Polynomial<SR> > values) {
+        const std::map<VarId,Polynomial<SR> >& values) {
       const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector< Polynomial<SR> > result;
       for (const auto &polynomial : tmp_polynomials) {
@@ -343,12 +348,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
      * the provided valuation might be modified with new elements. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
       assert(valuation);
-
-      /* FIXME: Do we need that?  The above assertion should let us know...
-      if (!valuation) {
-        valuation = new std::unordered_map<SR, VarId, SR>();
-      }
-      */
 
       auto result = FreeSemiring::null();
       // convert this polynomial by adding all converted monomials
@@ -382,10 +381,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
         std::unordered_map<SR, VarId, SR> *valuation) {
 
       assert(valuation);
-      // FIXME: Again, do we need that?
-      // if (!valuation)
-      //   valuation = new std::unordered_map<SR, VarId, SR>();
-
 
       const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<FreeSemiring> result;
@@ -472,8 +467,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 };
 
-template <typename SR> bool Polynomial<SR>::is_commutative = false; // FIXME: shouldn't this be true?
-template <typename SR> bool Polynomial<SR>::is_idempotent = false;
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os, const std::map<VarId, SR>& values) {
