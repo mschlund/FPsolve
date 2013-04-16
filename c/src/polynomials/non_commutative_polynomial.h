@@ -41,12 +41,12 @@ private:
 
     static void InsertMonomial(
         std::map<NonCommutativeMonomial<SR>, std::uint_fast16_t> &monomials,
-        std::vector<std::pair<elemType,int>> &&idx,
-        std::vector<VarId> &&variables,
-        std::vector<SR> &&srs
+        std::vector<std::pair<elemType,int>> &idx,
+        std::vector<VarId> &variables,
+        std::vector<SR> &srs
         )
     {
-      auto tmp_monomial = NonCommutativeMonomial<SR>(std::move(idx), std::move(variables), std::move(srs));
+      auto tmp_monomial = NonCommutativeMonomial<SR>(idx, variables, srs);
       InsertMonomial(monomials, tmp_monomial, 1);
     };
 
@@ -58,21 +58,43 @@ private:
 
     /* Create a 'constant' polynomial. */
     NonCommutativePolynomial(const SR &elem) {
-      InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {elem});
+      std::vector<std::pair<elemType, int>> idx = {{SemiringType, 0}};
+      std::vector<VarId> variables = {};
+      std::vector<SR> srs = {elem};
+      if(!(elem == SR::null()))
+      {
+        InsertMonomial(monomials_, idx, variables, srs);
+      } // else this is an empty polynomial
     }
-    NonCommutativePolynomial(SR &&elem) {
+
+    NonCommutativePolynomial(SR &elem) {
       InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {elem});
     }
 
     /* Create a polynomial which consists only of one variable. */
     NonCommutativePolynomial(const VarId var) {
-      InsertMonomial(monomials_, {{Variable, 0}}, {var}, {});
+      std::vector<std::pair<elemType, int>> idx = {{Variable, 0}};
+      std::vector<VarId> variables = {var};
+      std::vector<SR> srs = {};
+      InsertMonomial(monomials_, idx, variables, srs);
+    }
+
+    /* initialize with some monomials */
+    NonCommutativePolynomial(std::initializer_list<NonCommutativeMonomial<SR>> monomials) {
+      for(auto monomial : monomials) {
+        InsertMonomial(monomials_, monomial, 1);
+      }
     }
 
     NonCommutativePolynomial<SR>& operator=(const NonCommutativePolynomial<SR> &p) = default;
     NonCommutativePolynomial<SR>& operator=(NonCommutativePolynomial<SR> &&p) = default;
 
     NonCommutativePolynomial<SR>& operator+=(const NonCommutativePolynomial<SR> &polynomial) {
+      if( *this == null())
+      {
+        *this = polynomial;
+        return *this;
+      }
       for (const auto &monomial : polynomial.monomials_) {
         // InsertMonomial handles monomials which are already in 'this' polynomial
         InsertMonomial(monomials_, monomial.first, monomial.second);
@@ -93,6 +115,22 @@ private:
     }
 
     NonCommutativePolynomial<SR>& operator*=(const NonCommutativePolynomial<SR> &rhs) {
+      if (*this == one())
+      {
+        *this = rhs;
+        return *this;
+      } else if (rhs == one())
+      {
+        return *this;
+      }
+      if (*this == null())
+      {
+        return *this;
+      } else if (rhs == null())
+      {
+        *this = rhs;
+        return *this;
+      }
       if (monomials_.empty()) {
         return *this;
       } else if (rhs.monomials_.empty()) {
@@ -176,7 +214,7 @@ private:
     SR eval(const std::map<VarId, SR> &values) const {
       SR result = SR::null();
       for (const auto &monomial : monomials_) {
-        result += monomial.eval(values);
+        result += monomial.first.eval(values) * monomial.second;
       }
       return result;
     }
@@ -229,7 +267,7 @@ private:
       auto result = FreeSemiring::null();
       // convert this polynomial by adding all converted monomials
       for (const auto &monomial : monomials_) {
-        result += monomial.second * monomial.first.make_free(valuation); // TODO: is this correct?
+        result += monomial.first.make_free(valuation) * monomial.second;
       }
       return result;
     }

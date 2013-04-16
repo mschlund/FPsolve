@@ -27,10 +27,10 @@ class NonCommutativeMonomial {
 
     /* Private constructor to not leak the internal data structure. */
     //NonCommutativeMonomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
-    NonCommutativeMonomial(std::vector<std::pair<elemType,int>> &&idx,
-        std::vector<VarId> &&variables,
-        std::vector<SR> &&srs) :
-      idx_(std::move(idx)), variables_(std::move(variables)), srs_(std::move(srs)) {}
+    NonCommutativeMonomial(std::vector<std::pair<elemType,int>> &idx,
+        std::vector<VarId> &variables,
+        std::vector<SR> &srs) :
+      idx_(idx), variables_(variables), srs_(srs) {}
 
   public:
 
@@ -77,7 +77,8 @@ class NonCommutativeMonomial {
       for (auto s : monomial.srs_)
         tmp_srs.push_back(s);
 
-      return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
+      //return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
+      return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
     }
 
 
@@ -270,7 +271,7 @@ class NonCommutativeMonomial {
                 result *= tmp_var_free;
               } else {
                 // there is already a variable for this element, use it
-                result *= *value_iter;
+                result *= value_iter->second;
               }
             }
           }
@@ -284,7 +285,7 @@ class NonCommutativeMonomial {
       // lexicographic ordering
       if(idx_ != rhs.idx_) return idx_ < rhs.idx_;
       if(variables_ != rhs.variables_) return variables_ < rhs.variables_;
-      if(srs_ != rhs.srs_) return srs_ < rhs.srs_;
+      // if(srs_ != rhs.srs_) return srs_ < rhs.srs_; // FIXME: This might be really wrong!!! but it assumes operator<(SR,SR) which does not exist... compare hash?
 
       // they are equal
       return false;
