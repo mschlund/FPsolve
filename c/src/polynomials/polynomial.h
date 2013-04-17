@@ -266,7 +266,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     SR DerivativeBinomAt(const VarDegreeMap &deriv_variables,
-                         const std::map<VarId, SR> &valuation) {
+                         const std::map<VarId, SR> &valuation) const {
 
       SR result = SR::null();
       for (const auto &monomial_coeff : monomials_) {
@@ -475,7 +475,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
     }
 
-    Degree get_degree() {
+    Degree get_degree() const {
       Degree degree = 0;
       for (auto &monomial_coeff : monomials_) {
         degree = std::max(degree, monomial_coeff.first.get_degree());
@@ -483,7 +483,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return degree;
     }
 
-    Degree GetMaxDegreeOf(const VarId var) {
+    Degree GetMaxDegreeOf(const VarId var) const {
       auto var_degree_iter = variables_.find(var);
       if (var_degree_iter == variables_.end()) {
         return 0;
