@@ -35,7 +35,7 @@ class VarDegreeMap {
     bool operator<(const VarDegreeMap &rhs) const { return map_ < rhs.map_; }
     bool operator==(const VarDegreeMap &rhs) const { return map_ == rhs.map_; }
 
-    /* The VarId must be in the map. */
+    /* Returns 0 if var is not in the map. */
     Degree GetDegreeOf(const VarId var) const;
 
     void Insert(const VarId var, Degree deg = 1);
