@@ -231,6 +231,11 @@ class Monomial {
       return degree;
     }
 
+    Degree GetDegreeOf(const VarId var) const {
+      return variables_.GetDegreeOf(var);
+    }
+
+
     // FIXME: modify or remove
     std::set<VarId> get_variables() const {
       std::set<VarId> set;
