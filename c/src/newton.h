@@ -260,6 +260,7 @@ class Newton {
         F.push_back(equation_it->second);
       }
       Matrix<SR> result = this->solve_fixpoint(F, poly_vars, max_iter);
+      // Matrix<SR> result = SolveNoSd(F, poly_vars, max_iter);
 
       // repack everything and return it
       std::map<VarId,SR> solution;
@@ -361,6 +362,153 @@ class Newton {
 
       return newton_values;
     }
+
+
+    Matrix<SR> ComputeDelta(
+        const std::vector<VarId> &variables,
+        const std::vector< Polynomial<SR> > &polynomials,
+        const Matrix<SR> &newton_values,
+        const Matrix<SR> &newton_update) {
+
+      assert(newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
+
+      auto num_variables = variables.size();
+      assert(num_variables == newton_values.getRows() &&
+             num_variables == newton_update.getRows());
+
+      std::vector<SR> delta_vector;
+
+      std::vector<Degree> current_max_degree(num_variables);
+
+      for (const auto &polynomial : polynomials) {
+        SR delta = SR::null();
+        Degree polynomial_max_degree = polynomial.get_degree();
+
+        for (std::size_t i = 0; i < num_variables; ++i) {
+          current_max_degree[i] = polynomial.GetMaxDegreeOf(variables[i]);
+        }
+
+        /* We want to calculate all possible derivatives of at least second
+         * order, but lower or equal to the degree of polynomial. */
+        Generator generator{current_max_degree, 2, polynomial_max_degree};
+
+        while (generator.NextCombination()) {
+          VarDegreeMap deriv_variables;
+
+          SR prod = SR::one();
+          for (std::size_t i = 0; i < num_variables; ++i) {
+            assert(deriv_variables.GetDegreeOf(variables[i]) == 0);
+            /* If we don't differentiate over the current variable, just
+             * continue with the next one.  The map deriv_variables will
+             * implicitly return 0 for the current variable. */
+            if (generator.GetVectorRef()[i] == 0) {
+              continue;
+            }
+            deriv_variables.Insert(variables[i], generator.GetVectorRef()[i]);
+            for (int j = 0; j < generator.GetVectorRef()[i]; ++j) {
+              prod *= newton_update.At(i, 0);
+            }
+          }
+
+          std::map<VarId, SR> values;
+          for (std::size_t i = 0; i < num_variables; ++i) {
+            // FIXME: GCC 4.7 is missing emplace
+            values.insert(std::make_pair(variables[i], newton_values.At(i, 0)));
+          }
+          SR polynomial_value =
+            polynomial.DerivativeBinomAt(deriv_variables, values);
+
+          delta += polynomial_value * prod;
+        }
+
+        delta_vector.emplace_back(std::move(delta));
+      }
+      return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
+    }
+
+
+
+    /* Solve without using symbolic delta. */
+    Matrix<SR> SolveNoSd(const std::vector< Polynomial<SR> > &polynomials,
+                         const std::vector<VarId> &variables,
+                         std::uint_fast64_t max_iter) {
+
+      Matrix< Polynomial<SR> > polynomials_matrix{polynomials.size(), polynomials};
+      Matrix< Polynomial<SR> > jacobian =
+        Polynomial<SR>::jacobian(polynomials, variables);
+
+      std::unordered_map<SR, VarId, SR> valuation_tmp;
+      Matrix<FreeSemiring> jacobian_free =
+        Polynomial<SR>::make_free(jacobian, &valuation_tmp);
+      Matrix<FreeSemiring> jacobian_star = jacobian_free.star();
+
+      std::unordered_map<VarId, SR> valuation;
+      for (auto &pair : valuation_tmp) {
+        valuation.insert(std::make_pair(pair.second, pair.first));
+      }
+
+      /* This is values^0 (i.e. \_ -> 0). */
+      Matrix<SR> newton_values{polynomials.size(), 1};
+
+      /* Temporary mapping just to get the first delta. */
+      std::map<VarId, SR> tmp_values;
+      for (auto &variable : variables) {
+        // FIXME: GCC 4.7 doesn't have emplace
+        tmp_values.insert(std::make_pair(variable, SR::null()));
+      }
+
+      /* This is delta^1. */
+      Matrix<SR> delta = Polynomial<SR>::eval(polynomials_matrix, tmp_values);
+      tmp_values.clear();
+
+      /* This is update^1. */
+      Matrix<SR> newton_update = step(variables, newton_values, jacobian_star,
+                                      delta, &valuation);
+
+      for (std::uint_fast16_t i = 1; i < max_iter; ++i) {
+
+        /* Here we have newton_values^(i - 1), newton_update^i and delta^i. */
+
+        /* This allows us to compute the delta^(i + 1) using:
+         * - newton_update^i
+         * - newton_values^{i - 1} */
+
+        if (!SR::IsIdempotent()) {
+          delta = ComputeDelta(variables, polynomials, newton_values, newton_update);
+        }
+
+        /* Then we compute the newton_values^i by (optionally) adding:
+         * - newton_values^{i - 1}
+         * - newton_update^i */
+
+        if (SR::IsIdempotent()) {
+          /* For idempotent SRs we do not have do perform the addition. */
+          newton_values = std::move(newton_update);
+        } else {
+          newton_values = newton_values + newton_update;
+        }
+
+        /* Finally we compute the newton_update^{i + 1} using:
+         * - newton_values^i
+         * - delta^{i + 1} */
+
+        newton_update = step(variables, newton_values, jacobian_star,
+                             delta, &valuation);
+
+        /* Here we have values^i, update^{i + 1} and delta^{i + 1}. */
+
+      }
+
+      if (SR::IsIdempotent()) {
+        /* For idempotent SRs we do not have do perform the addition. */
+        newton_values = std::move(newton_update);
+      } else {
+        newton_values = newton_values + newton_update;
+      }
+
+      return newton_values;
+    }
+
 };
 
 #endif
