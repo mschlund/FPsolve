@@ -125,20 +125,6 @@ class Monomial {
       return {multiplicity, Monomial{std::move(tmp_variables)} };
     }
 
-    //TODO: avoid creation of temporary objects
-    template <typename SR>
-    SR derivative_binom_at(const VarDegreeMap &vars,
-                           const std::map<VarId, SR> &valuation) const {
-
-
-
-
-      auto tmp_deriv = derivative_binom(vars);
-      SR res = tmp_deriv.second.eval(valuation);
-      res *= tmp_deriv.first;
-      return res;
-    }
-
     /* Evaluate the monomial given the map from variables to values,
      * If a variable is not interpreted the assertion fails !*/
     template <typename SR>
