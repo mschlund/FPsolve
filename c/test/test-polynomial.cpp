@@ -164,9 +164,9 @@ void PolynomialTest::testDerivativeBinomAt() {
     { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("f")) }
   };
 
-  std::map<VarId, Degree> dx0;
-  std::map<VarId, Degree> dx1 = { {Var::GetVarId("x"), 1} };
-  std::map<VarId, Degree> dx2 = { {Var::GetVarId("x"), 2} };
+  VarDegreeMap dx0;
+  VarDegreeMap dx1 = { {Var::GetVarId("x"), 1} };
+  VarDegreeMap dx2 = { {Var::GetVarId("x"), 2} };
 
   CPPUNIT_ASSERT(first->derivative_binom(dx0).eval(values).string() ==
                  first->DerivativeBinomAt(dx0, values).string());
