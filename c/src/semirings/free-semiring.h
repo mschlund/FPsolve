@@ -59,9 +59,11 @@ class FreeSemiring : public Semiring<FreeSemiring, Commutativity::NonCommutative
     }
 
     std::string string() const {
-      std::stringstream ss;
-      ss << *node_;
-      return ss.str();
+      return NodeToString(*node_);
+    }
+
+    std::string RawString() const {
+      return NodeToRawString(*node_);
     }
 
     template <typename SR>
