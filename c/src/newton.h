@@ -181,11 +181,11 @@ class Newton {
 
         while (generator.NextCombination()) {
           //std::vector<VarId> dx;
-          std::map<VarId, Degree> dx;
+          VarDegreeMap dx;
           Polynomial<SR> prod{SR::one()};
 
           for (std::size_t index = 0; index < num_variables; ++index) {
-            dx[poly_vars[index]] = generator.GetVectorRef()[index];
+            dx.Insert(poly_vars[index], generator.GetVectorRef()[index]);
             for (int j = 0; j < generator.GetVectorRef()[index]; ++j) {
               prod *= v_upd[index];
             }

@@ -227,7 +227,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     Polynomial<SR> derivative(const VarId &var) const {
-      return this->derivative_binom(std::map<VarId,Degree>{std::make_pair(var,1)});
+      return derivative_binom(VarDegreeMap{std::make_pair(var,1)});
     }
 
     Polynomial<SR> derivative(const std::vector<VarId> &vars) const {
@@ -241,10 +241,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
           dx[v] ++;
         }
       }
-      return this->derivative_binom(dx);
+      return derivative_binom(dx);
     }
 
-    Polynomial<SR> derivative_binom(const std::map<VarId, Degree> &vars) const {
+    Polynomial<SR> derivative_binom(const VarDegreeMap &vars) const {
       std::map<Monomial, SR> tmp_monomials;
       VarDegreeMap tmp_variables;
 
@@ -265,7 +265,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR DerivativeBinomAt(const std::map<VarId, Degree> &deriv_variables,
+    SR DerivativeBinomAt(const VarDegreeMap &deriv_variables,
                          const std::map<VarId, SR> &valuation) {
 
       SR result = SR::null();
@@ -313,7 +313,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
           const auto variable = variable_degree.first;
           const auto degree = variable_degree.second;
 
-          if (deriv_variables.count(variable) > 0) {
+          if (deriv_variables.GetDegreeOf(variable) > 0) {
             /* Already considered in the previous loop. */
             continue;
           }

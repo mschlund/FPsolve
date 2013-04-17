@@ -91,7 +91,7 @@ class Monomial {
      *  with binom{D}{i} where D is the vector of variable degrees
      *  i.e. if above operator d/dx^2y^3 is applied to the monomial x^5y^6 the result is (5*4 * 6*5*4) * x^3y^3
      */
-    std::pair<Degree, Monomial> derivative_binom(const std::map<VarId, Degree> &vars) const {
+    std::pair<Degree, Monomial> derivative_binom(const VarDegreeMap &vars) const {
       Degree multiplicity = 1;
       auto tmp_variables = variables_;
 
@@ -127,7 +127,7 @@ class Monomial {
 
     //TODO: avoid creation of temporary objects
     template <typename SR>
-    SR derivative_binom_at(const std::map<VarId, Degree> &vars,
+    SR derivative_binom_at(const VarDegreeMap &vars,
                            const std::map<VarId, SR> &valuation) const {
 
 

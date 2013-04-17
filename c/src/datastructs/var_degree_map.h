@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <initializer_list>
 #include <limits>
 #include <map>
 
@@ -18,6 +19,10 @@ class VarDegreeMap {
     VarDegreeMap() = default;
     VarDegreeMap(const VarDegreeMap &) = default;
     VarDegreeMap(VarDegreeMap &&) = default;
+
+    VarDegreeMap(std::initializer_list< std::pair<const VarId, Degree> > list)
+      : map_(list) {}
+
     VarDegreeMap& operator=(const VarDegreeMap &) = default;
     VarDegreeMap& operator=(VarDegreeMap &&) = default;
 
