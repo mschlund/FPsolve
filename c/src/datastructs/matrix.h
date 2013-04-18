@@ -200,8 +200,8 @@ class Matrix {
 
       Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
       Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
-      Matrix A_12 = as_11 * a_12 * as_22;
-      Matrix A_21 = as_22 * a_21 * as_11;
+      Matrix A_12 = as_11 * a_12 * A_22;
+      Matrix A_21 = A_22 * a_21 * as_11;
 
       return block_matrix(std::move(A_11), std::move(A_12),
                           std::move(A_21), std::move(A_22));
