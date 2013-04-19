@@ -28,6 +28,7 @@ public:
 	std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> float_parser(std::string input);
 	std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
 	std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
+        std::vector<std::pair<VarId, Polynomial<FreeSemiring>>> free_parser(std::string input);
 };
 
 #endif

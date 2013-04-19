@@ -41,16 +41,29 @@ const phx::function<option_impl> option;
 
 struct rexp_var_impl
 {
-	template <typename T>
-	struct result { typedef CommutativeRExp type; }; // this tells Boost the return type
+        template <typename T>
+        struct result { typedef CommutativeRExp type; }; // this tells Boost the return type
 
-	const CommutativeRExp operator()(std::string& s) const
-	{
-		// create an element with the given var
-		return CommutativeRExp(Var::GetVarId(s));
-	}
+        const CommutativeRExp operator()(std::string& s) const
+        {
+                // create an element with the given var
+                return CommutativeRExp(Var::GetVarId(s));
+        }
 };
 const phx::function<rexp_var_impl> rexp_var;
+
+struct free_var_impl
+{
+	template <typename T>
+	struct result { typedef FreeSemiring type; }; // this tells Boost the return type
+
+	const FreeSemiring operator()(std::string& s) const
+	{
+		// create an element with the given var
+		return FreeSemiring(Var::GetVarId(s));
+	}
+};
+const phx::function<free_var_impl> free_var;
 
 struct slset_var_impl
 {
@@ -146,6 +159,16 @@ struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space
 	qi::rule<iterator_type, std::string()> varidentifier;
 };
 
+// parser for a free semiring element
+struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
+{
+        free_elem_parser() : free_elem_parser::base_type(elem)
+        {
+                elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = free_var(_1)] >> '"';
+        }
+        qi::rule<iterator_type, FreeSemiring()> elem;
+};
+
 
 // use the given parser and return a list of equations of SR polynomials
 template <typename SR_Parser, typename SR>
@@ -214,5 +237,11 @@ std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(s
 // wrapper function for explicit semilinear set equations
 std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
 {
-	return parser<slset_elem_parser, SemilinSetExp>(input);
+        return parser<slset_elem_parser, SemilinSetExp>(input);
+}
+
+// wrapper function for free semiring equations
+std::vector<std::pair<VarId, Polynomial<FreeSemiring>>> Parser::free_parser(std::string input)
+{
+	return parser<free_elem_parser, FreeSemiring>(input);
 }
