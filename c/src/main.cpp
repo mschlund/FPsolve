@@ -310,7 +310,7 @@ int main(int argc, char* argv[])
         }
 	else if(vm.count("free")) {
 		// parse the input into a list of (Var → Polynomial[SR])
-		std::vector<std::pair<VarId, Polynomial<FreeSemiring>>> equations(p.free_parser(input_all));
+		std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> equations(p.free_parser(input_all));
 		if(equations.empty()) return -1;
 
 		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
@@ -319,8 +319,8 @@ int main(int argc, char* argv[])
 		}
 
 		// apply the newton method to the equations
-		auto result = apply_newton<FreeSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
-		std::cout << result_string(result) << std::endl;
+		//auto result = apply_newton<FreeSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+                //std::cout << result_string(result) << std::endl;
 	}
 	else if(vm.count("float")) {
 		std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> equations(p.float_parser(input_all));

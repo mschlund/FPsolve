@@ -6,6 +6,7 @@
 #include "semirings/float-semiring.h"
 #include "semirings/commutativeRExp.h"
 #include "polynomials/polynomial.h"
+#include "polynomials/non_commutative_polynomial.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semirings/semilinSetExp.h"
@@ -28,7 +29,7 @@ public:
 	std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> float_parser(std::string input);
 	std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
 	std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
-        std::vector<std::pair<VarId, Polynomial<FreeSemiring>>> free_parser(std::string input);
+        std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> free_parser(std::string input);
 };
 
 #endif

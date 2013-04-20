@@ -171,17 +171,18 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
 
 
 // use the given parser and return a list of equations of SR polynomials
-template <typename SR_Parser, typename SR>
-struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId, Polynomial<SR>>>(), qi::space_type>
+// the second parameter is either Polynomial<SR> or NonCommutativePolynomial<SR>
+template <typename SR_Parser, typename PSR>
+struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId, PSR>>(), qi::space_type>
 {
-	std::vector<std::pair<VarId, Polynomial<SR>>> new_rules; // accumulate generated rules in this vector
+	std::vector<std::pair<VarId, PSR>> new_rules; // accumulate generated rules in this vector
 	equation_parser() : equation_parser::base_type(equations)
 	{
 		// the first rule combines the generated equations with the read equations and returns them in one vector
 		equations = (*equation)[_val = _1] [insert(_val, end(_val), begin(phx::ref(new_rules)), end(phx::ref(new_rules)))];
 		equation %= (var >> lexeme["::="] >> polynomial >> ';');
 		polynomial = summand [_val = _1] >> *('|' >> summand [_val = _val + _1]); // addition
-		summand = eps [_val = Polynomial<SR>::one()] >> // set _val to one-element of the semiring
+		summand = eps [_val = PSR::one()] >> // set _val to one-element of the semiring
 				*(
 					('(' >> polynomial >> ')') [_val = _val * _1] | // group term
 					('{' >> kstar >> '}') [_val = _val * _1] | // | // kleene star: {A} → B && B = 1 + BA
@@ -195,21 +196,38 @@ struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId,
 					[_val = _a]; // continue with the new variable
 		varidentifier = qi::as_string[lexeme['<' >> +(ascii::char_ - '>') >> '>']];
 	}
-	qi::rule<iterator_type, std::vector<std::pair<VarId, Polynomial<SR>>>(), qi::space_type> equations;
-	qi::rule<iterator_type, std::pair<VarId, Polynomial<SR>>(), qi::space_type> equation;
-	qi::rule<iterator_type, Polynomial<SR>(), qi::space_type> polynomial;
-	qi::rule<iterator_type, Polynomial<SR>(), qi::space_type> summand;
+	qi::rule<iterator_type, std::vector<std::pair<VarId, PSR>>(), qi::space_type> equations;
+	qi::rule<iterator_type, std::pair<VarId, PSR>(), qi::space_type> equation;
+	qi::rule<iterator_type, PSR(), qi::space_type> polynomial;
+	qi::rule<iterator_type, PSR(), qi::space_type> summand;
 	qi::rule<iterator_type, std::string()> varidentifier;
 	qi::rule<iterator_type, VarId(), qi::locals<VarId>, qi::space_type> kstar;
 	qi::rule<iterator_type, VarId()> var;
 	SR_Parser sr_elem;
 };
 
-// generic function for using the parser
+// non commutative generic function for using the parser
 template <typename SR_Parser, typename SR> 
-std::vector<std::pair<VarId, Polynomial<SR>>> parser(std::string input)
+std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> non_commutative_parser(std::string input)
 {
-	typedef equation_parser<SR_Parser, SR> equation_parser;
+        typedef equation_parser<SR_Parser, NonCommutativePolynomial<SR>> equation_parser;
+        equation_parser equation;
+
+        iterator_type iter = input.begin();
+        iterator_type end = input.end();
+
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> result;
+        if(!(qi::phrase_parse(iter, end, equation, qi::space, result) && iter == end))
+                std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
+
+        return result;
+}
+
+// commutative generic function for using the parser
+template <typename SR_Parser, typename SR> 
+std::vector<std::pair<VarId, Polynomial<SR>>> commutative_parser(std::string input)
+{
+	typedef equation_parser<SR_Parser, Polynomial<SR>> equation_parser;
 	equation_parser equation;
 
 	iterator_type iter = input.begin();
@@ -225,23 +243,23 @@ std::vector<std::pair<VarId, Polynomial<SR>>> parser(std::string input)
 // wrapper function for float equations
 std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> Parser::float_parser(std::string input)
 {
-	return parser<float_elem_parser, FloatSemiring>(input);
+	return commutative_parser<float_elem_parser, FloatSemiring>(input);
 }
 
 // wrapper function for regular expression equations
 std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
 {
-	return parser<rexp_elem_parser, CommutativeRExp>(input);
+	return commutative_parser<rexp_elem_parser, CommutativeRExp>(input);
 }
 
 // wrapper function for explicit semilinear set equations
 std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
 {
-        return parser<slset_elem_parser, SemilinSetExp>(input);
+        return commutative_parser<slset_elem_parser, SemilinSetExp>(input);
 }
 
 // wrapper function for free semiring equations
-std::vector<std::pair<VarId, Polynomial<FreeSemiring>>> Parser::free_parser(std::string input)
+std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> Parser::free_parser(std::string input)
 {
-	return parser<free_elem_parser, FreeSemiring>(input);
+	return non_commutative_parser<free_elem_parser, FreeSemiring>(input);
 }

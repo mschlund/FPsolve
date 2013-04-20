@@ -15,6 +15,7 @@
 #include "../datastructs/var_degree_map.h"
 
 #include "non_commutative_monomial.h"
+#include "polynomial.h"
 
 /* FIXME: NonCommutativePolynomials are no semiring in our definition (not starable). */
 template <typename SR>
@@ -68,7 +69,13 @@ private:
     }
 
     NonCommutativePolynomial(SR &elem) {
-      InsertMonomial(monomials_, {{SemiringType, 0}}, {}, {elem});
+      std::vector<std::pair<elemType, int>> idx = {{SemiringType, 0}};
+      std::vector<VarId> variables = {};
+      std::vector<SR> srs = {elem};
+      if(!(elem == SR::null()))
+      {
+        InsertMonomial(monomials_, idx, variables, srs);
+      } // else this is an empty polynomial
     }
 
     /* Create a polynomial which consists only of one variable. */
@@ -157,7 +164,7 @@ private:
     NonCommutativePolynomial<SR> operator*(const VarId &var) const {
       NonCommutativePolynomial result_polynomial;
       for (auto &monomial : monomials_) {
-        InsertMonomial(result_polynomial.monomials_, monomial * var);
+        InsertMonomial(result_polynomial.monomials_, monomial.first * var, monomial.second);
       }
       return result_polynomial;
     }
@@ -173,6 +180,18 @@ private:
 
     bool operator==(const NonCommutativePolynomial<SR> &polynomial) const {
       return monomials_ == polynomial.monomials_;
+    }
+
+    /* convert this non-commutative-polynomial to a commutative one */
+    Polynomial<SR> make_commutative() const {
+      Polynomial<SR> result;
+      
+      for(auto const &monomial : monomials_)
+      {
+        result *= monomial.make_commutative();
+      }
+
+      return result;
     }
 
     /* calculate the delta for this polynomial with the given data at iteration d
