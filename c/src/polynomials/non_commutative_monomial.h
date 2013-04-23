@@ -126,10 +126,10 @@ class NonCommutativeMonomial {
       auto tmp_idx = idx_;
       auto tmp_variables = variables_;
       auto tmp_srs = srs_;
-      tmp_variables.push_back(var);
       tmp_idx.push_back(std::pair<elemType, int>(Variable, tmp_variables.size()));
+      tmp_variables.push_back(var);
 
-      return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
+      return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
     }
 
     /* Multiply a monomial with a semiring element. */
@@ -138,10 +138,27 @@ class NonCommutativeMonomial {
       auto tmp_idx = idx_;
       auto tmp_variables = variables_;
       auto tmp_srs = srs_;
-      tmp_srs.push_back(sr);
       tmp_idx.push_back(std::pair<elemType, int>(SemiringType, tmp_srs.size()));
+      tmp_srs.push_back(sr);
 
-      return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
+      return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
+    }
+
+    /* convert this monomial into an commutative one
+     * return a Polynomial, because the semiring element is not saved
+     * in the commutative version of the monomial but in the polynomial */
+    NonCommutativePolynomial<SR> make_commutative() const {
+      NonCommutativePolynomial<SR> result_polynomial;
+      
+      for(auto const &sr : srs_) {
+        result_polynomial *= sr;
+      }
+
+      for(auto const &var : variables_) {
+        result_polynomial *= var;
+      }
+
+      return result_polynomial;
     }
 
     /* derivation function which is used in the polynomial derivative function.

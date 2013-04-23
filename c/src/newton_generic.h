@@ -391,8 +391,40 @@ private:
   std::vector<VarId> poly_vars;
 };
 
+/*
+ * TODO: other signature for "solving" linsys ?? (with number of iterations?)
+ * Be sure to call it only on semirings for which the iteration terminates...
+ * TODO: implement round-robin iteration etc. (all the tricks from program-analysis.. see Tarjan's paper from '76)
+ */
+template <typename SR>
+class SimpleKleeneLinSolver {
+
+public:
+  /*
+   *
+   */
+  SimpleKleeneLinSolver(const std::vector< NonCommutativePolynomial<SR> >& F,  const std::vector<VarId>& variables) {
+
+  }
+
+  /*
+   * compute f = "F.differential_at(values) + rhs" (=linear polynomial)
+   * and then iterate f^n(0) until convergence or MAX_ITER is reached
+   */
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs, const std::vector<VarId>& variables) {
+
+  }
+
+private:
+
+};
+
+
+
+
 // compatability with old implementation
 template <typename SR> class Newton : public GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator >{ };
+
 
 
 #endif /* NEWTON_GENERIC_H_ */
