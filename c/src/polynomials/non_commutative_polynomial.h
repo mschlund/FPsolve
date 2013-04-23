@@ -211,6 +211,14 @@ private:
       return {result, mapping};
     }
 
+   NonCommutativePolynomial<SR> differential_at(const std::map<VarId,SR> valuation) const {
+     NonCommutativePolynomial<SR> result;
+     for(auto const &monomial : monomials_) {
+       result += monomial.first.differential_at(valuation) * monomial.second;
+     }
+
+   }
+
     SR eval(const std::map<VarId, SR> &values) const {
       SR result = SR::null();
       for (const auto &monomial : monomials_) {

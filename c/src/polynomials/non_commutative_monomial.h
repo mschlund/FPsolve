@@ -32,6 +32,45 @@ class NonCommutativeMonomial {
         std::vector<SR> &srs) :
       idx_(idx), variables_(variables), srs_(srs) {}
 
+    /*
+     * evaluate all variables except the one at the exceptional position
+     * returns a monomial of the form aXb where a,b are in SR.
+     * TODO: check, that all variables are present in the valuation!
+     */
+    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) {
+      SR a = SR::one();
+      SR b = SR::one();
+
+      assert(except_pos < variables.size());
+
+      /*
+       * go through the idx_-vector,
+       * - evaluate all variables encountered as long as its position is less than except_pos
+       * - on the way: multiply everything (evaluated vars and sr-elems) onto a
+       * - after except_pos has been found: multiply everything encountered onto b
+       */
+
+      SR* prod = &a;
+      for(auto p : idx_) {
+        if(except_pos == variables[p.second]) {
+          prod = &b;
+          continue;
+        }
+        if(p.first == elemType::Variable)
+          (*prod) *= valuation[variables[p.second]];
+        else
+          (*prod) *= srs_[p.second];
+      }
+
+      std::vector<std::pair<elemType,int> > info{std::make_pair(elemType::SemiringType,0),
+                                              std::make_pair(elemType::Variable,0),
+                                              std::make_pair(elemType::SemiringType,1),};
+      std::vector<VarId> vars{variables_[except_pos]};
+      std::vector<SR> sr{a,b};
+
+      return NonCommutativeMonomial(info, vars, sr);
+    }
+
   public:
 
     /* Since we don't manage any resources, we can simply use the default
@@ -105,7 +144,6 @@ class NonCommutativeMonomial {
       return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
     }
 
-
     /* derivation function which is used in the polynomial derivative function.
      * for the variables for the d-1-th iterand we use the given map 'substitution' */
     NonCommutativePolynomial<SR> derivative(const std::map<VarId, VarId> &substitution) const {
@@ -119,6 +157,21 @@ class NonCommutativeMonomial {
       }
       return result;
     }
+
+    /*
+     * compute the linearization of the polynomial at the given point "valuation"
+     * to this end, we linearize every monomial and sum them up
+     */
+    NonCommutativePolynomial<SR> differential_at(const std::map<VarId, SR> &valuation) const {
+      NonCommutativePolynomial<SR> result; // empty polynomial = 0 (constant monomials have differential f(x)=0)
+
+      for(unsigned int position = 0; position < variables_.size(); position++) {
+        // the variable at the position is the variable which should not be touched, all others will be evaluated
+        result += this->eval_all_except(position, valuation);
+      }
+      return result;
+    }
+
 
     SR calculate_delta_helper(
       const std::vector<bool> &permutation,
