@@ -41,7 +41,7 @@ class NonCommutativeMonomial {
       SR a = SR::one();
       SR b = SR::one();
 
-      assert(except_pos < variables.size());
+      assert(except_pos < variables_.size());
 
       /*
        * go through the idx_-vector,
@@ -52,12 +52,12 @@ class NonCommutativeMonomial {
 
       SR* prod = &a;
       for(auto p : idx_) {
-        if(except_pos == variables[p.second]) {
+        if(except_pos == p.second) {
           prod = &b;
           continue;
         }
         if(p.first == elemType::Variable)
-          (*prod) *= valuation[variables[p.second]];
+          (*prod) *= valuation[variables_[p.second]];
         else
           (*prod) *= srs_[p.second];
       }
@@ -95,13 +95,25 @@ class NonCommutativeMonomial {
     }
 */
 
-    /* Multiply two monomials. */
+    /* Multiply two monomials and return a result in normalform if both monomials
+     * already are in normal form */
     NonCommutativeMonomial operator*(const NonCommutativeMonomial &monomial) const {
       auto tmp_idx = idx_;
       auto tmp_variables = variables_;
       auto tmp_srs = srs_;
+      bool normalform = true;
       unsigned int offset_variables = tmp_variables.size();
       unsigned int offset_srs = tmp_srs.size();
+
+      // assume both monomials are in normal form
+      // then the only position where this assumption might
+      // be violated is where both are concatenated
+      if(tmp_idx.back().first == SemiringType && monomial.idx_.front().first == SemiringType)
+      {
+        tmp_idx.pop_back();
+        offset_srs--;
+        normalform = false;
+      }
 
       for (auto &p : monomial.idx_) {
         if(p.first == Variable)
@@ -113,8 +125,17 @@ class NonCommutativeMonomial {
       for (auto v : monomial.variables_)
         tmp_variables.push_back(v);
 
-      for (auto s : monomial.srs_)
-        tmp_srs.push_back(s);
+      //for (auto s : monomial.srs_)
+      for(auto s = monomial.srs_.begin(); s != monomial.srs_.end(); s++)
+        if(!normalform && s == monomial.srs_.begin())
+        {
+          auto elem = tmp_srs.back();
+          tmp_srs.pop_back();
+          tmp_srs.push_back(elem * (*s));
+          normalform = true;
+        } else {
+          tmp_srs.push_back(*s);
+        }
 
       //return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
       return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
@@ -132,14 +153,22 @@ class NonCommutativeMonomial {
       return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
     }
 
-    /* Multiply a monomial with a semiring element. */
-    // TODO: should we optimize two consecutive semiring elements?
+    /* Multiply a monomial with a semiring element and return it in normal form. */
     NonCommutativeMonomial operator*(const SR &sr) const {
       auto tmp_idx = idx_;
       auto tmp_variables = variables_;
       auto tmp_srs = srs_;
-      tmp_idx.push_back(std::pair<elemType, int>(SemiringType, tmp_srs.size()));
-      tmp_srs.push_back(sr);
+
+      // assume the monomial is in normal form
+      if(tmp_idx.back().first() == SemiringType)
+      {
+        auto elem = tmp_srs.back();
+        tmp_srs.pop_back();
+        tmp_srs.push_back(elem * sr);
+      } else {
+        tmp_idx.push_back(std::pair<elemType, int>(SemiringType, tmp_srs.size()));
+        tmp_srs.push_back(sr);
+      }
 
       return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
     }
@@ -149,7 +178,7 @@ class NonCommutativeMonomial {
      * in the commutative version of the monomial but in the polynomial */
     NonCommutativePolynomial<SR> make_commutative() const {
       NonCommutativePolynomial<SR> result_polynomial;
-      
+
       for(auto const &sr : srs_) {
         result_polynomial *= sr;
       }
@@ -273,16 +302,32 @@ class NonCommutativeMonomial {
             result_monomial.variables_.push_back(variables_.at(p.second));
           } else
           { /* Variable found, use it for evaluation */
-            // FIXME: multiply SR elements immediatly if possible
-            result_monomial.idx_.push_back(std::pair<elemType, int>(SemiringType, result_monomial.srs_.size()));
-            result_monomial.srs_.push_back(value_iter->second);
+            if(result_monomial.idx_.size() > 0 && result_monomial.idx_.back().first == SemiringType)
+            {
+              // multiplying sr-elements to achieve normal form
+              auto elem = result_monomial.srs_.back();
+              result_monomial.srs_.pop_back();
+              result_monomial.srs_.push_back(elem * value_iter->second);
+
+            } else {
+              result_monomial.idx_.push_back(std::pair<elemType, int>(SemiringType, result_monomial.srs_.size()));
+              result_monomial.srs_.push_back(value_iter->second);
+            }
           }
 
         } else if (p.first == SemiringType)
         {
-          // FIXME: probably possible to multiply with new semiring element in front of this element
-          result_monomial.idx_.push_back(std::pair<elemType, int>(SemiringType, result_monomial.srs_.size()));
-          result_monomial.srs_.push_back(srs_.at(p.second));
+          if(result_monomial.idx_.size() > 0 && result_monomial.idx_.back().first == SemiringType)
+          {
+            // multiplying sr-elements to achieve normal form
+            auto elem = result_monomial.srs_.back();
+            result_monomial.srs_.pop_back();
+            result_monomial.srs_.push_back(elem * srs_.at(p.second));
+
+          } else {
+            result_monomial.idx_.push_back(std::pair<elemType, int>(SemiringType, result_monomial.srs_.size()));
+            result_monomial.srs_.push_back(srs_.at(p.second));
+          }
         }
       }
 

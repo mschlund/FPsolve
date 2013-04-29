@@ -185,7 +185,7 @@ private:
     /* convert this non-commutative-polynomial to a commutative one */
     Polynomial<SR> make_commutative() const {
       Polynomial<SR> result;
-      
+
       for(auto const &monomial : monomials_)
       {
         result *= monomial.make_commutative();
