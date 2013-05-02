@@ -11,13 +11,13 @@ class PrefixSemiring : public Semiring<PrefixSemiring, Commutativity::NonCommuta
 {
 private:
 	std::set<std::vector<VarId>> val;
-	static unsigned int max_length;
-	static std::vector<VarId> concatenate(std::vector<VarId> l, std::vector<VarId> r);
+	unsigned int max_length;
+	static std::vector<VarId> concatenate(std::vector<VarId> l, std::vector<VarId> r, unsigned int length);
 	static std::shared_ptr<PrefixSemiring> elem_null;
 	static std::shared_ptr<PrefixSemiring> elem_one;
 public:
 	PrefixSemiring();
-	PrefixSemiring(const std::vector<VarId>& val);
+	PrefixSemiring(const std::vector<VarId>& val, unsigned int length);
 	virtual ~PrefixSemiring();
 	PrefixSemiring operator += (const PrefixSemiring& elem);
 	PrefixSemiring operator *= (const PrefixSemiring& elem);

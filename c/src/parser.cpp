@@ -54,16 +54,29 @@ const phx::function<rexp_var_impl> rexp_var;
 
 struct free_var_impl
 {
-	template <typename T>
-	struct result { typedef FreeSemiring type; }; // this tells Boost the return type
+        template <typename T>
+        struct result { typedef FreeSemiring type; }; // this tells Boost the return type
 
-	const FreeSemiring operator()(std::string& s) const
-	{
-		// create an element with the given var
-		return FreeSemiring(Var::GetVarId(s));
-	}
+        const FreeSemiring operator()(std::string& s) const
+        {
+                // create an element with the given var
+                return FreeSemiring(Var::GetVarId(s));
+        }
 };
 const phx::function<free_var_impl> free_var;
+
+struct prefix_impl
+{
+	template <typename T, typename U>
+	struct result { typedef PrefixSemiring type; }; // this tells Boost the return type
+
+	const PrefixSemiring operator()(std::vector<VarId>& p, unsigned int length) const
+	{
+		// create a prefix with the given vars
+		return PrefixSemiring(p, length);
+	}
+};
+const phx::function<prefix_impl> prefix;
 
 struct slset_var_impl
 {
@@ -117,6 +130,7 @@ using phx::ref; // must be used as phx::ref, otherwise g++ is confused with std:
 using phx::insert;
 using phx::end;
 using phx::begin;
+using phx::ref;
 
 typedef std::string::const_iterator iterator_type;
 
@@ -169,6 +183,19 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
         qi::rule<iterator_type, FreeSemiring()> elem;
 };
 
+// parser for a prefix semiring element
+struct prefix_elem_parser : qi::grammar<iterator_type, PrefixSemiring()>
+{
+  unsigned int max_length;
+        prefix_elem_parser() : prefix_elem_parser::base_type(elem)
+        {
+                elem = '"' >> (*var)[_val = prefix(_1,phx::ref(max_length))] >> '"';
+                var = qi::as_string[lexeme[+(ascii::char_ - '"' - ',')]] [_val = variable(_1)] >> (',');
+        }
+        qi::rule<iterator_type, PrefixSemiring()> elem;
+        qi::rule<iterator_type, VarId()> var;
+};
+
 
 // use the given parser and return a list of equations of SR polynomials
 // the second parameter is either Polynomial<SR> or NonCommutativePolynomial<SR>
@@ -205,6 +232,23 @@ struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId,
 	qi::rule<iterator_type, VarId()> var;
 	SR_Parser sr_elem;
 };
+
+// non commutative function for using the parser with one int and the prefix semiring
+std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> non_commutative_parser(std::string input, unsigned int length)
+{
+        typedef equation_parser<prefix_elem_parser, NonCommutativePolynomial<PrefixSemiring>> equation_parser;
+        equation_parser equation;
+        equation.sr_elem.max_length = length;
+
+        iterator_type iter = input.begin();
+        iterator_type end = input.end();
+
+        std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> result;
+        if(!(qi::phrase_parse(iter, end, equation, qi::space, result) && iter == end))
+                std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
+
+        return result;
+}
 
 // non commutative generic function for using the parser
 template <typename SR_Parser, typename SR> 
@@ -261,5 +305,11 @@ std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(st
 // wrapper function for free semiring equations
 std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> Parser::free_parser(std::string input)
 {
-	return non_commutative_parser<free_elem_parser, FreeSemiring>(input);
+        return non_commutative_parser<free_elem_parser, FreeSemiring>(input);
+}
+
+// wrapper function for prefix semiring equations
+std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> Parser::prefix_parser(std::string input, unsigned int length)
+{
+	return non_commutative_parser(input, length);
 }

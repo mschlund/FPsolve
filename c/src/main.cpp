@@ -179,6 +179,7 @@ int main(int argc, char* argv[])
 		( "slset", "explicit semilinear sets semiring (as vectors)" )
 		( "free", "free semiring" )
 		( "pseudolin", "abstraction over semilinear sets" )
+                ( "prefix", po::value<int>(), "prefix semiring with given length")
 		( "graphviz", "create the file graph.dot with the equation graph" )
 		;
 
@@ -235,7 +236,8 @@ int main(int argc, char* argv[])
            !vm.count("rexp") &&
            !vm.count("slset") &&
            !vm.count("free") &&
-           !vm.count("pseudolin")) // check for all compatible parameters
+           !vm.count("pseudolin") &&
+           !vm.count("prefix")) // check for all compatible parameters
 	{
 		std::cout << "Please supply a supported semiring :)" << std::endl;
 		return 0;
@@ -308,9 +310,23 @@ int main(int argc, char* argv[])
                 auto result = apply_newton<CommutativeRExp>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
                 std::cout << result_string(result) << std::endl;
         }
-	else if(vm.count("free")) {
+        else if(vm.count("free")) {
+                // parse the input into a list of (Var → Polynomial[SR])
+                std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> equations(p.free_parser(input_all));
+                if(equations.empty()) return -1;
+
+                for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
+                {
+                        std::cout << "* " << eq_it->first << " → " << eq_it->second << std::endl;
+                }
+
+                // apply the newton method to the equations
+                //auto result = apply_newton<FreeSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+                //std::cout << result_string(result) << std::endl;
+        }
+	else if(vm.count("prefix")) {
 		// parse the input into a list of (Var → Polynomial[SR])
-		std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> equations(p.free_parser(input_all));
+		std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> equations(p.prefix_parser(input_all, vm["prefix"].as<int>()));
 		if(equations.empty()) return -1;
 
 		for(auto eq_it = equations.begin(); eq_it != equations.end(); ++eq_it)
@@ -319,7 +335,7 @@ int main(int argc, char* argv[])
 		}
 
 		// apply the newton method to the equations
-		//auto result = apply_newton<FreeSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
+		//auto result = apply_newton<PrefixSemiring>(equations, vm.count("scc"), vm.count("iterations"), iterations, vm.count("graphviz"));
                 //std::cout << result_string(result) << std::endl;
 	}
 	else if(vm.count("float")) {

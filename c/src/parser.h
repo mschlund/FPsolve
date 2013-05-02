@@ -5,6 +5,7 @@
 
 #include "semirings/float-semiring.h"
 #include "semirings/commutativeRExp.h"
+#include "semirings/prefix-semiring.h"
 #include "polynomials/polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 
@@ -25,11 +26,12 @@ class Parser
 {
 private:
 public:
-	Parser();
-	std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> float_parser(std::string input);
-	std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
-	std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
-        std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> free_parser(std::string input);
+  Parser();
+  std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> float_parser(std::string input);
+  std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
+  std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
+  std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> free_parser(std::string input);
+  std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> prefix_parser(std::string input, unsigned int length);
 };
 
 #endif
