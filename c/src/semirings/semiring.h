@@ -65,6 +65,9 @@ class Semiring {
 
     virtual SR star () const = 0;
     virtual bool operator==(const SR& elem) const = 0;
+    friend bool operator!=(const SR& lhs, const SR& rhs) {
+      return !(lhs == rhs);
+    }
 
     static constexpr Commutativity GetCommutativity() { return Comm; }
     static constexpr bool IsCommutative() { return IsCommutative_<Comm>::value; }

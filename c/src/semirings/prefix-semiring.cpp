@@ -6,7 +6,7 @@
 PrefixSemiring::PrefixSemiring()
 {
 	// empty prefix
-	this->val = {{}};
+	this->val = {};
         this->max_length = 0;
 }
 
@@ -31,7 +31,7 @@ PrefixSemiring::~PrefixSemiring()
 PrefixSemiring PrefixSemiring::operator+=(const PrefixSemiring& elem)
 {
 	// union of both operands
-	this->val.insert(elem.val.begin(), elem.val.end());
+        this->val.insert(elem.val.begin(), elem.val.end());
         this->max_length = std::max(this->max_length, elem.max_length);
 	return *this;
 }
@@ -48,6 +48,23 @@ PrefixSemiring PrefixSemiring::operator*=(const PrefixSemiring& elem)
 {
 	std::set<std::vector<VarId>> ret;
         this->max_length = std::max(this->max_length, elem.max_length);
+        if(*this == one())
+        {
+          *this = elem;
+          return *this;
+        }
+        else if (elem == one())
+          return *this;
+
+        if(*this == null())
+        {
+          return *this;
+        }
+        else if (elem == null())
+        {
+          *this = elem;
+          return *this;
+        }
 
 	// element-wise concatenation
 	for(auto v : this->val)
@@ -59,19 +76,46 @@ PrefixSemiring PrefixSemiring::operator*=(const PrefixSemiring& elem)
 
 bool PrefixSemiring::operator==(const PrefixSemiring& elem) const
 {
-        if(this->max_length != elem.max_length)
-          return false;
+  if(this->val.size() != elem.val.size())
+    return false;
+  if(this->val.size() == 0 && elem.val.size() == 0)
+    // this returns true for null elements of different length classes
+    return true;
+  if(this->max_length != elem.max_length)
+    return false;
 
-	for(auto v : this->val)
-		for(auto u : elem.val)
-			if(v != u)
-				return false;
-	return true;
+
+  auto v = this->val.begin();
+  auto u = elem.val.begin();
+  for(int i = 0; i < this->val.size(); i++)
+  {
+    if(*v != *u)
+      return false;
+    v++;
+    u++;
+  }
+  return true;
 }
 
 PrefixSemiring PrefixSemiring::star() const
 {
-	assert(false);
+  // let a be the element to be stared
+  // a* = sum i=0 to inf a^i
+  // -> 1 + a + a^2 + a^3 + ...
+  // f(x) = a*x + 1
+  // sum all f^1(0), f^2(0),... f^n(0) until the result converges (size of the set does not increase anymore)
+  // a*0 + 1, a*1 + 1, a(a+1) + 1, a(a(a+1)+1)+1
+  auto result = one();
+  if(*this == null())
+    return result;
+
+  int old_size;
+  do
+  {
+    old_size = result.val.size();
+    result += *this*result + one();
+  } while(old_size != result.val.size());
+  return result;
 }
 
 PrefixSemiring PrefixSemiring::null()
@@ -84,7 +128,7 @@ PrefixSemiring PrefixSemiring::null()
 PrefixSemiring PrefixSemiring::one()
 {
 	if(!PrefixSemiring::elem_one)
-		PrefixSemiring::elem_one = std::shared_ptr<PrefixSemiring>(new PrefixSemiring({Var::GetVarId("")},1));
+		PrefixSemiring::elem_one = std::shared_ptr<PrefixSemiring>(new PrefixSemiring({},1));
 	return *PrefixSemiring::elem_one;
 }
 
