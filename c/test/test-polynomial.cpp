@@ -3,6 +3,7 @@
 #include <map>
 
 #include "test-polynomial.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
@@ -37,6 +38,11 @@ void PolynomialTest::tearDown() {
   delete second;
   delete p1;
   delete a; delete b; delete c; delete d; delete e;
+}
+
+void PolynomialTest::testSemiring()
+{
+  generic_test_semiring(*first, *second);
 }
 
 void PolynomialTest::testAddition() {

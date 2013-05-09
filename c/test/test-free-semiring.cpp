@@ -1,4 +1,5 @@
 #include "test-free-semiring.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(FreeSemiringTest);
 
@@ -14,6 +15,11 @@ void FreeSemiringTest::tearDown()
 	delete a;
 	delete b;
 	delete c;
+}
+
+void FreeSemiringTest::testSemiring()
+{
+  generic_test_semiring(*a,*b);
 }
 
 void FreeSemiringTest::testAddition()

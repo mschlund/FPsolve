@@ -6,6 +6,7 @@
  */
 
 #include "test-semilinSetExp.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(SemilinSetExpTest);
 
@@ -22,6 +23,11 @@ void SemilinSetExpTest::tearDown()
 	delete a;
 	delete b;
 	delete c;
+}
+
+void SemilinSetExpTest::testSemiring()
+{
+  generic_test_semiring(*a, *b);
 }
 
 void SemilinSetExpTest::testBasic()

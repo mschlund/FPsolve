@@ -9,6 +9,7 @@
 class NonCommutativePolynomialTest : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(NonCommutativePolynomialTest);
+        CPPUNIT_TEST(testSemiring);
 	CPPUNIT_TEST(testAddition);
 	CPPUNIT_TEST(testMultiplication);
 	CPPUNIT_TEST(testEvaluation);
@@ -21,6 +22,7 @@ public:
 	void tearDown();
 
 protected:
+        void testSemiring();
 	void testAddition();
 	void testMultiplication();
 	void testEvaluation();

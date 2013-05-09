@@ -1,4 +1,5 @@
 #include "test-float-semiring.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(FloatSemiringTest);
 
@@ -16,6 +17,11 @@ void FloatSemiringTest::tearDown()
 	delete one;
 	delete first;
 	delete second;
+}
+
+void FloatSemiringTest::testSemiring()
+{
+  generic_test_semiring(*first, *second);
 }
 
 void FloatSemiringTest::testAddition()

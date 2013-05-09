@@ -8,6 +8,7 @@
 class FreeSemiringTest : public CppUnit::TestFixture
 {
 	CPPUNIT_TEST_SUITE(FreeSemiringTest);
+        CPPUNIT_TEST(testSemiring);
 	CPPUNIT_TEST(testAddition);
 	CPPUNIT_TEST(testMultiplication);
 	CPPUNIT_TEST(testStar);
@@ -18,6 +19,7 @@ public:
 	void tearDown();
 
 protected:
+        void testSemiring();
 	void testAddition();
 	void testMultiplication();
 	void testStar();

@@ -6,6 +6,7 @@
  */
 
 #include "test-tropical-SR.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(TropicalSemiringTest);
 
@@ -19,6 +20,11 @@ void TropicalSemiringTest::tearDown()
 {
   delete first;
   delete second;
+}
+
+void TropicalSemiringTest::testSemiring()
+{
+  generic_test_semiring(*first, *second);
 }
 
 void TropicalSemiringTest::testAddition()

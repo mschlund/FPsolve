@@ -1,4 +1,5 @@
 #include "test-commutativeRExp.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(CommutativeRExpTest);
 
@@ -15,6 +16,11 @@ void CommutativeRExpTest::tearDown()
 	delete a;
 	delete b;
 	delete c;
+}
+
+void CommutativeRExpTest::testSemiring()
+{
+  generic_test_semiring(*a,*b);
 }
 
 void CommutativeRExpTest::testTerms()

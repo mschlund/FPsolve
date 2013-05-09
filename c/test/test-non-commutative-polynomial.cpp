@@ -3,6 +3,7 @@
 #include <map>
 
 #include "test-non-commutative-polynomial.h"
+#include "util.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(NonCommutativePolynomialTest);
 
@@ -35,6 +36,11 @@ void NonCommutativePolynomialTest::tearDown() {
   delete X;
   delete Y;
   delete a; delete b; delete c; delete d; delete e;
+}
+
+void NonCommutativePolynomialTest::testSemiring()
+{
+  generic_test_semiring(*first, *second);
 }
 
 void NonCommutativePolynomialTest::testAddition() {
