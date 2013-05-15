@@ -227,7 +227,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     Polynomial<SR> derivative(const VarId &var) const {
-      return this->derivative_binom(std::map<VarId,Degree>{std::make_pair(var,1)});
+      return derivative_binom(VarDegreeMap{std::make_pair(var,1)});
     }
 
     Polynomial<SR> derivative(const std::vector<VarId> &vars) const {
@@ -241,10 +241,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
           dx[v] ++;
         }
       }
-      return this->derivative_binom(dx);
+      return derivative_binom(dx);
     }
 
-    Polynomial<SR> derivative_binom(const std::map<VarId, Degree> &vars) const {
+    Polynomial<SR> derivative_binom(const VarDegreeMap &vars) const {
       std::map<Monomial, SR> tmp_monomials;
       VarDegreeMap tmp_variables;
 
@@ -265,7 +265,87 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR derivative_binom_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
+    SR DerivativeBinomAt(const VarDegreeMap &deriv_variables,
+                         const std::map<VarId, SR> &valuation) const {
+
+      SR result = SR::null();
+      for (const auto &monomial_coeff : monomials_) {
+        SR monomial_value = monomial_coeff.second;
+        assert(!(monomial_value == SR::null()));
+
+        /* First consider the variables that are in deriv_variables. */
+        for (const auto &deriv_variable_degree : deriv_variables) {
+          const auto variable = deriv_variable_degree.first;
+          const auto deriv_degree = deriv_variable_degree.second;
+
+          auto degree = monomial_coeff.first.GetDegreeOf(variable);
+
+          if (deriv_degree > degree) {
+            monomial_value = SR::null();
+            break;
+          }
+
+          auto binomial_coeff_d =
+            boost::math::binomial_coefficient<double>(degree, deriv_degree);
+          /* Check if we don't overflow. */
+          assert(static_cast<std::uint_fast64_t>(binomial_coeff_d) <=
+                 static_cast<std::uint_fast64_t>(
+                      std::numeric_limits<Degree>::max()));
+          monomial_value *= static_cast<Degree>(binomial_coeff_d);
+
+          if (degree > deriv_degree) {
+            auto value_lookup = valuation.find(variable);
+            assert(value_lookup != valuation.end());
+            for (Degree c = 0; c < degree - deriv_degree; ++c) {
+              monomial_value *= value_lookup->second;
+            }
+          }
+        }
+
+        /* If the current monomial_value is 0 (and thus it'll remain to be 0),
+         * we can continue with the next monomial. */
+        if (monomial_value == SR::null()) {
+          continue;
+        }
+
+        /* Finally consider all the variables that are *not* in deriv_variables. */
+        for (const auto &variable_degree : monomial_coeff.first) {
+          const auto variable = variable_degree.first;
+          const auto degree = variable_degree.second;
+
+          if (deriv_variables.GetDegreeOf(variable) > 0) {
+            /* Already considered in the previous loop. */
+            continue;
+          }
+
+          auto value_lookup = valuation.find(variable);
+          assert(value_lookup != valuation.end());
+          for (Degree c = 0; c < degree; ++c) {
+            monomial_value *= value_lookup->second;
+          }
+        }
+        result += monomial_value;
+      }
+
+      DMSG("DerivativeBinomAt:");
+      DMSG(result);
+      DMSG("eval . derivative_binom:");
+      DMSG(derivative_binom(deriv_variables).eval(valuation));
+
+      return result;
+      // for every (coefficient, monomial):
+      //   for every (variable, degree) in monomial:
+      //     find the corresponding deriv_degree in deriv_variables
+      //     if (devir_degree >= degree)
+      //       the derivative is equal to zero, so continue with the next
+      //       monomial
+      //     otherwise
+      //       tmp = coefficient * BinomCoeff(deegre, deriv_degree)
+      //     if it doesn't exist return lookup the variable in valuation
+    }
+
+    SR derivative_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> &valuation) const {
+
       SR result = SR::null();
       /*
        * sum over all monomials collect the binomial derivative_at
@@ -391,7 +471,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
     }
 
-    Degree get_degree() {
+    Degree get_degree() const {
       Degree degree = 0;
       for (auto &monomial_coeff : monomials_) {
         degree = std::max(degree, monomial_coeff.first.get_degree());
@@ -399,7 +479,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return degree;
     }
 
-    Degree GetMaxDegreeOf(const VarId var) {
+    Degree GetMaxDegreeOf(const VarId var) const {
       auto var_degree_iter = variables_.find(var);
       if (var_degree_iter == variables_.end()) {
         return 0;

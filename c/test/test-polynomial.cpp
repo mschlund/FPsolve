@@ -162,3 +162,36 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
 
   CPPUNIT_ASSERT( eval_elem == eval_elem2 );
 }
+
+void PolynomialTest::testDerivativeBinomAt() {
+  std::map<VarId, FreeSemiring> values = {
+    { Var::GetVarId("x"), FreeSemiring(Var::GetVarId("d")) },
+    { Var::GetVarId("y"), FreeSemiring(Var::GetVarId("e")) },
+    { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("f")) }
+  };
+
+  VarDegreeMap dx0;
+  VarDegreeMap dx1 = { {Var::GetVarId("x"), 1} };
+  VarDegreeMap dx2 = { {Var::GetVarId("x"), 2} };
+
+  CPPUNIT_ASSERT(first->derivative_binom(dx0).eval(values).string() ==
+                 first->DerivativeBinomAt(dx0, values).string());
+
+
+  CPPUNIT_ASSERT(first->derivative_binom(dx1).eval(values).string() ==
+                 first->DerivativeBinomAt(dx1, values).string());
+
+  CPPUNIT_ASSERT(first->derivative_binom(dx1).eval(values).string() ==
+                 first->DerivativeBinomAt(dx1, values).string());
+
+  CPPUNIT_ASSERT(second->derivative_binom(dx0).eval(values).string() ==
+                 second->DerivativeBinomAt(dx0, values).string());
+
+  CPPUNIT_ASSERT(second->derivative_binom(dx1).eval(values).string() ==
+                 second->DerivativeBinomAt(dx1, values).string());
+
+  CPPUNIT_ASSERT(second->derivative_binom(dx2).eval(values).string() ==
+                 second->DerivativeBinomAt(dx2, values).string());
+
+}
+

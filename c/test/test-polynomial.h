@@ -17,6 +17,7 @@ class PolynomialTest : public CppUnit::TestFixture
 	CPPUNIT_TEST(testJacobian);
 	CPPUNIT_TEST(testEvaluation);
 	CPPUNIT_TEST(testMatrixEvaluation);
+	CPPUNIT_TEST(testDerivativeBinomAt);
 //	CPPUNIT_TEST(testPolynomialToFreeSemiring);
 	CPPUNIT_TEST_SUITE_END();
 
@@ -32,6 +33,7 @@ protected:
 	void testEvaluation();
 	void testMatrixEvaluation();
 	void testPolynomialToFreeSemiring();
+	void testDerivativeBinomAt();
 
 private:
 	FreeSemiring *a, *b, *c, *d, *e;

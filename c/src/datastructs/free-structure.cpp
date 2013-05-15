@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "hash.h"
 
 #include "free-structure.h"
@@ -70,10 +72,95 @@ class StringPrinter : public NodeVisitor {
     std::ostream &out_;
 };
 
-std::ostream& operator<<(std::ostream &out, const Node &node) {
-  StringPrinter printer{out};
+class WordsPrinter : public NodeVisitor {
+  public:
+    WordsPrinter() = default;
+    ~WordsPrinter() = default;
+
+    void Visit(const Addition &a) {
+      a.GetLhs()->Accept(*this);
+      auto tmp = std::move(words_);
+      words_ = {};
+      a.GetRhs()->Accept(*this);
+      std::move(tmp.begin(), tmp.end(), std::back_inserter(words_));
+    }
+
+    void Visit(const Multiplication &m) {
+      m.GetLhs()->Accept(*this);
+      auto tmp = std::move(words_);
+      words_ = {};
+      m.GetRhs()->Accept(*this);
+      std::vector<std::string> result;
+      for (auto &lhs_word : tmp) {
+        for (auto &rhs_word : words_) {
+          result.emplace_back(lhs_word + rhs_word);
+        }
+      }
+      words_ = std::move(result);
+    }
+
+    void Visit(const Star &s) {
+      s.GetNode()->Accept(*this);
+      std::sort(words_.begin(), words_.end());
+      std::stringstream ss;
+      ss << "(";
+      bool first = true;
+      for (const auto &word : words_) {
+        if (!first) {
+          ss << "+";
+        } else {
+          first = false;
+        }
+        ss << word;
+      }
+      ss << ")*";
+      words_ = { ss.str() };
+    }
+
+    void Visit(const Element &e) {
+      words_.emplace_back(Var::GetVar(e.GetVar()).string());
+    }
+
+    void Visit(const Epsilon &e) {
+      words_.emplace_back("_");
+    }
+
+    void Visit(const Empty &e) {}
+
+    const std::vector<std::string>& GetWords() const {
+      return words_;
+    }
+
+    std::string GetString() {
+      std::sort(words_.begin(), words_.end());
+      std::stringstream ss;
+      bool first = true;
+      for (const auto &word : words_) {
+        if (!first) {
+          ss << "+";
+        } else {
+          first = false;
+        }
+        ss << word;
+      }
+      return ss.str();
+    }
+
+  private:
+    std::vector<std::string> words_;
+};
+
+std::string NodeToString(const Node &node) {
+  WordsPrinter printer;
   node.Accept(printer);
-  return out;
+  return printer.GetString();
+}
+
+std::string NodeToRawString(const Node &node) {
+  std::stringstream ss;
+  StringPrinter printer{ss};
+  node.Accept(printer);
+  return ss.str();
 }
 
 

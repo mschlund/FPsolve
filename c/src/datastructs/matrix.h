@@ -15,28 +15,39 @@ template <typename SR>
 class Matrix {
   public:
     Matrix(const Matrix &m) = default;
-    Matrix(Matrix &&m) = default;
+    Matrix(Matrix &&m)
+        : rows_(m.rows_), columns_(m.columns_), elements_(std::move(m.elements_)) {
+      m.rows_ = 0;
+      m.columns_ = 0;
+    }
+
 
     Matrix(std::size_t r, const std::vector<SR> &es)
         : rows_(r), columns_(es.size() / r), elements_(es) {
-      assert(Sanity());
+      assert(Ok());
     }
 
     Matrix(std::size_t r, std::vector<SR> &&es)
       : rows_(r), columns_(es.size() / r), elements_(std::move(es)) {
-      assert(Sanity());
+      assert(Ok());
     }
 
     Matrix(std::size_t r, std::initializer_list<SR> es)
         : rows_(r), columns_(es.size() / r), elements_(es) {
-      assert(Sanity());
+      assert(Ok());
     }
 
+    /* Either both arguments are greater than zero or both are zero. */
     Matrix(std::size_t r, std::size_t c)
-        : rows_(r), columns_(c), elements_(rows_ * columns_, SR::null()) {}
+        : rows_(r), columns_(c), elements_(rows_ * columns_, SR::null()) {
+      assert((r == 0 && c == 0) || (r > 0 && c > 0));
+    }
 
+    /* Either both arguments are greater than zero or both are zero. */
     Matrix(std::size_t r, std::size_t c, const SR &elem)
-        : rows_(r), columns_(c), elements_(rows_ * columns_, elem) {}
+        : rows_(r), columns_(c), elements_(rows_ * columns_, elem) {
+      assert((r == 0 && c == 0) || (r > 0 && c > 0));
+    }
 
     inline std::size_t GetIndex(std::size_t r, std::size_t c) const {
       return r * columns_ + c;
@@ -52,8 +63,15 @@ class Matrix {
       return elements_[GetIndex(r, c)];
     }
 
-    Matrix& operator=(const Matrix &matrix) = default;
-    Matrix& operator=(Matrix &&matrix) = default;
+    Matrix& operator=(const Matrix &rhs) = default;
+    Matrix& operator=(Matrix &&rhs) {
+      rows_ = rhs.rows_;
+      rhs.rows_ = 0;
+      columns_ = rhs.columns_;
+      rhs.columns_ = 0;
+      elements_ = std::move(rhs.elements_);
+      return *this;
+    }
 
     Matrix operator+(const Matrix &mat) const {
       assert(rows_ == mat.rows_ && columns_ == mat.columns_ &&
@@ -129,6 +147,10 @@ class Matrix {
       return columns_;
     };
 
+    std::size_t getSize() const {
+      return elements_.size();
+    }
+
     const std::vector<SR>& getElements() const {
       return elements_;
     };
@@ -166,7 +188,7 @@ class Matrix {
     std::size_t columns_;
     std::vector<SR> elements_;
 
-    bool Sanity() const {
+    bool Ok() const {
       return columns_ * rows_ == elements_.size();
     }
 

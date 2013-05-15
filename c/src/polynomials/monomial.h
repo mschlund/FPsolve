@@ -5,7 +5,6 @@
 #include "../semirings/free-semiring.h"
 #include "../datastructs/var_degree_map.h"
 
-#include <boost/math/special_functions/factorials.hpp>
 #include <boost/math/special_functions/binomial.hpp>
 
 
@@ -24,6 +23,10 @@ class Monomial {
     Monomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
 
   public:
+    typedef typename VarDegreeMap::iterator iterator;
+    typedef typename VarDegreeMap::const_iterator const_iterator;
+
+
     /* Since we don't manage any resources, we can simply use the default
      * constructors and assignment operators. */
     Monomial() = default;
@@ -88,7 +91,7 @@ class Monomial {
      *  with binom{D}{i} where D is the vector of variable degrees
      *  i.e. if above operator d/dx^2y^3 is applied to the monomial x^5y^6 the result is (5*4 * 6*5*4) * x^3y^3
      */
-    std::pair<Degree, Monomial> derivative_binom(const std::map<VarId, Degree> &vars) const {
+    std::pair<Degree, Monomial> derivative_binom(const VarDegreeMap &vars) const {
       Degree multiplicity = 1;
       auto tmp_variables = variables_;
 
@@ -120,15 +123,6 @@ class Monomial {
       /* Remove one of these by removing the first of them and then "multiply"
        * the coefficient with degree_before. */
       return {multiplicity, Monomial{std::move(tmp_variables)} };
-    }
-
-    //TODO: avoid creation of temporary objects
-    template <typename SR>
-    SR derivative_binom_at(const std::map<VarId, Degree> &vars, const std::map<VarId, SR> valuation) const {
-      auto tmp_deriv = derivative_binom(vars);
-      SR res = tmp_deriv.second.eval(valuation);
-      res *= tmp_deriv.first;
-      return res;
     }
 
     /* Evaluate the monomial given the map from variables to values,
@@ -209,6 +203,12 @@ class Monomial {
       return variables_ == rhs.variables_;
     }
 
+    iterator begin() { return variables_.begin(); }
+    iterator end() { return variables_.end(); }
+
+    const_iterator begin() const { return variables_.begin(); }
+    const_iterator end() const { return variables_.end(); }
+
     Degree get_degree() const {
       Degree degree = 0;
       for (auto var_degree : variables_) {
@@ -216,6 +216,11 @@ class Monomial {
       }
       return degree;
     }
+
+    Degree GetDegreeOf(const VarId var) const {
+      return variables_.GetDegreeOf(var);
+    }
+
 
     // FIXME: modify or remove
     std::set<VarId> get_variables() const {
