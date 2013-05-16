@@ -209,14 +209,12 @@ class Newton {
       return Matrix<Polynomial<SR> >(delta.size(), delta);
     }
 
-    std::vector<VarId> get_symbolic_vector(int size, std::string prefix) {
-      // define new symbolic vector [u1,u2,...,un] TODO: this is ugly...
+    // return a vector of fresh anonymous variables
+    std::vector<VarId> get_symbolic_vector(int size) {
       std::vector<VarId> ret;
       for (int i=0; i<size; i++)
       {
-        std::stringstream ss;
-        ss << prefix << "_" << i;
-        ret.push_back(Var::GetVarId(ss.str()));
+        ret.push_back(Var::GetVarId());
       }
       return ret;
     }
@@ -301,11 +299,9 @@ class Newton {
         valuation.insert(std::make_pair(pair.second, pair.first));
       }
 
-      // define new symbolic vectors [u1,u2,...,un] TODO: this is ugly...
-      //FIXME: just generate new variables!
-      std::vector<VarId> u = this->get_symbolic_vector(variables.size(), "u");
+      std::vector<VarId> u = this->get_symbolic_vector(variables.size());
       std::vector<VarId> u_upd =
-        this->get_symbolic_vector(variables.size(), "u_upd");
+        this->get_symbolic_vector(variables.size());
 
       // newton_values^0 = 0
       Matrix<SR> newton_values{polynomials.size(), 1};
