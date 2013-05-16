@@ -44,7 +44,7 @@ template <typename Var,
           typename Value,
           DIVIDER_TEMPLATE_TYPE VecDivider,
           VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
-class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
+class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, VecDivider,
                                                          VecSimpl>,
                                                          Commutativity::Commutative, Idempotence::Idempotent > {
   public:

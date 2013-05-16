@@ -17,7 +17,6 @@
 #include "non_commutative_monomial.h"
 #include "polynomial.h"
 
-/* FIXME: NonCommutativePolynomials are no semiring in our definition (not starable). */
 template <typename SR>
 class NonCommutativePolynomial : public Semiring<NonCommutativePolynomial<SR>,
                                                  Commutativity::NonCommutative,
@@ -333,12 +332,6 @@ private:
         vars.insert(tmp.begin(), tmp.end());
       }
       return vars;
-    }
-
-    // TODO: we cannot star polynomials!
-    NonCommutativePolynomial<SR> star() const {
-      assert(false);
-      return (*this);
     }
 
     static NonCommutativePolynomial<SR> null() {

@@ -43,7 +43,7 @@
 
 
 
-class CommutativeRExp : public Semiring<CommutativeRExp, Commutativity::Commutative, Idempotence::Idempotent>
+class CommutativeRExp : public StarableSemiring<CommutativeRExp, Commutativity::Commutative, Idempotence::Idempotent>
 {
 public:
 	enum optype {Empty, Element, Addition, Multiplication, Star, Plus};

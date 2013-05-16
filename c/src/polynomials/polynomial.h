@@ -18,7 +18,6 @@
 
 #include "monomial.h"
 
-/* FIXME: Polynomials are no semiring in our definition (not starable). */
 template <typename SR>
 class Polynomial : public Semiring<Polynomial<SR>,
                                    Commutativity::Commutative,
@@ -494,12 +493,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
         vars.insert(var_degree.first);
       }
       return vars;
-    }
-
-    // TODO: we cannot star polynomials!
-    Polynomial<SR> star() const {
-      assert(false);
-      return (*this);
     }
 
     static Polynomial<SR> null() {

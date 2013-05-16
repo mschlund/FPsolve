@@ -63,7 +63,6 @@ class Semiring {
       return result;
     }
 
-    virtual SR star () const = 0;
     virtual bool operator==(const SR& elem) const = 0;
     friend bool operator!=(const SR& lhs, const SR& rhs) {
       return !(lhs == rhs);
@@ -114,6 +113,12 @@ std::ostream& operator<<(std::ostream& os, const Semiring<SR, Comm, Idem>& elem)
   return os << elem.string();
 }
 
+
+template <typename SR, Commutativity Comm, Idempotence Idem>
+class StarableSemiring : public Semiring<SR, Comm, Idem>{
+  virtual SR star () const = 0;
+
+};
 
 
 #endif

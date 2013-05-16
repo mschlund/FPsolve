@@ -7,7 +7,7 @@
 #include "semiring.h"
 #include "../datastructs/var.h"
 
-class PrefixSemiring : public Semiring<PrefixSemiring, Commutativity::NonCommutative, Idempotence::Idempotent>
+class PrefixSemiring : public StarableSemiring<PrefixSemiring, Commutativity::NonCommutative, Idempotence::Idempotent>
 {
 private:
 	std::set<std::vector<VarId>> val;

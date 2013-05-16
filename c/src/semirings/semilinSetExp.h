@@ -50,7 +50,7 @@ typedef std::map<VarId, unsigned int> VecSparse;
 typedef std::pair< VecSparse, std::set<VecSparse> > LinSet;
 
 
-class SemilinSetExp : public Semiring<SemilinSetExp, Commutativity::Commutative, Idempotence::Idempotent> {
+class SemilinSetExp : public StarableSemiring<SemilinSetExp, Commutativity::Commutative, Idempotence::Idempotent> {
   private:
     std::set<LinSet> val;
     /* null = {} (empty set) */

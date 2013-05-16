@@ -37,7 +37,7 @@ template <typename Var,
           DIVIDER_TEMPLATE_TYPE VecDivider,
           VEC_SIMPL_TEMPLATE_TYPE VecSimpl,
           LIN_SIMPL_TEMPLATE_TYPE LinSimpl>
-class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
+class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivider,
                                                      VecSimpl, LinSimpl>,
                                                      Commutativity::Commutative, Idempotence::Idempotent> {
   public:

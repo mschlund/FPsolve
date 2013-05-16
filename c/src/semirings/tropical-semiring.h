@@ -15,7 +15,7 @@
 
 #define INFTY (std::numeric_limits<unsigned int>::max())
 
-class TropicalSemiring : public Semiring<TropicalSemiring, Commutativity::Commutative, Idempotence::Idempotent>{
+class TropicalSemiring : public StarableSemiring<TropicalSemiring, Commutativity::Commutative, Idempotence::Idempotent>{
 private:
   /*
    * val == UINT_MAX is interpreted as infinity

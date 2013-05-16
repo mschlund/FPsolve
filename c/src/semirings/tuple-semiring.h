@@ -10,9 +10,8 @@
 #include "../utils/profiling-macros.h"
 
 
-// is it commutative or idempotent?
 template <typename SR_A, typename SR_B>
-class TupleSemiring : public Semiring<TupleSemiring<SR_A,SR_B>, Commutativity::NonCommutative, Idempotence::Idempotent>
+class TupleSemiring : public StarableSemiring<TupleSemiring<SR_A,SR_B>, SR_A::IsCommutative() && SR_B::IsCommutative() ? Commutativity::Commutative : Commutativity::NonCommutative , SR_A::IsIdempotent() && SR_B::IsIdempotent() ? Idempotence::Idempotent : Idempotence::NonIdempotent>
 {
 private:
 	std::tuple<SR_A, SR_B> val;

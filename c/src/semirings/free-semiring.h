@@ -13,7 +13,7 @@
 template <typename SR>
 class Evaluator;
 
-class FreeSemiring : public Semiring<FreeSemiring, Commutativity::NonCommutative, Idempotence::NonIdempotent> {
+class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCommutative, Idempotence::NonIdempotent> {
   public:
     /* Default constructor creates zero element. */
     FreeSemiring() {

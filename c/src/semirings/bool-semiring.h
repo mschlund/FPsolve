@@ -6,7 +6,7 @@
 
 #include "semiring.h"
 
-class BoolSemiring : public Semiring<BoolSemiring, Commutativity::Commutative, Idempotence::Idempotent>
+class BoolSemiring : public StarableSemiring<BoolSemiring, Commutativity::Commutative, Idempotence::Idempotent>
 {
 private:
 	bool val;

@@ -8,8 +8,9 @@
 #include <string>
 
 #include "semiring.h"
+#include "../utils/profiling-macros.h"
 
-class FloatSemiring : public Semiring<FloatSemiring,
+class FloatSemiring : public StarableSemiring<FloatSemiring,
                                       Commutativity::Commutative,
                                       Idempotence::NonIdempotent> {
   private:
