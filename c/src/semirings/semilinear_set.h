@@ -7,6 +7,7 @@
 #include "semiring.h"
 #include "../datastructs/sparse_vec.h"
 #include "../string_util.h"
+#include "../utils/profiling-macros.h"
 
 class VarId;
 
@@ -86,6 +87,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
     SemilinearSet& operator=(SemilinearSet &&slset) = default;
 
     SemilinearSet& operator+=(const SemilinearSet &rhs) {
+      OPADD;
       if (IsZero()) {
         set_ = rhs.set_;
       } else if (!rhs.IsZero()) {
@@ -103,6 +105,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
     }
 
     SemilinearSet& operator*=(const SemilinearSet &rhs) {
+      OPMULT;
       if (IsZero() || rhs.IsZero()) {
         *this = null();
       } else if (IsOne()) {

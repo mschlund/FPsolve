@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "commutativeRExp.h"
+#include "../utils/profiling-macros.h"
 
 // this creates the empty set
 CommutativeRExp::CommutativeRExp()
@@ -166,6 +167,7 @@ void CommutativeRExp::optimize(bool one)
 // union operator
 CommutativeRExp CommutativeRExp::operator +=(const CommutativeRExp& expr)
 {
+  OPADD;
 	std::shared_ptr<std::set<CommutativeRExp> > retset(new std::set<CommutativeRExp>());
 
 	if(this->type == Element || this->type == Multiplication || this->type == Star || this->type == Plus)
@@ -291,6 +293,7 @@ void CommutativeRExp::optimize_starplus()
 // concatenate all expressions from first set with all expressions of the second set
 CommutativeRExp CommutativeRExp::operator *=(const CommutativeRExp& expr)
 {
+  OPMULT;
 	std::shared_ptr<std::multiset<CommutativeRExp> > retset(new std::multiset<CommutativeRExp>());
 
 	if(this->type == Element || this->type == Addition || this->type == Star || this->type == Plus)

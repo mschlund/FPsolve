@@ -6,6 +6,7 @@
  */
 
 #include "tropical-semiring.h"
+#include "../utils/profiling-macros.h"
 #include <sstream>
 
 // std::map in polynomial.h wants this constructor...
@@ -25,6 +26,7 @@ TropicalSemiring::~TropicalSemiring()
 
 TropicalSemiring TropicalSemiring::operator+=(const TropicalSemiring& elem)
 {
+  OPADD;
   if(isInf(elem)) {
     return *this;
   }
@@ -39,6 +41,7 @@ TropicalSemiring TropicalSemiring::operator+=(const TropicalSemiring& elem)
 
 TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem)
 {
+  OPMULT;
   if(TropicalSemiring::null() == elem || TropicalSemiring::null() == *this) {
     this->val = TropicalSemiring::null().val;
   }

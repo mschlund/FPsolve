@@ -14,6 +14,7 @@
 #endif
 
 #include "semilinSetExp.h"
+#include "../utils/profiling-macros.h"
 
 // adding two Var-maps componentwise... could be put in a util-class ?
 VecSparse operator+(const VecSparse &a, const VecSparse &b) {
@@ -418,6 +419,7 @@ SemilinSetExp SemilinSetExp::one() {
 
 // TODO: check for obvious inclusions and remove them
 SemilinSetExp SemilinSetExp::operator+=(const SemilinSetExp &sl) {
+  OPADD;
   std::set<LinSet> result;
   std::insert_iterator< std::set<LinSet> > it(result, result.begin());
   std::set_union(val.begin(), val.end(), sl.val.begin(), sl.val.end(), it);
@@ -430,6 +432,7 @@ SemilinSetExp SemilinSetExp::operator+=(const SemilinSetExp &sl) {
 }
 
 SemilinSetExp SemilinSetExp::operator*=(const SemilinSetExp &sl) {
+  OPMULT;
   std::set<LinSet> result;
   for(auto &lin_set_rhs : sl.val) {
     for(auto &lin_set_lhs : val) {

@@ -2,6 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include "prefix-semiring.h"
+#include "../utils/profiling-macros.h"
 
 PrefixSemiring::PrefixSemiring()
 {
@@ -30,6 +31,7 @@ PrefixSemiring::~PrefixSemiring()
 
 PrefixSemiring PrefixSemiring::operator+=(const PrefixSemiring& elem)
 {
+  OPADD;
 	// union of both operands
         this->val.insert(elem.val.begin(), elem.val.end());
         this->max_length = std::max(this->max_length, elem.max_length);
@@ -46,6 +48,7 @@ std::vector<VarId> PrefixSemiring::concatenate(std::vector<VarId> l, std::vector
 
 PrefixSemiring PrefixSemiring::operator*=(const PrefixSemiring& elem)
 {
+  OPMULT;
 	std::set<std::vector<VarId>> ret;
         this->max_length = std::max(this->max_length, elem.max_length);
         if(*this == one())

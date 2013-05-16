@@ -1,6 +1,7 @@
 #include <cassert>
 #include <sstream>
 #include "bool-semiring.h"
+#include "../utils/profiling-macros.h"
 
 // std::map in polynomial.h wants this constructor...
 BoolSemiring::BoolSemiring()
@@ -19,12 +20,14 @@ BoolSemiring::~BoolSemiring()
 
 BoolSemiring BoolSemiring::operator+=(const BoolSemiring& elem)
 {
+  OPADD;
   this->val |= elem.val;
   return *this;
 }
 
 BoolSemiring BoolSemiring::operator*=(const BoolSemiring& elem)
 {
+  OPMULT;
   this->val &= elem.val;
   return *this;
 }

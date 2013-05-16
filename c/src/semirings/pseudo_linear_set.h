@@ -12,6 +12,7 @@
 #include "semilinear_util.h"
 #include "linear_set.h"
 #include "semilinear_set.h"
+#include "../utils/profiling-macros.h"
 
 class VarId;
 
@@ -95,6 +96,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
+      OPADD;
       if (rhs.IsZero()) {
         return *this;
       } else if (IsZero()) {
@@ -122,6 +124,7 @@ class PseudoLinearSet : public Semiring< PseudoLinearSet<Var, Value, VecDivider,
     }
 
     PseudoLinearSet& operator*=(const PseudoLinearSet &rhs) {
+      OPMULT;
       if (IsZero() || rhs.IsZero()) {
         *this = null();
         return *this;

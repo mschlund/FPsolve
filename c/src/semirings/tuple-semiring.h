@@ -7,6 +7,7 @@
 #include <cassert>
 #include <sstream>
 #include "semiring.h"
+#include "../utils/profiling-macros.h"
 
 
 // is it commutative or idempotent?
@@ -50,6 +51,7 @@ TupleSemiring<SR_A,SR_B>::~TupleSemiring()
 template <typename SR_A, typename SR_B>
 TupleSemiring<SR_A,SR_B> TupleSemiring<SR_A,SR_B>::operator+=(const TupleSemiring<SR_A,SR_B>& elem)
 {
+  OPADD;
   std::get<0>(this->val) += std::get<0>(elem.val);
   std::get<1>(this->val) += std::get<1>(elem.val);
   return *this;
@@ -58,6 +60,7 @@ TupleSemiring<SR_A,SR_B> TupleSemiring<SR_A,SR_B>::operator+=(const TupleSemirin
 template <typename SR_A, typename SR_B>
 TupleSemiring<SR_A,SR_B> TupleSemiring<SR_A,SR_B>::operator*=(const TupleSemiring<SR_A,SR_B>& elem)
 {
+  OPMULT;
   std::get<0>(this->val) *= std::get<0>(elem.val);
   std::get<1>(this->val) *= std::get<1>(elem.val);
   return *this;

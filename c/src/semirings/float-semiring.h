@@ -23,11 +23,13 @@ class FloatSemiring : public Semiring<FloatSemiring,
     ~FloatSemiring() = default;
 
     FloatSemiring& operator+=(const FloatSemiring &elem) {
+      OPADD;
       value_ += elem.value_;
       return *this;
     }
 
     FloatSemiring& operator*=(const FloatSemiring &elem) {
+      OPMULT;
       value_ *= elem.value_;
       return *this;
     }
