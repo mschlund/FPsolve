@@ -1,3 +1,4 @@
+#include <stdlib.h> // rand, srand
 #include "test-matrix.h"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(MatrixTest);
@@ -80,28 +81,31 @@ void MatrixTest::testMultiplication()
 // test the star by solving an all-pairs-shortest path problem (over the tropical semiring)
 void MatrixTest::testStar()
 {
+  // use a fix seed, so tests are deterministic
+  unsigned int seed = 42;
+  srand(seed);
 
-  Matrix<TS> A(4,
-      {
-      TS(INFTY), TS(2), TS(7), TS(INFTY),
-      TS(INFTY), TS(1), TS(4), TS(2),
-      TS(INFTY), TS(3), TS(INFTY), TS(INFTY),
-      TS(INFTY), TS(INFTY), TS(1), TS(INFTY)
-      });
+  // generate random matrix with values [0,10] where 0 is INFTY
+  int size = 100;
+  float density = 0.6; // this is a percentage of how many elements are not INFTY
+  int mod = 10 / density;
+  std::vector<TS> elements;
+  for(unsigned int i = 0; i < size*size; i++)
+  {
+    int r = rand() % mod;
+    if(r > 10 || r == 0)
+      elements.push_back(TS(INFTY));
+    else
+      elements.push_back(TS(r));
+  }
+  Matrix<TS> test_matrix(size, elements);
 
-  //std::cout << A <<std::endl;
-  //std::cout << A.star() <<std::endl;
+  // calculate the star with the recursive version and a floyd-warshall implementation
+  // and compare results. Both results should be equal.
+  auto rec_star = test_matrix.star();
+  auto fw_star = test_matrix.star2();
 
-  Matrix<TS> result(4,
-      {
-      TS(0), TS(2), TS(5), TS(4),
-      TS(INFTY), TS(0), TS(3), TS(2),
-      TS(INFTY), TS(3), TS(0), TS(5),
-      TS(INFTY), TS(4), TS(1), TS(0)
-      });
-
-  //std::cout << result <<std::endl;
-
-  CPPUNIT_ASSERT( A.star() == result );
-
+  //std::cout << "recursive:" << std::endl << rec_star;
+  //std::cout << "floydwarshall:" << std::endl << fw_star;
+  CPPUNIT_ASSERT(rec_star == fw_star);
 }
