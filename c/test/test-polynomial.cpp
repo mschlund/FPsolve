@@ -9,23 +9,23 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
 void PolynomialTest::setUp() {
   std::cout << "Poly-Test:" << std::endl;
-  a = new FreeSemiring(Var::GetVarId("a"));
-  b = new FreeSemiring(Var::GetVarId("b"));
-  c = new FreeSemiring(Var::GetVarId("c"));
-  d = new FreeSemiring(Var::GetVarId("d"));
-  e = new FreeSemiring(Var::GetVarId("e"));
-  null = new Polynomial<FreeSemiring>(FreeSemiring::null());
-  one = new Polynomial<FreeSemiring>(FreeSemiring::one());
-  first = new Polynomial<FreeSemiring>({
+  a = new CommutativeRExp(Var::GetVarId("a"));
+  b = new CommutativeRExp(Var::GetVarId("b"));
+  c = new CommutativeRExp(Var::GetVarId("c"));
+  d = new CommutativeRExp(Var::GetVarId("d"));
+  e = new CommutativeRExp(Var::GetVarId("e"));
+  null = new Polynomial<CommutativeRExp>(CommutativeRExp::null());
+  one = new Polynomial<CommutativeRExp>(CommutativeRExp::one());
+  first = new Polynomial<CommutativeRExp>({
     {*a, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*b, {Var::GetVarId("z")}}
   }); // a*xx+b*z
-  second = new Polynomial<FreeSemiring>({
+  second = new Polynomial<CommutativeRExp>({
     {*c, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
     {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
   }); // c*xx+d*xy+e*yy
-  p1 = new Polynomial<FreeSemiring>({
+  p1 = new Polynomial<CommutativeRExp>({
     {*a, {Var::GetVarId("x")}},
     {*b, {Var::GetVarId("x")}}
   }); // should be a*x+b*x
@@ -51,7 +51,7 @@ void PolynomialTest::testAddition() {
   // poly + 0 = poly
   CPPUNIT_ASSERT( *first + *null == *first);
 
-  Polynomial<FreeSemiring> result({
+  Polynomial<CommutativeRExp> result({
     {*a + *c, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*b, {Var::GetVarId("z")}},
     {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
@@ -70,7 +70,7 @@ void PolynomialTest::testMultiplication() {
   // poly * 0 = 0
   CPPUNIT_ASSERT( *first * *null == *null);
 
-  Polynomial<FreeSemiring> result({
+  Polynomial<CommutativeRExp> result({
       {*a * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x")}},
       {*a * *d, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("y")}},
       {*b * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("z")}},
@@ -82,40 +82,42 @@ void PolynomialTest::testMultiplication() {
 }
 
 void PolynomialTest::testJacobian() {
-  std::vector<Polynomial<FreeSemiring> > polys = {*first, *second};
+  std::vector<Polynomial<CommutativeRExp> > polys = {*first, *second};
   std::vector<VarId> vars = {Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("z")};
 
-  std::vector<Polynomial<FreeSemiring> > polys2 = {
-    Polynomial<FreeSemiring>({ {*a+*a, {Var::GetVarId("x")}} }),
-    Polynomial<FreeSemiring>({ {FreeSemiring::null(), {}} }),
-    Polynomial<FreeSemiring>({ {*b, {}} }),
-    Polynomial<FreeSemiring>({
+  std::vector<Polynomial<CommutativeRExp> > polys2 = {
+    Polynomial<CommutativeRExp>({ {*a+*a, {Var::GetVarId("x")}} }),
+    Polynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} }),
+    Polynomial<CommutativeRExp>({ {*b, {}} }),
+    Polynomial<CommutativeRExp>({
       {*c+*c, {Var::GetVarId("x")}}, {*d, {Var::GetVarId("y")}}
     }),
-    Polynomial<FreeSemiring>({
+    Polynomial<CommutativeRExp>({
         {*d, {Var::GetVarId("x")}}, {*e+*e, {Var::GetVarId("y")}}
     }),
-    Polynomial<FreeSemiring>({ {FreeSemiring::null(), {}} })
+    Polynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} })
   };
 
-  Matrix<Polynomial<FreeSemiring> > result = Matrix<Polynomial<FreeSemiring> >(2,polys2);
+  Matrix<Polynomial<CommutativeRExp> > result = Matrix<Polynomial<CommutativeRExp> >(2,polys2);
 
-  CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
+  CPPUNIT_ASSERT( Polynomial<CommutativeRExp>::jacobian(polys, vars) == result );
 
   polys = {*p1};
   vars = {Var::GetVarId("x")};
-  polys2 = { Polynomial<FreeSemiring>({ {*a+*b, {}} }) };
-  result = Matrix<Polynomial<FreeSemiring> >(1,polys2);
-  CPPUNIT_ASSERT( Polynomial<FreeSemiring>::jacobian(polys, vars) == result );
+  polys2 = { Polynomial<CommutativeRExp>({ {*a+*b, {}} }) };
+  result = Matrix<Polynomial<CommutativeRExp> >(1,polys2);
+  CPPUNIT_ASSERT( Polynomial<CommutativeRExp>::jacobian(polys, vars) == result );
 
 }
 
 void PolynomialTest::testEvaluation() {
-  std::map<VarId,FreeSemiring> values = {
-    { Var::GetVarId("x"), FreeSemiring(Var::GetVarId("a")) },
-    { Var::GetVarId("y"), FreeSemiring(Var::GetVarId("b")) },
-    { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("c")) }
+  std::map<VarId,CommutativeRExp> values = {
+    { Var::GetVarId("x"), CommutativeRExp(Var::GetVarId("a")) },
+    { Var::GetVarId("y"), CommutativeRExp(Var::GetVarId("b")) },
+    { Var::GetVarId("z"), CommutativeRExp(Var::GetVarId("c")) }
   };
+  // FIXME: Instead of the CommutativeRExp we used the FreeSemiring here
+  // We might rewrite this test now
   /* This test is a bit fragile, since it FreeSemiring distinguishes between
    *   ((a + b) + c) and (a + (b + c))
    * So for now we have a number of comparisons that should cover most cases.
@@ -136,10 +138,10 @@ void PolynomialTest::testMatrixEvaluation() { }
 
 void PolynomialTest::testPolynomialToFreeSemiring() {
   // auto valuation = new std::unordered_map<FreeSemiring, FreeSemiring, FreeSemiring>();
-  std::unordered_map<FreeSemiring, VarId, FreeSemiring> valuation;
+  std::unordered_map<CommutativeRExp, VarId, CommutativeRExp> valuation;
   FreeSemiring elem = second->make_free(&valuation);
   //std::cout << "poly2free: " << std::endl << (*second) << " → " << elem << std::endl;
-  std::unordered_map<VarId, FreeSemiring> r_valuation;
+  std::unordered_map<VarId, CommutativeRExp> r_valuation;
   for (auto &pair : valuation) {
     r_valuation.emplace(pair.second, pair.first);
   }
@@ -151,23 +153,23 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
   r_valuation[Var::GetVarId("y")] = *b;
   r_valuation[Var::GetVarId("z")] = *c;
 
-  FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
+  CommutativeRExp eval_elem = FreeSemiring_eval<CommutativeRExp>(elem, &r_valuation);
 
-  std::map<VarId,FreeSemiring> values = {
-    std::pair<VarId,FreeSemiring>(Var::GetVarId("x"),FreeSemiring(Var::GetVarId("a"))),
-    std::pair<VarId,FreeSemiring>(Var::GetVarId("y"),FreeSemiring(Var::GetVarId("b"))),
-    std::pair<VarId,FreeSemiring>(Var::GetVarId("z"),FreeSemiring(Var::GetVarId("c")))};
-  FreeSemiring eval_elem2 = second->eval(values);
+  std::map<VarId,CommutativeRExp> values = {
+    std::pair<VarId,CommutativeRExp>(Var::GetVarId("x"),CommutativeRExp(Var::GetVarId("a"))),
+    std::pair<VarId,CommutativeRExp>(Var::GetVarId("y"),CommutativeRExp(Var::GetVarId("b"))),
+    std::pair<VarId,CommutativeRExp>(Var::GetVarId("z"),CommutativeRExp(Var::GetVarId("c")))};
+  CommutativeRExp eval_elem2 = second->eval(values);
   //std::cout << "evaluated: " << eval_elem << " vs. " << eval_elem2 << std::endl;
 
   CPPUNIT_ASSERT( eval_elem == eval_elem2 );
 }
 
 void PolynomialTest::testDerivativeBinomAt() {
-  std::map<VarId, FreeSemiring> values = {
-    { Var::GetVarId("x"), FreeSemiring(Var::GetVarId("d")) },
-    { Var::GetVarId("y"), FreeSemiring(Var::GetVarId("e")) },
-    { Var::GetVarId("z"), FreeSemiring(Var::GetVarId("f")) }
+  std::map<VarId, CommutativeRExp> values = {
+    { Var::GetVarId("x"), CommutativeRExp(Var::GetVarId("d")) },
+    { Var::GetVarId("y"), CommutativeRExp(Var::GetVarId("e")) },
+    { Var::GetVarId("z"), CommutativeRExp(Var::GetVarId("f")) }
   };
 
   VarDegreeMap dx0;

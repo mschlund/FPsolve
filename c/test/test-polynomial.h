@@ -3,7 +3,7 @@
 
 #include <cppunit/extensions/HelperMacros.h>
 
-#include "../src/semirings/free-semiring.h"
+#include "../src/semirings/commutativeRExp.h"
 #include "../src/polynomials/polynomial.h"
 #include "../src/datastructs/matrix.h"
 #include "../src/matrix_free_semiring.h"
@@ -36,8 +36,8 @@ protected:
 	void testDerivativeBinomAt();
 
 private:
-	FreeSemiring *a, *b, *c, *d, *e;
-	Polynomial<FreeSemiring> *null, *one, *first, *second, *p1;
+	CommutativeRExp *a, *b, *c, *d, *e;
+	Polynomial<CommutativeRExp> *null, *one, *first, *second, *p1;
 };
 
 #endif
