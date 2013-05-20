@@ -14,17 +14,23 @@ template <
   typename Var = VarId,
   typename Value = Counter,
   DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier,
-  LIN_SIMPL_TEMPLATE_TYPE LinSimpl = LinearSetSimplifier>
+  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier,
+  LIN_SIMPL_TEMPLATE_TYPE LinSimpl = DummyLinSimplifier>
 class SemilinearSet;
 
 /* Compatibility with the old implementation. */
 typedef SemilinearSet<> SemilinSetExp;
 
-/* SimpleLinearSet performs no simplification at all. */
+/* Three typedefs for easy comparison between the impact of various
+ * simplifications performs no simplification at all. */
+
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      DummyVecSimplifier, DummyLinSimplifier
-                      > SimpleSemilinearSet;
+                      SparseVecSimplifier, DummyLinSimplifier
+                      > SemilinearSetV;
+
+typedef SemilinearSet<VarId, Counter, DummyDivider,
+                      SparseVecSimplifier, LinearSetSimplifier
+                      > SemilinearSetL;
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * is an over-approximation, the result might no longer be precise. */
@@ -38,7 +44,8 @@ template <typename Var,
           LIN_SIMPL_TEMPLATE_TYPE LinSimpl>
 class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
                                                      VecSimpl, LinSimpl>,
-                                                     Commutativity::Commutative, Idempotence::Idempotent> {
+                                       Commutativity::Commutative,
+                                       Idempotence::Idempotent > {
   public:
     typedef SparseVec<Var, Value, DummyDivider> OffsetType;
     typedef SparseVec<Var, Value, VecDivider> GeneratorType;

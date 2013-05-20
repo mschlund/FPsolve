@@ -74,7 +74,8 @@ class LinearSet {
       for (const auto &g : s.GetGenerators()) {
         generators.insert(GeneratorType{g});
       }
-      LinearSet(s.GetOffset(), std::move(generators));
+      offset_ = s.GetOffset();
+      generators_ = builder_.New(std::move(generators));
     }
 
     LinearSet& operator=(const LinearSet &s) = default;

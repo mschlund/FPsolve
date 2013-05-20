@@ -189,9 +189,11 @@ int main(int argc, char* argv[]) {
     ( "file,f", po::value<std::string>(), "input file" )
     ( "float", "float semiring" )
     ( "rexp", "commutative regular expression semiring" )
-    ( "slset", "explicit semilinear sets semiring (as vectors)" )
+    ( "slset", "explicit semilinear sets semiring, no simplification " )
+    ( "mlset", "abstraction over semilinear sets" )
+    ( "vec-simpl", "vector simplification only (only semilinear and multilinear sets)" )
+    ( "lin-simpl", "linear set simplification (only semilinear sets)" )
     ( "free", "free semiring" )
-    ( "pseudolin", "abstraction over semilinear sets" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
     ;
@@ -248,7 +250,7 @@ int main(int argc, char* argv[]) {
       !vm.count("rexp") &&
       !vm.count("slset") &&
       !vm.count("free") &&
-      !vm.count("pseudolin") &&
+      !vm.count("mlset") &&
       !vm.count("prefix")) {
     std::cout << "Please supply a supported semiring :)" << std::endl;
     return 0;
@@ -288,14 +290,30 @@ int main(int argc, char* argv[]) {
 
     PrintEquations(equations);
 
-    auto result = apply_newton<SemilinSetExp>(equations,
-                                              vm.count("scc"),
-                                              vm.count("iterations"),
-                                              iterations,
-                                              vm.count("graphviz"));
-    std::cout << result_string(result) << std::endl;
+    if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
+      auto result = apply_newton(equations, vm.count("scc"),
+                                 vm.count("iterations"), iterations,
+                                 vm.count("graphviz"));
+      std::cout << result_string(result) << std::endl;
+    } else if (vm.count("vec-simpl") && !vm.count("lin-simpl")) {
+      auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
+        return SemilinearSetV{s};
+      });
+      auto result = apply_newton(equations2, vm.count("scc"),
+                                 vm.count("iterations"), iterations,
+                                 vm.count("graphviz"));
+      std::cout << result_string(result) << std::endl;
+    } else {
+      auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
+        return SemilinearSetL{s};
+      });
+      auto result = apply_newton(equations2, vm.count("scc"),
+                                 vm.count("iterations"), iterations,
+                                 vm.count("graphviz"));
+      std::cout << result_string(result) << std::endl;
+    }
 
-  } else if (vm.count("pseudolin")) {
+  } else if (vm.count("mlset")) {
 
     auto equations = p.slset_parser(input_all);
     auto pseudo_equations =
@@ -322,11 +340,9 @@ int main(int argc, char* argv[]) {
     PrintEquations(equations);
 
     // apply the newton method to the equations
-    auto result = apply_newton<CommutativeRExp>(equations,
-                                                vm.count("scc"),
-                                                vm.count("iterations"),
-                                                iterations,
-                                                vm.count("graphviz"));
+    auto result = apply_newton(equations, vm.count("scc"),
+                               vm.count("iterations"), iterations,
+                               vm.count("graphviz"));
     std::cout << result_string(result) << std::endl;
 
   } else if (vm.count("free")) {
@@ -368,11 +384,9 @@ int main(int argc, char* argv[]) {
 
     PrintEquations(equations);
 
-    auto result = apply_newton<FloatSemiring>(equations,
-                                              vm.count("scc"),
-                                              vm.count("iterations"),
-                                              iterations,
-                                              vm.count("graphviz"));
+    auto result = apply_newton(equations, vm.count("scc"),
+                               vm.count("iterations"), iterations,
+                               vm.count("graphviz"));
     std::cout << result_string(result) << std::endl;
   }
 
