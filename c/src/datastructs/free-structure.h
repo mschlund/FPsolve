@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iosfwd>
 #include <unordered_map>
 
 #include "var.h"
