@@ -335,6 +335,19 @@ class SparseVecSimplifier {
     std::unordered_map<SparseVecTypeNoDiv, bool> computed_;
 };
 
+template<typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
+class DummyVecSimplifier2 {
+  public:
+    typedef SparseVec<Var, Value, Divider> SparseVecType;
+    DummyVecSimplifier2(const VecSet<SparseVecType> &s) {}
+
+    static bool IsActive() { return false; }
+
+    bool IsCovered(const SparseVecType &lhs_any) {
+      return false;
+    }
+};
+
 template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
 class NaiveSimplifier2 {
   public:

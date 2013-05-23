@@ -160,8 +160,8 @@ std::map<VarId, SR> apply_newton(
 template <typename SR>
 std::string result_string(const std::map<VarId, SR> &result) {
   std::stringstream ss;
-  for (auto r_it = result.begin(); r_it != result.end(); ++r_it) {
-    ss << r_it->first << " == " << r_it->second << std::endl;
+  for (auto &x : result) {
+    ss << x.first << " == " << x.second << std::endl;
   }
   return ss.str();
 }
@@ -283,53 +283,55 @@ int main(int argc, char* argv[]) {
 
   Parser p;
 
+  auto iter_flag = vm.count("iterations");
+  auto graph_flag = vm.count("graphviz");
+  auto scc_flag = vm.count("scc");
+
   if (vm.count("slset")) {
 
     auto equations = p.slset_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
-
     PrintEquations(equations);
-
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
-      auto result = apply_newton(equations, vm.count("scc"),
-                                 vm.count("iterations"), iterations,
-                                 vm.count("graphviz"));
-      std::cout << result_string(result) << std::endl;
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
     } else if (vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
         return SemilinearSetV{s};
       });
-      auto result = apply_newton(equations2, vm.count("scc"),
-                                 vm.count("iterations"), iterations,
-                                 vm.count("graphviz"));
-      std::cout << result_string(result) << std::endl;
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
     } else {
       auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
         return SemilinearSetL{s};
       });
-      auto result = apply_newton(equations2, vm.count("scc"),
-                                 vm.count("iterations"), iterations,
-                                 vm.count("graphviz"));
-      std::cout << result_string(result) << std::endl;
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
     }
 
   } else if (vm.count("mlset")) {
 
     auto equations = p.slset_parser(input_all);
-    auto pseudo_equations =
-      SemilinearToPseudoLinearEquations<
-      DummyDivider,
-      // DummySimplifier
-      SparseVecSimplifier2>(equations);
+    if (equations.empty()) return EXIT_FAILURE;
+    if (vm.count("vec-simpl")) {
+      auto m_equations = SemilinearToPseudoLinearEquations<
+          DummyDivider, SparseVecSimplifier2>(equations);
+      PrintEquations(m_equations);
+      std::cout << result_string(
+          apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+    } else {
+      auto m_equations = SemilinearToPseudoLinearEquations<
+        DummyDivider, DummyVecSimplifier2>(equations);
+      PrintEquations(m_equations);
+      std::cout << result_string(
+          apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+    }
 
-    PrintEquations(pseudo_equations);
-
-    auto pseudo_result = apply_newton(pseudo_equations,
-                                      vm.count("scc"),
-                                      vm.count("iterations"),
-                                      iterations,
-                                      vm.count("graphviz"));
-    std::cout << result_string(pseudo_result) << std::endl;
 
   } else if (vm.count("rexp")) {
 
@@ -340,6 +342,9 @@ int main(int argc, char* argv[]) {
     PrintEquations(equations);
 
     // apply the newton method to the equations
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
     auto result = apply_newton(equations, vm.count("scc"),
                                vm.count("iterations"), iterations,
                                vm.count("graphviz"));
@@ -383,11 +388,10 @@ int main(int argc, char* argv[]) {
     if (equations.empty()) return EXIT_FAILURE;
 
     PrintEquations(equations);
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
 
-    auto result = apply_newton(equations, vm.count("scc"),
-                               vm.count("iterations"), iterations,
-                               vm.count("graphviz"));
-    std::cout << result_string(result) << std::endl;
   }
 
 
