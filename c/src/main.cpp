@@ -283,9 +283,9 @@ int main(int argc, char* argv[]) {
 
   Parser p;
 
-  auto iter_flag = vm.count("iterations");
-  auto graph_flag = vm.count("graphviz");
-  auto scc_flag = vm.count("scc");
+  const auto iter_flag = vm.count("iterations");
+  const auto graph_flag = vm.count("graphviz");
+  const auto scc_flag = vm.count("scc");
 
   if (vm.count("slset")) {
 
