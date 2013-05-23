@@ -13,11 +13,23 @@ fi
 
 for FILE in ${FILES}; do
   BASENAME=$(basename ${FILE})
-  SEMIRING=$(echo ${BASENAME} | awk -F _ '{ print $1 }')
   OUTPUT="${BASENAME}.out"
   OUTPUT_NEW="${OUTPUT}.new"
-  COMMAND="${NEWTON_BIN} --${SEMIRING} ${ITER_SCC} -f ${FILE}"
+  COMMAND="${NEWTON_BIN} ${ITER_SCC} -f ${FILE}"
   echo
   echo "Running: ${COMMAND}..."
   time (${COMMAND} >& ${OUTPUT_NEW})
+  if [ -f "${OUTPUT}" ]; then
+    echo -n "Checking output:"
+    diff -q ${OUTPUT} ${OUTPUT_NEW} >& /dev/null
+    if [ $? -ne 0 ]; then
+      echo " error!"
+      echo "Files ${OUTPUT} and ${OUTPUT_NEW} differ!"
+    else
+      echo " ok."
+      rm -f ${OUTPUT_NEW}
+    fi
+  else
+    mv ${OUTPUT_NEW} ${OUTPUT}
+  fi
 done
