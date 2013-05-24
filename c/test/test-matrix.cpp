@@ -86,7 +86,7 @@ void MatrixTest::testStar()
   srand(seed);
 
   // generate random matrix with values [0,10] where 0 is INFTY
-  int size = 100;
+  int size = 10;
   float density = 0.6; // this is a percentage of how many elements are not INFTY
   int mod = 10 / density;
   std::vector<TS> elements;
@@ -100,12 +100,20 @@ void MatrixTest::testStar()
   }
   Matrix<TS> test_matrix(size, elements);
 
+  //std::cout << "testmat:" << std::endl << test_matrix;
+
   // calculate the star with the recursive version and a floyd-warshall implementation
   // and compare results. Both results should be equal.
   auto rec_star = test_matrix.star();
+  auto rec_star2 = test_matrix.star3();
   auto fw_star = test_matrix.star2();
 
   //std::cout << "recursive:" << std::endl << rec_star;
-  //std::cout << "floydwarshall:" << std::endl << fw_star;
+  //std::cout << "recursive2:" << std::endl << rec_star2;
+  //std::cout << "floyd-warshall:" << std::endl << fw_star;
+
+  CPPUNIT_ASSERT(rec_star2 == fw_star);
+  CPPUNIT_ASSERT(rec_star2 == rec_star);
   CPPUNIT_ASSERT(rec_star == fw_star);
+
 }

@@ -338,6 +338,7 @@ class Newton {
         }
         std::cout << "Delta_new: " << delta_new << std::endl;
 
+
         if (SR::IsIdempotent())
           // for idempotent SRs we do not have do perform the addition (terms
           // are already accounted for in u_upd)!

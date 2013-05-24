@@ -8,7 +8,7 @@
 #ifndef COUNTING_SEMIRING_H_
 #define COUNTING_SEMIRING_H_
 
-#include "semiring.h"
+#include "semirings/semiring.h"
 
 class CountingSemiring : public Semiring<CountingSemiring>
 {
