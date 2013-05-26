@@ -36,7 +36,6 @@ typedef SemilinearSet<VarId, Counter, DummyDivider,
  * is an over-approximation, the result might no longer be precise. */
 typedef SemilinearSet< VarId, Counter, GcdDivider> DivSemilinearSet;
 
-
 template <typename Var,
           typename Value,
           DIVIDER_TEMPLATE_TYPE VecDivider,
@@ -151,10 +150,20 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
         VecSetUnion(lset.GetGenerators(),
                     VecSet<GeneratorType>{ GeneratorType{lset.GetOffset()} });
 
-      SemilinearSet result{
-        LinearSetType{lset.GetOffset(), std::move(result_gens)} };
+      /* We need to add one(), but to avoid additional simplification step, we
+       * just "inline" it... */
+      SemilinearSet result;
+      LinearSetType tmp_lin{lset.GetOffset(), std::move(result_gens)};
+      LinearSetType tmp_one;
+      if (tmp_lin < tmp_one) {
+        result.set_.emplace_back(std::move(tmp_lin));
+        result.set_.emplace_back(std::move(tmp_one));
+      } else {
+        result.set_.emplace_back(std::move(tmp_one));
+        result.set_.emplace_back(std::move(tmp_lin));
+      }
 
-      return one() + result;
+      return result;
     }
 
     SemilinearSet star() const {

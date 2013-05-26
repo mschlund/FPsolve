@@ -272,35 +272,32 @@ class UniqueVMapBuilder {
                                const UniqueVMap<K, V> &rhs) {
 
       auto result = Allocate();
+      auto output = std::back_inserter(result->vector_);
 
       auto lhs_iter = lhs.vector_.begin();
       auto rhs_iter = rhs.vector_.begin();
       const auto lhs_iter_end = lhs.vector_.end();
       const auto rhs_iter_end = rhs.vector_.end();
 
-      while (lhs_iter != lhs_iter_end && rhs_iter != rhs_iter_end) {
+      while (lhs_iter != lhs_iter_end) {
+        if (rhs_iter == rhs_iter_end) {
+          std::copy(lhs_iter, lhs_iter_end, output);
+          break;
+        }
         if (lhs_iter->first < rhs_iter->first) {
-          result->vector_.emplace_back(*lhs_iter);
+          *output = *lhs_iter;
           ++lhs_iter;
         } else if (lhs_iter->first > rhs_iter->first) {
-          result->vector_.emplace_back(*rhs_iter);
+          *output = *rhs_iter;
           ++rhs_iter;
         } else {
-          assert(lhs_iter->first == rhs_iter->first);
-          result->vector_.emplace_back(lhs_iter->first,
-                                       lhs_iter->second + rhs_iter->second);
+          *output = std::make_pair(lhs_iter->first,
+                                   lhs_iter->second + rhs_iter->second);
           ++lhs_iter;
           ++rhs_iter;
         }
       }
-
-      for (; lhs_iter != lhs_iter_end; ++lhs_iter) {
-        result->vector_.emplace_back(*lhs_iter);
-      }
-
-      for (; rhs_iter != rhs_iter_end; ++rhs_iter) {
-        result->vector_.emplace_back(*rhs_iter);
-      }
+      std::copy(rhs_iter, rhs_iter_end, output);
 
       return TryLookup<Divider>(std::move(result));
     }
