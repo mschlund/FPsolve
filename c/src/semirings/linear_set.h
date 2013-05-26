@@ -184,7 +184,7 @@ class LinearSetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    LinearSetSimplifier(const std::set<LinearSetType> &s) : rhs_lsets_(s) {}
+    LinearSetSimplifier(const VecSet<LinearSetType> &s) : rhs_lsets_(s) {}
 
     static bool IsActive() { return true; }
 
@@ -211,7 +211,7 @@ class LinearSetSimplifier {
       return false;
     }
   private:
-    const std::set<LinearSetType> &rhs_lsets_;
+    const VecSet<LinearSetType> &rhs_lsets_;
 };
 
 template <typename Var,
@@ -222,7 +222,7 @@ class DummyLinSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    DummyLinSimplifier(const std::set<LinearSetType> &s) {}
+    DummyLinSimplifier(const VecSet<LinearSetType> &s) {}
 
     static bool IsActive() { return false; }
 
@@ -242,7 +242,7 @@ class LinearSubsetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    LinearSubsetSimplifier(const std::set<LinearSetType> &s) : rhs_lsets_(s) {}
+    LinearSubsetSimplifier(const VecSet<LinearSetType> &s) : rhs_lsets_(s) {}
 
     static bool IsActive() { return true; }
 
@@ -262,5 +262,5 @@ class LinearSubsetSimplifier {
       return false;
     }
   private:
-    const std::set<LinearSetType> &rhs_lsets_;
+    const VecSet<LinearSetType> &rhs_lsets_;
 };

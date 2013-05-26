@@ -254,9 +254,16 @@ class VecSet {
     void emplace_back(A &&a) {
       assert(marked_erased == nil_index);
       Index index = vector_.size();
-      Index prev_index = index == 0 ? nil_index : index - 1;
+      Index prev_index = (index == 0 ? nil_index : index - 1);
       vector_.emplace_back(ElemInfo<A>{std::move(a), prev_index, index + 1});
       assert(Ok());
+    }
+
+    void clear () {
+      vector_.clear();
+      begin_ = 0;
+      marked_erased = nil_index;
+      num_erased_ = 0;
     }
 
   private:

@@ -71,7 +71,9 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
     SemilinearSet(const SemilinearSet<Var, Value, OldVecDivider,
                                       OldVecSimpl, OldLinSimpl> &slset) {
       for (const auto &lset : slset) {
-        set_.insert(LinearSetType{lset});
+        /* Elements of slset are already sorted, so it's safe to use
+         * emplace_back. */
+        set_.emplace_back(LinearSetType{lset});
       }
     }
 
@@ -96,12 +98,13 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       if (IsZero()) {
         set_ = rhs.set_;
       } else if (!rhs.IsZero()) {
-        std::set<LinearSetType> result;
-        std::set_union(set_.begin(), set_.end(),
-                       rhs.set_.begin(), rhs.set_.end(),
-                       std::inserter(result, result.begin()));
+        // VecSet<LinearSetType> result;
+        set_ = VecSetUnion(set_, rhs.set_);
+        // std::set_union(set_.begin(), set_.end(),
+        //                rhs.set_.begin(), rhs.set_.end(),
+        //                std::inserter(result, result.begin()));
 
-        set_ = std::move(result);
+        // set_ = std::move(result);
 
         SimplifySet<LinSimplType>(set_);
       }
@@ -115,13 +118,17 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       } else if (IsOne()) {
         set_ = rhs.set_;
       } else if (!rhs.IsOne()) {
-        std::set<LinearSetType> result;
+        std::set<LinearSetType> tmp_result;
         for(auto &lin_set_rhs : rhs.set_) {
           for(auto &lin_set_lhs : set_) {
-            result.insert(lin_set_lhs + lin_set_rhs);
+            tmp_result.insert(lin_set_lhs + lin_set_rhs);
           }
         }
-        set_ = std::move(result);
+        set_.clear();
+        for (auto &lset : tmp_result) {
+          set_.emplace_back(std::move(lset));
+        }
+        // set_ = std::move(result);
         SimplifySet<LinSimplType>(set_);
       }
 
@@ -156,9 +163,9 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
         LinearSetType{lset.GetOffset(), std::move(result_gens)} };
 
       /* Insert one.  We're inlining the definition for efficiency. */
-      result.set_.insert(LinearSetType{});
+      // result.set_.insert(LinearSetType{});
 
-      return result;
+      return one() + result;
     }
 
     SemilinearSet star() const {
@@ -186,13 +193,13 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       return std::move(sout.str());
     }
 
-    typedef typename std::set<LinearSetType>::const_iterator const_iterator;
+    typedef typename VecSet<LinearSetType>::const_iterator const_iterator;
 
     const_iterator begin() const { return set_.begin(); }
     const_iterator end() const { return set_.end(); }
 
   private:
-    SemilinearSet(std::set<LinearSetType> &&s) : set_(s) {}
+    SemilinearSet(VecSet<LinearSetType> &&s) : set_(s) {}
 
-    std::set<LinearSetType> set_;
+    VecSet<LinearSetType> set_;
 };
