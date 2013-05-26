@@ -1,6 +1,8 @@
 #pragma once
 
 #include "hash.h"
+#include "vec_set.h"
+
 
 template <typename A>
 class UniqueSetBuilder;
@@ -8,6 +10,9 @@ class UniqueSetBuilder;
 template <typename A>
 class UniqueSet {
   public:
+    typedef typename VecSet<A>::iterator iterator;
+    typedef typename VecSet<A>::const_iterator const_iterator;
+
     UniqueSet() = delete;
     UniqueSet(const UniqueSet &set) = delete;
     UniqueSet(UniqueSet &&set) = delete;
@@ -19,13 +24,13 @@ class UniqueSet {
 
     UniqueSet(UniqueSetBuilder<A> &b) : builder_(b) {}
 
-    UniqueSet(UniqueSetBuilder<A> &b, std::set<A> &&s)
+    UniqueSet(UniqueSetBuilder<A> &b, VecSet<A> &&s)
         : builder_(b), set_(std::move(s)) {}
 
-    UniqueSet(UniqueSetBuilder<A> &b, const std::set<A> &s)
+    UniqueSet(UniqueSetBuilder<A> &b, const VecSet<A> &s)
         : builder_(b), set_(s) {}
 
-    const std::set<A>& GetSet() const { return set_; }
+    const VecSet<A>& GetVecSet() const { return set_; }
 
     bool empty() const { return set_.empty(); }
 
@@ -38,9 +43,15 @@ class UniqueSet {
     }
 
     std::size_t Hash() const {
-      std::hash< std::set<A> > h;
+      std::hash< VecSet<A> > h;
       return h(set_);
     }
+
+    iterator begin() { return set_.begin(); }
+    iterator end() { return set_.end(); }
+
+    const_iterator begin() const { return set_.begin(); }
+    const_iterator end() const { return set_.end(); }
 
     friend inline void intrusive_ptr_add_ref(const UniqueSet *set) {
       ++set->ref_count_;
@@ -56,7 +67,7 @@ class UniqueSet {
 
     friend std::ostream& operator<<(std::ostream &out, const UniqueSet &set) {
       out << "{";
-      for (const auto &v : set.GetSet()) {
+      for (const auto &v : set) {
         out << v;
       }
       out << "}";
@@ -65,7 +76,7 @@ class UniqueSet {
 
   private:
     UniqueSetBuilder<A> &builder_;
-    std::set<A> set_;
+    VecSet<A> set_;
     mutable RefCounter ref_count_ = 0;
 
     friend UniqueSetBuilder<A>;
@@ -132,12 +143,12 @@ class UniqueSetBuilder {
       return UniqueSetPtr<A>{iter_inserted.first->second};
     }
 
-    UniqueSetPtr<A> New(std::set<A> &&s) {
+    UniqueSetPtr<A> New(VecSet<A> &&s) {
       return TryLookup(std::unique_ptr< UniqueSet<A> >(
             new UniqueSet<A>(*this, std::move(s))));
     }
 
-    UniqueSetPtr<A> New(const std::set<A> &s) {
+    UniqueSetPtr<A> New(const VecSet<A> &s) {
       return TryLookup(std::unique_ptr< UniqueSet<A> >(
             new UniqueSet<A>(*this, s)));
     }
