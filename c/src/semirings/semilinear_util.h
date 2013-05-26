@@ -73,10 +73,8 @@ void SimplifySet(VecSet<Elem> &to_simpl) {
     /* Erase automatically advances the iterator to the next element. */
     iter = to_simpl.MarkErased(iter);
 
-    /* Add it back only if it's not "covered" by the set. */
+    /* Now we check if it's necessary to add it back. */
 
-    /* Note that we cannot create the simplifier earlier, since it might be
-     * the case that to_simpl and available are the same sets! */
     Simpl simplifier{to_simpl};
 
     if (!simplifier.IsCovered(tmp_elem)) {

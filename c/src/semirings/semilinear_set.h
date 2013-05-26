@@ -14,7 +14,7 @@ template <
   typename Var = VarId,
   typename Value = Counter,
   DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier,
+  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier2,
   LIN_SIMPL_TEMPLATE_TYPE LinSimpl = DummyLinSimplifier>
 class SemilinearSet;
 
@@ -25,11 +25,11 @@ typedef SemilinearSet<> SemilinSetExp;
  * simplifications performs no simplification at all. */
 
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      SparseVecSimplifier, DummyLinSimplifier
+                      SparseVecSimplifier2, DummyLinSimplifier
                       > SemilinearSetV;
 
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      SparseVecSimplifier, LinearSetSimplifier
+                      SparseVecSimplifier2, LinearSetSimplifier
                       > SemilinearSetL;
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
@@ -115,7 +115,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       } else if (IsOne()) {
         set_ = rhs.set_;
       } else if (!rhs.IsOne()) {
-        std::set< LinearSetType > result;
+        std::set<LinearSetType> result;
         for(auto &lin_set_rhs : rhs.set_) {
           for(auto &lin_set_lhs : set_) {
             result.insert(lin_set_lhs + lin_set_rhs);
@@ -136,10 +136,10 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
        *   w*
        * instead of 1 + ww*. */
       if (lset.GetGenerators().empty()) {
-        std::set<GeneratorType> result_gens;
+        VecSet<GeneratorType> result_gens;
         /* If w is not the one-element, move w to the generators. */
         if (lset.GetOffset() != OffsetType{}) {
-          result_gens.insert(GeneratorType{lset.GetOffset()});
+          result_gens.emplace_back(GeneratorType{lset.GetOffset()});
         }
         return SemilinearSet{ LinearSetType{
                                 OffsetType{}, std::move(result_gens)} };
@@ -148,11 +148,12 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       /* Star of a linear set is a semilinear set:
        * (w_0.w_1*.w_2*...w_n*)* = 1 + (w_0.w_0*.w_1*.w_2*...w_n*) */
 
-      std::set<GeneratorType> result_gens = lset.GetGenerators();
-      result_gens.insert(GeneratorType{lset.GetOffset()});
+      VecSet<GeneratorType> result_gens =
+        VecSetUnion(lset.GetGenerators(),
+                    VecSet<GeneratorType>{ GeneratorType{lset.GetOffset()} });
 
-      SemilinearSet result{ LinearSetType{
-                              lset.GetOffset(), std::move(result_gens)} };
+      SemilinearSet result{
+        LinearSetType{lset.GetOffset(), std::move(result_gens)} };
 
       /* Insert one.  We're inlining the definition for efficiency. */
       result.set_.insert(LinearSetType{});
