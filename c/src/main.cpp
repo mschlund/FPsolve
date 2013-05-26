@@ -293,22 +293,25 @@ int main(int argc, char* argv[]) {
     if (equations.empty()) return EXIT_FAILURE;
     PrintEquations(equations);
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
+      DMSG("A");
       std::cout << result_string(
           apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else if (vm.count("vec-simpl") && !vm.count("lin-simpl")) {
+      DMSG("B");
       auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
         return SemilinearSetV{s};
       });
       std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_newton(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
+      DMSG("C");
       auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
         return SemilinearSetL{s};
       });
       std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_newton(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
 
