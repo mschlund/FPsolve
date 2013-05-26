@@ -238,26 +238,25 @@ struct hash< SparseVec<Var, Value, Divider> > {
 
 }  /* namespace std */
 
-
 template<typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
 class DummyVecSimplifier {
   public:
-    DummyVecSimplifier(const std::set< SparseVec<Var, Value, Divider> > &s) {}
+    typedef SparseVec<Var, Value, Divider> SparseVecType;
+    DummyVecSimplifier(const VecSet<SparseVecType> &s) {}
 
     static bool IsActive() { return false; }
 
-    bool IsCovered(const SparseVec<Var, Value, Divider> &lhs) {
+    bool IsCovered(const SparseVecType &lhs_any) {
       return false;
     }
 };
-
 
 template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
 class NaiveSimplifier {
   public:
     typedef SparseVec<Var, Value, Divider> SparseVecType;
 
-    NaiveSimplifier(const std::set<SparseVecType> &s) : rhs_set_(s) {}
+    NaiveSimplifier(const VecSet<SparseVecType> &s) : rhs_set_(s) {}
 
     static bool IsActive() { return true; }
 
@@ -265,7 +264,7 @@ class NaiveSimplifier {
     bool IsCovered(const SparseVec<Var, Value, AnyDivider> &lhs_any) {
       /* Cast the vector without actually invoking the Divider. */
       auto lhs = lhs_any.template Cast<Divider>();
-      if (lhs.IsZero() || rhs_set_.count(lhs) > 0) {
+      if (lhs.IsZero() || rhs_set_.Contains(lhs)) {
         return true;
       }
       for (const auto &rhs_gen : rhs_set_) {
@@ -277,7 +276,7 @@ class NaiveSimplifier {
     }
 
   private:
-    const std::set<SparseVecType> &rhs_set_;
+    const VecSet<SparseVecType> &rhs_set_;
 };
 
 template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
@@ -286,7 +285,7 @@ class SparseVecSimplifier {
     typedef SparseVec<Var, Value, Divider> SparseVecType;
     typedef SparseVec<Var, Value, DummyDivider> SparseVecTypeNoDiv;
 
-    SparseVecSimplifier(const std::set<SparseVecType> &s)
+    SparseVecSimplifier(const VecSet<SparseVecType> &s)
         : rhs_set_(s) {}
 
     static bool IsActive() { return true; }
@@ -314,103 +313,6 @@ class SparseVecSimplifier {
         return iter->second;
       }
       /* Should we go from the back? */
-      for (auto &rhs : rhs_set_) {
-        if (rhs.IsZero()) {
-          assert(false);
-          continue;
-        }
-        /* We don't want to do any simplification/division of the vector. */
-        auto new_lhs = lhs - rhs.template Cast<DummyDivider>();
-        if (new_lhs.IsValid() && (new_lhs.IsZero() ||
-                                  IsCovered_(new_lhs))) {
-          computed_.emplace(lhs, true);
-          return true;
-        }
-      }
-      computed_.emplace(lhs, false);
-      return false;
-    }
-
-    const std::set<SparseVecType> &rhs_set_;
-    std::unordered_map<SparseVecTypeNoDiv, bool> computed_;
-};
-
-template<typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
-class DummyVecSimplifier2 {
-  public:
-    typedef SparseVec<Var, Value, Divider> SparseVecType;
-    DummyVecSimplifier2(const VecSet<SparseVecType> &s) {}
-
-    static bool IsActive() { return false; }
-
-    bool IsCovered(const SparseVecType &lhs_any) {
-      return false;
-    }
-};
-
-template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
-class NaiveSimplifier2 {
-  public:
-    typedef SparseVec<Var, Value, Divider> SparseVecType;
-
-    NaiveSimplifier2(const VecSet<SparseVecType> &s) : rhs_set_(s) {}
-
-    static bool IsActive() { return true; }
-
-    template <DIVIDER_TEMPLATE_TYPE AnyDivider>
-    bool IsCovered(const SparseVec<Var, Value, AnyDivider> &lhs_any) {
-      /* Cast the vector without actually invoking the Divider. */
-      auto lhs = lhs_any.template Cast<Divider>();
-      if (lhs.IsZero() || rhs_set_.Contains(lhs)) {
-        return true;
-      }
-      for (const auto &rhs_gen : rhs_set_) {
-        if (rhs_gen.Divides(lhs)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-  private:
-    const VecSet<SparseVecType> &rhs_set_;
-};
-
-template <typename Var, typename Value, DIVIDER_TEMPLATE_TYPE Divider>
-class SparseVecSimplifier2 {
-  public:
-    typedef SparseVec<Var, Value, Divider> SparseVecType;
-    typedef SparseVec<Var, Value, DummyDivider> SparseVecTypeNoDiv;
-
-    SparseVecSimplifier2(const VecSet<SparseVecType> &s)
-        : rhs_set_(s) {}
-
-    static bool IsActive() { return true; }
-
-    /*
-     * Check, if lhs is a non-negative integer linear combination of the vectors
-     * in rhs_set_
-     */
-    template <template <typename, typename> class AnyDivider>
-    bool IsCovered(const SparseVec<Var, Value, AnyDivider> &lhs_any) {
-      auto lhs = lhs_any.template Cast<DummyDivider>();
-      /* Check the cheap and naive simplifier. */
-      NaiveSimplifier2<Var, Value, Divider> naive{rhs_set_};
-      if (naive.IsCovered(lhs)) {
-        return true;
-      }
-      return IsCovered_(lhs);
-    }
-
-  private:
-    /* Dynamic programming/memoization */
-    bool IsCovered_(const SparseVecTypeNoDiv &lhs) {
-      auto iter = computed_.find(lhs);
-      if (iter != computed_.end()) {
-        return iter->second;
-      }
-      /* Should we go from the back? */
-      // std::cout << "ITERATION" << std::endl;
       for (auto &rhs : rhs_set_) {
         if (rhs.IsZero()) {
           assert(false);

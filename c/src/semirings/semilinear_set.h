@@ -14,7 +14,7 @@ template <
   typename Var = VarId,
   typename Value = Counter,
   DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier2,
+  VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier,
   LIN_SIMPL_TEMPLATE_TYPE LinSimpl = DummyLinSimplifier>
 class SemilinearSet;
 
@@ -25,11 +25,11 @@ typedef SemilinearSet<> SemilinSetExp;
  * simplifications performs no simplification at all. */
 
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      SparseVecSimplifier2, DummyLinSimplifier
+                      SparseVecSimplifier, DummyLinSimplifier
                       > SemilinearSetV;
 
 typedef SemilinearSet<VarId, Counter, DummyDivider,
-                      SparseVecSimplifier2, LinearSetSimplifier
+                      SparseVecSimplifier, LinearSetSimplifier
                       > SemilinearSetL;
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
@@ -98,14 +98,7 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
       if (IsZero()) {
         set_ = rhs.set_;
       } else if (!rhs.IsZero()) {
-        // VecSet<LinearSetType> result;
         set_ = VecSetUnion(set_, rhs.set_);
-        // std::set_union(set_.begin(), set_.end(),
-        //                rhs.set_.begin(), rhs.set_.end(),
-        //                std::inserter(result, result.begin()));
-
-        // set_ = std::move(result);
-
         SimplifySet<LinSimplType>(set_);
       }
 
@@ -128,7 +121,6 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
         for (auto &lset : tmp_result) {
           set_.emplace_back(std::move(lset));
         }
-        // set_ = std::move(result);
         SimplifySet<LinSimplType>(set_);
       }
 
@@ -161,9 +153,6 @@ class SemilinearSet : public Semiring< SemilinearSet<Var, Value, VecDivider,
 
       SemilinearSet result{
         LinearSetType{lset.GetOffset(), std::move(result_gens)} };
-
-      /* Insert one.  We're inlining the definition for efficiency. */
-      // result.set_.insert(LinearSetType{});
 
       return one() + result;
     }

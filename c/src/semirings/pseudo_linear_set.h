@@ -18,7 +18,7 @@ class VarId;
 template <typename Var = VarId,
           typename Value = Counter,
           DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier2>
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier>
 class PseudoLinearSet;
 
 typedef PseudoLinearSet<VarId, Counter, GcdDivider> DivPseudoLinearSet;

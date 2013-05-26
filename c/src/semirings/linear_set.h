@@ -26,11 +26,11 @@ class VarId;
 template <typename Var = VarId,
           typename Value = Counter,
           DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier2>
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier>
 class LinearSet;
 
 /* SimpleLinearSet does no simplification. */
-typedef LinearSet<VarId, Counter, DummyDivider, DummyVecSimplifier2> SimpleLinearSet;
+typedef LinearSet<VarId, Counter, DummyDivider, DummyVecSimplifier> SimpleLinearSet;
 
 /* DivLinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * over-approximates and does not give a precise answer anymore.  */
@@ -108,11 +108,9 @@ class LinearSet {
       auto result_offset = offset_ + rhs.offset_;
       VecSet<GeneratorType> result_generators;
 
-      // VecSetUnion(GetGenerators(), rhs.GetGenerators());
       std::set_union(GetGenerators().begin(), GetGenerators().end(),
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
                      std::back_inserter(result_generators));
-                     // inserter(result_generators, result_generators.begin()));
 
       SimplifySet<VecSimplType>(result_generators);
 

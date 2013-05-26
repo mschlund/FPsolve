@@ -321,14 +321,14 @@ int main(int argc, char* argv[]) {
     if (equations.empty()) return EXIT_FAILURE;
     if (vm.count("vec-simpl")) {
       auto m_equations = SemilinearToPseudoLinearEquations<
-          DummyDivider, SparseVecSimplifier2>(equations);
+          DummyDivider, SparseVecSimplifier>(equations);
       PrintEquations(m_equations);
       std::cout << result_string(
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       auto m_equations = SemilinearToPseudoLinearEquations<
-        DummyDivider, DummyVecSimplifier2>(equations);
+        DummyDivider, DummyVecSimplifier>(equations);
       PrintEquations(m_equations);
       std::cout << result_string(
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
