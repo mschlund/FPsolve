@@ -228,20 +228,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return derivative_binom(VarDegreeMap{std::make_pair(var,1)});
     }
 
-    Polynomial<SR> derivative(const std::vector<VarId> &vars) const {
-      std::map<VarId, Degree> dx;
-      for(auto v: vars) {
-        auto iter =dx.find(v);
-        if(iter == dx.end()) {
-          dx[v] = 1;
-        }
-        else{
-          dx[v] ++;
-        }
-      }
-      return derivative_binom(dx);
-    }
-
     Polynomial<SR> derivative_binom(const VarDegreeMap &vars) const {
       std::map<Monomial, SR> tmp_monomials;
       VarDegreeMap tmp_variables;

@@ -279,7 +279,6 @@ class NonCommutativeMonomial {
         }
         else if (p.first == SemiringType)
           result *= srs_.at(p.second);
-
       }
 
       return result;

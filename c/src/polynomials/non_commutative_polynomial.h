@@ -234,7 +234,7 @@ private:
      for(auto const &monomial : monomials_) {
        result += monomial.first.differential_at(valuation) * monomial.second;
      }
-
+     return result;
    }
 
     SR eval(const std::map<VarId, SR> &values) const {

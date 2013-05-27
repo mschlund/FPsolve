@@ -116,8 +116,9 @@ std::ostream& operator<<(std::ostream& os, const Semiring<SR, Comm, Idem>& elem)
 
 template <typename SR, Commutativity Comm, Idempotence Idem>
 class StarableSemiring : public Semiring<SR, Comm, Idem>{
+public:
   virtual SR star () const = 0;
-
+  virtual ~StarableSemiring(){};
 };
 
 

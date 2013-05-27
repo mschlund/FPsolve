@@ -220,6 +220,8 @@ public:
                             const std::vector<VarId>& variables,
                             int max_iter) {
 
+	assert(polynomials.size() == variables.size());
+
     Matrix< Polynomial<SR> > F_mat{polynomials.size(), polynomials};
 
     Matrix<SR> newton_values{polynomials.size(), 1};
@@ -412,26 +414,107 @@ public:
    *
    */
   SimpleKleeneLinSolver(const std::vector< NonCommutativePolynomial<SR> >& F,  const std::vector<VarId>& variables) {
-
+	  polynomials_ = F;
   }
 
   /*
+   * FIXME: very very ugly code.. lots of copying
    * compute f = "F.differential_at(values) + rhs" (=linear polynomial)
    * and then iterate f^n(0) until convergence or MAX_ITER is reached
    */
   Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs, const std::vector<VarId>& variables) {
+	  std::vector<NonCommutativePolynomial<SR> > F_lin;
 
+	  std::map<VarId, SR> val_map = make_valmap(variables, values);
+
+
+	  // linearize F at point "values", obtain linear polynomials F_lin
+	  for(NonCommutativePolynomial<SR>& p : polynomials_) {
+		  F_lin.push_back(p.differential_at(val_map));
+	  }
+
+	  int iteration=0;
+	  bool converged = false;
+
+	  std::map<VarId, SR> iter_values = make_valmap(variables,rhs);
+	  std::map<VarId, SR> iter_values_new;
+
+	  // with start s = rhs, compute s = F_lin(s) + rhs until convergence or iteration bound has been hit
+
+	  while(!converged && iteration < MAX_ITER) {
+		  for(std::size_t j = 0; j < variables.size(); ++j) {
+			  iter_values_new[variables[j]] = F_lin[j].eval(iter_values) + rhs.At(j,0);
+		  }
+		  if(iter_values == iter_values_new)
+			  converged = true;
+		  else
+			  iter_values = iter_values_new;
+		  ++iteration;
+	  }
+	  return Matrix<SR>(variables.size(),std::vector<SR>(iter_values.begin(), iter_values.end()));
   }
 
 private:
+  const int MAX_ITER = 10; // FIXME: for testing only---TODO: change interface of LinSolver ...
+  std::vector< NonCommutativePolynomial<SR> >& polynomials_;
 
+  std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
+	  std::map<VarId, SR> val_map;
+	  for (std::size_t i = 0; i < variables.size(); ++i) {
+		  // FIXME: GCC 4.7 is missing emplace
+		  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+	  }
+	  return val_map;
+  }
 };
 
+
+template <typename SR>
+class NonCommutativeDeltaGenerator {
+public:
+	NonCommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
+    //FIXME: no need for copying... just keep a pointer to the polynomial system and the vars
+    this->polynomials_ = polynomials;
+    this->poly_vars = poly_vars;
+  }
+
+  virtual ~NonCommutativeDeltaGenerator(){ }
+
+  Matrix<SR> delta_at(const Matrix<SR>& newton_update,
+		  	  	  	  const Matrix<SR>& previous_newton_values) {
+	assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
+
+	std::vector<SR> delta;
+
+	  for(NonCommutativePolynomial<SR>& p : polynomials_) {
+		  delta.push_back(p.calculate_delta(make_valmap(poly_vars,previous_newton_values),
+				  	  	  	make_valmap(poly_vars,newton_update)));
+
+	  }
+	  return Matrix<SR>(delta);
+  }
+
+private:
+  std::vector< Polynomial<SR> > polynomials_;
+  std::vector<VarId> poly_vars;
+
+  std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
+	  std::map<VarId, SR> val_map;
+	  for (std::size_t i = 0; i < variables.size(); ++i) {
+		  // FIXME: GCC 4.7 is missing emplace
+		  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+	  }
+	  return val_map;
+  }
+};
 
 
 
 // compatability with old implementation
 template <typename SR> class Newton : public GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator >{ };
+
+// default NonCommutative Newton implementation using naive Kleene iteration
+template <typename SR> class NonCommutativeNewton : public GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator >{ };
 
 
 
