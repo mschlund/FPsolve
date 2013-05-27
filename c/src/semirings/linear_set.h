@@ -58,23 +58,26 @@ class LinearSet {
     LinearSet(OffsetType &&o)
         : offset_(std::move(o)), generators_(builder_.New({})) {}
 
-    LinearSet(const OffsetType &o, const std::set<GeneratorType> &vs)
+    LinearSet(const OffsetType &o, const VecSet<GeneratorType> &vs)
         : offset_(o), generators_(builder_.New(vs)) {}
 
-    LinearSet(OffsetType &&o, std::set<GeneratorType> &&vs)
+    LinearSet(OffsetType &&o, VecSet<GeneratorType> &&vs)
         : offset_(std::move(o)), generators_(builder_.New(std::move(vs))) {}
 
-    LinearSet(const OffsetType &o, std::set<GeneratorType> &&vs)
+    LinearSet(const OffsetType &o, VecSet<GeneratorType> &&vs)
         : offset_(o), generators_(builder_.New(std::move(vs))) {}
 
     template <DIVIDER_TEMPLATE_TYPE OldVecDivider,
               VEC_SIMPL_TEMPLATE_TYPE OldVecSimpl>
     LinearSet(const LinearSet<Var, Value, OldVecDivider, OldVecSimpl> &s) {
-      std::set<GeneratorType> generators;
+      VecSet<GeneratorType> generators;
       for (const auto &g : s.GetGenerators()) {
-        generators.insert(GeneratorType{g});
+        /* Since s.GetGenerators() is already a VecSet, then the elements are
+         * already ordered and it's safe to use emplace_back. */
+        generators.emplace_back(GeneratorType{g});
       }
-      LinearSet(s.GetOffset(), std::move(generators));
+      offset_ = s.GetOffset();
+      generators_ = builder_.New(std::move(generators));
     }
 
     LinearSet& operator=(const LinearSet &s) = default;
@@ -103,11 +106,11 @@ class LinearSet {
         return *this;
       }
       auto result_offset = offset_ + rhs.offset_;
-      std::set<GeneratorType> result_generators;
+      VecSet<GeneratorType> result_generators;
 
       std::set_union(GetGenerators().begin(), GetGenerators().end(),
                      rhs.GetGenerators().begin(), rhs.GetGenerators().end(),
-                     inserter(result_generators, result_generators.begin()));
+                     std::back_inserter(result_generators));
 
       SimplifySet<VecSimplType>(result_generators);
 
@@ -125,13 +128,14 @@ class LinearSet {
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
       out << "<" << lset.offset_
           << " : "
-          << ToStringSorted(lset.generators_->GetSet()) << ">";
+          << ToStringSorted(lset.GetGenerators()) << ">";
       return out;
     }
 
     const OffsetType& GetOffset() const { return offset_; }
-    const std::set<GeneratorType>& GetGenerators() const {
-      return generators_->GetSet();
+    const VecSet<GeneratorType>& GetGenerators() const {
+      assert(Ok());
+      return generators_->GetVecSet();
     }
 
     bool IsZero() const { return offset_.IsZero() && generators_->empty(); }
@@ -139,6 +143,10 @@ class LinearSet {
   private:
     LinearSet(OffsetType &&o, UniqueSetPtr<GeneratorType> s)
         : offset_(std::move(o)), generators_(s) {}
+
+    bool Ok() const {
+      return generators_ != nullptr;
+    }
 
     OffsetType offset_;
     UniqueSetPtr<GeneratorType> generators_;
@@ -174,7 +182,7 @@ class LinearSetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    LinearSetSimplifier(const std::set<LinearSetType> &s) : rhs_lsets_(s) {}
+    LinearSetSimplifier(const VecSet<LinearSetType> &s) : rhs_lsets_(s) {}
 
     static bool IsActive() { return true; }
 
@@ -201,7 +209,7 @@ class LinearSetSimplifier {
       return false;
     }
   private:
-    const std::set<LinearSetType> &rhs_lsets_;
+    const VecSet<LinearSetType> &rhs_lsets_;
 };
 
 template <typename Var,
@@ -212,7 +220,7 @@ class DummyLinSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    DummyLinSimplifier(const std::set<LinearSetType> &s) {}
+    DummyLinSimplifier(const VecSet<LinearSetType> &s) {}
 
     static bool IsActive() { return false; }
 
@@ -232,7 +240,7 @@ class LinearSubsetSimplifier {
   public:
     typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
 
-    LinearSubsetSimplifier(const std::set<LinearSetType> &s) : rhs_lsets_(s) {}
+    LinearSubsetSimplifier(const VecSet<LinearSetType> &s) : rhs_lsets_(s) {}
 
     static bool IsActive() { return true; }
 
@@ -252,5 +260,5 @@ class LinearSubsetSimplifier {
       return false;
     }
   private:
-    const std::set<LinearSetType> &rhs_lsets_;
+    const VecSet<LinearSetType> &rhs_lsets_;
 };
