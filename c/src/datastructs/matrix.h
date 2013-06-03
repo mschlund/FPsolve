@@ -129,7 +129,7 @@ class Matrix {
       return result;
     }
 
-    Matrix star3() const {
+    Matrix star() const {
       assert(columns_ == rows_);
       return recursive_star2(*this);
     }
@@ -139,7 +139,7 @@ class Matrix {
       return FloydWarshall();
     }
 
-    Matrix star() const {
+    Matrix star3() const {
       assert(columns_ == rows_);
       return recursive_star(*this);
     }
@@ -225,10 +225,13 @@ class Matrix {
       Matrix as_22 = recursive_star(a_22);
 
 
-      Matrix A_11 = recursive_star(a_11 + a_12 * as_22 * a_21);
-      Matrix A_22 = recursive_star(a_22 + a_21 * as_11 * a_12);
-	  Matrix A_12 = as_11 * a_12 * A_22;
-      Matrix A_21 = A_22 * a_21 * as_11;
+      Matrix a = a_21 * as_11;
+      Matrix b = a_12 * as_22;
+      Matrix A_11 = recursive_star(a_11 + b * a_21);
+
+      Matrix A_22 = recursive_star(a_22 + a * a_12);
+	  Matrix A_12 = A_11 * b;
+      Matrix A_21 = A_22 * a;
 
 
       return block_matrix(std::move(A_11), std::move(A_12),
@@ -258,9 +261,11 @@ class Matrix {
       Matrix b = (a_21 * as_11);
 
       Matrix A_22 = recursive_star2(a_22 + a_21 * a);
-      Matrix A_11 = a * A_22 * b + as_11;
-      Matrix A_12 = as_11 * a_12 * A_22;
-      Matrix A_21 = A_22 * b;
+      Matrix c = A_22 * b;
+
+      Matrix A_11 = a * c + as_11;
+      Matrix A_12 = a * A_22;
+      Matrix A_21 = c;
 
       return block_matrix(std::move(A_11), std::move(A_12),
                           std::move(A_21), std::move(A_22));

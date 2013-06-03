@@ -82,38 +82,41 @@ void MatrixTest::testMultiplication()
 void MatrixTest::testStar()
 {
   // use a fix seed, so tests are deterministic
-  unsigned int seed = 42;
-  srand(seed);
+  std::vector<unsigned int> seeds{42,23,11805,24890};
 
-  // generate random matrix with values [0,10] where 0 is INFTY
-  int size = 10;
-  float density = 0.6; // this is a percentage of how many elements are not INFTY
-  int mod = 10 / density;
-  std::vector<TS> elements;
-  for(unsigned int i = 0; i < size*size; i++)
-  {
-    int r = rand() % mod;
-    if(r > 10 || r == 0)
-      elements.push_back(TS(INFTY));
-    else
-      elements.push_back(TS(r));
-  }
-  Matrix<TS> test_matrix(size, elements);
+	for (auto &seed : seeds) {
+	  srand(seed);
 
-  //std::cout << "testmat:" << std::endl << test_matrix;
+	  // generate random matrix with values [0,10] where 0 is INFTY
+	  int size = 100;
+	  float density = 0.6; // this is a percentage of how many elements are not INFTY
+	  int mod = 10 / density;
+	  std::vector<TS> elements;
+	  for(unsigned int i = 0; i < size*size; i++)
+	  {
+		int r = rand() % mod;
+		if(r > 10 || r == 0)
+		  elements.push_back(TS(INFTY));
+		else
+		  elements.push_back(TS(r));
+	  }
+	  Matrix<TS> test_matrix(size, elements);
 
-  // calculate the star with the recursive version and a floyd-warshall implementation
-  // and compare results. Both results should be equal.
-  auto rec_star = test_matrix.star();
-  auto rec_star2 = test_matrix.star3();
-  auto fw_star = test_matrix.star2();
+	  //std::cout << "testmat:" << std::endl << test_matrix;
 
-  //std::cout << "recursive:" << std::endl << rec_star;
-  //std::cout << "recursive2:" << std::endl << rec_star2;
-  //std::cout << "floyd-warshall:" << std::endl << fw_star;
+	  // calculate the star with the recursive versions and a floyd-warshall implementation
+	  // and compare results. All three results should be equal.
+	  auto rec_star2 = test_matrix.star();
+	  auto rec_star = test_matrix.star3();
+	  auto fw_star = test_matrix.star2();
 
-  CPPUNIT_ASSERT(rec_star2 == fw_star);
-  CPPUNIT_ASSERT(rec_star2 == rec_star);
-  CPPUNIT_ASSERT(rec_star == fw_star);
+	  //std::cout << "recursive:" << std::endl << rec_star;
+	  //std::cout << "recursive2:" << std::endl << rec_star2;
+	  //std::cout << "floyd-warshall:" << std::endl << fw_star;
+
+	  CPPUNIT_ASSERT(rec_star2 == fw_star);
+	  CPPUNIT_ASSERT(rec_star2 == rec_star);
+	  CPPUNIT_ASSERT(rec_star == fw_star);
+	}
 
 }
