@@ -353,7 +353,7 @@ public:
 		  tmp_zero.insert(std::make_pair(variable, SR::null()));
 	  }
 
-	  if(polynomial_max_degree == 1) {
+	  if(polynomial_max_degree <= 1) {
 		  delta =polynomial.eval(tmp_zero);
 	  }
 	  else {
