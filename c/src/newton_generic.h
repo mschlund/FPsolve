@@ -31,19 +31,22 @@
 #define DELTA_GEN_TYPE template <typename> class
 
 
+
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum
  * and max_sum. */
-class Generator {
+class Generator2 {
   public:
-    Generator(const std::vector<Degree> &max, Degree min_sum, Degree max_sum)
-        : vector_(max.size()), max_(max), current_sum_(0),
+    Generator2(std::unordered_map<VarId, Degree> &max, Degree min_sum, Degree max_sum)
+        : val_map_(max), max_(max), current_sum_(0),
           min_sum_(min_sum), max_sum_(max_sum) {
-      assert(0 < vector_.size());
+      for (auto &var_val : val_map_) {
+        var_val.second = 0;
+      }
+      assert(0 < max_.size());
       assert(min_sum <= max_sum);
       assert(current_sum_ == CurrentSum());
-      assert(min_sum <= std::accumulate(max_.begin(), max_.end(),
-                                        static_cast<Degree>(0)));
+      // FIXME: add assertion that sum of max >= min_sum
     }
 
     bool NextCombination() {
@@ -68,42 +71,60 @@ class Generator {
       return false;
     }
 
-    const std::vector<std::uint16_t>& GetVectorRef() const {
+    const std::unordered_map<VarId, Degree>& GetMap() const {
       assert(current_sum_ == CurrentSum());
       assert(BelowEqualMax());
       assert(min_sum_ <= current_sum_ && current_sum_ <= max_sum_);
 
-      return vector_;
+      return val_map_;
     }
 
   private:
-    std::uint16_t CurrentSum() const {
-      return std::accumulate(vector_.begin(), vector_.end(), 0);
+    Degree Max(const VarId v) const {
+      auto lookup = max_.find(v);
+      if (lookup == max_.end()) {
+        assert(false);
+        return 0;
+      }
+      return lookup->second;
+    }
+
+    Degree CurrentSum() const {
+      Degree result = 0;
+      for (auto &var_val : val_map_) {
+        result += var_val.second;
+      }
+      return result;
     }
 
     bool BelowEqualMax() const {
-      for (std::size_t i = 0; i < vector_.size(); ++i) {
-        if (vector_[i] > max_[i]) {
+      for (auto &var_val : val_map_) {
+        if (var_val.second > Max(var_val.first)) {
           return false;
         }
       }
       return true;
     }
 
-
     /* Add 1 to the current vector, wrap-around if some value is > max_.
      * Returns false if we cannot add 1 (i.e., the last element would
      * overflow). */
-    bool AddOne(std::size_t start_index = 0) {
-      for (auto i = start_index; i < vector_.size(); ++i) {
-        if (max_[i] == 0) {
+    bool AddOne() {
+      return AddOne(val_map_.begin());
+    }
+
+    bool AddOne(typename std::unordered_map<VarId, Degree>::iterator start) {
+      for (auto iter = start; iter != val_map_.end(); ++iter) {
+        auto &integer = iter->second;
+        const auto integer_max = Max(iter->first);
+
+        if (integer_max == 0) {
           continue;
         }
 
-        auto &integer = vector_[i];
         ++integer;
         ++current_sum_;
-        if (integer <= max_[i]) {
+        if (integer <= integer_max) {
           return true;
         }
         current_sum_ -= integer;
@@ -117,12 +138,12 @@ class Generator {
     bool JumpMin() {
       assert(min_sum_ > current_sum_);
       auto remaining = min_sum_ - current_sum_;
-      for (std::size_t i = 0; i < vector_.size(); ++i) { // auto &integer : vector_) {
-        if (max_[i] == 0) {
+      for (auto &elem : val_map_) {
+        if (Max(elem.first) == 0) {
           continue;
         }
-        auto &integer = vector_[i];
-        auto integer_max = max_[i];
+        auto &integer = elem.second;
+        const auto integer_max = Max(elem.first);
         auto to_add = integer + remaining > integer_max ?
                       integer_max - integer : remaining;
         integer += to_add;
@@ -140,12 +161,12 @@ class Generator {
      * means that we add (with overflow) enough to get below max. */
     bool JumpMax() {
       assert(max_sum_ < current_sum_);
-      for (std::size_t i = 0; i < vector_.size(); ++i) {
-        if (max_[i] == 0) {
+      for (auto iter = val_map_.begin(); iter != val_map_.end(); ++iter) {
+        if (Max(iter->first) == 0) {
           continue;
         }
 
-        auto &integer = vector_[i];
+        auto &integer = iter->second;
 
         /* If integer == 0 then this is harmless. */
         current_sum_ -= integer;
@@ -155,19 +176,19 @@ class Generator {
          * Check if that is enough or whether we should try to wrap-around the
          * next position too.  This can happen when integer == 1. */
         if (current_sum_ - integer + 1 <= max_sum_) {
-          return AddOne(i + 1);
+          ++iter;
+          return AddOne(iter);
         }
       }
       return false;
     }
 
-    std::vector<std::uint16_t> vector_;
-    const std::vector<Degree> &max_;
+    std::unordered_map<VarId, Degree> val_map_;
+    const std::unordered_map<VarId, Degree> &max_;
     Degree current_sum_;
     Degree min_sum_;
     Degree max_sum_;
 };
-
 
 template <typename SR,
           LIN_EQ_SOLVER_TYPE LinEqSolverTemplate,
@@ -358,14 +379,16 @@ class CommutativeConcreteLinSolver {
 template <typename SR>
 class CommutativeDeltaGenerator {
 public:
-  CommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials,
-                            const std::vector<VarId> &poly_vars) {
-    //FIXME: no need for copying... just keep a pointer to the polynomial system and the vars
-    this->polynomials = polynomials;
-    this->poly_vars = poly_vars;
+  CommutativeDeltaGenerator(
+      const std::vector< Polynomial<SR> > &ps, const std::vector<VarId> &pvs)
+      : polynomials(ps), poly_vars(pvs) {
+    index_map_.reserve(poly_vars.size());
+    for (std::size_t i = 0; i < poly_vars.size(); ++i) {
+      index_map_.emplace(poly_vars[i], i);
+      // GCC 4.7 doesn't have emplace for std::map
+      zero_valuation_.insert(std::make_pair(poly_vars[i], SR::null()));
+    }
   }
-
-  virtual ~CommutativeDeltaGenerator(){ }
 
   Matrix<SR> delta_at(const Matrix<SR> &newton_update,
                       const Matrix<SR> &previous_newton_values) {
@@ -378,52 +401,40 @@ public:
 
     std::vector<SR> delta_vector;
 
-    std::vector<Degree> current_max_degree(num_variables);
+    std::unordered_map<VarId, Degree> current_max_degree;
+
+    for (std::size_t i = 0; i < num_variables; ++i) {
+      current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
+    }
 
     for (const auto &polynomial : polynomials) {
       SR delta = SR::null();
       Degree polynomial_max_degree = polynomial.get_degree();
 
-      for (std::size_t i = 0; i < num_variables; ++i) {
-              current_max_degree[i] = polynomial.GetMaxDegreeOf(poly_vars[i]);
-      }
-
+      current_max_degree.clear();
+      current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
+                                polynomial.GetVarDegreeMap().end());
 
       if (polynomial_max_degree <= 1) {
-        for (auto &variable : poly_vars) {
-          tmp_valuation_[variable] = SR::null();
-        }
-        delta = polynomial.eval(tmp_valuation_);
-
+        delta = polynomial.eval(zero_valuation_);
       } else {
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
-        Generator generator{current_max_degree, 2, polynomial_max_degree};
+        Generator2 generator{current_max_degree, 2, polynomial_max_degree};
 
         while (generator.NextCombination()) {
-          VarDegreeMap deriv_variables;
 
           SR prod = SR::one();
-          for (std::size_t i = 0; i < num_variables; ++i) {
-                  assert(deriv_variables.GetDegreeOf(poly_vars[i]) == 0);
-                  /* If we don't differentiate over the current variable, just
-                   * continue with the next one. The map deriv_variables will
-                   * implicitly return 0 for the current variable. */
-                  if (generator.GetVectorRef()[i] == 0) {
-                          continue;
-                  }
-                  deriv_variables.Insert(poly_vars[i], generator.GetVectorRef()[i]);
-                  for (int j = 0; j < generator.GetVectorRef()[i]; ++j) {
-                          prod *= newton_update.At(i, 0);
-                  }
+
+          for (const auto &var_val : generator.GetMap()) {
+            assert(poly_vars[index_map_[var_val.first]] == var_val.first);
+            for (int j = 0; j < var_val.second; ++j) {
+              prod *= newton_update.At(index_map_[var_val.first], 0);
+            }
           }
 
-          for (std::size_t i = 0; i < num_variables; ++i) {
-            // FIXME: GCC 4.7 is missing emplace
-            tmp_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
-          }
           SR polynomial_value =
-            polynomial.DerivativeBinomAt(deriv_variables, tmp_valuation_);
+            polynomial.DerivativeBinomAt(generator.GetMap(), current_valuation_);
 
           delta += polynomial_value * prod;
         }
@@ -435,11 +446,13 @@ public:
   }
 
 private:
-  std::vector< Polynomial<SR> > polynomials;
-  std::vector<VarId> poly_vars;
+  const std::vector< Polynomial<SR> > &polynomials;
+  const std::vector<VarId> &poly_vars;
+  std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
    * we also make sure that we always overwrite everything before using it... */
-  std::map<VarId, SR> tmp_valuation_;
+  std::map<VarId, SR> current_valuation_;
+  std::map<VarId, SR> zero_valuation_;
 };
 
 /*

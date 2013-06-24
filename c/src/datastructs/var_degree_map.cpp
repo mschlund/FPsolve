@@ -3,15 +3,6 @@
 
 #include "var_degree_map.h"
 
-Degree VarDegreeMap::GetDegreeOf(const VarId var) const {
-  auto var_iter = map_.find(var);
-  if (var_iter != map_.end()) {
-    return var_iter->second;
-  } else {
-    return 0;
-  }
-}
-
 void VarDegreeMap::Insert(const VarId var, Degree deg) {
   if (deg == 0) {
     return;

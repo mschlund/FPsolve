@@ -176,24 +176,28 @@ void PolynomialTest::testDerivativeBinomAt() {
   VarDegreeMap dx1 = { {Var::GetVarId("x"), 1} };
   VarDegreeMap dx2 = { {Var::GetVarId("x"), 2} };
 
+  std::unordered_map<VarId, Degree> hdx0;
+  std::unordered_map<VarId, Degree> hdx1 = { {Var::GetVarId("x"), 1} };
+  std::unordered_map<VarId, Degree> hdx2 = { {Var::GetVarId("x"), 2} };
+
   CPPUNIT_ASSERT(first->derivative_binom(dx0).eval(values).string() ==
-                 first->DerivativeBinomAt(dx0, values).string());
+                 first->DerivativeBinomAt(hdx0, values).string());
 
 
   CPPUNIT_ASSERT(first->derivative_binom(dx1).eval(values).string() ==
-                 first->DerivativeBinomAt(dx1, values).string());
+                 first->DerivativeBinomAt(hdx1, values).string());
 
   CPPUNIT_ASSERT(first->derivative_binom(dx1).eval(values).string() ==
-                 first->DerivativeBinomAt(dx1, values).string());
+                 first->DerivativeBinomAt(hdx1, values).string());
 
   CPPUNIT_ASSERT(second->derivative_binom(dx0).eval(values).string() ==
-                 second->DerivativeBinomAt(dx0, values).string());
+                 second->DerivativeBinomAt(hdx0, values).string());
 
   CPPUNIT_ASSERT(second->derivative_binom(dx1).eval(values).string() ==
-                 second->DerivativeBinomAt(dx1, values).string());
+                 second->DerivativeBinomAt(hdx1, values).string());
 
   CPPUNIT_ASSERT(second->derivative_binom(dx2).eval(values).string() ==
-                 second->DerivativeBinomAt(dx2, values).string());
+                 second->DerivativeBinomAt(hdx2, values).string());
 
 }
 
