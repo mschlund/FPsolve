@@ -367,77 +367,79 @@ public:
 
   virtual ~CommutativeDeltaGenerator(){ }
 
-  Matrix<SR> delta_at(const Matrix<SR>& newton_update,
-		  	  	  	  const Matrix<SR>& previous_newton_values) {
-	assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
+  Matrix<SR> delta_at(const Matrix<SR> &newton_update,
+                      const Matrix<SR> &previous_newton_values) {
 
-	auto num_variables = poly_vars.size();
-	assert(num_variables == previous_newton_values.getRows() &&
-		  num_variables == newton_update.getRows());
+    assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
 
-	std::vector<SR> delta_vector;
+    auto num_variables = poly_vars.size();
+    assert(num_variables == previous_newton_values.getRows() &&
+           num_variables == newton_update.getRows());
 
-	std::vector<Degree> current_max_degree(num_variables);
+    std::vector<SR> delta_vector;
 
-	for (const auto &polynomial : polynomials) {
-	  SR delta = SR::null();
-	  Degree polynomial_max_degree = polynomial.get_degree();
+    std::vector<Degree> current_max_degree(num_variables);
 
-	  for (std::size_t i = 0; i < num_variables; ++i) {
-		  current_max_degree[i] = polynomial.GetMaxDegreeOf(poly_vars[i]);
-	  }
+    for (const auto &polynomial : polynomials) {
+      SR delta = SR::null();
+      Degree polynomial_max_degree = polynomial.get_degree();
 
-	  std::map<VarId, SR> tmp_zero;
-	  for (auto &variable : poly_vars) {
-		  tmp_zero.insert(std::make_pair(variable, SR::null()));
-	  }
+      for (std::size_t i = 0; i < num_variables; ++i) {
+              current_max_degree[i] = polynomial.GetMaxDegreeOf(poly_vars[i]);
+      }
 
-	  if(polynomial_max_degree <= 1) {
-		  delta =polynomial.eval(tmp_zero);
-	  }
-	  else {
-		  /* We want to calculate all possible derivatives of at least second
-		   * order, but lower or equal to the degree of polynomial. */
-		  Generator generator{current_max_degree, 2, polynomial_max_degree};
 
-		  while (generator.NextCombination()) {
-			  VarDegreeMap deriv_variables;
+      if (polynomial_max_degree <= 1) {
+        for (auto &variable : poly_vars) {
+          tmp_valuation_[variable] = SR::null();
+        }
+        delta = polynomial.eval(tmp_valuation_);
 
-			  SR prod = SR::one();
-			  for (std::size_t i = 0; i < num_variables; ++i) {
-				  assert(deriv_variables.GetDegreeOf(poly_vars[i]) == 0);
-				  /* If we don't differentiate over the current variable, just
-				   * continue with the next one. The map deriv_variables will
-				   * implicitly return 0 for the current variable. */
-				  if (generator.GetVectorRef()[i] == 0) {
-					  continue;
-				  }
-				  deriv_variables.Insert(poly_vars[i], generator.GetVectorRef()[i]);
-				  for (int j = 0; j < generator.GetVectorRef()[i]; ++j) {
-					  prod *= newton_update.At(i, 0);
-				  }
-			  }
+      } else {
+        /* We want to calculate all possible derivatives of at least second
+         * order, but lower or equal to the degree of polynomial. */
+        Generator generator{current_max_degree, 2, polynomial_max_degree};
 
-			  std::map<VarId, SR> values;
-			  for (std::size_t i = 0; i < num_variables; ++i) {
-				  // FIXME: GCC 4.7 is missing emplace
-				  values.insert(std::make_pair(poly_vars[i], previous_newton_values.At(i, 0)));
-			  }
-			  SR polynomial_value =
-					  polynomial.DerivativeBinomAt(deriv_variables, values);
+        while (generator.NextCombination()) {
+          VarDegreeMap deriv_variables;
 
-			  delta += polynomial_value * prod;
-		  }
-	  }
+          SR prod = SR::one();
+          for (std::size_t i = 0; i < num_variables; ++i) {
+                  assert(deriv_variables.GetDegreeOf(poly_vars[i]) == 0);
+                  /* If we don't differentiate over the current variable, just
+                   * continue with the next one. The map deriv_variables will
+                   * implicitly return 0 for the current variable. */
+                  if (generator.GetVectorRef()[i] == 0) {
+                          continue;
+                  }
+                  deriv_variables.Insert(poly_vars[i], generator.GetVectorRef()[i]);
+                  for (int j = 0; j < generator.GetVectorRef()[i]; ++j) {
+                          prod *= newton_update.At(i, 0);
+                  }
+          }
 
-	  delta_vector.emplace_back(std::move(delta));
-	}
-	return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
+          for (std::size_t i = 0; i < num_variables; ++i) {
+            // FIXME: GCC 4.7 is missing emplace
+            tmp_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
+          }
+          SR polynomial_value =
+            polynomial.DerivativeBinomAt(deriv_variables, tmp_valuation_);
+
+          delta += polynomial_value * prod;
+        }
+      }
+
+      delta_vector.emplace_back(std::move(delta));
+    }
+    return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
   }
 
 private:
   std::vector< Polynomial<SR> > polynomials;
   std::vector<VarId> poly_vars;
+  /* We cache the std::map so that we can avoid reallocating it every time.  And
+   * we also make sure that we always overwrite everything before using it... */
+  std::map<VarId, SR> tmp_valuation_;
 };
 
 /*
