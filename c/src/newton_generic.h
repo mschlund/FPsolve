@@ -313,8 +313,46 @@ private:
       valuation[variables[i]] = newton_values.At(i, 0);
     }
   }
-
 };
+
+
+template <typename SR>
+class CommutativeConcreteLinSolver {
+  public:
+  CommutativeConcreteLinSolver(
+      const std::vector< Polynomial<SR> >& F,
+      const std::vector<VarId>& variables)
+    : jacobian_(Polynomial<SR>::jacobian(F, variables)) {}
+
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+                          const std::vector<VarId>& variables) {
+    assert(values.getColumns() == 1);
+    assert(variables.size() == values.getRows());
+    if (valuation_.size() > 0) {
+      assert(valuation_.size() == variables.size());
+    }
+
+    for (std::size_t i = 0; i < variables.size(); ++i) {
+      valuation_[variables[i]] = values.At(i, 0);
+    }
+
+    std::vector<SR> result_vec;
+    for (auto &poly : jacobian_.getElements()) {
+      result_vec.emplace_back(poly.eval(valuation_));
+    }
+    return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.FloydWarshall()
+           * rhs;
+  }
+
+  private:
+    Matrix< Polynomial<SR> > jacobian_;
+    /* We don't want to allocate the map every time, especially since the keys
+     * do not change... */
+    std::map<VarId, SR> valuation_;
+};
+
+
+
 
 
 template <typename SR>
