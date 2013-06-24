@@ -235,18 +235,20 @@ class GenericNewton {
     LinEqSolver LinSolver = LinEqSolver(polynomials, variables);
     DeltaGenerator DeltaGen = DeltaGenerator(polynomials, variables);
 
-    for (int i=0; i<max_iter; ++i) {
-      newton_update = LinSolver.solve_lin_at(newton_values,delta,variables);
+    for (int i=0; i < max_iter; ++i) {
+      newton_update = LinSolver.solve_lin_at(newton_values, delta, variables);
 
-      previous_newton_values = newton_values;
+      /* No need to recompute delta if this is the last iteration... */
+      if (!SR::IsIdempotent() && i + 1 < max_iter) {
+        delta = DeltaGen.delta_at(newton_update, newton_values);
+      }
 
-      if (!SR::IsIdempotent())
+      if (!SR::IsIdempotent()) {
         newton_values = newton_values + newton_update;
-      else
+      } else {
         newton_values = newton_update;
+      }
 
-      if (!SR::IsIdempotent())
-        delta = DeltaGen.delta_at(newton_update, previous_newton_values);
     }
 
     return newton_values;
