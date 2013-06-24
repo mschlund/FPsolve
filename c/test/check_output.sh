@@ -4,7 +4,7 @@ USAGE="Usage: ./check_output.sh <path to newton> \"<options>\" <files>"
 
 NEWTON_BIN="${PWD}/$1"
 ITER_SCC=$2
-FILES=$3
+FILES="${@:3}"
 
 if [ $# -lt 3 ]; then
   echo "${USAGE}"
@@ -17,7 +17,7 @@ for FILE in ${FILES}; do
   OUTPUT_NEW="${OUTPUT}.new"
   COMMAND="${NEWTON_BIN} ${ITER_SCC} -f ${FILE}"
   echo
-  echo "Running: ${COMMAND}..."
+  echo "Running: ${COMMAND}"
   time (${COMMAND} >& ${OUTPUT_NEW})
   if [ -f "${OUTPUT}" ]; then
     echo -n "Checking output:"
