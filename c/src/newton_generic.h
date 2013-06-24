@@ -552,13 +552,17 @@ private:
 
 
 // compatability with old implementation
-template <typename SR> class Newton : public GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator >{ };
+template <typename SR>
+using Newton =
+  GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator>;
+
+template <typename SR>
+using NewtonCL =
+  GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator>;
 
 // default NonCommutative Newton implementation using naive Kleene iteration
-template <typename SR> class NonCommutativeNewton : public GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator >{ };
-
-
+template <typename SR>
+using NonCommutativeNewton =
+  GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator>;
 
 #endif /* NEWTON_GENERIC_H_ */
-
-
