@@ -36,6 +36,7 @@ class VarDegreeMap {
 
     void clear() { map_.clear(); };
     bool empty() const { return map_.empty(); };
+    std::size_t size() const { return map_.size(); };
 
     bool operator<(const VarDegreeMap &rhs) const { return map_ < rhs.map_; }
     bool operator==(const VarDegreeMap &rhs) const { return map_ == rhs.map_; }
