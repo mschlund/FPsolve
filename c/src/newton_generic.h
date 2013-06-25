@@ -35,9 +35,9 @@
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum
  * and max_sum. */
-class Generator2 {
+class Generator {
   public:
-    Generator2(std::unordered_map<VarId, Degree> &max, Degree min_sum, Degree max_sum)
+    Generator(std::unordered_map<VarId, Degree> &max, Degree min_sum, Degree max_sum)
         : val_map_(max), max_(max), current_sum_(0),
           min_sum_(min_sum), max_sum_(max_sum) {
       for (auto &var_val : val_map_) {
@@ -420,7 +420,7 @@ public:
       } else {
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
-        Generator2 generator{current_max_degree, 2, polynomial_max_degree};
+        Generator generator{current_max_degree, 2, polynomial_max_degree};
 
         while (generator.NextCombination()) {
 
