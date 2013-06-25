@@ -31,19 +31,22 @@
 #define DELTA_GEN_TYPE template <typename> class
 
 
+
 /* This defines the generator that is able to create all possible combinations
  * of integers such they are smaller than max and their sum is between min_sum
  * and max_sum. */
 class Generator {
   public:
-    Generator(const std::vector<Degree> &max, Degree min_sum, Degree max_sum)
-        : vector_(max.size()), max_(max), current_sum_(0),
+    Generator(std::unordered_map<VarId, Degree> &max, Degree min_sum, Degree max_sum)
+        : val_map_(max), max_(max), current_sum_(0),
           min_sum_(min_sum), max_sum_(max_sum) {
-      assert(0 < vector_.size());
+      for (auto &var_val : val_map_) {
+        var_val.second = 0;
+      }
+      assert(0 < max_.size());
       assert(min_sum <= max_sum);
       assert(current_sum_ == CurrentSum());
-      assert(min_sum <= std::accumulate(max_.begin(), max_.end(),
-                                        static_cast<Degree>(0)));
+      // FIXME: add assertion that sum of max >= min_sum
     }
 
     bool NextCombination() {
@@ -68,42 +71,60 @@ class Generator {
       return false;
     }
 
-    const std::vector<std::uint16_t>& GetVectorRef() const {
+    const std::unordered_map<VarId, Degree>& GetMap() const {
       assert(current_sum_ == CurrentSum());
       assert(BelowEqualMax());
       assert(min_sum_ <= current_sum_ && current_sum_ <= max_sum_);
 
-      return vector_;
+      return val_map_;
     }
 
   private:
-    std::uint16_t CurrentSum() const {
-      return std::accumulate(vector_.begin(), vector_.end(), 0);
+    Degree Max(const VarId v) const {
+      auto lookup = max_.find(v);
+      if (lookup == max_.end()) {
+        assert(false);
+        return 0;
+      }
+      return lookup->second;
+    }
+
+    Degree CurrentSum() const {
+      Degree result = 0;
+      for (auto &var_val : val_map_) {
+        result += var_val.second;
+      }
+      return result;
     }
 
     bool BelowEqualMax() const {
-      for (std::size_t i = 0; i < vector_.size(); ++i) {
-        if (vector_[i] > max_[i]) {
+      for (auto &var_val : val_map_) {
+        if (var_val.second > Max(var_val.first)) {
           return false;
         }
       }
       return true;
     }
 
-
     /* Add 1 to the current vector, wrap-around if some value is > max_.
      * Returns false if we cannot add 1 (i.e., the last element would
      * overflow). */
-    bool AddOne(std::size_t start_index = 0) {
-      for (auto i = start_index; i < vector_.size(); ++i) {
-        if (max_[i] == 0) {
+    bool AddOne() {
+      return AddOne(val_map_.begin());
+    }
+
+    bool AddOne(typename std::unordered_map<VarId, Degree>::iterator start) {
+      for (auto iter = start; iter != val_map_.end(); ++iter) {
+        auto &integer = iter->second;
+        const auto integer_max = Max(iter->first);
+
+        if (integer_max == 0) {
           continue;
         }
 
-        auto &integer = vector_[i];
         ++integer;
         ++current_sum_;
-        if (integer <= max_[i]) {
+        if (integer <= integer_max) {
           return true;
         }
         current_sum_ -= integer;
@@ -117,12 +138,12 @@ class Generator {
     bool JumpMin() {
       assert(min_sum_ > current_sum_);
       auto remaining = min_sum_ - current_sum_;
-      for (std::size_t i = 0; i < vector_.size(); ++i) { // auto &integer : vector_) {
-        if (max_[i] == 0) {
+      for (auto &elem : val_map_) {
+        if (Max(elem.first) == 0) {
           continue;
         }
-        auto &integer = vector_[i];
-        auto integer_max = max_[i];
+        auto &integer = elem.second;
+        const auto integer_max = Max(elem.first);
         auto to_add = integer + remaining > integer_max ?
                       integer_max - integer : remaining;
         integer += to_add;
@@ -140,12 +161,12 @@ class Generator {
      * means that we add (with overflow) enough to get below max. */
     bool JumpMax() {
       assert(max_sum_ < current_sum_);
-      for (std::size_t i = 0; i < vector_.size(); ++i) {
-        if (max_[i] == 0) {
+      for (auto iter = val_map_.begin(); iter != val_map_.end(); ++iter) {
+        if (Max(iter->first) == 0) {
           continue;
         }
 
-        auto &integer = vector_[i];
+        auto &integer = iter->second;
 
         /* If integer == 0 then this is harmless. */
         current_sum_ -= integer;
@@ -155,46 +176,43 @@ class Generator {
          * Check if that is enough or whether we should try to wrap-around the
          * next position too.  This can happen when integer == 1. */
         if (current_sum_ - integer + 1 <= max_sum_) {
-          return AddOne(i + 1);
+          ++iter;
+          return AddOne(iter);
         }
       }
       return false;
     }
 
-    std::vector<std::uint16_t> vector_;
-    const std::vector<Degree> &max_;
+    std::unordered_map<VarId, Degree> val_map_;
+    const std::unordered_map<VarId, Degree> &max_;
     Degree current_sum_;
     Degree min_sum_;
     Degree max_sum_;
 };
 
-
-template <typename SR, LIN_EQ_SOLVER_TYPE LinEqSolverTemplate, DELTA_GEN_TYPE DeltaGeneratorTemplate>
+template <typename SR,
+          LIN_EQ_SOLVER_TYPE LinEqSolverTemplate,
+          DELTA_GEN_TYPE DeltaGeneratorTemplate>
 class GenericNewton {
   typedef LinEqSolverTemplate<SR> LinEqSolver;
   typedef DeltaGeneratorTemplate<SR> DeltaGenerator;
-public:
 
-  std::map<VarId,SR> solve_fixpoint(
-      const std::vector<std::pair<VarId, Polynomial<SR>>>& equations,
-      int max_iter) {
+  public:
+  std::map<VarId,SR> solve_fixpoint(const Equations<SR>& equations, int max_iter) {
     std::vector<Polynomial<SR>> F;
     std::vector<VarId> poly_vars;
-    for (auto equation_it = equations.begin(); equation_it != equations.end(); ++equation_it) {
-      poly_vars.push_back(equation_it->first);
-      F.push_back(equation_it->second);
+    for (const auto &eq : equations) {
+      poly_vars.push_back(eq.first);
+      F.push_back(eq.second);
     }
-    Matrix<SR> result = this->solve_fixpoint(F, poly_vars, max_iter);
+    Matrix<SR> result = solve_fixpoint(F, poly_vars, max_iter);
 
     // repack everything and return it
     std::map<VarId,SR> solution;
     auto result_vec = result.getElements();
-    auto var_it = poly_vars.begin();
-    for (auto result_it = result_vec.begin(); result_it != result_vec.end();
-         ++result_it) {
-      solution.insert(solution.begin(),
-                      std::pair<VarId,SR>(*var_it, *result_it));
-      ++var_it;
+    assert(result_vec.size() == poly_vars.size());
+    for (std::size_t i = 0; i < result_vec.size(); ++i) {
+      solution.insert(std::make_pair(poly_vars[i], result_vec[i]));
     }
     return solution;
   }
@@ -216,11 +234,11 @@ public:
    *  delta = DeltaGenerator.delta_at(newton_update, previous_newton_values) (generates the "rhs" of linear system) //compute delta for the next iteration
    *
   */
-  Matrix<SR> solve_fixpoint(const std::vector< Polynomial<SR> >& polynomials,
-                            const std::vector<VarId>& variables,
-                            int max_iter) {
+  Matrix<SR> solve_fixpoint(
+      const std::vector< Polynomial<SR> > &polynomials,
+      const std::vector<VarId> &variables, std::size_t max_iter) {
 
-	assert(polynomials.size() == variables.size());
+    assert(polynomials.size() == variables.size());
 
     Matrix< Polynomial<SR> > F_mat{polynomials.size(), polynomials};
 
@@ -238,18 +256,20 @@ public:
     LinEqSolver LinSolver = LinEqSolver(polynomials, variables);
     DeltaGenerator DeltaGen = DeltaGenerator(polynomials, variables);
 
-    for (int i=0; i<max_iter; ++i) {
-      newton_update = LinSolver.solve_lin_at(newton_values,delta,variables);
+    for (int i=0; i < max_iter; ++i) {
+      newton_update = LinSolver.solve_lin_at(newton_values, delta, variables);
 
-      previous_newton_values = newton_values;
+      /* No need to recompute delta if this is the last iteration... */
+      if (!SR::IsIdempotent() && i + 1 < max_iter) {
+        delta = DeltaGen.delta_at(newton_update, newton_values);
+      }
 
-      if (!SR::IsIdempotent())
+      if (!SR::IsIdempotent()) {
         newton_values = newton_values + newton_update;
-      else
+      } else {
         newton_values = newton_update;
+      }
 
-      if (!SR::IsIdempotent())
-        delta = DeltaGen.delta_at(newton_update, previous_newton_values);
     }
 
     return newton_values;
@@ -266,11 +286,13 @@ public:
 
 template <typename SR>
 class CommutativeSymbolicLinSolver {
+  public:
+  // TODO: use initialization lists instead of temporaries+copying? see
+  // http://www.parashift.com/c++-faq-lite/init-lists.html
+  CommutativeSymbolicLinSolver(
+      const std::vector< Polynomial<SR> >& F,
+      const std::vector<VarId>& variables) {
 
-public:
-  //TODO: use initialization lists instead of temporaries+copying? see http://www.parashift.com/c++-faq-lite/init-lists.html
-  CommutativeSymbolicLinSolver(const std::vector< Polynomial<SR> >& F,
-		  	  	  	  	  	   const std::vector<VarId>& variables) {
     Matrix< Polynomial<SR> > jacobian = Polynomial<SR>::jacobian(F, variables);
 
     std::unordered_map<SR, VarId, SR> valuation_tmp;
@@ -291,9 +313,8 @@ public:
     jacobian_star_ = 0;
   }
 
-  Matrix<SR> solve_lin_at(const Matrix<SR>& values,
-		  	  	  	  	  const Matrix<SR>& rhs,
-		  	  	  	  	  const std::vector<VarId>& variables) {
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+                          const std::vector<VarId>& variables) {
     UpdateValuation(variables, values, valuation_);
     return FreeSemiringMatrixEval(*jacobian_star_, valuation_) * rhs;
   }
@@ -313,92 +334,125 @@ private:
       valuation[variables[i]] = newton_values.At(i, 0);
     }
   }
-
 };
+
+
+template <typename SR>
+class CommutativeConcreteLinSolver {
+  public:
+  CommutativeConcreteLinSolver(
+      const std::vector< Polynomial<SR> >& F,
+      const std::vector<VarId>& variables)
+    : jacobian_(Polynomial<SR>::jacobian(F, variables)) {}
+
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+                          const std::vector<VarId>& variables) {
+    assert(values.getColumns() == 1);
+    assert(variables.size() == values.getRows());
+    if (valuation_.size() > 0) {
+      assert(valuation_.size() == variables.size());
+    }
+
+    for (std::size_t i = 0; i < variables.size(); ++i) {
+      valuation_[variables[i]] = values.At(i, 0);
+    }
+
+    std::vector<SR> result_vec;
+    for (auto &poly : jacobian_.getElements()) {
+      result_vec.emplace_back(poly.eval(valuation_));
+    }
+    return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.FloydWarshall()
+           * rhs;
+  }
+
+  private:
+    Matrix< Polynomial<SR> > jacobian_;
+    /* We don't want to allocate the map every time, especially since the keys
+     * do not change... */
+    std::map<VarId, SR> valuation_;
+};
+
+
+
 
 
 template <typename SR>
 class CommutativeDeltaGenerator {
 public:
-  CommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
-    //FIXME: no need for copying... just keep a pointer to the polynomial system and the vars
-    this->polynomials = polynomials;
-    this->poly_vars = poly_vars;
+  CommutativeDeltaGenerator(
+      const std::vector< Polynomial<SR> > &ps, const std::vector<VarId> &pvs)
+      : polynomials(ps), poly_vars(pvs) {
+    index_map_.reserve(poly_vars.size());
+    for (std::size_t i = 0; i < poly_vars.size(); ++i) {
+      index_map_.emplace(poly_vars[i], i);
+      // GCC 4.7 doesn't have emplace for std::map
+      zero_valuation_.insert(std::make_pair(poly_vars[i], SR::null()));
+    }
   }
 
-  virtual ~CommutativeDeltaGenerator(){ }
+  Matrix<SR> delta_at(const Matrix<SR> &newton_update,
+                      const Matrix<SR> &previous_newton_values) {
 
-  Matrix<SR> delta_at(const Matrix<SR>& newton_update,
-		  	  	  	  const Matrix<SR>& previous_newton_values) {
-	assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
+    assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
 
-	auto num_variables = poly_vars.size();
-	assert(num_variables == previous_newton_values.getRows() &&
-		  num_variables == newton_update.getRows());
+    auto num_variables = poly_vars.size();
+    assert(num_variables == previous_newton_values.getRows() &&
+           num_variables == newton_update.getRows());
 
-	std::vector<SR> delta_vector;
+    std::vector<SR> delta_vector;
 
-	std::vector<Degree> current_max_degree(num_variables);
+    std::unordered_map<VarId, Degree> current_max_degree;
 
-	for (const auto &polynomial : polynomials) {
-	  SR delta = SR::null();
-	  Degree polynomial_max_degree = polynomial.get_degree();
+    for (std::size_t i = 0; i < num_variables; ++i) {
+      current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
+    }
 
-	  for (std::size_t i = 0; i < num_variables; ++i) {
-		  current_max_degree[i] = polynomial.GetMaxDegreeOf(poly_vars[i]);
-	  }
+    for (const auto &polynomial : polynomials) {
+      SR delta = SR::null();
+      Degree polynomial_max_degree = polynomial.get_degree();
 
-	  std::map<VarId, SR> tmp_zero;
-	  for (auto &variable : poly_vars) {
-		  tmp_zero.insert(std::make_pair(variable, SR::null()));
-	  }
+      current_max_degree.clear();
+      current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
+                                polynomial.GetVarDegreeMap().end());
 
-	  if(polynomial_max_degree <= 1) {
-		  delta =polynomial.eval(tmp_zero);
-	  }
-	  else {
-		  /* We want to calculate all possible derivatives of at least second
-		   * order, but lower or equal to the degree of polynomial. */
-		  Generator generator{current_max_degree, 2, polynomial_max_degree};
+      if (polynomial_max_degree <= 1) {
+        delta = polynomial.eval(zero_valuation_);
+      } else {
+        /* We want to calculate all possible derivatives of at least second
+         * order, but lower or equal to the degree of polynomial. */
+        Generator generator{current_max_degree, 2, polynomial_max_degree};
 
-		  while (generator.NextCombination()) {
-			  VarDegreeMap deriv_variables;
+        while (generator.NextCombination()) {
 
-			  SR prod = SR::one();
-			  for (std::size_t i = 0; i < num_variables; ++i) {
-				  assert(deriv_variables.GetDegreeOf(poly_vars[i]) == 0);
-				  /* If we don't differentiate over the current variable, just
-				   * continue with the next one. The map deriv_variables will
-				   * implicitly return 0 for the current variable. */
-				  if (generator.GetVectorRef()[i] == 0) {
-					  continue;
-				  }
-				  deriv_variables.Insert(poly_vars[i], generator.GetVectorRef()[i]);
-				  for (int j = 0; j < generator.GetVectorRef()[i]; ++j) {
-					  prod *= newton_update.At(i, 0);
-				  }
-			  }
+          SR prod = SR::one();
 
-			  std::map<VarId, SR> values;
-			  for (std::size_t i = 0; i < num_variables; ++i) {
-				  // FIXME: GCC 4.7 is missing emplace
-				  values.insert(std::make_pair(poly_vars[i], previous_newton_values.At(i, 0)));
-			  }
-			  SR polynomial_value =
-					  polynomial.DerivativeBinomAt(deriv_variables, values);
+          for (const auto &var_val : generator.GetMap()) {
+            assert(poly_vars[index_map_[var_val.first]] == var_val.first);
+            for (int j = 0; j < var_val.second; ++j) {
+              prod *= newton_update.At(index_map_[var_val.first], 0);
+            }
+          }
 
-			  delta += polynomial_value * prod;
-		  }
-	  }
+          SR polynomial_value =
+            polynomial.DerivativeBinomAt(generator.GetMap(), current_valuation_);
 
-	  delta_vector.emplace_back(std::move(delta));
-	}
-	return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
+          delta += polynomial_value * prod;
+        }
+      }
+
+      delta_vector.emplace_back(std::move(delta));
+    }
+    return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
   }
 
 private:
-  std::vector< Polynomial<SR> > polynomials;
-  std::vector<VarId> poly_vars;
+  const std::vector< Polynomial<SR> > &polynomials;
+  const std::vector<VarId> &poly_vars;
+  std::unordered_map<VarId, std::size_t> index_map_;
+  /* We cache the std::map so that we can avoid reallocating it every time.  And
+   * we also make sure that we always overwrite everything before using it... */
+  std::map<VarId, SR> current_valuation_;
+  std::map<VarId, SR> zero_valuation_;
 };
 
 /*
@@ -414,7 +468,7 @@ public:
    *
    */
   SimpleKleeneLinSolver(const std::vector< NonCommutativePolynomial<SR> >& F,  const std::vector<VarId>& variables) {
-	  polynomials_ = F;
+          polynomials_ = F;
   }
 
   /*
@@ -423,35 +477,35 @@ public:
    * and then iterate f^n(0) until convergence or MAX_ITER is reached
    */
   Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs, const std::vector<VarId>& variables) {
-	  std::vector<NonCommutativePolynomial<SR> > F_lin;
+          std::vector<NonCommutativePolynomial<SR> > F_lin;
 
-	  std::map<VarId, SR> val_map = make_valmap(variables, values);
+          std::map<VarId, SR> val_map = make_valmap(variables, values);
 
 
-	  // linearize F at point "values", obtain linear polynomials F_lin
-	  for(NonCommutativePolynomial<SR>& p : polynomials_) {
-		  F_lin.push_back(p.differential_at(val_map));
-	  }
+          // linearize F at point "values", obtain linear polynomials F_lin
+          for(NonCommutativePolynomial<SR>& p : polynomials_) {
+                  F_lin.push_back(p.differential_at(val_map));
+          }
 
-	  int iteration=0;
-	  bool converged = false;
+          int iteration=0;
+          bool converged = false;
 
-	  std::map<VarId, SR> iter_values = make_valmap(variables,rhs);
-	  std::map<VarId, SR> iter_values_new;
+          std::map<VarId, SR> iter_values = make_valmap(variables,rhs);
+          std::map<VarId, SR> iter_values_new;
 
-	  // with start s = rhs, compute s = F_lin(s) + rhs until convergence or iteration bound has been hit
+          // with start s = rhs, compute s = F_lin(s) + rhs until convergence or iteration bound has been hit
 
-	  while(!converged && iteration < MAX_ITER) {
-		  for(std::size_t j = 0; j < variables.size(); ++j) {
-			  iter_values_new[variables[j]] = F_lin[j].eval(iter_values) + rhs.At(j,0);
-		  }
-		  if(iter_values == iter_values_new)
-			  converged = true;
-		  else
-			  iter_values = iter_values_new;
-		  ++iteration;
-	  }
-	  return Matrix<SR>(variables.size(),std::vector<SR>(iter_values.begin(), iter_values.end()));
+          while(!converged && iteration < MAX_ITER) {
+                  for(std::size_t j = 0; j < variables.size(); ++j) {
+                          iter_values_new[variables[j]] = F_lin[j].eval(iter_values) + rhs.At(j,0);
+                  }
+                  if(iter_values == iter_values_new)
+                          converged = true;
+                  else
+                          iter_values = iter_values_new;
+                  ++iteration;
+          }
+          return Matrix<SR>(variables.size(),std::vector<SR>(iter_values.begin(), iter_values.end()));
   }
 
 private:
@@ -459,12 +513,12 @@ private:
   std::vector< NonCommutativePolynomial<SR> >& polynomials_;
 
   std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
-	  std::map<VarId, SR> val_map;
-	  for (std::size_t i = 0; i < variables.size(); ++i) {
-		  // FIXME: GCC 4.7 is missing emplace
-		  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
-	  }
-	  return val_map;
+          std::map<VarId, SR> val_map;
+          for (std::size_t i = 0; i < variables.size(); ++i) {
+                  // FIXME: GCC 4.7 is missing emplace
+                  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+          }
+          return val_map;
   }
 };
 
@@ -472,7 +526,7 @@ private:
 template <typename SR>
 class NonCommutativeDeltaGenerator {
 public:
-	NonCommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
+        NonCommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
     //FIXME: no need for copying... just keep a pointer to the polynomial system and the vars
     this->polynomials_ = polynomials;
     this->poly_vars = poly_vars;
@@ -481,17 +535,17 @@ public:
   virtual ~NonCommutativeDeltaGenerator(){ }
 
   Matrix<SR> delta_at(const Matrix<SR>& newton_update,
-		  	  	  	  const Matrix<SR>& previous_newton_values) {
-	assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
+                                          const Matrix<SR>& previous_newton_values) {
+        assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
 
-	std::vector<SR> delta;
+        std::vector<SR> delta;
 
-	  for(NonCommutativePolynomial<SR>& p : polynomials_) {
-		  delta.push_back(p.calculate_delta(make_valmap(poly_vars,previous_newton_values),
-				  	  	  	make_valmap(poly_vars,newton_update)));
+          for(NonCommutativePolynomial<SR>& p : polynomials_) {
+                  delta.push_back(p.calculate_delta(make_valmap(poly_vars,previous_newton_values),
+                                                        make_valmap(poly_vars,newton_update)));
 
-	  }
-	  return Matrix<SR>(delta);
+          }
+          return Matrix<SR>(delta);
   }
 
 private:
@@ -499,25 +553,29 @@ private:
   std::vector<VarId> poly_vars;
 
   std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
-	  std::map<VarId, SR> val_map;
-	  for (std::size_t i = 0; i < variables.size(); ++i) {
-		  // FIXME: GCC 4.7 is missing emplace
-		  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
-	  }
-	  return val_map;
+          std::map<VarId, SR> val_map;
+          for (std::size_t i = 0; i < variables.size(); ++i) {
+                  // FIXME: GCC 4.7 is missing emplace
+                  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+          }
+          return val_map;
   }
 };
 
 
 
 // compatability with old implementation
-template <typename SR> class Newton : public GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator >{ };
+template <typename SR>
+using Newton =
+  GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator>;
+
+template <typename SR>
+using NewtonCL =
+  GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator>;
 
 // default NonCommutative Newton implementation using naive Kleene iteration
-template <typename SR> class NonCommutativeNewton : public GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator >{ };
-
-
+template <typename SR>
+using NonCommutativeNewton =
+  GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator>;
 
 #endif /* NEWTON_GENERIC_H_ */
-
-

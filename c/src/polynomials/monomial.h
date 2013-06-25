@@ -236,6 +236,26 @@ class Monomial {
       ss << variables_;
       return std::move(ss.str());
     }
+
+    std::size_t Hash() const {
+      std::size_t h = 0;
+      for (auto &x : variables_) {
+        HashCombine(h, x);
+      }
+      return h;
+    }
 };
+
+namespace std {
+
+template<>
+struct hash<Monomial> {
+  inline std::size_t operator()(const Monomial &m) const {
+    return m.Hash();
+  }
+};
+
+}  /* namespace std */
+
 
 std::ostream& operator<<(std::ostream &out, const Monomial &monomial);

@@ -102,7 +102,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
 }
 
 // apply the newton method to the given input
-template <typename SR>
+template <template <typename> class NewtonType = Newton, typename SR>
 std::map<VarId, SR> apply_newton(
     const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
     bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output) {
@@ -110,7 +110,7 @@ std::map<VarId, SR> apply_newton(
   // TODO: sanity checks on the input!
 
   // generate an instance of the newton solver
-  Newton<SR> newton;
+  NewtonType<SR> newton;
 
   // if we use the scc method, group the equations
   // the outer vector contains SCCs starting with a bottom SCC at 0
@@ -392,7 +392,7 @@ int main(int argc, char* argv[]) {
 
     PrintEquations(equations);
       std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_newton<NewtonCL>(equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
   }
