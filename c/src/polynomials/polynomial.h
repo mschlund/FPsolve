@@ -249,7 +249,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR DerivativeBinomAt(const VarDegreeMap &deriv_variables,
+    SR DerivativeBinomAt(const std::unordered_map<VarId, Degree> &deriv_variables,
                          const std::map<VarId, SR> &valuation) const {
 
       SR result = SR::null();
@@ -261,6 +261,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
         for (const auto &deriv_variable_degree : deriv_variables) {
           const auto variable = deriv_variable_degree.first;
           const auto deriv_degree = deriv_variable_degree.second;
+
+          if (deriv_degree == 0) {
+            continue;
+          }
 
           auto degree = monomial_coeff.first.GetDegreeOf(variable);
 
@@ -297,7 +301,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
           const auto variable = variable_degree.first;
           const auto degree = variable_degree.second;
 
-          if (deriv_variables.GetDegreeOf(variable) > 0) {
+          auto lookup = deriv_variables.find(variable);
+          if (lookup != deriv_variables.end() && lookup->second > 0) {
             /* Already considered in the previous loop. */
             continue;
           }
@@ -311,10 +316,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
         result += monomial_value;
       }
 
-      DMSG("DerivativeBinomAt:");
-      DMSG(result);
-      DMSG("eval . derivative_binom:");
-      DMSG(derivative_binom(deriv_variables).eval(valuation));
+      // DMSG("DerivativeBinomAt:");
+      // DMSG(result);
+      // DMSG("eval . derivative_binom:");
+      // DMSG(derivative_binom(deriv_variables).eval(valuation));
 
       return result;
       // for every (coefficient, monomial):
@@ -469,6 +474,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
         return 0;
       }
       return var_degree_iter->second;
+    }
+
+    const VarDegreeMap& GetVarDegreeMap() const {
+      return variables_;
     }
 
     /* FIXME: Get rid of this. */
