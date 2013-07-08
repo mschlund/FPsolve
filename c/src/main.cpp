@@ -24,6 +24,8 @@
 #include "semirings/semilinear_set.h"
 #endif
 
+#include "utils/timer.h"
+
 
 #include "parser.h"
 
@@ -126,6 +128,9 @@ std::map<VarId, SR> apply_newton(
   // this holds the solution
   std::map<VarId, SR> solution;
 
+  Timer timer;
+  timer.Start();
+
   // the same loop is used for both the scc and the non-scc variant
   // in the non-scc variant, we just run once through the loop
   //for (auto it1 = equations2.begin(); it != equations2.end(); ++it)
@@ -153,6 +158,13 @@ std::map<VarId, SR> apply_newton(
     // copy the results into the solution map
     solution.insert(result.begin(), result.end());
   }
+
+  timer.Stop();
+  std::cout << "Solving time:\t" << timer.GetMicroseconds().count()
+    << " us" << std::endl
+    << "Solving time:\t" << timer.GetMilliseconds().count()
+    << " ms" << std::endl;
+
 
   return solution;
 }
@@ -321,7 +333,7 @@ int main(int argc, char* argv[]) {
     if (equations.empty()) return EXIT_FAILURE;
     if (vm.count("vec-simpl")) {
       auto m_equations = SemilinearToPseudoLinearEquations<
-          DummyDivider, SparseVecSimplifier>(equations);
+        DummyDivider, SparseVecSimplifier>(equations);
       PrintEquations(m_equations);
       std::cout << result_string(
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
