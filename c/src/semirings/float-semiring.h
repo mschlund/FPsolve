@@ -44,6 +44,8 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
 
     FloatSemiring star() const {
       // if value_ == 1 this returns inf
+      if(value_ > 1)
+         std::cout << value_<< " is > 1!" << std::endl;
       assert(0 < 1 - value_);
       return FloatSemiring(1 / (1 - value_));
     }

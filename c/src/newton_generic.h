@@ -190,6 +190,7 @@ class CommutativeConcreteLinSolver {
   Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
                           const std::vector<VarId>& variables) {
     assert(values.getColumns() == 1);
+
     assert(variables.size() == values.getRows());
     if (valuation_.size() > 0) {
       assert(valuation_.size() == variables.size());
@@ -203,7 +204,7 @@ class CommutativeConcreteLinSolver {
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
-    return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.FloydWarshall()
+    return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.star()
            * rhs;
   }
 
@@ -258,7 +259,7 @@ public:
       current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
                                 polynomial.GetVarDegreeMap().end());
 
-      if (polynomial_max_degree <= 1) {
+      if (polynomial_max_degree == 1) {
         delta = polynomial.eval(zero_valuation_);
       } else {
         /* We want to calculate all possible derivatives of at least second
@@ -343,7 +344,10 @@ public:
       current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
                                 polynomial.GetVarDegreeMap().end());
 
-      if (polynomial_max_degree <= 1) {
+      if (polynomial_max_degree == 0) {
+        delta = SR::null();
+      }
+      if (polynomial_max_degree == 1) {
         delta = polynomial.eval(zero_valuation_);
       } else {
         delta =

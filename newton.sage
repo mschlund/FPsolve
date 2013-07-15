@@ -37,7 +37,7 @@ def compute_mat_star(M) :
         A_22 = compute_mat_star(a_22 + a_21 * as_11 * a_12)
         A_12 = as_11 * a_12 * A_22
         A_21 = as_22 * a_21 * A_11
-        return block_matrix(SR,[[A_11,A_12],[A_21,A_22]],  subdivide=False)
+        return block_matrix([A_11,A_12,A_21,A_22],  subdivide=False)
 
 # taken from sage/symbolic/expression.pyx
 # modified it to be able to specify the variables
@@ -56,7 +56,7 @@ def compute_symbolic_delta(u,F,v) :
     for i in F: # iterate over equations
         H = nhessian(i[0], v)
         d.append((1/2*u.transpose()*H*u)[0,0]) #TODO: make this nice :)
-    return vector(SR,d).column()
+    return vector(SR,d).transpose()
 
 # compute the degree of f when viewed as a polynomial in the variables v
 # (necessary since some "symbolic variables" may actually be symbolic constants for us
@@ -93,7 +93,8 @@ def compute_symbolic_delta_general(v, v_upd, F, poly_vars) :
 
                 sub_dict = dict(zip(poly_vars,v))
                 delta[i] = delta[i] + diff(f,dx).subs(sub_dict) * prod
-    return delta.column()
+        delta[i] = delta[i]/factorial(deg)
+    return delta.transpose()
 
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
@@ -232,9 +233,9 @@ def newton_numerical(F, poly_vars, max_iter=10) :
     J = jacobian(F,poly_vars)
     
     v_0 = numpy.array([0]*len(poly_vars))
-    v = vector(map(np_to_SR,v_0)).column()
+    v = vector(map(np_to_SR,v_0)).transpose()
     for i in range(1,max_iter+1) :
-        v = vector(map(np_to_SR,v)).column()
+        v = vector(map(np_to_SR,v)).transpose()
         sub = dict(zip(poly_vars,v.list()))
         A = J.subs(sub)
         b = F.subs(sub)

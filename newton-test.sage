@@ -6,7 +6,11 @@ f1 = a*x*y + b
 f2 = c*y*z + d*y*x + e
 f3 = g*x*h + i
 
-#f4 = a*x*x*x + b*x + c
+
+f4 = a*x*x + c
+
+f5 = a*y*y + a*x*x + c
+f6 = a*x*x + a*y*y + c
 
 # to compute the termination probability of the above system:
 probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
@@ -15,15 +19,16 @@ probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1
 #probabilistic_subs = dict( [(a,1/16),(b,1/2),(c,1/2)] ) #not a probability distribution :)
 s = 1/(1-x)
 
-F = vector(SR,[f1,f2,f3]).column()
-#F = vector(SR,[f4]).column()
+#F = vector(SR,[f1,f2,f3]).transpose()
+F = vector(SR,[f4]).transpose()
+G = vector(SR,[f5,f6]).transpose()
 
 F_c = F.subs(probabilistic_subs)
 
-variables = [x,y,z]
-#variables = [x]
-F_diff = F_c - vector(SR,variables).column()
-
+#variables = [x,y,z]
+f_var = [x]
+g_var = [x,y]
+#F_diff = F_c - vector(SR,variables).transpose()
 
 # test functions
 
@@ -81,9 +86,33 @@ def gen_random_quadratic_eqns(n, eps) :
 # format:
 # <X> ::= c_1 <X><Y> | c_2 <X><Z> | ... ;
 
+def newton_plain(F, poly_vars, iters) :
+  J = jacobian(F, poly_vars)
+  J_s = compute_mat_star(J) #only compute matrix star once
+  print J_s
 
+  u = var(join(['u%d' %i for i in range(J.ncols())]))
+  u_upd = var(join(['u_upd%d' %i for i in range(J.ncols())]))
+  
+  if(J.ncols() == 1) :
+      u = (u,)
+      u_upd = (u_upd,)
 
+  delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
+  print delta
 
+  v = matrix(SR,F.nrows(),1) # v^0 = 0
+
+  delta_new = F.subs( dict( (v,0) for v in poly_vars )) # delta^0 = F(0)
+  v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+  v = v + v_upd
+
+  for i in range(1, iters) :
+    delta_new = delta.subs( dict( zip(u_upd,v_upd.list()) ) )
+    v_upd = newton_step(F,poly_vars,J_s,v,delta_new)
+    v = v + v_upd
+    
+  return v
 
 
 
