@@ -259,8 +259,8 @@ public:
       current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
                                 polynomial.GetVarDegreeMap().end());
 
-      if (polynomial_max_degree == 1) {
-        delta = polynomial.eval(zero_valuation_);
+      if (polynomial_max_degree <= 1) {
+        delta = SR::null();
       } else {
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
@@ -344,11 +344,8 @@ public:
       current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
                                 polynomial.GetVarDegreeMap().end());
 
-      if (polynomial_max_degree == 0) {
+      if (polynomial_max_degree <= 1) {
         delta = SR::null();
-      }
-      if (polynomial_max_degree == 1) {
-        delta = polynomial.eval(zero_valuation_);
       } else {
         delta =
           polynomial.AllNewtonDerivatives(current_valuation_, newton_update_map);
