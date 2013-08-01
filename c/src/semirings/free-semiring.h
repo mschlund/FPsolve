@@ -76,6 +76,10 @@ class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCom
       factory_.PrintDot(out);
     }
 
+    void PrintStats(std::ostream &out = std::cout) {
+      factory_.PrintStats(out);
+    }
+
     void GC() {
       factory_.GC();
     }

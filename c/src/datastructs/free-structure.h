@@ -135,13 +135,6 @@ class NodeFactory {
   public:
     NodeFactory() : empty_(new Empty), epsilon_(new Epsilon) {}
     virtual ~NodeFactory() {
-      std::cout << "Size (free-struct): " << additions_.size() + multiplications_.size()+ stars_.size()<< std::endl;
-      std::cout << "Add (free-struct): " << additions_.size() << std::endl;
-      std::cout << "Mult (free-struct): " << multiplications_.size() << std::endl;
-      std::cout << "Stars (free-struct): " << stars_.size() << std::endl;
-      std::cout << "Elems (free-struct): " << elems_.size() << std::endl;
-
-
       for (auto &pair : additions_) { delete pair.second; }
       for (auto &pair : multiplications_) { delete pair.second; }
       for (auto &pair : stars_) { delete pair.second; }
@@ -159,6 +152,7 @@ class NodeFactory {
 
     virtual void PrintDot(std::ostream &out);
     virtual void GC();
+    virtual void PrintStats(std::ostream &out = std::cout);
 
   private:
     std::unordered_map< std::pair<NodePtr, NodePtr>, NodePtr > additions_;

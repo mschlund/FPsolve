@@ -151,6 +151,7 @@ class Monomial {
       SR result_value = SR::one();
       Monomial result_monomial;
 
+
       for (auto var_degree : variables_) {
         auto value_iter = values.find(var_degree.first);
         if (value_iter == values.end()) {
@@ -162,6 +163,11 @@ class Monomial {
             result_value *= value_iter->second;
           }
         }
+      }
+
+      // the coefficient is 0 if and only if the monomial is 0---so make sure that the variable-map is empty
+      if(SR::null() == result_value) {
+    	  result_monomial.variables_.clear();
       }
 
       return { std::move(result_value), std::move(result_monomial) };

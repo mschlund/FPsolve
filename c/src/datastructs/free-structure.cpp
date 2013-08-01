@@ -252,6 +252,16 @@ void NodeFactory::GC() {
   assert(false);
 }
 
+void NodeFactory::PrintStats(std::ostream &out) {
+  std::cout << "Size (free-struct): "
+    << additions_.size() + multiplications_.size()+ stars_.size()
+    << std::endl;
+  std::cout << "Add (free-struct): " << additions_.size() << std::endl;
+  std::cout << "Mult (free-struct): " << multiplications_.size() << std::endl;
+  std::cout << "Stars (free-struct): " << stars_.size() << std::endl;
+  std::cout << "Elems (free-struct): " << elems_.size() << std::endl;
+}
+
 
 
 void NodeFactory::PrintDot(std::ostream &out) {

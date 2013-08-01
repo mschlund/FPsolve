@@ -142,6 +142,15 @@ class CommutativeSymbolicLinSolver {
     Matrix<FreeSemiring> jacobian_free = Polynomial<SR>::make_free(jacobian, &valuation_tmp);
     jacobian_star_ = new Matrix<FreeSemiring>(jacobian_free.star());
 
+    // For benchmarking only ->
+    std::cout << "Size of Jacobian: "
+              << jacobian_star_->getRows()
+              << " x "
+              << jacobian_star_->getColumns()
+              << std::endl;
+    FreeSemiring::one().PrintStats();
+    // <-
+
     //std::cout << "J*: " << *jacobian_star_ << std::endl;
 
     for (auto &pair : valuation_tmp) {

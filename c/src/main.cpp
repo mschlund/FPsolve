@@ -303,7 +303,7 @@ int main(int argc, char* argv[]) {
 
     auto equations = p.slset_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
-    PrintEquations(equations);
+    //PrintEquations(equations);
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("A");
       std::cout << result_string(
@@ -334,14 +334,14 @@ int main(int argc, char* argv[]) {
     if (vm.count("vec-simpl")) {
       auto m_equations = SemilinearToPseudoLinearEquations<
         DummyDivider, SparseVecSimplifier>(equations);
-      PrintEquations(m_equations);
+      //PrintEquations(m_equations);
       std::cout << result_string(
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       auto m_equations = SemilinearToPseudoLinearEquations<
         DummyDivider, DummyVecSimplifier>(equations);
-      PrintEquations(m_equations);
+      //PrintEquations(m_equations);
       std::cout << result_string(
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
@@ -354,7 +354,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.rexp_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    PrintEquations(equations);
+    //PrintEquations(equations);
 
     // apply the newton method to the equations
       std::cout << result_string(
@@ -371,7 +371,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.free_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    PrintEquations(equations);
+    //PrintEquations(equations);
 
     // apply the newton method to the equations
     //auto result = apply_newton<FreeSemiring>(equations,
@@ -387,7 +387,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.prefix_parser(input_all, vm["prefix"].as<int>());
     if (equations.empty()) return EXIT_FAILURE;
 
-    PrintEquations(equations);
+    //PrintEquations(equations);
 
     // apply the newton method to the equations
     //auto result = apply_newton<PrefixSemiring>(equations,
