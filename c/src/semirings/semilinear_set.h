@@ -130,6 +130,8 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivi
     }
 
     SemilinearSet star(const LinearSetType &lset) const {
+      /* Remember to check if an offset is a zero vector and don't put that to
+       * generators... */
 
       /* If we do not have any generators, i.e.,
        *   ls = w  (for some word w)
@@ -139,7 +141,7 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivi
       if (lset.GetGenerators().empty()) {
         VecSet<GeneratorType> result_gens;
         /* If w is not the one-element, move w to the generators. */
-        if (lset.GetOffset() != OffsetType{}) {
+        if (lset.GetOffset() != OffsetType{} && !lset.GetOffset().IsZero()) {
           result_gens.emplace_back(GeneratorType{lset.GetOffset()});
         }
         return SemilinearSet{ LinearSetType{
@@ -150,8 +152,10 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivi
        * (w_0.w_1*.w_2*...w_n*)* = 1 + (w_0.w_0*.w_1*.w_2*...w_n*) */
 
       VecSet<GeneratorType> result_gens =
-        VecSetUnion(lset.GetGenerators(),
-                    VecSet<GeneratorType>{ GeneratorType{lset.GetOffset()} });
+        VecSetUnionWith(
+            lset.GetGenerators(),
+            VecSet<GeneratorType>{ GeneratorType{lset.GetOffset()} },
+            [](const OffsetType &o) { return !o.IsZero(); });
 
       /* We need to add one(), but to avoid additional simplification step, we
        * just "inline" it... */
