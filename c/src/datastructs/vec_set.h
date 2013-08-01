@@ -350,11 +350,13 @@ class VecSet {
 
 
 /* Helper function for creating a new VecSet that is a union of the arguments.
- * The only difference with std::set_union is that we explicitly use A to
+ * The predicate is applied to elements of type B (if it's false for an element,
+ * it won't appear in the final result.
+ * The other difference with std::set_union is that we explicitly use A to
  * insert an element of type B. */
-template<typename A, typename B>
-VecSet<A> VecSetUnion(const VecSet<A> &lhs, const VecSet<B> &rhs) {
-  DMSG("VecSetUnion");
+template <typename A, typename B, typename P>
+VecSet<A> VecSetUnionWith(const VecSet<A> &lhs, const VecSet<B> &rhs, P pred) {
+  DMSG("VecSetUnionWith");
   auto lhs_iter = lhs.begin();
   auto lhs_iter_end = lhs.end();
   auto rhs_iter = rhs.begin();
@@ -365,6 +367,11 @@ VecSet<A> VecSetUnion(const VecSet<A> &lhs, const VecSet<B> &rhs) {
     if (rhs_iter == rhs_iter_end) {
       std::copy(lhs_iter, lhs_iter_end, output);
       return result;
+    }
+    /* Ignore if the predicate is false. */
+    if (!pred(*rhs_iter)) {
+      ++rhs_iter;
+      continue;
     }
     auto rhs_elem = A{*rhs_iter};
     if (rhs_elem < *lhs_iter) {
@@ -383,6 +390,12 @@ VecSet<A> VecSetUnion(const VecSet<A> &lhs, const VecSet<B> &rhs) {
   }
   return result;
 }
+
+template <typename A, typename B>
+VecSet<A> VecSetUnion(const VecSet<A> &lhs, const VecSet<B> &rhs) {
+  return VecSetUnionWith(lhs, rhs, [](const B &b) { return true; });
+}
+
 
 
 namespace std {

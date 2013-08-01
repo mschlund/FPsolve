@@ -162,7 +162,8 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
       DMSG("-> star");
       SetType<OffsetType> result_offsets = { OffsetType{} };
 
-      auto result_generators = VecSetUnion(generators_, offsets_);
+      auto result_generators = VecSetUnionWith(generators_, offsets_,
+        [](const OffsetType &o) { return !o.IsZero(); });
 
       DMSG("<- star");
       return PseudoLinearSet{ std::move(result_offsets),
