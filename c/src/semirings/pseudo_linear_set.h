@@ -192,7 +192,19 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
 
   private:
     PseudoLinearSet(SetType<OffsetType> &&os, SetType<GeneratorType> &&gs)
-        : offsets_(os), generators_(gs) {}
+        : offsets_(os), generators_(gs) {
+      assert(Ok());
+    }
+
+    bool Ok() const {
+      for (auto &g : generators_) {
+        if (g.IsZero()) {
+          DMSG("Zero vector in generators.");
+          return false;
+        }
+      }
+      return true;
+    }
 
     void Simplify() {
       if (!VecSimplType::IsActive() || without_simpl < simpl_freq) {

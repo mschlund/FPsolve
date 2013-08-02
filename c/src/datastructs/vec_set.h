@@ -386,7 +386,9 @@ VecSet<A> VecSetUnionWith(const VecSet<A> &lhs, const VecSet<B> &rhs, P pred) {
     }
   }
   for (; rhs_iter != rhs_iter_end; ++rhs_iter) {
-    *output = A{*rhs_iter};
+    if (pred(*rhs_iter)) {
+      *output = A{*rhs_iter};
+    }
   }
   return result;
 }
