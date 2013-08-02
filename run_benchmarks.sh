@@ -5,7 +5,7 @@ for f in `find c/test/grammars/cfg-analyzer-benchmarks/benchmarks -name '*.cfg'`
 do
   echo $f
   echo "sl-nopt:"
-  timeout 15s ./newton -f $f --slset --scc > ${f}_log_slset_nonopt
+  timeout 15s ./c/src/newton -f $f --slset --scc > ${f}_log_slset_nonopt
   if [ $? -ne 0 ]; then
     #!= 0 signals a timeout or that sth else is wrong
     echo "TIMEOUT"
@@ -13,7 +13,7 @@ do
   fi
 
   echo "sl-opt:"
-  timeout 15s ./newton -f $f --slset --lin-simpl --scc > ${f}_log_slset_simpl
+  timeout 15s ./c/src/newton -f $f --slset --lin-simpl --scc > ${f}_log_slset_simpl
   if [ $? -ne 0 ]; then
     #!= 0 signals a timeout or that sth else is wrong
     echo "TIMEOUT"
@@ -21,7 +21,7 @@ do
   fi
 
   echo "ml-nopt:"
-  timeout 15s ./newton -f $f --mlset --scc > ${f}_log_mlset_nonopt
+  timeout 15s ./c/src/newton -f $f --mlset --scc > ${f}_log_mlset_nonopt
   if [ $? -ne 0 ]; then
     #!= 0 signals a timeout or that sth else is wrong
     echo "TIMEOUT"
@@ -29,7 +29,7 @@ do
   fi
 
   echo "ml-opt:"
-  timeout 15s ./newton -f $f --mlset --vec-simpl --scc > ${f}_log_mlset_simpl
+  timeout 15s ./c/src/newton -f $f --mlset --vec-simpl --scc > ${f}_log_mlset_simpl
   if [ $? -ne 0 ]; then
     #!= 0 signals a timeout or that sth else is wrong
     echo "TIMEOUT"

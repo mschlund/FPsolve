@@ -402,7 +402,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.float_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    PrintEquations(equations);
+    //PrintEquations(equations);
       std::cout << result_string(
           apply_newton<NewtonCL>(equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
