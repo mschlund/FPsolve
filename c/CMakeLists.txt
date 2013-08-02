@@ -56,7 +56,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")
 
-set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O3 -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O2 -DNDEBUG")
 
 if(${LPSOLVE})
   add_definitions(-DLPSOLVE_OPT)

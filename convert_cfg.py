@@ -1,3 +1,5 @@
+#usage: python convert_cfg.py input.cfg > output.cfg
+
 tokens = ('COLON','SEMICOLON','TERMINAL','NONTERMINAL')
 
 t_COLON = r'\:'

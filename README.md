@@ -31,3 +31,9 @@ Also remember that to build with libc++ you need both Boost and Cppunit compiled
 with libc++ too.  To make it easier to use different installations of Boost and
 Cppunit, you can specify the BOOST_ROOT and CPPUNIT_ROOT environment variables,
 before running cmake, to point to the directories containing the libraries.
+
+
+LICENSE
+==========
+The source code is distributed under the BSD license, see
+http://www.opensource.org/licenses/bsd-license.php .
