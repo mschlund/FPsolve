@@ -6,6 +6,6 @@ for n in $N
 do
   for e in $eps
   do
-    python gen_eqs.py $n $e > "c/test/grammars/float-random/float_${n}_${e/./}.cfg"
+    python gen_eqs.py $n $e > "c/test/grammars/float-random/float2_${n}_${e/./}.cfg"
   done
 done

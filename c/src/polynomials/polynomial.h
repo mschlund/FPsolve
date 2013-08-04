@@ -251,8 +251,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR AllNewtonDerivatives(const std::map<VarId, SR> &previous_newton,
-                            const std::map<VarId, SR> &newton_update) const;
+    SR AllNewtonDerivatives(const std::unordered_map<VarId, SR> &previous_newton,
+                            const std::unordered_map<VarId, SR> &newton_update) const;
 
 
     SR DerivativeBinomAt(const std::unordered_map<VarId, Degree> &deriv_variables,
@@ -463,8 +463,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
 template <typename SR>
 SR Polynomial<SR>::AllNewtonDerivatives(
-    const std::map<VarId, SR> &previous_newton,
-    const std::map<VarId, SR> &newton_update) const {
+    const std::unordered_map<VarId, SR> &previous_newton,
+    const std::unordered_map<VarId, SR> &newton_update) const {
 
   std::unordered_map<VarId, Degree> current_max_degree;
 
@@ -496,6 +496,12 @@ SR Polynomial<SR>::AllNewtonDerivatives(
 
     while (generator.NextCombination()) {
       const auto &deriv_variables = generator.GetMap();
+
+      /*for(auto &kv : deriv_variables) {
+    	  std::cout << "[" << kv.first << ":" <<kv.second<<"]";
+      }
+      std::cout << std::endl;
+       */
 
       /* First consider the variables that are in deriv_variables. */
       for (const auto &deriv_variable_degree : deriv_variables) {

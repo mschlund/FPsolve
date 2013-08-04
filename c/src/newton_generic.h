@@ -337,7 +337,7 @@ public:
 
     std::unordered_map<VarId, Degree> current_max_degree;
 
-    std::map<VarId, SR> newton_update_map;
+    std::unordered_map<VarId, SR> newton_update_map;
 
     for (std::size_t i = 0; i < num_variables; ++i) {
       current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
@@ -371,8 +371,8 @@ private:
   std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
    * we also make sure that we always overwrite everything before using it... */
-  std::map<VarId, SR> current_valuation_;
-  std::map<VarId, SR> zero_valuation_;
+  std::unordered_map<VarId, SR> current_valuation_;
+  std::unordered_map<VarId, SR> zero_valuation_;
 };
 
 /*
