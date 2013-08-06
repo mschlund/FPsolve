@@ -45,7 +45,7 @@ std::vector< std::vector< std::pair< VarId, Polynomial<SR> > > >
 group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
              bool graphviz_output) {
   // create map of variables to [0..n]. this is used to enumerate important variables in a clean way from 0 to n during graph construction
-  std::map<VarId, int> var_key;
+  std::unordered_map<VarId, int> var_key;
 
   // build the graph
   boost::adjacency_list<boost::vecS,
@@ -105,7 +105,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
 
 // apply the newton method to the given input
 template <template <typename> class NewtonType = Newton, typename SR>
-std::map<VarId, SR> apply_newton(
+ValuationMap<SR> apply_newton(
     const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
     bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output) {
 
@@ -126,7 +126,7 @@ std::map<VarId, SR> apply_newton(
   }
 
   // this holds the solution
-  std::map<VarId, SR> solution;
+  ValuationMap<SR> solution;
 
   Timer timer;
   timer.Start();
@@ -153,7 +153,7 @@ std::map<VarId, SR> apply_newton(
     }
 
     // do some real work here
-    std::map<VarId, SR> result = newton.solve_fixpoint(equations2[j], iterations);
+    ValuationMap<SR> result = newton.solve_fixpoint(equations2[j], iterations);
 
     // copy the results into the solution map
     solution.insert(result.begin(), result.end());
@@ -170,7 +170,7 @@ std::map<VarId, SR> apply_newton(
 }
 
 template <typename SR>
-std::string result_string(const std::map<VarId, SR> &result) {
+std::string result_string(const ValuationMap<SR> &result) {
   std::stringstream ss;
   for (auto &x : result) {
     ss << x.first << " == " << x.second << std::endl;

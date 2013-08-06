@@ -192,7 +192,7 @@ class Newton {
           }
 
           // eval f.derivative(dx) at v
-          std::map<VarId, VarId> values;
+          std::unordered_map<VarId, VarId> values;
           for (std::size_t index = 0; index < v.size(); ++index) {
             // FIXME: GCC 4.7 is missing emplace
             // values.emplace(poly_vars[index], v[index]);
@@ -248,7 +248,7 @@ class Newton {
     }
 
     // this is just a wrapper function at the moment
-    std::map<VarId,SR> solve_fixpoint(
+    ValuationMap<SR> solve_fixpoint(
         const std::vector<std::pair<VarId, Polynomial<SR>>>& equations,
         int max_iter) {
       std::vector<Polynomial<SR>> F;
@@ -261,7 +261,7 @@ class Newton {
       // Matrix<SR> result = SolveNoSd(F, poly_vars, max_iter);
 
       // repack everything and return it
-      std::map<VarId,SR> solution;
+      ValuationMap<SR> solution;
       auto result_vec = result.getElements();
       auto var_it = poly_vars.begin();
       for (auto result_it = result_vec.begin(); result_it != result_vec.end();

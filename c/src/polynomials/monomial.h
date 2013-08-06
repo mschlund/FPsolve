@@ -128,7 +128,7 @@ class Monomial {
     /* Evaluate the monomial given the map from variables to values,
      * If a variable is not interpreted the assertion fails !*/
     template <typename SR>
-    SR eval(const std::map<VarId, SR> &values) const {
+    SR eval(const std::unordered_map<VarId, SR> &values) const {
       auto result = SR::one();
 
       for (auto var_degree : variables_) {
@@ -146,7 +146,7 @@ class Monomial {
     /* Partially evaluate the monomial. */
     template <typename SR>
     std::pair<SR, Monomial> partial_eval(
-        const std::map<VarId, SR> &values) const {
+        const std::unordered_map<VarId, SR> &values) const {
 
       SR result_value = SR::one();
       Monomial result_monomial;
@@ -174,7 +174,7 @@ class Monomial {
     }
 
     /* Variable substitution. */
-    Monomial subst(const std::map<VarId, VarId> &mapping) const {
+    Monomial subst(const std::unordered_map<VarId, VarId> &mapping) const {
       VarDegreeMap tmp_variables;
 
       for (const auto &var_degree : variables_) {

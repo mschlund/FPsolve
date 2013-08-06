@@ -40,7 +40,7 @@ class GenericNewton {
   typedef DeltaGeneratorTemplate<SR> DeltaGenerator;
 
   public:
-  std::map<VarId,SR> solve_fixpoint(const Equations<SR>& equations, int max_iter) {
+  ValuationMap<SR> solve_fixpoint(const Equations<SR>& equations, int max_iter) {
     std::vector<Polynomial<SR>> F;
     std::vector<VarId> poly_vars;
     for (const auto &eq : equations) {
@@ -50,7 +50,7 @@ class GenericNewton {
     Matrix<SR> result = solve_fixpoint(F, poly_vars, max_iter);
 
     // repack everything and return it
-    std::map<VarId,SR> solution;
+    ValuationMap<SR> solution;
     auto result_vec = result.getElements();
     assert(result_vec.size() == poly_vars.size());
     for (std::size_t i = 0; i < result_vec.size(); ++i) {
@@ -87,7 +87,7 @@ class GenericNewton {
     Matrix<SR> newton_values{polynomials.size(), 1};
     Matrix<SR> previous_newton_values{polynomials.size(), 1};
 
-    std::map<VarId,SR> values;
+    ValuationMap<SR> values;
     for (auto &variable : variables) {
       values.insert(std::make_pair(variable, SR::null()));
     }
@@ -221,7 +221,7 @@ class CommutativeConcreteLinSolver {
     Matrix< Polynomial<SR> > jacobian_;
     /* We don't want to allocate the map every time, especially since the keys
      * do not change... */
-    std::map<VarId, SR> valuation_;
+    std::unordered_map<VarId, SR> valuation_;
 };
 
 
@@ -252,7 +252,7 @@ public:
 
     std::unordered_map<VarId, Degree> current_max_degree;
 
-    std::map<VarId, SR> newton_update_map;
+    ValuationMap<SR> newton_update_map;
 
     for (std::size_t i = 0; i < num_variables; ++i) {
       current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
@@ -303,8 +303,8 @@ private:
   std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
    * we also make sure that we always overwrite everything before using it... */
-  std::map<VarId, SR> current_valuation_;
-  std::map<VarId, SR> zero_valuation_;
+  ValuationMap<SR> current_valuation_;
+  ValuationMap<SR> zero_valuation_;
 };
 
 
@@ -399,7 +399,7 @@ public:
   Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs, const std::vector<VarId>& variables) {
           std::vector<NonCommutativePolynomial<SR> > F_lin;
 
-          std::map<VarId, SR> val_map = make_valmap(variables, values);
+          ValuationMap<SR> val_map = make_valmap(variables, values);
 
 
           // linearize F at point "values", obtain linear polynomials F_lin
@@ -410,8 +410,8 @@ public:
           int iteration=0;
           bool converged = false;
 
-          std::map<VarId, SR> iter_values = make_valmap(variables,rhs);
-          std::map<VarId, SR> iter_values_new;
+          ValuationMap<SR> iter_values = make_valmap(variables,rhs);
+          ValuationMap<SR> iter_values_new;
 
           // with start s = rhs, compute s = F_lin(s) + rhs until convergence or iteration bound has been hit
 
@@ -432,13 +432,13 @@ private:
   const int MAX_ITER = 10; // FIXME: for testing only---TODO: change interface of LinSolver ...
   std::vector< NonCommutativePolynomial<SR> >& polynomials_;
 
-  std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
-          std::map<VarId, SR> val_map;
-          for (std::size_t i = 0; i < variables.size(); ++i) {
-                  // FIXME: GCC 4.7 is missing emplace
-                  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
-          }
-          return val_map;
+  ValuationMap<SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
+    ValuationMap<SR> val_map;
+    for (std::size_t i = 0; i < variables.size(); ++i) {
+      // FIXME: GCC 4.7 is missing emplace
+      val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+    }
+    return val_map;
   }
 };
 
@@ -472,13 +472,13 @@ private:
   std::vector< Polynomial<SR> > polynomials_;
   std::vector<VarId> poly_vars;
 
-  std::map<VarId, SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
-          std::map<VarId, SR> val_map;
-          for (std::size_t i = 0; i < variables.size(); ++i) {
-                  // FIXME: GCC 4.7 is missing emplace
-                  val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
-          }
-          return val_map;
+  ValuationMap<SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
+    ValuationMap<SR> val_map;
+    for (std::size_t i = 0; i < variables.size(); ++i) {
+      // FIXME: GCC 4.7 is missing emplace
+      val_map.insert(std::make_pair(variables[i], rhs.At(i, 0)));
+    }
+    return val_map;
   }
 };
 
