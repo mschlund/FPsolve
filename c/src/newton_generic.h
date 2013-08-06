@@ -171,12 +171,12 @@ class CommutativeSymbolicLinSolver {
   }
 
 private:
-  std::unordered_map<VarId, SR> valuation_;
+  ValuationMap<SR> valuation_;
   Matrix<FreeSemiring>* jacobian_star_;
 
   void UpdateValuation(const std::vector<VarId> &variables,
                        const Matrix<SR> &newton_values,
-                       std::unordered_map<VarId, SR>& valuation) {
+                       ValuationMap<SR>& valuation) {
     //assert(!valuation.empty());
     assert(variables.size() == newton_values.getRows());
     assert(newton_values.getColumns() == 1);
@@ -221,7 +221,7 @@ class CommutativeConcreteLinSolver {
     Matrix< Polynomial<SR> > jacobian_;
     /* We don't want to allocate the map every time, especially since the keys
      * do not change... */
-    std::unordered_map<VarId, SR> valuation_;
+    ValuationMap<SR> valuation_;
 };
 
 
@@ -337,7 +337,7 @@ public:
 
     std::unordered_map<VarId, Degree> current_max_degree;
 
-    std::unordered_map<VarId, SR> newton_update_map;
+    ValuationMap<SR> newton_update_map;
 
     for (std::size_t i = 0; i < num_variables; ++i) {
       current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
@@ -371,8 +371,8 @@ private:
   std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
    * we also make sure that we always overwrite everything before using it... */
-  std::unordered_map<VarId, SR> current_valuation_;
-  std::unordered_map<VarId, SR> zero_valuation_;
+  ValuationMap<SR> current_valuation_;
+  ValuationMap<SR> zero_valuation_;
 };
 
 /*

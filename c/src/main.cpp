@@ -72,7 +72,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
       int b = var_key.find(var)->second; // variable key
       boost::add_edge(a, b, graph);
     }
-  } // graph is complete
+  }
 
   if (graphviz_output) {
     // output the created graph to graph.dot
@@ -83,7 +83,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
     boost::write_graphviz_dp(outf, graph, dp);
   }
 
-  // calculate strong connected components and store them in 'component'
+  // calculate strongly connected components and store them in 'component'
   std::vector<int> component(boost::num_vertices(graph));
   boost::strong_components(graph,&component[0]);
 
@@ -103,7 +103,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
   return grouped_equations;
 }
 
-// apply the newton method to the given input
+// apply Newton's method to the given input
 template <template <typename> class NewtonType = Newton, typename SR>
 ValuationMap<SR> apply_newton(
     const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
@@ -356,10 +356,7 @@ int main(int argc, char* argv[]) {
 
     //PrintEquations(equations);
 
-    // apply the newton method to the equations
-      std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
-          ) << std::endl;
+    // apply Newton's method to the equations
     auto result = apply_newton(equations, vm.count("scc"),
                                vm.count("iterations"), iterations,
                                vm.count("graphviz"));

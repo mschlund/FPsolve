@@ -67,7 +67,7 @@ class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCom
     }
 
     template <typename SR>
-    SR Eval(const std::unordered_map<VarId, SR> &valuation) const;
+    SR Eval(const ValuationMap<SR> &valuation) const;
 
     template <typename SR>
     SR Eval(Evaluator<SR> &evaluator) const;
@@ -118,7 +118,7 @@ struct hash<FreeSemiring> {
 template <typename SR>
 class Evaluator : public NodeVisitor {
   public:
-    Evaluator(const std::unordered_map<VarId, SR> &v)
+    Evaluator(const ValuationMap<SR> &v)
         : val_(v), evaled_(), result_() {}
 
     ~Evaluator() {
@@ -185,13 +185,13 @@ class Evaluator : public NodeVisitor {
       }
     }
 
-    const std::unordered_map<VarId, SR> &val_;
+    const ValuationMap<SR> &val_;
     std::unordered_map<NodePtr, SR*> evaled_;
     SR* result_;
 };
 
 template <typename SR>
-SR FreeSemiring::Eval(const std::unordered_map<VarId, SR> &valuation) const {
+SR FreeSemiring::Eval(const ValuationMap<SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
   return evaluator.MoveResult();

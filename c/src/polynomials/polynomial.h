@@ -20,8 +20,7 @@
 
 #include "monomial.h"
 
-template <typename SR> using MonomialMap = std::unordered_map<Monomial, SR> ;
-template <typename SR> using ValuationMap = std::unordered_map<VarId, SR>;
+template <typename SR> using MonomialMap = std::map<Monomial, SR> ;
 
 template <typename SR>
 class Polynomial : public Semiring<Polynomial<SR>,
@@ -255,8 +254,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
-    SR AllNewtonDerivatives(const std::unordered_map<VarId, SR> &previous_newton,
-                            const std::unordered_map<VarId, SR> &newton_update) const;
+    SR AllNewtonDerivatives(const ValuationMap<SR> &previous_newton,
+                            const ValuationMap<SR> &newton_update) const;
 
 
     SR DerivativeBinomAt(const std::unordered_map<VarId, Degree> &deriv_variables,
@@ -323,7 +322,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     static Matrix<SR> eval(const Matrix< Polynomial<SR> > &poly_matrix,
-        const std::unordered_map<VarId, SR> &values) {
+        const ValuationMap<SR> &values) {
       const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<SR> result;
       for (const auto &polynomial : tmp_polynomials) {
@@ -389,6 +388,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
     }
 
+    // FIXME: this is inefficient!
     Degree get_degree() const {
       Degree degree = 0;
       for (auto &monomial_coeff : monomials_) {
@@ -450,7 +450,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
       /* Variables don't change, so just copy them over. */
       VarDegreeMap result_variables = variables_;
-      std::unordered_map<Monomial, SR2> result_monomials;
+      MonomialMap<SR2> result_monomials;
 
       std::transform(
         monomials_.begin(), monomials_.end(),
@@ -467,8 +467,8 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
 template <typename SR>
 SR Polynomial<SR>::AllNewtonDerivatives(
-    const std::unordered_map<VarId, SR> &previous_newton,
-    const std::unordered_map<VarId, SR> &newton_update) const {
+    const ValuationMap<SR> &previous_newton,
+    const ValuationMap<SR> &newton_update) const {
 
   std::unordered_map<VarId, Degree> current_max_degree;
 

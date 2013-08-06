@@ -7,7 +7,6 @@
 
 #include <boost/math/special_functions/binomial.hpp>
 
-
 template <typename SR>
 class Polynomial;
 
@@ -128,7 +127,7 @@ class Monomial {
     /* Evaluate the monomial given the map from variables to values,
      * If a variable is not interpreted the assertion fails !*/
     template <typename SR>
-    SR eval(const std::unordered_map<VarId, SR> &values) const {
+    SR eval(const ValuationMap<SR> &values) const {
       auto result = SR::one();
 
       for (auto var_degree : variables_) {
@@ -146,7 +145,7 @@ class Monomial {
     /* Partially evaluate the monomial. */
     template <typename SR>
     std::pair<SR, Monomial> partial_eval(
-        const std::unordered_map<VarId, SR> &values) const {
+        const ValuationMap<SR> &values) const {
 
       SR result_value = SR::one();
       Monomial result_monomial;

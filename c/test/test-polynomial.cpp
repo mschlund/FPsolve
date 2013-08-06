@@ -182,7 +182,7 @@ void PolynomialTest::testDerivativeBinomAt() {
 
   //std::cout << first->derivative_binom(dx0).eval(values).string() << "=?="<< first->DerivativeBinomAt(hdx0, values).string()<<std::endl;
 
-  //FIXME: do not test for string equivalence!---polynomials are unordered maps now!
+  //FIXME: do not test for string equivalence!---polynomials are not necessarily ordered maps!
   /*
   CPPUNIT_ASSERT(first->derivative_binom(dx0).eval(values).string() ==
                  first->DerivativeBinomAt(hdx0, values).string());

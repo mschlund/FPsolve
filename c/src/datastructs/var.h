@@ -5,6 +5,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <map>
 #include <vector>
 #include <limits>
 
@@ -138,3 +139,5 @@ class Var {
 };
 
 std::ostream& operator<<(std::ostream &out, const std::vector<VarId> vids);
+
+template <typename SR> using ValuationMap = std::unordered_map<VarId, SR>;

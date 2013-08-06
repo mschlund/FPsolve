@@ -3,9 +3,10 @@
 #include "semirings/free-semiring.h"
 #include "datastructs/matrix.h"
 
+
 template <typename SR>
 Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
-    const std::unordered_map<VarId, SR> &valuation) {
+    const ValuationMap<SR> &valuation) {
 
   const std::vector<FreeSemiring> &elements = matrix.getElements();
   std::vector<SR> result;
@@ -25,13 +26,13 @@ Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
 /* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
 SR FreeSemiring_eval(FreeSemiring elem,
-    std::unordered_map<VarId, SR> *valuation) {
+    ValuationMap<SR> *valuation) {
   return elem.Eval(*valuation);
 }
 
 /* FIXME: Temporary wrapper for compatibility with the old implementation. */
 template <typename SR>
 Matrix<SR> FreeSemiring_eval(Matrix<FreeSemiring> matrix,
-    std::unordered_map<VarId, SR> *valuation) {
+    ValuationMap<SR> *valuation) {
   return FreeSemiringMatrixEval(matrix, *valuation);
 }
