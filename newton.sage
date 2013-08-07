@@ -233,9 +233,9 @@ def newton_numerical(F, poly_vars, max_iter=10) :
     J = jacobian(F,poly_vars)
     
     v_0 = numpy.array([0]*len(poly_vars))
-    v = vector(map(np_to_SR,v_0)).transpose()
+    v = vector(map(np_to_SR,v_0)).column()
     for i in range(1,max_iter+1) :
-        v = vector(map(np_to_SR,v)).transpose()
+        v = vector(map(np_to_SR,v)).column()
         sub = dict(zip(poly_vars,v.list()))
         A = J.subs(sub)
         b = F.subs(sub)
@@ -243,6 +243,32 @@ def newton_numerical(F, poly_vars, max_iter=10) :
         v = v - x
 
     return v
+
+
+def gen_random_quadratic_eqns(n, eps) :
+    poly_vars = ['x%d' %i for i in range(n)]
+    
+    
+    # n variables ==> n choose 2 monomials, select eps*n of those which will be non-zero
+    monomials = [m for m in itertools.combinations(poly_vars,2)]
+
+    k = int(eps*(n*n/2 - n/2))
+
+    if(k<2) :
+        k=2
+
+    #for the non-zero monomials choose random coefficients from (0,1) that add up to 1
+    # this can be done by sampling from a (/the) k-dimensional (symmetric) Dirichlet-distribution
+    
+    for i in range(n) :
+        non_zero = random.sample(monomials, k-1)
+        coeff = list(numpy.random.dirichlet([1]*k))
+        const_coeff = coeff.pop()
+        
+        mon_coeffs = map(lambda x : str(x[0]) + " " + "<"+x[1][0]+">"+"<"+x[1][1]+">", zip(coeff,non_zero) )
+        f = reduce(lambda x, y : x + " | " + y, mon_coeffs)
+        f = f + " | " + str(const_coeff)
+        print "<" + poly_vars[i] + ">" + " ::= " + f + ";"
 
 
 

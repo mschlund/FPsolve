@@ -18,7 +18,7 @@ def gen_random_quadratic_eqns(n, eps) :
     poly_vars = ['x%d' %i for i in range(n)]
     
     # n variables ==> n choose 2 monomials, select eps*n of those which will be non-zero
-    monomials = [m for m in itertools.combinations(poly_vars,2)]
+    monomials = [m for m in itertools.combinations_with_replacement(poly_vars,2)]
 
     k = int(eps*(n*n/2 - n/2))
 

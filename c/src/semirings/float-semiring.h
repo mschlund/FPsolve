@@ -43,6 +43,7 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
     }
 
     FloatSemiring star() const {
+      OPSTAR;
       // if value_ == 1 this returns inf
       if(value_ > 1)
          std::cout << value_<< " is > 1!" << std::endl;

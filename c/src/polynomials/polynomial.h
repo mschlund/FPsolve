@@ -277,15 +277,24 @@ class Polynomial : public Semiring<Polynomial<SR>,
     static Matrix< Polynomial<SR> > jacobian(
         const std::vector< Polynomial<SR> > &polynomials,
         const std::vector<VarId> &variables) {
-      std::vector< Polynomial<SR> > result_vector;
-      for (const auto &polynomial : polynomials) {
-        for (const auto variable : variables) {
-          result_vector.push_back(polynomial.derivative(variable));
-        }
-      }
-      // FIXME: Clean up Matrix and then remove the casts...
-      return Matrix< Polynomial<SR> >{polynomials.size(),
-                                      std::move(result_vector)};
+    	Matrix< Polynomial<SR> > result(polynomials.size(),variables.size());
+
+    	std::unordered_map<VarId, unsigned int> varpos;
+    	for(unsigned int j=0; j<variables.size(); ++j){
+    		varpos[variables[j]] = j;
+    	}
+
+    	for (unsigned int i=0; i<polynomials.size(); ++i) {
+    		for(const auto &monomial_coeff : polynomials[i].monomials_) {
+    			for(const auto &v : monomial_coeff.first.variables_){
+    				//variables_ is a var_degree_map
+    				int j = varpos[v.first];
+    				auto mult_mon = monomial_coeff.first.derivative(v.first);
+    				result.At(i,j) += Polynomial(monomial_coeff.second*mult_mon.first, std::move(mult_mon.second));
+    			}
+    		}
+    	}
+    	return result;
     };
 
     SR eval(const ValuationMap<SR> &values) const {
@@ -569,7 +578,7 @@ SR Polynomial<SR>::AllNewtonDerivatives(
       SR prod = SR::one();
 
       for (const auto &var_val : generator.GetMap()) {
-        for (int j = 0; j < var_val.second; ++j) {
+        for (unsigned int j = 0; j < var_val.second; ++j) {
           auto lookup = newton_update.find(var_val.first);
           assert(lookup != newton_update.end());
           prod *= lookup->second;
