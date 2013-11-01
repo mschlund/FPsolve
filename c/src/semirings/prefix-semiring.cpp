@@ -100,6 +100,11 @@ bool PrefixSemiring::operator==(const PrefixSemiring& elem) const
   return true;
 }
 
+bool PrefixSemiring::operator<(const PrefixSemiring& elem) const
+{
+	return string() < elem.string();
+}
+
 PrefixSemiring PrefixSemiring::star() const
 {
   // let a be the element to be stared

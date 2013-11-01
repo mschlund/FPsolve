@@ -19,6 +19,7 @@ public:
 	BoolSemiring operator += (const BoolSemiring& elem);
 	BoolSemiring operator *= (const BoolSemiring& elem);
 	bool operator == (const BoolSemiring& elem) const;
+	bool operator < (const BoolSemiring& elem) const;
 	BoolSemiring star () const;
 	static BoolSemiring null();
 	static BoolSemiring one();

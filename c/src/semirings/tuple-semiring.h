@@ -24,6 +24,7 @@ public:
 	TupleSemiring<SR_A, SR_B> operator += (const TupleSemiring<SR_A, SR_B>& elem);
 	TupleSemiring<SR_A, SR_B> operator *= (const TupleSemiring<SR_A, SR_B>& elem);
 	bool operator == (const TupleSemiring& elem) const;
+	bool operator < (const TupleSemiring& elem) const;
 	TupleSemiring<SR_A, SR_B> star () const;
 	static TupleSemiring<SR_A, SR_B> null();
 	static TupleSemiring<SR_A, SR_B> one();

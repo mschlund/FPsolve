@@ -64,6 +64,10 @@ class Semiring {
     }
 
     virtual bool operator==(const SR& elem) const = 0;
+
+    virtual bool operator<(const SR& elem);
+
+
     friend bool operator!=(const SR& lhs, const SR& rhs) {
       return !(lhs == rhs);
     }

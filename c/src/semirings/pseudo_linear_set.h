@@ -95,6 +95,10 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
       return offsets_ == rhs.offsets_ && generators_ == rhs.generators_;
     }
 
+    bool operator<(const PseudoLinearSet &elem) const {
+    	return string() < elem.string();
+    }
+
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
       OPADD;
       if (rhs.IsZero()) {

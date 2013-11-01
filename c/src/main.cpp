@@ -206,6 +206,7 @@ int main(int argc, char* argv[]) {
     ( "vec-simpl", "vector simplification only (only semilinear and multilinear sets)" )
     ( "lin-simpl", "linear set simplification (only semilinear sets)" )
     ( "free", "free semiring" )
+    ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
     ;
@@ -263,7 +264,8 @@ int main(int argc, char* argv[]) {
       !vm.count("slset") &&
       !vm.count("free") &&
       !vm.count("mlset") &&
-      !vm.count("prefix")) {
+      !vm.count("prefix") &&
+      !vm.count("lossy")) {
     std::cout << "Please supply a supported semiring :)" << std::endl;
     return 0;
   }
@@ -368,7 +370,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.free_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    //PrintEquations(equations);
+    PrintEquations(equations);
 
     // apply the newton method to the equations
     //auto result = apply_newton<FreeSemiring>(equations,
@@ -378,6 +380,14 @@ int main(int argc, char* argv[]) {
     //                                         vm.count("graphviz"));
     //std::cout << result_string(result) << std::endl;
 
+  } else if (vm.count("lossy")) {
+
+    // parse to lossy semiring polynomial; an element a of the semiring
+    // will be parsed to "1+a" while variables do not get the "1+" bit
+    auto equations = p.lossy_parser(input_all);
+    if (equations.empty()) return EXIT_FAILURE;
+
+    PrintEquations(equations);
   } else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])
