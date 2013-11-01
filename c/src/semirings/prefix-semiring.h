@@ -22,7 +22,6 @@ public:
 	PrefixSemiring operator += (const PrefixSemiring& elem);
 	PrefixSemiring operator *= (const PrefixSemiring& elem);
 	bool operator == (const PrefixSemiring& elem) const;
-	bool operator < (const PrefixSemiring& elem) const;
 	PrefixSemiring star () const;
 	static PrefixSemiring null();
 	static PrefixSemiring one();

@@ -78,7 +78,6 @@ class SemilinSetExp : public StarableSemiring<SemilinSetExp, Commutativity::Comm
     SemilinSetExp operator *= (const SemilinSetExp& sl);
 
     bool operator == (const SemilinSetExp& sl) const;
-    bool operator < (const SemilinSetExp& sl) const;
     std::ostream& operator<<(std::ostream& os) const;
 
     void clean_slset();

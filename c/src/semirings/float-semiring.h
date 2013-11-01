@@ -42,10 +42,6 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
                std::min(std::fabs(value_), std::fabs(elem.value_));
     }
 
-    bool operator<(const FloatSemiring &elem) const {
-    	return string() < elem.string();
-    }
-
     FloatSemiring star() const {
       OPSTAR;
       // if value_ == 1 this returns inf

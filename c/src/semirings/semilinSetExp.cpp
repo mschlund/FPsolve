@@ -452,10 +452,6 @@ bool SemilinSetExp::operator == (const SemilinSetExp &sl) const {
   return (val == sl.val);
 }
 
-bool SemilinSetExp::operator<(const SemilinSetExp &sl) const {
-	return string() < sl.string();
-}
-
 std::set<LinSet> SemilinSetExp::star(const LinSet &ls) {
 
   /* If we do not have any generators, i.e.,

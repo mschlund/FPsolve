@@ -399,9 +399,7 @@ class NonCommutativeMonomial {
       // lexicographic ordering
       if(idx_ != rhs.idx_) return idx_ < rhs.idx_;
       if(variables_ != rhs.variables_) return variables_ < rhs.variables_;
-
-      // this should be fixed now, TESTME
-      if(srs_ != rhs.srs_) return srs_ < rhs.srs_; // FIXME: This might be really wrong!!! but it assumes operator<(SR,SR) which does not exist... compare hash?
+      // if(srs_ != rhs.srs_) return srs_ < rhs.srs_; // FIXME: This might be really wrong!!! but it assumes operator<(SR,SR) which does not exist... compare hash?
 
       // they are equal
       return false;

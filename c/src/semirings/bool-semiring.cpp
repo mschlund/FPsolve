@@ -37,10 +37,6 @@ bool BoolSemiring::operator==(const BoolSemiring& elem) const
   return this->val == elem.val;
 }
 
-bool BoolSemiring::operator<(const BoolSemiring &x) const {
-	return string() < x.string();
-}
-
 BoolSemiring BoolSemiring::star() const
 {
   return BoolSemiring(true);

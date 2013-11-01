@@ -83,10 +83,6 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivi
       return set_ == rhs.set_;
     }
 
-    bool operator<(const SemilinearSet &elem) const {
-    	return string() < elem.string();
-    }
-
     static SemilinearSet null() {
       return SemilinearSet{};
     }

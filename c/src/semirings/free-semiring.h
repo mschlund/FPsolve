@@ -58,10 +58,6 @@ class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCom
       return node_ == x.node_;
     }
 
-    bool operator<(const FreeSemiring &x) const {
-    	return string() < x.string();
-    }
-
     std::string string() const {
       return NodeToString(*node_);
     }
