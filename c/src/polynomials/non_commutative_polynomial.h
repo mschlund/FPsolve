@@ -291,10 +291,12 @@ private:
     template <typename SROLD>
     static NonCommutativePolynomial<SR> changeSemiring(const NonCommutativePolynomial<SROLD> &oldPoly) {
     	NonCommutativePolynomial<SR> poly;
-
-    	for(const auto &oldMono: oldPoly.monomials_) {
-    		poly.InsertMonomial(poly.monomials_, NonCommutativeMonomial<SR>::changeSemiring(oldMono), 1);
-    	}
+//    	uint_fast16_t index = 1;
+//
+//    	for(const auto &oldMono: oldPoly.monomials_) {
+//    		poly.InsertMonomial(poly.monomials_, NonCommutativeMonomial<SR>::changeSemiring(oldMono), index);
+//    		index++;
+//    	}
 
     	return poly;
     }

@@ -367,6 +367,15 @@ class NonCommutativeMonomial {
     static NonCommutativeMonomial<SR> changeSemiring(const NonCommutativeMonomial<SROLD> &oldMono) {
     	NonCommutativeMonomial<SR> mono;
 
+    	// copy the vectors assigning element types to indices and assigning VarIds to indices
+    	mono.idx_(oldMono.idx_);
+    	mono.variables_(oldMono.variables_);
+
+    	// create a new vector for the semiring elements, switch ring while doing so
+    	for(const SROLD &oldElem: oldMono.srs_) {
+    		mono.srs_.push_back(SR(oldElem));
+    	}
+
     	return mono;
     }
     /* Convert this monomial to an element of the free semiring. */
