@@ -122,7 +122,7 @@ class WordsPrinter : public NodeVisitor {
     }
 
     void Visit(const Epsilon &e) {
-      words_.emplace_back("_");
+      words_.emplace_back("1");
     }
 
     void Visit(const Empty &e) {}
@@ -135,6 +135,7 @@ class WordsPrinter : public NodeVisitor {
       std::sort(words_.begin(), words_.end());
       std::stringstream ss;
       bool first = true;
+      ss << "(";
       for (const auto &word : words_) {
         if (!first) {
           ss << "+";
@@ -143,6 +144,7 @@ class WordsPrinter : public NodeVisitor {
         }
         ss << word;
       }
+      ss << ")";
       return ss.str();
     }
 

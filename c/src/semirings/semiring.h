@@ -65,7 +65,7 @@ class Semiring {
 
     virtual bool operator==(const SR& elem) const = 0;
 
-    virtual bool operator<(const SR& elem) {
+    virtual bool operator<(const SR& elem) const {
     	return string() < elem.string();
     }
 
