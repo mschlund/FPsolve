@@ -360,6 +360,15 @@ class NonCommutativeMonomial {
       return result_monomial;
     }
 
+    /*
+     * Transforms a polynomial over one semiring into one over another.
+     */
+    template <typename SROLD>
+    static NonCommutativeMonomial<SR> changeSemiring(const NonCommutativeMonomial<SROLD> &oldMono) {
+    	NonCommutativeMonomial<SR> mono;
+
+    	return mono;
+    }
     /* Convert this monomial to an element of the free semiring. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
       FreeSemiring result = FreeSemiring::one();

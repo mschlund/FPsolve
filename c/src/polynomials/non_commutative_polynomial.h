@@ -285,6 +285,20 @@ private:
       return Matrix<NonCommutativePolynomial<SR>>{poly_matrix.getRows(), result};
     }
 
+    /*
+     * Transforms a polynomial over one semiring into one over another.
+     */
+    template <typename SROLD>
+    static NonCommutativePolynomial<SR> changeSemiring(const NonCommutativePolynomial<SROLD> &oldPoly) {
+    	NonCommutativePolynomial<SR> poly;
+
+    	for(const auto &oldMono: oldPoly.monomials_) {
+    		poly.InsertMonomial(poly.monomials_, NonCommutativeMonomial<SR>::changeSemiring(oldMono), 1);
+    	}
+
+    	return poly;
+    }
+
     /* Convert this polynomial to an element of the free semiring.  Note that
      * the provided valuation might be modified with new elements. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
