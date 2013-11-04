@@ -89,12 +89,11 @@ def compute_symbolic_delta_general(v, v_upd, F, poly_vars) :
             if sum(idx) <=deg and sum(idx) >= 2 :
 #                print str(idx)
                 dx = reduce(lambda x,y : x + ([y[0]]*y[1]), zip(poly_vars,idx), [])
-                prod = reduce(lambda p,x : p*(x[0]**x[1]), zip(v_upd,idx), 1)
-
+                prd = reduce(lambda p,x : p*(x[0]**x[1]), zip(v_upd,idx), 1)
                 sub_dict = dict(zip(poly_vars,v))
-                delta[i] = delta[i] + diff(f,dx).subs(sub_dict) * prod
-        delta[i] = delta[i]/factorial(deg)
-    return delta.transpose()
+                delta[i] = delta[i] + diff(f,dx).subs(sub_dict) * prd / prod([factorial(x) for x in idx])
+#        delta[i] = delta[i]/factorial(deg) #FIXME!!! WRONG!
+    return delta.column()
 
 
 # given a vector of polynomials F in variables poly_vars, its Jacobian,
@@ -133,7 +132,7 @@ def newton_fixpoint_solve(F, poly_vars, max_iter=10) :
 #    delta = compute_symbolic_delta(vector(u).column(),F,poly_vars)
     delta = compute_symbolic_delta_general(u, u_upd, F, poly_vars)
     
-#    print delta
+    print delta
 
     v = matrix(SR,F.nrows(),1) # v^0 = 0
     delta_new = F.subs( dict( (v,0) for v in poly_vars ))

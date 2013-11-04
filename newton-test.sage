@@ -9,8 +9,12 @@ f3 = g*x*h + i
 
 f4 = a*x*x + c
 
-f5 = a*y*y + a*x*x + c
-f6 = a*x*x + a*y*y + c
+#f5 = a*y*y + a*x*x + c
+#f6 = a*x*x + a*y*y + c
+
+f5 = 2*a*x*y + a*x*x + a*y*y + c
+f6 = 2*a*x*y + a*x*x + a*y*y + c
+
 
 # to compute the termination probability of the above system:
 probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1),(i,0.7) ] )
@@ -20,8 +24,8 @@ probabilistic_subs = dict( [(a,0.4),(b,0.6),(c,0.3),(d,0.4),(e,0.3),(g,0.3),(h,1
 s = 1/(1-x)
 
 #F = vector(SR,[f1,f2,f3]).transpose()
-F = vector(SR,[f4]).transpose()
-G = vector(SR,[f5,f6]).transpose()
+F = vector(SR,[f4]).column()
+G = vector(SR,[f5,f6]).column()
 
 F_c = F.subs(probabilistic_subs)
 
@@ -31,6 +35,18 @@ g_var = [x,y]
 #F_diff = F_c - vector(SR,variables).transpose()
 
 # test functions
+
+def compare_eqns_fg(i) :
+  g_sol = newton_fixpoint_solve(G,g_var,i)[0][0]
+#  print g_sol
+  trg = g_sol.series(a,10).truncate()
+
+  f_sol = newton_fixpoint_solve(F,f_var,i)[0][0]
+  trf = f_sol.series(a,10).truncate()
+  print "f: " + str(trf)
+  print "g: " + str(trg)
+  return (trf,trg)
+  
 
 # test the fixpoint method with i steps
 def test_newton_fixpoint(i) :

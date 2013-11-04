@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.free_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    //PrintEquations(equations);
+    PrintEquations(equations);
 
     // apply the newton method to the equations
     //auto result = apply_newton<FreeSemiring>(equations,
