@@ -65,24 +65,24 @@ void NonCommutativePolynomialTest::testMultiplication() {
   CPPUNIT_ASSERT( *first * *null == *null);
 
   auto result =
-    *a * *X * *b * *Y * *X * *e + 
-    *c * *Y * *d * *Y * *X * *e +
-    *a * *X * *b * *d * *X * *Y +
-    *c * *Y * *d * *d * *X * *Y;
+      *a * *X * *b * *Y * *X * *e +
+      *c * *Y * *d * *Y * *X * *e +
+      *a * *X * *b * *d * *X * *Y +
+      *c * *Y * *d * *d * *X * *Y;
   CPPUNIT_ASSERT( (*first) * (*second) == result );
   CPPUNIT_ASSERT( !( (*first) * (*second) == (*second) * (*first) ) );
 }
 
 void NonCommutativePolynomialTest::testEvaluation() {
   std::map<VarId,FreeSemiring> values = {
-    { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
-    { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
+      { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
+      { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
   };
   auto dab = FreeSemiring(Var::GetVarId("d")) * FreeSemiring(Var::GetVarId("a")) * FreeSemiring(Var::GetVarId("b"));
   auto bae = FreeSemiring(Var::GetVarId("b")) * FreeSemiring(Var::GetVarId("a")) * FreeSemiring(Var::GetVarId("e"));
   auto result = dab+bae;
-//  dXY+YXe
-//  dab+bae
+  //  dXY+YXe
+  //  dab+bae
   CPPUNIT_ASSERT( second->eval(values) == result );
 }
 
@@ -107,10 +107,21 @@ void NonCommutativePolynomialTest::testNonCommutativePolynomialToFreeSemiring() 
   FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
 
   std::map<VarId,FreeSemiring> values = {
-    std::pair<VarId,FreeSemiring>(Var::GetVarId("X"),FreeSemiring(Var::GetVarId("a"))),
-    std::pair<VarId,FreeSemiring>(Var::GetVarId("Y"),FreeSemiring(Var::GetVarId("b")))};
+      std::pair<VarId,FreeSemiring>(Var::GetVarId("X"),FreeSemiring(Var::GetVarId("a"))),
+      std::pair<VarId,FreeSemiring>(Var::GetVarId("Y"),FreeSemiring(Var::GetVarId("b")))};
   FreeSemiring eval_elem2 = second->eval(values);
   //std::cout << "evaluated: " << eval_elem << " vs. " << eval_elem2 << std::endl;
 
   CPPUNIT_ASSERT( eval_elem == eval_elem2 );
 }
+
+void NonCommutativePolynomialTest::testDerivative() {
+  std::map<VarId,FreeSemiring> values = {
+      { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
+      { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
+  };
+
+  std::cout << first->differential_at(values) << std::endl;
+
+}
+

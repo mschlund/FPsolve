@@ -15,6 +15,7 @@ class NonCommutativePolynomialTest : public CppUnit::TestFixture
 	CPPUNIT_TEST(testEvaluation);
 	CPPUNIT_TEST(testMatrixEvaluation);
 	CPPUNIT_TEST(testNonCommutativePolynomialToFreeSemiring);
+	CPPUNIT_TEST(testDerivative);
 	CPPUNIT_TEST_SUITE_END();
 
 public:
@@ -28,6 +29,7 @@ protected:
 	void testEvaluation();
 	void testMatrixEvaluation();
 	void testNonCommutativePolynomialToFreeSemiring();
+	void testDerivative();
 
 private:
         NonCommutativePolynomial<FreeSemiring> *a, *b, *c, *d, *e;

@@ -37,7 +37,7 @@ class NonCommutativeMonomial {
      * returns a monomial of the form aXb where a,b are in SR.
      * TODO: check, that all variables are present in the valuation!
      */
-    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) {
+    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) const {
       SR a = SR::one();
       SR b = SR::one();
 
@@ -57,15 +57,16 @@ class NonCommutativeMonomial {
           continue;
         }
         if(p.first == elemType::Variable)
-          (*prod) *= valuation[variables_[p.second]];
+
+          (*prod) *= valuation.at(variables_.at(p.second));
         else
-          (*prod) *= srs_[p.second];
+          (*prod) *= srs_.at(p.second);
       }
 
       std::vector<std::pair<elemType,int> > info{std::make_pair(elemType::SemiringType,0),
                                               std::make_pair(elemType::Variable,0),
                                               std::make_pair(elemType::SemiringType,1),};
-      std::vector<VarId> vars{variables_[except_pos]};
+      std::vector<VarId> vars{variables_.at(except_pos)};
       std::vector<SR> sr{a,b};
 
       return NonCommutativeMonomial(info, vars, sr);
