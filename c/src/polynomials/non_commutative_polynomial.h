@@ -285,22 +285,6 @@ private:
       return Matrix<NonCommutativePolynomial<SR>>{poly_matrix.getRows(), result};
     }
 
-    /*
-     * Transforms a polynomial over one semiring into one over another.
-     */
-    template <typename SROLD>
-    static NonCommutativePolynomial<SR> changeSemiring(const NonCommutativePolynomial<SROLD> &oldPoly) {
-    	NonCommutativePolynomial<SR> poly;
-//    	uint_fast16_t index = 1;
-//
-//    	for(const auto &oldMono: oldPoly.monomials_) {
-//    		poly.InsertMonomial(poly.monomials_, NonCommutativeMonomial<SR>::changeSemiring(oldMono), index);
-//    		index++;
-//    	}
-
-    	return poly;
-    }
-
     /* Convert this polynomial to an element of the free semiring.  Note that
      * the provided valuation might be modified with new elements. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
@@ -350,6 +334,32 @@ private:
       return vars;
     }
 
+    /*
+     * Returns the sum of the leading constant factors of all monomials in this polynomial.
+     */
+    SR getSumOfLeadingFactors() {
+    	SR sum = SR::null();
+
+    	for(auto &monomial: monomials_) {
+    		sum += monomial.first.getLeadingSR();
+    	}
+
+    	return sum;
+    }
+
+    /*
+     * Returns the sum of the leading constant factors of all monomials in this polynomial.
+     */
+    SR getSumOfTrailingFactors() {
+    	SR sum = SR::null();
+
+    	for(auto &monomial: monomials_) {
+    		sum += monomial.first.getTrailingSR();
+    	}
+
+    	return sum;
+    }
+
     static NonCommutativePolynomial<SR> null() {
       return NonCommutativePolynomial<SR>{};
     }
@@ -365,8 +375,9 @@ private:
 	    // TODO: implement this
       std::stringstream ss;
       for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
-        if(monomial != monomials_.begin())
+    	if(monomial != monomials_.begin())
           ss << " + ";
+//    	ss << "[degree: " << monomial->first.get_degree() << "]";
         ss << monomial->second << " * ";
         ss << monomial->first;
       }

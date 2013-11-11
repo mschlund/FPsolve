@@ -37,7 +37,7 @@ class NonCommutativeMonomial {
      * returns a monomial of the form aXb where a,b are in SR.
      * TODO: check, that all variables are present in the valuation!
      */
-    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) {
+    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) const {
       SR a = SR::one();
       SR b = SR::one();
 
@@ -52,12 +52,12 @@ class NonCommutativeMonomial {
 
       SR* prod = &a;
       for(auto p : idx_) {
-        if(except_pos == p.second) {
+        if(p.first == elemType::Variable && except_pos == p.second) {
           prod = &b;
           continue;
         }
         if(p.first == elemType::Variable)
-          (*prod) *= valuation[variables_[p.second]];
+          (*prod) *= valuation.at(variables_[p.second]);
         else
           (*prod) *= srs_[p.second];
       }
@@ -218,7 +218,6 @@ class NonCommutativeMonomial {
       return result;
     }
 
-
     SR calculate_delta_helper(
       const std::vector<bool> &permutation,
       const std::map<VarId, SR> &de2, // [d-2], true
@@ -360,24 +359,6 @@ class NonCommutativeMonomial {
       return result_monomial;
     }
 
-    /*
-     * Transforms a polynomial over one semiring into one over another.
-     */
-    template <typename SROLD>
-    static NonCommutativeMonomial<SR> changeSemiring(const NonCommutativeMonomial<SROLD> &oldMono) {
-    	NonCommutativeMonomial<SR> mono;
-
-    	// copy the vectors assigning element types to indices and assigning VarIds to indices
-    	mono.idx_(oldMono.idx_);
-    	mono.variables_(oldMono.variables_);
-
-    	// create a new vector for the semiring elements, switch ring while doing so
-    	for(const SROLD &oldElem: oldMono.srs_) {
-    		mono.srs_.push_back(SR(oldElem));
-    	}
-
-    	return mono;
-    }
     /* Convert this monomial to an element of the free semiring. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
       FreeSemiring result = FreeSemiring::one();
@@ -441,6 +422,50 @@ class NonCommutativeMonomial {
         set.insert(var);
       }
       return set;
+    }
+
+    /*
+     * If the monomial has form xYz where x is an element of the semiring,
+     * Y is a monomial over the semiring, and z is an element of the semiring,
+     * this method gives back x wrapped in a monomial.
+     */
+    SR getLeadingSR() const {
+    	SR leadingSR = SR::one();
+
+    	// give me a copy of the semiring factor on the leading side of the monomial
+    	for(int i = 0; i < idx_.size(); i++) {
+
+    		// multiply as long as there was no variable encountered
+    		if(idx_.at(i).first == SemiringType) {
+  				leadingSR = leadingSR  * srs_.at(idx_.at(i).second);
+    		} else {
+    			break; // break on the first variable
+    		}
+    	}
+
+    	return leadingSR;
+    }
+
+    /*
+     * If the monomial has form xYz where x is an element of the semiring,
+     * Y is a monomial over the semiring, and z is an element of the semiring,
+     * this method gives back z wrapped in a monomial.
+     */
+    SR getTrailingSR() const {
+    	SR trailingSR = SR::one();
+
+    	// give me a copy of the semiring factor on the trailing side of the monomial
+    	for(int i = idx_.size() - 1; i >= 0; i--) {
+
+    		// multiply as long as there was no variable encountered
+    		if(idx_.at(i).first == SemiringType) {
+    			trailingSR = srs_.at(idx_.at(i).second) * trailingSR;
+    		} else {
+    			break; // break on the first variable
+    		}
+    	}
+
+    	return trailingSR;
     }
 
     std::string string() const {

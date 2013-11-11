@@ -384,12 +384,13 @@ int main(int argc, char* argv[]) {
 
     // parse to lossy semiring polynomial; an element a of the semiring
     // will be parsed to "1+a" while variables do not get the "1+" bit
-    auto freeEquations = p.free_parser(input_all);
-    if (freeEquations.empty()) return EXIT_FAILURE;
+    auto equations = p.lossy_parser(input_all);
+    if (equations.empty()) return EXIT_FAILURE;
 
-    auto lossyEquations = LossySemiring::freeEquationsToLossyEquations(freeEquations);
+    ValuationMap<LossySemiring> valuation = LossySemiring::solvePolynomialSystem(equations);
+    std::cout << result_string(valuation) << std::endl;
 
-    PrintEquations(lossyEquations);
+    PrintEquations(equations);
 
   } else if (vm.count("prefix")) {
 
