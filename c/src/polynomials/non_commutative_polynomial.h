@@ -334,6 +334,32 @@ private:
       return vars;
     }
 
+    /*
+     * Returns the sum of the leading constant factors of all monomials in this polynomial.
+     */
+    SR getSumOfLeadingFactors() {
+    	SR sum = SR::null();
+
+    	for(auto &monomial: monomials_) {
+    		sum += monomial.first.getLeadingSR();
+    	}
+
+    	return sum;
+    }
+
+    /*
+     * Returns the sum of the leading constant factors of all monomials in this polynomial.
+     */
+    SR getSumOfTrailingFactors() {
+    	SR sum = SR::null();
+
+    	for(auto &monomial: monomials_) {
+    		sum += monomial.first.getTrailingSR();
+    	}
+
+    	return sum;
+    }
+
     static NonCommutativePolynomial<SR> null() {
       return NonCommutativePolynomial<SR>{};
     }
@@ -349,8 +375,9 @@ private:
 	    // TODO: implement this
       std::stringstream ss;
       for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
-        if(monomial != monomials_.begin())
+    	if(monomial != monomials_.begin())
           ss << " + ";
+//    	ss << "[degree: " << monomial->first.get_degree() << "]";
         ss << monomial->second << " * ";
         ss << monomial->first;
       }
