@@ -52,12 +52,11 @@ class NonCommutativeMonomial {
 
       SR* prod = &a;
       for(auto p : idx_) {
-        if(except_pos == p.second) {
+        if(p.first == elemType::Variable && except_pos == p.second) {
           prod = &b;
           continue;
         }
         if(p.first == elemType::Variable)
-
           (*prod) *= valuation.at(variables_.at(p.second));
         else
           (*prod) *= srs_.at(p.second);
@@ -218,7 +217,6 @@ class NonCommutativeMonomial {
       }
       return result;
     }
-
 
     SR calculate_delta_helper(
       const std::vector<bool> &permutation,
@@ -400,7 +398,7 @@ class NonCommutativeMonomial {
       // lexicographic ordering
       if(idx_ != rhs.idx_) return idx_ < rhs.idx_;
       if(variables_ != rhs.variables_) return variables_ < rhs.variables_;
-      // if(srs_ != rhs.srs_) return srs_ < rhs.srs_; // FIXME: This might be really wrong!!! but it assumes operator<(SR,SR) which does not exist... compare hash?
+      if(srs_ != rhs.srs_) return srs_ < rhs.srs_;
 
       // they are equal
       return false;
@@ -424,6 +422,50 @@ class NonCommutativeMonomial {
         set.insert(var);
       }
       return set;
+    }
+
+    /*
+     * If the monomial has form xYz where x is an element of the semiring,
+     * Y is a monomial over the semiring, and z is an element of the semiring,
+     * this method gives back x wrapped in a monomial.
+     */
+    SR getLeadingSR() const {
+    	SR leadingSR = SR::one();
+
+    	// give me a copy of the semiring factor on the leading side of the monomial
+    	for(int i = 0; i < idx_.size(); i++) {
+
+    		// multiply as long as there was no variable encountered
+    		if(idx_.at(i).first == SemiringType) {
+  				leadingSR = leadingSR  * srs_.at(idx_.at(i).second);
+    		} else {
+    			break; // break on the first variable
+    		}
+    	}
+
+    	return leadingSR;
+    }
+
+    /*
+     * If the monomial has form xYz where x is an element of the semiring,
+     * Y is a monomial over the semiring, and z is an element of the semiring,
+     * this method gives back z wrapped in a monomial.
+     */
+    SR getTrailingSR() const {
+    	SR trailingSR = SR::one();
+
+    	// give me a copy of the semiring factor on the trailing side of the monomial
+    	for(int i = idx_.size() - 1; i >= 0; i--) {
+
+    		// multiply as long as there was no variable encountered
+    		if(idx_.at(i).first == SemiringType) {
+    			trailingSR = srs_.at(idx_.at(i).second) * trailingSR;
+    		} else {
+    			break; // break on the first variable
+    		}
+    	}
+
+    	return trailingSR;
     }
 
     std::string string() const {
