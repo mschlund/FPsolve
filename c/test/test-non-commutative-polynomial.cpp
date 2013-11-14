@@ -120,8 +120,8 @@ void NonCommutativePolynomialTest::testDerivative() {
       { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
       { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
   };
-  std::cout << first->string() << std::endl;
-  std::cout << first->differential_at(values) << std::endl;
+  std::cout << second->string() << std::endl;
+  std::cout << second->differential_at(values) << std::endl;
 
 }
 

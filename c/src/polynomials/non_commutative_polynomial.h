@@ -372,7 +372,6 @@ private:
     static bool is_commutative;
 
     std::string string() const {
-	    // TODO: implement this
       std::stringstream ss;
       for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
     	if(monomial != monomials_.begin())
