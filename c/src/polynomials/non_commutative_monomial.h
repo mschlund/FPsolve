@@ -468,6 +468,55 @@ class NonCommutativeMonomial {
     	return trailingSR;
     }
 
+    /*
+     * Checks whether this monomial is productive, depending on the set of variables
+     * that are already known to be productive.
+     */
+    bool isProductive(const std::map<VarId, bool> &productiveVariables) const {
+
+    	// if this monomial has no variables, then it is productive since
+    	// it represents an element of the semiring
+    	if(get_degree() == 0) {
+    		return true;
+    	}
+
+    	// check if any monomial in this polynomial is productive; that will be enough
+    	for(auto variable: variables_) {
+
+    		// if there is any variable that is not known to be productive in this monomial,
+    		// then the monomial isn't productive
+    		if(!productiveVariables.at(variable)) {
+    			return false;
+    		}
+    	}
+
+    	// if all variables are productive, then so is the monomial
+    	return true;
+    }
+
+    /*
+     * Checks whether this monomial only contains productive variables.
+     */
+    bool containsOnlyProductiveVariables(const std::map<VarId, bool> &productiveVariables) const {
+
+    	// no variables to check
+    	if(get_degree() == 0) {
+    		return true;
+    	}
+
+    	// check all variables whether they are productive
+    	for(auto variable: variables_) {
+
+    		// if we found one that is unproductive, then the monomial does
+    		// not only contain productive variables
+    		if(!productiveVariables.at(variable)) {
+    			return false;
+    		}
+    	}
+
+    	return true;
+    }
+
     std::string string() const {
       std::stringstream ss;
       //for(auto &p : idx_) {

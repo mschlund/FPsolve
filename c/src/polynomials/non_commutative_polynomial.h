@@ -360,6 +360,40 @@ private:
     	return sum;
     }
 
+    /*
+     * Checks whether this polynomial is productive, depending on the set of variables
+     * that are already known to be productive.
+     */
+    bool isProductive(const std::map<VarId, bool> &productiveVariables) const {
+
+    	//check if any monomial in this polynomial is productive; that will be enough
+    	for(auto monomial: monomials_) {
+    		if(monomial.first.isProductive(productiveVariables)) {
+    			return true;
+    		}
+    	}
+
+    	// if there is no productive monomial, then the polynomial isn't known to be productive so far
+    	return false;
+    }
+
+    /*
+     * Returns a cleaned version of this polynomial, i.e. a version that
+     * had all monomials with unproductive variables eliminated.
+     */
+    NonCommutativePolynomial<SR> removeUnproductiveMonomials(const std::map<VarId, bool> &productiveVariables) const {
+    	NonCommutativePolynomial<SR> cleanPoly = null();
+
+    	// add all monomials to the clean polynomial that only contain productive variables
+    	for(auto monomial: monomials_) {
+    		if(monomial.first.containsOnlyProductiveVariables(productiveVariables)){
+    			cleanPoly += monomial.first;
+    		}
+    	}
+
+    	return cleanPoly;
+    }
+
     static NonCommutativePolynomial<SR> null() {
       return NonCommutativePolynomial<SR>{};
     }
