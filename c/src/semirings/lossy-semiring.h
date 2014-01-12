@@ -147,94 +147,94 @@ public:
 				factory_.GC();
 			}
 
-		private:
-			LossySemiring(NodePtr n) : node_(n) {}
+private:
+	LossySemiring(NodePtr n) : node_(n) {}
 
-			NodePtr node_;
-			static NodeFactory factory_;
+	NodePtr node_;
+	static NodeFactory factory_;
 
-			friend struct std::hash<LossySemiring>;
+	friend struct std::hash<LossySemiring>;
 
-			/*
-			 * Cleans the polynomial system, i.e. removes variables that are unproductive.
-			 */
-			static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanSystem
-			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
+	/*
+	 * Cleans the polynomial system, i.e. removes variables that are unproductive.
+	 */
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanSystem
+		(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
 
-				std::queue<VarId> temp1, temp2; // to store the variables that still need checking
-				std::map<VarId, bool> productiveVariables;
-				std::map<VarId, NonCommutativePolynomial<LossySemiring>> polyMap;
+		std::queue<VarId> temp1, temp2; // to store the variables that still need checking
+		std::map<VarId, bool> productiveVariables;
+		std::map<VarId, NonCommutativePolynomial<LossySemiring>> polyMap;
 
-				// build the data structures that will store the info about which variables still
-				// need checking and which variables are known to be productive
-				for(auto equation: equations) {
-					temp1.push(equation.first);
-					productiveVariables.insert(std::make_pair(equation.first, false));
-					polyMap.insert(std::make_pair(equation.first, equation.second));
+		// build the data structures that will store the info about which variables still
+		// need checking and which variables are known to be productive
+		for(auto equation: equations) {
+			temp1.push(equation.first);
+			productiveVariables.insert(std::make_pair(equation.first, false));
+			polyMap.insert(std::make_pair(equation.first, equation.second));
+		}
+
+		// keep checking the variables that are left until no further variable becomes known
+		// to be productive
+		bool update = true;
+		VarId var;
+		while(update) {
+			update = false;
+
+			while(!temp1.empty()) {
+				var = temp1.front();
+				temp1.pop();
+
+				// if the variable was found to be productive, remember the update
+				// and change the flag for the variable
+				if(polyMap[var].isProductive(productiveVariables)) {
+					productiveVariables[var] = true;
+					update = true;
+				} else { // if the variable isn't productive, put it in the queue
+					 temp2.push(var);
 				}
-
-				// keep checking the variables that are left until no further variable becomes known
-				// to be productive
-				bool update = true;
-				VarId var;
-				while(update) {
-					update = false;
-
-					 while(!temp1.empty()) {
-						 var = temp1.front();
-						 temp1.pop();
-
-						 // if the variable was found to be productive, remember the update
-						 // and change the flag for the variable
-						 if(polyMap[var].isProductive(productiveVariables)) {
-							 productiveVariables[var] = true;
-							 update = true;
-						 } else { // if the variable isn't productive, put it in the queue
-							 temp2.push(var);
-						 }
-					 }
-
-					 temp1.swap(temp2);
-				}
-
-				// build the clean system: only use productive variables, and remove unproductive monomials
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations;
-				for(auto equation: equations) {
-					if(productiveVariables[var]) {
-						cleanEquations.push_back(std::make_pair(var, polyMap[var].removeUnproductiveMonomials(productiveVariables)));
-					}
-				}
-
-				return cleanEquations;
 			}
 
-			/*
-			 * Evaluates a polynomial system at a given vector.
-			 */
-			static std::map<VarId, LossySemiring> evaluateSystem
-			(std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations,
-					int& times, std::map<VarId, LossySemiring> &initialValuation) {
+			temp1.swap(temp2);
+		}
 
-				std::map<VarId, LossySemiring> valuation, tempValuation;
-				valuation = initialValuation;
-				VarId variable;
+		// build the clean system: only use productive variables, and remove unproductive monomials
+		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations;
+		for(auto equation: equations) {
+			if(productiveVariables[var]) {
+				cleanEquations.push_back(std::make_pair(var, polyMap[var].removeUnproductiveMonomials(productiveVariables)));
+			}
+		}
 
-				// iterate the desired number of times
-				for(int i = 0; i < times; i++) {
+		return cleanEquations;
+	}
 
-					// evaluate each polynomial and map the appropriate variable to the result
-					for(auto &equation: equations) {
-						tempValuation.insert(std::pair<VarId, LossySemiring>(equation.first, equation.second.eval(valuation)));
-					}
+	/*
+	 * Evaluates a polynomial system at a given vector.
+	 */
+	static std::map<VarId, LossySemiring> evaluateSystem
+		(std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations,
+		int& times, std::map<VarId, LossySemiring> &initialValuation) {
 
-					// prepare next iteration
-					valuation.swap(tempValuation);
-					tempValuation.clear();
-				}
+		std::map<VarId, LossySemiring> valuation, tempValuation;
+		valuation = initialValuation;
+		VarId variable;
 
-				return valuation;
+		// iterate the desired number of times
+		for(int i = 0; i < times; i++) {
+
+			// evaluate each polynomial and map the appropriate variable to the result
+			for(auto &equation: equations) {
+				tempValuation.insert(std::pair<VarId, LossySemiring>(equation.first, equation.second.eval(valuation)));
 			}
 
-		};
+			// prepare next iteration
+			valuation.swap(tempValuation);
+			tempValuation.clear();
+		}
+
+		return valuation;
+	}
+
+};
 
 #endif
