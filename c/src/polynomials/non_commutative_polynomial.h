@@ -387,7 +387,7 @@ private:
     	// add all monomials to the clean polynomial that only contain productive variables
     	for(auto monomial: monomials_) {
     		if(monomial.first.containsOnlyProductiveVariables(productiveVariables)){
-    			cleanPoly += monomial.first;
+    			cleanPoly += monomial.first * monomial.second;
     		}
     	}
 

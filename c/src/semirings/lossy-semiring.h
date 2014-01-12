@@ -162,40 +162,40 @@ private:
 	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanSystem
 		(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
 
-		std::queue<VarId> temp1, temp2; // to store the variables that still need checking
+		std::queue<VarId> queueForChecking, temp; // to store the variables that still need checking
 		std::map<VarId, bool> productiveVariables;
 		std::map<VarId, NonCommutativePolynomial<LossySemiring>> polyMap;
 
 		// build the data structures that will store the info about which variables still
 		// need checking and which variables are known to be productive
 		for(auto equation: equations) {
-			temp1.push(equation.first);
+			queueForChecking.push(equation.first);
 			productiveVariables.insert(std::make_pair(equation.first, false));
 			polyMap.insert(std::make_pair(equation.first, equation.second));
 		}
 
 		// keep checking the variables that are left until no further variable becomes known
 		// to be productive
-		bool update = true;
+		bool update = false;
 		VarId var;
 		while(update) {
 			update = false;
 
-			while(!temp1.empty()) {
-				var = temp1.front();
-				temp1.pop();
+			while(!queueForChecking.empty()) {
+				var = queueForChecking.front();
+				queueForChecking.pop();
 
 				// if the variable was found to be productive, remember the update
 				// and change the flag for the variable
 				if(polyMap[var].isProductive(productiveVariables)) {
 					productiveVariables[var] = true;
 					update = true;
-				} else { // if the variable isn't productive, put it in the queue
-					 temp2.push(var);
+				} else { // if the variable isn't productive, put it in the queue for the next iteration
+					 temp.push(var);
 				}
 			}
 
-			temp1.swap(temp2);
+			queueForChecking.swap(temp);
 		}
 
 		// build the clean system: only use productive variables, and remove unproductive monomials
