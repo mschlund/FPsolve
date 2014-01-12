@@ -95,19 +95,20 @@ public:
 			const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>>&equations) {
 
 				ValuationMap<LossySemiring> solution;
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> workEquations = cleanSystem(equations);
+				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations = cleanSystem(equations);
+				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = normalizeSystem(cleanEquations);
 
 				// build a zero vector
 				std::map<VarId, LossySemiring> zeroSystem;
-				for(auto &equation: workEquations) {
+				for(auto &equation: normalForm) {
 					zeroSystem.insert(std::pair<VarId, LossySemiring>(equation.first, LossySemiring::null()));
 				}
 
 				// build the vectors f(0) and f^n(0), where n is the number of variables in the system
 				int times = 1;
-				std::map<VarId, LossySemiring> f_0 = evaluateSystem(workEquations, times, zeroSystem);
-				times = workEquations.size();
-				std::map<VarId, LossySemiring> f_n_0 = evaluateSystem(workEquations, times, zeroSystem);
+				std::map<VarId, LossySemiring> f_0 = evaluateSystem(normalForm, times, zeroSystem);
+				times = normalForm.size();
+				std::map<VarId, LossySemiring> f_n_0 = evaluateSystem(normalForm, times, zeroSystem);
 
 				// find the LossySemiring element in the "middle" of the expression
 				LossySemiring middle = LossySemiring::null();
@@ -117,7 +118,7 @@ public:
 
 				// build the differential of the system
 				std::map<VarId, NonCommutativePolynomial<LossySemiring>> differential;
-				for(auto &equation: workEquations) {
+				for(auto &equation: normalForm) {
 					differential.insert(std::make_pair(equation.first, equation.second.differential_at(f_0)));
 				}
 
@@ -135,7 +136,7 @@ public:
 
 				// fixpoint element
 				LossySemiring fixpoint = lefthandSum.star() * middle * righthandSum.star();
-				for(auto &variable_mapping:workEquations) {
+				for(auto &variable_mapping: normalForm) {
 					solution.insert(std::make_pair(variable_mapping.first, fixpoint));
 				}
 
@@ -206,6 +207,13 @@ private:
 		}
 
 		return cleanEquations;
+	}
+
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeSystem
+			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
+			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm;
+
+			return normalForm;
 	}
 
 	/*
