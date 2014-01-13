@@ -260,7 +260,7 @@ private:
 		// stores mappings between suffixes of monomials and the variables
 		// that are introduced to produce those suffixes in the process of generating
 		// the Chomsky Normal Form
-		std::map<string, VarId> chomskyVariables;
+		std::map<std::string, VarId> chomskyVariables;
 
 		// stores the productions (i.e. equations) that are introduced while producing the
 		// Chomsky Normal Form

@@ -519,11 +519,11 @@ public:
 	 * Only works for monomials in which no constants exists (neither as factors nor as summands)
 	 * and with degree != 2.
 	 */
-	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<string, VarId> chomskyVariables,
-			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyVariableEquations,
-			std::map<VarId, LossySemiring> variablesToConstants) const {
-		NonCommutativePolynomial<SR> temp = null();
-		NonCommutativePolynomial<SR> suffix = null();
+	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> chomskyVariables,
+			std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations,
+			std::map<VarId, SR> variablesToConstants) const {
+		NonCommutativePolynomial<SR> temp = NonCommutativePolynomial<SR>::null();
+		NonCommutativePolynomial<SR> suffix = NonCommutativePolynomial<SR>::null();
 
 		// if this monomial is a single variable, replace the variable by the constant it maps to;
 		// otherwise we have at least two variables; we need to shorten that to exactly two by
