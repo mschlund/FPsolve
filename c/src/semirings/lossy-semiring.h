@@ -96,7 +96,7 @@ public:
 
 				ValuationMap<LossySemiring> solution;
 				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations = cleanSystem(equations);
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = normalizeSystem(cleanEquations);
+				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = normalizeCleanSystem(cleanEquations);
 
 				// build a zero vector
 				std::map<VarId, LossySemiring> zeroSystem;
@@ -174,8 +174,8 @@ private:
 			polyMap.insert(std::make_pair(equation.first, equation.second));
 		}
 
-		// keep checking the variables that are left until no further variable becomes known
-		// to be productive
+		// keep checking the variables that are not yet known to be productive
+		// until no further variable becomes known to be productive
 		bool update = false;
 		VarId var;
 		while(update) {
@@ -198,22 +198,53 @@ private:
 			queueForChecking.swap(temp);
 		}
 
-		// build the clean system: only use productive variables, and remove unproductive monomials
+		// build the clean system: only use productive variables and remove unproductive monomials
 		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations;
 		for(auto equation: equations) {
-			if(productiveVariables[var]) {
-				cleanEquations.push_back(std::make_pair(var, polyMap[var].removeUnproductiveMonomials(productiveVariables)));
+			if(productiveVariables[equation.first]) {
+				cleanEquations.push_back(std::make_pair(equation.first,
+						equation.second.removeUnproductiveMonomials(productiveVariables)));
 			}
 		}
 
 		return cleanEquations;
 	}
 
-	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeSystem
+	/*
+	 * Brings a clean system into quadratic normal form.
+	 */
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeCleanSystem
 			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
 			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm;
+			normalForm = chomskyNormalForm(equations);
 
 			return normalForm;
+	}
+
+	/*
+	 * Brings a CFG into CNF.
+	 */
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyNormalForm
+				(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
+		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyNormalFormEquations;
+		std::map<LossySemiring, VarId> constantVariables;
+		std::set<NonCommutativePolynomial<LossySemiring>> constants;
+
+		// find all constants in the system
+		for(auto equation: equations) {
+			equation.second.findAllConstants(constants);
+		}
+
+		VarId var;
+		std::map<VarId, LossySemiring> nullMap; // dummy map to call NonCommutativePolynomial<SR>.eval(..) with
+		for(auto &constant_: constants) {
+			var = Var::GetVarId();
+			chomskyNormalFormEquations.push_back(std::make_pair(var, constant_));
+			constantVariables.insert(std::make_pair(constant_.eval(nullMap), var));
+		}
+
+		for(auto euqation: equations) {
+		}
 	}
 
 	/*
