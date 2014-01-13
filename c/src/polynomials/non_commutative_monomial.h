@@ -516,14 +516,14 @@ public:
 
 	/*
 	 * Transforms a polynomial into its Chomsky Normal Form.
-	 * Only works for monomials in which no constants exists (neither as factors nor as summands)
-	 * and with degree != 2.
+	 * Only works for monomials in which no constants exists (neither as factors nor as summands).
 	 */
-	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> chomskyVariables,
-			std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations,
+	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> &chomskyVariables,
+			std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &chomskyVariableEquations,
 			std::map<VarId, SR> variablesToConstants) const {
-		NonCommutativePolynomial<SR> temp = NonCommutativePolynomial<SR>::null();
-		NonCommutativePolynomial<SR> suffix = NonCommutativePolynomial<SR>::null();
+
+		NonCommutativePolynomial<SR> temp;
+		NonCommutativePolynomial<SR> suffix;
 
 		// if this monomial is a single variable, replace the variable by the constant it maps to;
 		// otherwise we have at least two variables; we need to shorten that to exactly two by
@@ -531,10 +531,48 @@ public:
 		if(get_degree() == 1) {
 			temp = NonCommutativePolynomial<SR>(variablesToConstants[variables_.at(0)]);
 		} else {
+			int variablesProcessed = 0;
+			int index = 0;
+			VarId var;
 
+			// loop over all suffixes to see which need new variables introduced for them
+			while(variablesProcessed < get_degree() - 1) {
+
+				// if this is the first iteration, we start with the leftmost variable
+				if(variablesProcessed == 0) {
+					index = variables_.size() - 1;
+
+					temp = NonCommutativePolynomial<SR>(variables_.at(index));
+					suffix = NonCommutativePolynomial<SR>(variables_.at(index));
+				} else { /* if this is not the first iteration, that means we already remembered a variable
+						  * ti produce the current suffix of the monomial; multiply the next variable from left,
+						  * check if some variable already maps to the current suffix, if none does introduce
+						  * a new variable that produces the product of the now two variables we have, and
+						  * make this new variable the starting point for the next iteration; also remember
+						  * the suffix so far so we can check whether maybe we already have a variable that
+						  * produces that suffix in the next iteration
+						  */
+					temp = NonCommutativePolynomial<SR>(variables_.at(index)) * temp; // multiplication from left is relevant -> noncommutative!
+					suffix = NonCommutativePolynomial<SR>(variables_.at(index)) * suffix;
+
+					// check if we already have a variable for the current suffix; if we do, proceed from there;
+					// else, introduce a new one
+					if(chomskyVariables.find(suffix.string()) != chomskyVariables.end()) {
+						temp = NonCommutativePolynomial<SR>(chomskyVariables[suffix.string()]);
+					} else {
+						var = Var::GetVarId();
+						chomskyVariableEquations.push_back(std::make_pair(var, temp));
+						chomskyVariables.insert(std::make_pair(suffix.string(), var));
+						temp = NonCommutativePolynomial<SR>(var);
+					}
+				}
+
+				index--;
+				variablesProcessed++;
+			}
 		}
 
-		return temp;
+		return NonCommutativePolynomial<SR>(variables_.at(0)) * temp;
 	}
 
 	/*

@@ -256,7 +256,6 @@ private:
 			variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
 		}
 
-
 		// stores mappings between suffixes of monomials and the variables
 		// that are introduced to produce those suffixes in the process of generating
 		// the Chomsky Normal Form
