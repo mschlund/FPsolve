@@ -366,11 +366,38 @@ public:
 		}
 	}
 
-	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId>) {
+	/*
+	 * Replaces all constants in the polynomial with their respective VarId mapping.
+	 * Used in transformation to Chomsky Normal Form.
+	 */
+	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId> constantsVariables) const {
+		NonCommutativePolynomial<SR> temp = null();
 
+		// delegate to the monomials
+		for(auto &monomial: monomials_) {
+			temp += monomial.first.replaceConstantsWithVariables(constantsVariables);
+		}
 
+		return temp;
+	}
 
-		return this;
+	/*
+	 * Transforms a polynomial into its Chomsky Normal Form.
+	 * Only works for polynomials in which no constants exists (neither as factors nor as summands).
+	 */
+	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<string, VarId> chomskyVariables,
+			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyVariableEquations,
+			std::map<VarId, LossySemiring> variablesToConstants) const {
+		NonCommutativePolynomial<SR> temp = null();
+
+		// delegate to the monomials
+		for(auto &monomial: monomials_) {
+			if(monomial.get_degree() != 2) {
+				temp += monomial.chomskyNormalForm(chomskyVariables, chomskyVariableEquations, variablesToConstants);
+			}
+		}
+
+		return temp;
 	}
 
 	/*

@@ -157,6 +157,18 @@ private:
 	friend struct std::hash<LossySemiring>;
 
 	/*
+	 * Brings a system into quadratic normal form.
+	 */
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeCleanSystem
+			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
+			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm;
+			normalForm = cleanSystem(equations);
+			normalForm = chomskyNormalForm(normalForm);
+
+			return normalForm;
+	}
+
+	/*
 	 * Cleans the polynomial system, i.e. removes variables that are unproductive.
 	 */
 	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanSystem
@@ -211,40 +223,65 @@ private:
 	}
 
 	/*
-	 * Brings a clean system into quadratic normal form.
-	 */
-	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeCleanSystem
-			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
-			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm;
-			normalForm = chomskyNormalForm(equations);
-
-			return normalForm;
-	}
-
-	/*
-	 * Brings a CFG into CNF.
+	 * Brings a system into CNF.
 	 */
 	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyNormalForm
 				(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
 		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyNormalFormEquations;
-		std::map<LossySemiring, VarId> constantVariables;
+		std::map<LossySemiring, VarId> constantsToVariables;
+		std::map<VarId, LossySemiring> variablesToConstants;
 		std::set<NonCommutativePolynomial<LossySemiring>> constants;
+		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> variablefiedEquations;
 
 		// find all constants in the system
 		for(auto equation: equations) {
 			equation.second.findAllConstants(constants);
 		}
 
+		// introduce a new variable for each constant found, add the respective equation to the system
 		VarId var;
-		std::map<VarId, LossySemiring> nullMap; // dummy map to call NonCommutativePolynomial<SR>.eval(..) with
+		std::map<VarId, LossySemiring> nullMap; // dummy map to call NonCommutativePolynomial<SR>.eval(..)
+												// without any valuations
 		for(auto &constant_: constants) {
 			var = Var::GetVarId();
 			chomskyNormalFormEquations.push_back(std::make_pair(var, constant_));
-			constantVariables.insert(std::make_pair(constant_.eval(nullMap), var));
+			constantsToVariables.insert(std::make_pair(constant_.eval(nullMap), var));
+			variablesToConstants.insert(std::make_pair(var,constant_.eval(nullMap)));
 		}
 
-		for(auto euqation: equations) {
+		// replace the constants in each equation with the new constant variables
+		NonCommutativePolynomial<LossySemiring> allVariablesPoly;
+		for(auto equation: equations) {
+			allVariablesPoly = equation.second.replaceConstantsWithVariables(constantsToVariables);
+			variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
 		}
+
+
+		// stores mappings between suffixes of monomials and the variables
+		// that are introduced to produce those suffixes in the process of generating
+		// the Chomsky Normal Form
+		std::map<string, VarId> chomskyVariables;
+
+		// stores the productions (i.e. equations) that are introduced while producing the
+		// Chomsky Normal Form
+		std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyVariableEquations;
+
+		// determine the necessary new variables to give all non-terminal productions
+		// (i.e. monomials of degree > 2) the form "X = YZ"
+		NonCommutativePolynomial<LossySemiring> chomskyPoly;
+		for(auto equation: variablefiedEquations) {
+			chomskyPoly =
+					equation.second.chomskyNormalForm(chomskyVariables, chomskyVariableEquations, variablesToConstants);
+			chomskyNormalFormEquations.push_back(std::make_pair(equation.first, chomskyPoly));
+		}
+
+		// finally, add the productions to the system that were introduced during the last step
+		for(auto equation: chomskyVariableEquations) {
+			chomskyNormalFormEquations.push_back(std::make_pair(equation.first, equation.second));
+		}
+
+		// we are done
+		return chomskyNormalFormEquations;
 	}
 
 	/*
@@ -273,7 +310,6 @@ private:
 
 		return valuation;
 	}
-
 };
 
 #endif

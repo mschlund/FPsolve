@@ -489,6 +489,55 @@ public:
 	}
 
 	/*
+	 * Replaces all constants in the polynomial with their respective VarId mapping.
+	 * Used in transformation to Chomsky Normal Form.
+	 */
+	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId> constantsVariables) const {
+		NonCommutativePolynomial<SR> temp;
+
+		if(idx_.at(0).first == SemiringType) {
+			temp = NonCommutativePolynomial<SR>(constantsVariables[srs_.at(idx_.at(0).second)]);
+		} else {
+			temp = NonCommutativePolynomial<SR>(variables_.at(idx_.at(0).second));
+		}
+
+		for(int i = 1; i < idx_.size(); i++) {
+
+			// multiply as long as there was no variable encountered
+			if(idx_.at(i).first == SemiringType) {
+				temp *= constantsVariables[srs_.at(idx_.at(i).second)];
+			} else {
+				temp *= variables_.at(idx_.at(i).second);
+			}
+		}
+
+		return temp;
+	}
+
+	/*
+	 * Transforms a polynomial into its Chomsky Normal Form.
+	 * Only works for monomials in which no constants exists (neither as factors nor as summands)
+	 * and with degree != 2.
+	 */
+	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<string, VarId> chomskyVariables,
+			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> chomskyVariableEquations,
+			std::map<VarId, LossySemiring> variablesToConstants) const {
+		NonCommutativePolynomial<SR> temp = null();
+		NonCommutativePolynomial<SR> suffix = null();
+
+		// if this monomial is a single variable, replace the variable by the constant it maps to;
+		// otherwise we have at least two variables; we need to shorten that to exactly two by
+		// introducing new variables where needed
+		if(get_degree() == 1) {
+			temp = NonCommutativePolynomial<SR>(variablesToConstants[variables_.at(0)]);
+		} else {
+
+		}
+
+		return temp;
+	}
+
+	/*
 	 * Checks whether this monomial is productive, depending on the set of variables
 	 * that are already known to be productive.
 	 */
