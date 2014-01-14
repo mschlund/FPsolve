@@ -285,6 +285,33 @@ private:
       return Matrix<NonCommutativePolynomial<SR>>{poly_matrix.getRows(), result};
     }
 
+    /*
+     * Evaluates a polynomial system at a given vector.
+     */
+    static std::map<VarId, SR> evaluateSystem
+    (std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
+        int& times, std::map<VarId, SR> &initialValuation) {
+
+      std::map<VarId, SR> valuation, tempValuation;
+      valuation = initialValuation;
+      VarId variable;
+
+      // iterate the desired number of times
+      for(int i = 0; i < times; i++) {
+
+        // evaluate each polynomial and map the appropriate variable to the result
+        for(auto &equation: equations) {
+          tempValuation.insert(std::pair<VarId, SR>(equation.first, equation.second.eval(valuation)));
+        }
+
+        // prepare next iteration
+        valuation.swap(tempValuation);
+        tempValuation.clear();
+      }
+
+      return valuation;
+    }
+
     /* Convert this polynomial to an element of the free semiring.  Note that
      * the provided valuation might be modified with new elements. */
     FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {

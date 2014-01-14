@@ -104,9 +104,9 @@ public:
 
 				// build the vectors f(0) and f^n(0), where n is the number of variables in the system
 				int times = 1;
-				std::map<VarId, LossySemiring> f_0 = evaluateSystem(equations, times, zeroSystem);
+				std::map<VarId, LossySemiring> f_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
 				times = equations.size();
-				std::map<VarId, LossySemiring> f_n_0 = evaluateSystem(equations, times, zeroSystem);
+				std::map<VarId, LossySemiring> f_n_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
 
 				// find the LossySemiring element in the "middle" of the expression
 				LossySemiring middle = LossySemiring::null();
@@ -138,7 +138,6 @@ public:
 					solution.insert(std::make_pair(variable_mapping.first, fixpoint));
 				}
 
-				//std::map<VarId, NonCommutativePolynomial<LossySemiring>>
 				return solution;
 			}
 
@@ -153,33 +152,6 @@ public:
 			static NodeFactory factory_;
 
 			friend struct std::hash<LossySemiring>;
-
-			/*
-			 * Evaluates a polynomial system at a given vector.
-			 */
-			static std::map<VarId, LossySemiring> evaluateSystem
-			(std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations,
-					int& times, std::map<VarId, LossySemiring> &initialValuation) {
-
-				std::map<VarId, LossySemiring> valuation, tempValuation;
-				valuation = initialValuation;
-				VarId variable;
-
-				// iterate the desired number of times
-				for(int i = 0; i < times; i++) {
-
-					// evaluate each polynomial and map the appropriate variable to the result
-					for(auto &equation: equations) {
-						tempValuation.insert(std::pair<VarId, LossySemiring>(equation.first, equation.second.eval(valuation)));
-					}
-
-					// prepare next iteration
-					valuation.swap(tempValuation);
-					tempValuation.clear();
-				}
-
-				return valuation;
-			}
 
 		};
 
