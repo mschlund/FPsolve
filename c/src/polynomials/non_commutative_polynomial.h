@@ -459,6 +459,25 @@ public:
 		return ss.str();
 	}
 
+	std::string posixString() const {
+        std::stringstream ss;
+        std::string posixMonomial;
+
+        for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
+            posixMonomial = monomial.first.posixString();
+
+            if(posixMonomial.size() > 0) {
+                if(monomial != monomials_.begin()) {
+                    ss << "|";
+                }
+
+                ss << posixMonomial;
+            }
+        }
+
+        return ss.str();
+	}
+
 };
 
 template<typename SR> bool NonCommutativePolynomial<SR>::is_commutative = false;

@@ -638,6 +638,18 @@ public:
 		}
 		return std::move(ss.str());
 	}
+
+	std::string posixString() const {
+        std::stringstream ss;
+        for(auto p = idx_.begin(); p != idx_.end(); p++) {
+            if(p->first == Variable) {
+                ss << variables_.at(p->second);
+            } else {
+                ss << srs_.at(p->second);
+            }
+        }
+        return std::move(ss.str());
+	}
 };
 
 template<typename SR>

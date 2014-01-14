@@ -1,0 +1,62 @@
+AUGEAS_0.1.0 {
+    global:
+      aug_init;
+      aug_close;
+      aug_get;
+      aug_set;
+      aug_insert;
+      aug_rm;
+      aug_mv;
+      aug_match;
+      aug_save;
+      aug_print;
+      # Symbols with __ are private
+      __aug_load_module_file;
+    local: *;
+};
+
+AUGEAS_0.8.0 {
+    global:
+      aug_defvar;
+      aug_defnode;
+      aug_load;
+} AUGEAS_0.1.0;
+
+AUGEAS_0.10.0 {
+    global:
+      aug_error;
+      aug_error_message;
+      aug_error_minor_message;
+      aug_error_details;
+} AUGEAS_0.8.0;
+
+AUGEAS_0.11.0 {
+    global:
+      aug_setm;
+} AUGEAS_0.10.0;
+
+AUGEAS_0.12.0 {
+    global:
+      aug_span;
+} AUGEAS_0.11.0;
+
+AUGEAS_0.14.0 {
+    global:
+      aug_srun;
+      __aug_init_memstream;
+      __aug_close_memstream;
+} AUGEAS_0.12.0;
+
+AUGEAS_0.15.0 {
+    global:
+      aug_to_xml;
+} AUGEAS_0.14.0;
+
+AUGEAS_0.16.0 {
+    global:
+      aug_text_store;
+      aug_text_retrieve;
+      aug_rename;
+      aug_transform;
+      aug_label;
+} AUGEAS_0.15.0;

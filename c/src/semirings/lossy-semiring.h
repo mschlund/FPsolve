@@ -65,7 +65,7 @@ public:
 	}
 
 	std::string string() const {
-		return NodeToString(*node_);
+		return NodeToPosixString(*node_);
 	}
 
 	std::string RawString() const {
@@ -95,8 +95,7 @@ public:
 			const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>>&equations) {
 
 				ValuationMap<LossySemiring> solution;
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations = cleanSystem(equations);
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = quadraticNormalForm(cleanEquations);
+				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = quadraticNormalForm(equations);
 
 				// build a zero vector
 				std::map<VarId, LossySemiring> zeroSystem;
@@ -129,7 +128,7 @@ public:
 				for(auto &equation: differential) {
 					differential_sum += equation.second;
 				}
-				std::cout << differential_sum << std::endl;
+
 				// get the lefthand and righthand semiring element of the fixpoint
 				LossySemiring lefthandSum = differential_sum.getSumOfLeadingFactors();
 				LossySemiring righthandSum = differential_sum.getSumOfTrailingFactors();

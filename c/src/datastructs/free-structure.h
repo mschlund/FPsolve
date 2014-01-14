@@ -33,6 +33,7 @@ class WordsPrinter;
 
 std::string NodeToRawString(const Node &node);
 std::string NodeToString(const Node &node);
+std::string NodeToPosixString(const Node &node);
 
 std::ostream& operator<<(std::ostream &out, const Node &node);
 
