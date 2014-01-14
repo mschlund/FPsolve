@@ -462,13 +462,16 @@ public:
 	std::string posixString() const {
         std::stringstream ss;
         std::string posixMonomial;
+        bool firstMonomial = true;
 
-        for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
+        for(auto monomial: monomials_) {
             posixMonomial = monomial.first.posixString();
 
             if(posixMonomial.size() > 0) {
-                if(monomial != monomials_.begin()) {
+                if(!firstMonomial) {
                     ss << "|";
+                } else {
+                    firstMonomial = false;
                 }
 
                 ss << posixMonomial;
