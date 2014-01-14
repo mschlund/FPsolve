@@ -96,7 +96,7 @@ public:
 
 				ValuationMap<LossySemiring> solution;
 				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> cleanEquations = cleanSystem(equations);
-				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = normalizeCleanSystem(cleanEquations);
+				std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm = quadraticNormalForm(cleanEquations);
 
 				// build a zero vector
 				std::map<VarId, LossySemiring> zeroSystem;
@@ -159,11 +159,35 @@ private:
 	/*
 	 * Brings a system into quadratic normal form.
 	 */
-	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalizeCleanSystem
+	static std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> quadraticNormalForm
 			(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> &equations) {
 			std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> normalForm;
+
+			// clean the system
 			normalForm = cleanSystem(equations);
+
+			// bring the clean system into Chomsky Normal Form
 			normalForm = chomskyNormalForm(normalForm);
+
+			// add 1 to each equation
+			for(auto equation: normalForm) {
+				equation.second = equation.second + NonCommutativePolynomial<LossySemiring>::one();
+			}
+
+			// add the monomials of degree 1; since we are in a lossy semiring, we have 1+1 = 1 and so
+			// we don't need to worry about the number of occurrences of each variable
+			std::set<VarId> vars;
+			NonCommutativePolynomial<LossySemiring> monomialsOfDegreeOne;
+			for(auto equation: normalForm) {
+				vars = equation.second.get_variables();
+				monomialsOfDegreeOne = NonCommutativePolynomial<LossySemiring>::null();
+
+				for(VarId var: vars) {
+					monomialsOfDegreeOne += NonCommutativePolynomial<LossySemiring>(var);
+				}
+
+				equation.second = equation.second + monomialsOfDegreeOne;
+			}
 
 			return normalForm;
 	}

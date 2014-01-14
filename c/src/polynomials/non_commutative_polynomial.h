@@ -385,8 +385,8 @@ public:
 	 * Transforms a polynomial into its Chomsky Normal Form.
 	 * Only works for polynomials in which no constants exists (neither as factors nor as summands).
 	 */
-	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> chomskyVariables,
-			std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations,
+	NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> &chomskyVariables,
+			std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &chomskyVariableEquations,
 			std::map<VarId, SR> variablesToConstants) const {
 		NonCommutativePolynomial<SR> temp = null();
 
