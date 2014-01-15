@@ -23,6 +23,10 @@
 #ifndef FA_H_
 #define FA_H_
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
 #include <stdio.h>
 #include <regex.h>
 
@@ -266,6 +270,10 @@ int fa_expand_nocase(const char *regexp, size_t regexp_len,
  * memory, and -2 if FA has more than LIMIT words.
  */
 int fa_enumerate(struct fa *fa, int limit, char ***words);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -1,41 +1,33 @@
 #pragma once
 
 #include <string>
-
-#include "../../libraries/augeas/src/fa.h"
+#include "libfa_fa.h"
 
 enum representation {libfa};
-
-class regularLanguage {
+class RegularLanguage {
 public:
-	boolean empty();
-	regularLanguage complement();
-	regularLanguage intersectionWith(regularLanguage other);
-	regularLanguage unionWith(regularLanguage other);
-	regularLanguage minimize();
+	bool empty();
+	RegularLanguage minimize();
+	RegularLanguage complement();
+	RegularLanguage intersectionWith(RegularLanguage other);
+	RegularLanguage unionWith(RegularLanguage other);
 	std::string regularExpression();
-	regularLanguage fromRegularExpression(std::string regularExpression);
 
-	regularLanguage toType(representation type) {
-		if(getType() != type) {
-			std::string expression = regularExpression();
+	RegularLanguage toType(representation type) {
+		std::string expression = regularExpression();
+
+		switch(type) {
+		    case libfa: return LibfaFA(expression);
 		}
-
-		return this;
 	}
 
-	representation getType(){
-		return type;
-	}
+	representation getType();
 
-	static boolean disjoint(regularLanguage A, regularLanguage B) {
+	static bool disjoint(RegularLanguage A, RegularLanguage B) {
 		return A.intersectionWith(B).empty();
 	}
 
-	static boolean isSubsetOf(regularLanguage sub, regularLanguage super) {
-
+	static bool isSubsetOf(RegularLanguage sub, RegularLanguage super) {
+	    return super.complement().intersectionWith(sub).empty();
 	}
-
-private:
-	representation type;
 };

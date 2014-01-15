@@ -29,6 +29,10 @@
  * subset of what Automaton provides is implemented here.
  */
 
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
 #include <config.h>
 #include <limits.h>
 #include <ctype.h>
@@ -4471,6 +4475,10 @@ void fa_dot(FILE *out, struct fa *fa) {
     }
     fprintf(out, "}\n");
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 /*
  * Local variables:

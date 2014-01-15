@@ -459,6 +459,9 @@ public:
 		return ss.str();
 	}
 
+	/*
+	 * Gives a POSIX regex that represents this polynomial.
+	 */
 	std::string posixString() const {
         std::stringstream ss;
         std::string posixMonomial;
