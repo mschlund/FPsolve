@@ -65,18 +65,31 @@ struct free_var_impl
 };
 const phx::function<free_var_impl> free_var;
 
-struct lossy_var_impl
+struct lossy_regexp_var_impl
 {
         template <typename T>
-        struct result { typedef LossySemiring type; }; // this tells Boost the return type
+        struct result { typedef NonCommutativePolynomial<LossyRegularExpression> type; }; // this tells Boost the return type
 
-        const LossySemiring operator()(std::string& s) const
+        const NonCommutativePolynomial<LossyRegularExpression> operator()(std::string& s) const
         {
                 // create an element with the given var
-                return LossySemiring(Var::GetVarId(s));
+                return NonCommutativePolynomial<LossyRegularExpression>(Var::GetVarId(s));
         }
 };
-const phx::function<lossy_var_impl> lossy_var;
+const phx::function<lossy_regexp_var_impl> lossy_regexp_var;
+
+struct lossy_fa_var_impl
+{
+        template <typename T>
+        struct result { typedef NonCommutativePolynomial<LossyFiniteAutomaton> type; }; // this tells Boost the return type
+
+        const NonCommutativePolynomial<LossyFiniteAutomaton> operator()(std::string& s) const
+        {
+                // create an element with the given var
+                return NonCommutativePolynomial<LossyFiniteAutomaton>(Var::GetVarId(s));
+        }
+};
+const phx::function<lossy_fa_var_impl> lossy_fa_var;
 
 struct prefix_impl
 {
@@ -197,13 +210,23 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
 };
 
 // parser for a lossy semiring element
-struct lossy_elem_parser : qi::grammar<iterator_type, LossySemiring()>
+struct lossy_regexp_elem_parser : qi::grammar<iterator_type, LossyRegularExpression()>
 {
-	    lossy_elem_parser() : lossy_elem_parser::base_type(elem)
+	    lossy_regexp_elem_parser() : lossy_regexp_elem_parser::base_type(elem)
         {
-                elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = lossy_var(_1)] >> '"';
+                elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = lossy_regexp_var(_1)] >> '"';
         }
-        qi::rule<iterator_type, LossySemiring()> elem;
+        qi::rule<iterator_type, LossyRegularExpression()> elem;
+};
+
+// parser for a lossy semiring element
+struct lossy_fa_elem_parser : qi::grammar<iterator_type, LossyFiniteAutomaton()>
+{
+        lossy_fa_elem_parser() : lossy_fa_elem_parser::base_type(elem)
+        {
+                elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = lossy_fa_var(_1)] >> '"';
+        }
+        qi::rule<iterator_type, LossyFiniteAutomaton()> elem;
 };
 
 // parser for a prefix semiring element
@@ -332,9 +355,15 @@ std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> Parser::fr
 }
 
 // wrapper function for lossy semiring equations
-std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> Parser::lossy_parser(std::string input)
+std::vector<std::pair<VarId, NonCommutativePolynomial<LossyRegularExpression>>> Parser::lossy_regexp_parser(std::string input)
 {
-        return non_commutative_parser<lossy_elem_parser, LossySemiring>(input);
+        return non_commutative_parser<lossy_regexp_elem_parser, LossyRegularExpression>(input);
+}
+
+// wrapper function for lossy semiring equations
+std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> Parser::lossy_fa_parser(std::string input)
+{
+        return non_commutative_parser<lossy_fa_elem_parser, LossyFiniteAutomaton>(input);
 }
 
 // wrapper function for prefix semiring equations

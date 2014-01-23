@@ -17,7 +17,7 @@
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
 #include "semirings/pseudo_linear_set.h"
-#include "datastructs/libfa_fa.h"
+#include "datastructs/finite_automaton.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semirings/semilinSetExp.h"
