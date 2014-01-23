@@ -22,53 +22,61 @@ public:
 
     /* Default constructor creates zero element. */
     LossyFiniteAutomaton() {
-        node_ = factory_.GetEmpty();
+        language = EMPTY.language;
+    }
+
+    LossyFiniteAutomaton(std::string regularExpression) {
+        language = FiniteAutomaton(regularExpression);
     }
 
     static LossyFiniteAutomaton null() {
-        return LossyFiniteAutomaton { factory_.GetEmpty() };
+        return EMPTY;
     }
 
     static LossyFiniteAutomaton one() {
-        return LossyFiniteAutomaton { factory_.GetEpsilon() };
+        return EPSILON;
     }
 
-    LossyFiniteAutomaton star() const {
-        return LossyFiniteAutomaton { factory_.NewStar(node_) };
+    LossyFiniteAutomaton minimize() {
+        return LossyFiniteAutomaton{language.minimize()};
+    }
+
+    LossyFiniteAutomaton star() {
+        return LossyFiniteAutomaton {language.kleeneStar()};
     }
 
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton { factory_.NewAddition(node_, x.node_) };
+        return LossyFiniteAutomaton {language.unionWith(x.language)};
     }
 
     LossyFiniteAutomaton& operator+=(const LossyFiniteAutomaton &x) {
-        node_ = factory_.NewAddition(node_, x.node_);
+        language = language.unionWith(x.language);
         return *this;
     }
 
     LossyFiniteAutomaton operator*(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton { factory_.NewMultiplication(node_, x.node_) };
+        return LossyFiniteAutomaton { language.concatenate(x.language)};
     }
 
     LossyFiniteAutomaton& operator*=(const LossyFiniteAutomaton &x) {
-        node_ = factory_.NewMultiplication(node_, x.node_);
+        language = language.concatenate(x.language);
         return *this;
     }
 
-    bool operator==(const LossyFiniteAutomaton &x) const {
-        return node_ == x.node_;
+    bool operator==(const LossyFiniteAutomaton &x) {
+        return language.equals(x.language);
     }
 
-    std::string string() const {
-        return automaton.string();
+    std::string string() {
+        return language.string();
     }
 
 private:
-    FiniteAutomaton automaton;
+    FiniteAutomaton language;
 
-    static FiniteAutomaton empty;
-    static FiniteAutomaton epsilon;
-    static FiniteAutomaton universe;
+    static const LossyFiniteAutomaton EMPTY;
+    static const LossyFiniteAutomaton EPSILON;
+    static const LossyFiniteAutomaton UNIVERSE;
 
     friend struct std::hash<LossyFiniteAutomaton>;
 };

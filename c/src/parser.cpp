@@ -68,12 +68,12 @@ const phx::function<free_var_impl> free_var;
 struct lossy_regexp_var_impl
 {
         template <typename T>
-        struct result { typedef NonCommutativePolynomial<LossyRegularExpression> type; }; // this tells Boost the return type
+        struct result { typedef LossyRegularExpression type; }; // this tells Boost the return type
 
-        const NonCommutativePolynomial<LossyRegularExpression> operator()(std::string& s) const
+        const LossyRegularExpression operator()(std::string& s) const
         {
                 // create an element with the given var
-                return NonCommutativePolynomial<LossyRegularExpression>(Var::GetVarId(s));
+                return LossyRegularExpression(Var::GetVarId(s));
         }
 };
 const phx::function<lossy_regexp_var_impl> lossy_regexp_var;
@@ -81,12 +81,12 @@ const phx::function<lossy_regexp_var_impl> lossy_regexp_var;
 struct lossy_fa_var_impl
 {
         template <typename T>
-        struct result { typedef NonCommutativePolynomial<LossyFiniteAutomaton> type; }; // this tells Boost the return type
+        struct result { typedef LossyFiniteAutomaton type; }; // this tells Boost the return type
 
-        const NonCommutativePolynomial<LossyFiniteAutomaton> operator()(std::string& s) const
+        const LossyFiniteAutomaton operator()(std::string& s) const
         {
                 // create an element with the given var
-                return NonCommutativePolynomial<LossyFiniteAutomaton>(Var::GetVarId(s));
+                return LossyFiniteAutomaton(Var::GetVarId(s));
         }
 };
 const phx::function<lossy_fa_var_impl> lossy_fa_var;
