@@ -8,6 +8,10 @@
 class FiniteAutomaton : public RegularLanguage<FiniteAutomaton> {
 public:
 
+    FiniteAutomaton() {
+        automaton = EMPTY_LANGUAGE;
+    }
+
     /*
      * Builds a finite automaton from a POSIX regular expression.
      * Use | for choice, () for grouping, * for Kleene star; don't use spaces,
@@ -18,7 +22,7 @@ public:
     }
 
     bool empty() {
-        return fa_equals(automaton, empty_language) == 1;
+        return fa_equals(automaton, EMPTY_LANGUAGE) == 1;
     }
 
     FiniteAutomaton minimize() {
@@ -64,7 +68,7 @@ private:
         automaton = FA;
     }
 
-    static const struct fa* EMPTY_LANGUAGE;
+    static struct fa* EMPTY_LANGUAGE;
 
-    const struct fa* automaton;
+    struct fa* automaton;
 };

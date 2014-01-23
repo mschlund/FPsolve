@@ -400,6 +400,68 @@ public:
 		return temp;
 	}
 
+
+    /*
+     * Brings a polynomial system into CNF.
+     */
+    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalForm
+                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations) {
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalFormEquations;
+        std::map<SR, VarId> constantsToVariables;
+        std::map<VarId, SR> variablesToConstants;
+        std::set<NonCommutativePolynomial<SR>> constants;
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> variablefiedEquations;
+
+        // find all constants in the system
+        for(auto equation: equations) {
+            equation.second.findAllConstants(constants);
+        }
+
+        // introduce a new variable for each constant found, add the respective equation to the system
+        VarId var;
+        std::map<VarId, SR> nullMap; // dummy map to call NonCommutativePolynomial<SR>.eval(..)
+                                                // without any valuations
+        for(auto &constant_: constants) {
+            var = Var::GetVarId();
+            chomskyNormalFormEquations.push_back(std::make_pair(var, constant_));
+            constantsToVariables.insert(std::make_pair(constant_.eval(nullMap), var));
+            variablesToConstants.insert(std::make_pair(var,constant_.eval(nullMap)));
+        }
+
+        // replace the constants in each equation with the new constant variables
+        NonCommutativePolynomial<SR> allVariablesPoly;
+        for(auto equation: equations) {
+            allVariablesPoly = equation.second.replaceConstantsWithVariables(constantsToVariables);
+            variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
+        }
+
+        // stores mappings between suffixes of monomials and the variables
+        // that are introduced to produce those suffixes in the process of generating
+        // the Chomsky Normal Form
+        std::map<std::string, VarId> chomskyVariables;
+
+        // stores the productions (i.e. equations) that are introduced while producing the
+        // Chomsky Normal Form
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations;
+
+        // determine the necessary new variables to give all non-terminal productions
+        // (i.e. monomials of degree > 2) the form "X = YZ"
+        NonCommutativePolynomial<SR> chomskyPoly;
+        for(auto equation: variablefiedEquations) {
+            chomskyPoly =
+                    equation.second.chomskyNormalForm(chomskyVariables, chomskyVariableEquations, variablesToConstants);
+            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, chomskyPoly));
+        }
+
+        // finally, add the productions to the system that were introduced during the last step
+        for(auto equation: chomskyVariableEquations) {
+            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, equation.second));
+        }
+
+        // we are done
+        return chomskyNormalFormEquations;
+    }
+
 	/*
 	 * Checks whether this polynomial is productive, depending on the set of variables
 	 * that are already known to be productive.

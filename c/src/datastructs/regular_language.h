@@ -20,19 +20,19 @@ public:
      */
 	std::string string();
 
-	static bool disjoint(RegularLanguage<RL> other) {
+	bool disjoint(RegularLanguage<RL> other) {
 		return intersectionWith(other).empty();
 	}
 
-	static bool containedIn(RegularLanguage<RL> super) {
+	bool containedIn(RegularLanguage<RL> super) {
 	    return intersectionWith(super.complement()).empty();
 	}
 
-	static bool contains(RegularLanguage<RL> sub) {
+	bool contains(RegularLanguage<RL> sub) {
 	    return complement().intersectionWith(sub).empty();
 	}
 
-	static bool equals(RegularLanguage<RL> other) {
+	bool equals(RegularLanguage<RL> other) {
 	    return contains(other) && containedIn(other);
 	}
 };

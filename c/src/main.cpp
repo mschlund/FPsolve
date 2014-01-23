@@ -385,7 +385,7 @@ int main(int argc, char* argv[]) {
 
     // parse to lossy semiring polynomial; an element a of the semiring
     // will be parsed to "1+a" while variables do not get the "1+" bit
-    auto equations = p.lossy_parser(input_all);
+    auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
     ValuationMap<LossySemiring> valuation = LossySemiring::solvePolynomialSystem(equations);

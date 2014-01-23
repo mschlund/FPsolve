@@ -26,7 +26,7 @@ public:
     }
 
     LossyFiniteAutomaton(std::string regularExpression) {
-        language = FiniteAutomaton(regularExpression);
+        language = FiniteAutomaton(regularExpression).unionWith(FiniteAutomaton::EPSILON_AUTOMATON).minimize();
     }
 
     static LossyFiniteAutomaton null() {
@@ -42,24 +42,24 @@ public:
     }
 
     LossyFiniteAutomaton star() {
-        return LossyFiniteAutomaton {language.kleeneStar()};
+        return LossyFiniteAutomaton {language.kleeneStar().minimize()};
     }
 
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton {language.unionWith(x.language)};
+        return LossyFiniteAutomaton {language.unionWith(x.language).minimize()};
     }
 
     LossyFiniteAutomaton& operator+=(const LossyFiniteAutomaton &x) {
-        language = language.unionWith(x.language);
+        language = language.unionWith(x.language).minimize();
         return *this;
     }
 
     LossyFiniteAutomaton operator*(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton { language.concatenate(x.language)};
+        return LossyFiniteAutomaton { language.concatenate(x.language).minimize()};
     }
 
     LossyFiniteAutomaton& operator*=(const LossyFiniteAutomaton &x) {
-        language = language.concatenate(x.language);
+        language = language.concatenate(x.language).minimize();
         return *this;
     }
 
@@ -74,9 +74,13 @@ public:
 private:
     FiniteAutomaton language;
 
-    static const LossyFiniteAutomaton EMPTY;
-    static const LossyFiniteAutomaton EPSILON;
-    static const LossyFiniteAutomaton UNIVERSE;
+    LossyFiniteAutomaton(FiniteAutomaton fa) {
+        language = fa;
+    }
+
+    static LossyFiniteAutomaton EMPTY;
+    static LossyFiniteAutomaton EPSILON;
+    static LossyFiniteAutomaton UNIVERSE;
 
     friend struct std::hash<LossyFiniteAutomaton>;
 };
