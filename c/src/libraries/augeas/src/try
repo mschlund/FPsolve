@@ -1,0 +1,44 @@
+#! /bin/bash
+
+topdir=$(cd $(dirname $0)/.. && pwd)
+export AUGEAS_LENS_LIB=${topdir}/lenses
+export AUGEAS_ROOT=${topdir}/build/try
+
+AUGCMDS=${topdir}/build/augcmds.txt
+GDBCMDS=${topdir}/build/gdbcmds.txt
+
+rm -rf $AUGEAS_ROOT
+cp -pr ${topdir}/tests/root $AUGEAS_ROOT
+find $AUGEAS_ROOT -name \*.augnew\* | xargs -r rm
+
+if [[ ! -f $AUGCMDS ]] ; then
+    cat > $AUGCMDS <<EOF
+match /augeas/version
+EOF
+fi
+
+if [[ ! -f $GDBCMDS ]] ; then
+    cat > $GDBCMDS <<EOF
+run --nostdinc -I $AUGEAS_LENS_LIB -r $AUGEAS_ROOT < $AUGCMDS
+EOF
+fi
+
+cd $topdir/src
+if [[ "x$1" == "xgdb" ]] ; then
+    [[ -n "$EMACS" ]] && int="-i=mi"
+    exec libtool --mode=execute gdb $int -x $GDBCMDS ./augtool
+elif [[ "x$1" == "xstrace" ]] ; then
+    libtool --mode=execute /usr/bin/strace ./augtool --nostdinc < $AUGCMDS
+elif [[ "x$1" == "xvalgrind" ]] ; then
+    libtool --mode=execute valgrind --leak-check=full ./augtool --nostdinc < $AUGCMDS
+elif [[ "x$1" == "xcli" ]] ; then
+    shift
+    ./augtool --nostdinc "$@"
+else
+    ./augtool --nostdinc "$@" < $AUGCMDS
+    echo
+    for f in $(find $AUGEAS_ROOT -name \*.augnew); do
+        echo "File $f"
+        diff -u ${f%.augnew} $f
+    done
+fi
