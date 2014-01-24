@@ -4,6 +4,10 @@
 #include <memory>
 #include <unordered_map>
 #include <queue>
+#include <string>
+extern "C" {
+    #include <fa.h>
+}
 
 #include "../datastructs/hash.h"
 #include "../datastructs/matrix.h"
@@ -11,7 +15,6 @@
 #include "../datastructs/free-structure.h"
 #include "../datastructs/finite_automaton.h"
 #include "../polynomials/non_commutative_polynomial.h"
-#include "../libraries/augeas/src/fa.h"
 
 #include "lossy-semiring.h"
 
@@ -47,7 +50,7 @@ public:
     }
 
     LossyFiniteAutomaton star() {
-        return LossyFiniteAutomaton {language.kleeneStar().minimize()};
+        return LossyFiniteAutomaton(language.kleeneStar().minimize());
     }
 
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {

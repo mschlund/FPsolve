@@ -18,6 +18,9 @@
 #include "semirings/float-semiring.h"
 #include "semirings/pseudo_linear_set.h"
 #include "datastructs/finite_automaton.h"
+#include "semirings/lossy-semiring.h"
+#include "semirings/lossy-regular-expression.h"
+#include "semirings/lossy-finite-automaton.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semirings/semilinSetExp.h"

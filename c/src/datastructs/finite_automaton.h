@@ -1,7 +1,10 @@
 #pragma once
 
 #include <string>
-#include "../libraries/augeas/src/fa.h"
+#include <string>
+extern "C" {
+    #include <fa.h>
+}
 
 #include "regular_language.h"
 
@@ -50,6 +53,22 @@ public:
 
     FiniteAutomaton kleeneStar() {
         return FiniteAutomaton(fa_iter(automaton, 0, -1));
+    }
+
+    bool disjoint(FiniteAutomaton other) {
+        return intersectionWith(other).empty();
+    }
+
+    bool containedIn(FiniteAutomaton super) {
+        return intersectionWith(super.complement()).empty();
+    }
+
+    bool contains(FiniteAutomaton sub) {
+        return complement().intersectionWith(sub).empty();
+    }
+
+    bool equals(FiniteAutomaton other) {
+        return contains(other) && containedIn(other);
     }
 
     std::string string() const {

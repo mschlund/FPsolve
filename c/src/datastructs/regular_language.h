@@ -15,24 +15,10 @@ public:
     RegularLanguage<RL> concatenate(RegularLanguage<RL> other);
 	RegularLanguage<RL> kleeneStar();
 
-    /*
-     * Returns a regular expression that describes the language of this automaton.
-     */
 	std::string string();
 
-	bool disjoint(RegularLanguage<RL> other) {
-		return intersectionWith(other).empty();
-	}
-
-	bool containedIn(RegularLanguage<RL> super) {
-	    return intersectionWith(super.complement()).empty();
-	}
-
-	bool contains(RegularLanguage<RL> sub) {
-	    return complement().intersectionWith(sub).empty();
-	}
-
-	bool equals(RegularLanguage<RL> other) {
-	    return contains(other) && containedIn(other);
-	}
+	bool disjoint(RegularLanguage<RL> other);
+	bool containedIn(RegularLanguage<RL> super);
+	bool contains(RegularLanguage<RL> sub);
+	bool equals(RegularLanguage<RL> other);
 };
