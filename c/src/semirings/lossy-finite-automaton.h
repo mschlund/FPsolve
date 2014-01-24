@@ -11,13 +11,14 @@
 #include "../datastructs/free-structure.h"
 #include "../datastructs/finite_automaton.h"
 #include "../polynomials/non_commutative_polynomial.h"
+#include "../libraries/augeas/src/fa.h"
 
 #include "lossy-semiring.h"
 
 template<typename SR>
 class Evaluator;
 
-class LossyFiniteAutomaton: public LossySemiring {
+class LossyFiniteAutomaton: public LossySemiring<LossyFiniteAutomaton>  {
 public:
 
     /* Default constructor creates zero element. */
@@ -27,6 +28,10 @@ public:
 
     LossyFiniteAutomaton(std::string regularExpression) {
         language = FiniteAutomaton(regularExpression).unionWith(FiniteAutomaton::EPSILON_AUTOMATON).minimize();
+    }
+
+    LossyFiniteAutomaton(const VarId var) {
+        language = FiniteAutomaton(Var::GetVar(var).string());
     }
 
     static LossyFiniteAutomaton null() {
@@ -63,11 +68,14 @@ public:
         return *this;
     }
 
-    bool operator==(const LossyFiniteAutomaton &x) {
-        return language.equals(x.language);
+    bool operator==(const LossyFiniteAutomaton &x) const {
+        FiniteAutomaton copyOther = FiniteAutomaton(x.language);
+        FiniteAutomaton copy = FiniteAutomaton(language);
+
+        return copy.equals(copyOther);
     }
 
-    std::string string() {
+    std::string string() const {
         return language.string();
     }
 

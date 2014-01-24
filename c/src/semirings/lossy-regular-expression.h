@@ -16,7 +16,7 @@
 template<typename SR>
 class Evaluator;
 
-class LossyRegularExpression: public LossySemiring {
+class LossyRegularExpression: public LossySemiring<LossyRegularExpression> {
 public:
     /* Default constructor creates zero element. */
     LossyRegularExpression() {
@@ -24,8 +24,8 @@ public:
     }
 
     LossyRegularExpression(const VarId var) {
-        node_ = factory_.NewElement(var);
-        // node_ = factory_.NewAddition(factory_.NewElement(var), factory_.GetEpsilon());
+        // node_ = factory_.NewElement(var);
+        node_ = factory_.NewAddition(factory_.NewElement(var), factory_.GetEpsilon());
     }
 
     static LossyRegularExpression null() {

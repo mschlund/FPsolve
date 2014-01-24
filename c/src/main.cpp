@@ -388,7 +388,7 @@ int main(int argc, char* argv[]) {
     auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    ValuationMap<LossySemiring> valuation = LossySemiring::solvePolynomialSystem(equations);
+    ValuationMap<LossyFiniteAutomaton> valuation = LossyFiniteAutomaton::solvePolynomialSystem(equations);
     std::cout << result_string(valuation) << std::endl;
 
     PrintEquations(equations);

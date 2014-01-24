@@ -235,7 +235,7 @@ public:
 	SR eval(const std::map<VarId, SR> &values) const {
 		SR result = SR::null();
 		for (const auto &monomial : monomials_) {
-			result += monomial.first.eval(values) * monomial.second;
+			result = result + (monomial.first.eval(values) * monomial.second);
 		}
 		return result;
 	}

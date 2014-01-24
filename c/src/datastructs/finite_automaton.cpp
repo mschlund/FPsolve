@@ -1,4 +1,5 @@
 #include "finite_automaton.h"
+#include "../libraries/augeas/src/fa.h"
 
 struct fa* FiniteAutomaton::EMPTY_LANGUAGE = fa_make_basic(fa_basic::FA_EMPTY);
 const FiniteAutomaton FiniteAutomaton::EMPTY_AUTOMATON = FiniteAutomaton(EMPTY_LANGUAGE);

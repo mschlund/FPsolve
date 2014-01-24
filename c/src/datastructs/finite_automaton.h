@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "../../libraries/augeas/src/fa.h"
+#include "../libraries/augeas/src/fa.h"
 
 #include "regular_language.h"
 
@@ -52,7 +52,7 @@ public:
         return FiniteAutomaton(fa_iter(automaton, 0, -1));
     }
 
-    std::string string() {
+    std::string string() const {
         char *regularExpression;
         size_t size;
         fa_as_regexp(automaton, &regularExpression, &size);
