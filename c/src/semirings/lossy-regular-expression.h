@@ -36,7 +36,7 @@ public:
         return LossyRegularExpression { factory_.GetEpsilon() };
     }
 
-    LossyRegularExpression star() {
+    LossyRegularExpression star() const {
         return LossyRegularExpression { factory_.NewStar(node_) };
     }
 

@@ -51,7 +51,7 @@ public:
         return FiniteAutomaton(fa_concat(automaton, other.automaton));
     }
 
-    FiniteAutomaton kleeneStar() {
+    FiniteAutomaton kleeneStar() const {
         return FiniteAutomaton(fa_iter(automaton, 0, -1));
     }
 

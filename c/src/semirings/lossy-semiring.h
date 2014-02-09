@@ -21,21 +21,7 @@ template <typename LSR>
 class LossySemiring: public StarableSemiring<LSR,
 		Commutativity::NonCommutative, Idempotence::Idempotent> {
 public:
-
-	static LSR null();
-	static LSR one();
-
-	LSR star() const;
-
-	LSR operator+(const LSR &x);
-	LSR& operator+=(const LSR &x);
-	LSR operator*(const LSR &x);
-	LSR& operator*=(const LSR &x);
-
-	bool operator==(const LSR &x) const;
-
-	std::string string() const;
-
+    virtual ~LossySemiring(){};
 
     /*
      * Solves a polynomial system over the lossy semiring. For derivation of

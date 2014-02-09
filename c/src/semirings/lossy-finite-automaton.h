@@ -49,7 +49,7 @@ public:
         return LossyFiniteAutomaton{language.minimize()};
     }
 
-    LossyFiniteAutomaton star() {
+    LossyFiniteAutomaton star() const {
         return LossyFiniteAutomaton(language.kleeneStar().minimize());
     }
 
@@ -85,9 +85,7 @@ public:
 private:
     FiniteAutomaton language;
 
-    LossyFiniteAutomaton(FiniteAutomaton fa) {
-        language = fa;
-    }
+    LossyFiniteAutomaton(FiniteAutomaton fa) : language(fa){}
 
     static LossyFiniteAutomaton EMPTY;
     static LossyFiniteAutomaton EPSILON;
