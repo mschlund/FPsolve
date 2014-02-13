@@ -93,16 +93,30 @@ const phx::function<prefix_impl> prefix;
 
 struct slset_var_impl
 {
-	template <typename T, typename U>
-	struct result { typedef SemilinSetExp type; }; // this tells Boost the return type
+        template <typename T, typename U>
+        struct result { typedef SemilinSetExp type; }; // this tells Boost the return type
 
-	const SemilinSetExp operator()(std::string& s, unsigned int& cnt) const
-	{
-		// create an element with the given var
-		return SemilinSetExp(Var::GetVarId(s), cnt);
-	}
+        const SemilinSetExp operator()(std::string& s, unsigned int& cnt) const
+        {
+                // create an element with the given var
+                return SemilinSetExp(Var::GetVarId(s), cnt);
+        }
 };
 const phx::function<slset_var_impl> slset_var;
+
+
+struct slsetndd_var_impl
+{
+	template <typename T, typename U>
+	struct result { typedef SemilinSetNdd type; }; // this tells Boost the return type
+
+	const SemilinSetNdd operator()(std::string& s, unsigned int& cnt) const
+	{
+		// create an element with the given var
+		return SemilinSetNdd(Var::GetVarId(s), cnt);
+	}
+};
+const phx::function<slsetndd_var_impl> slsetndd_var;
 
 
 
@@ -171,18 +185,37 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 // e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>" or "<>" (for the one-element)
 struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space_type>
 {
-	slset_elem_parser() : slset_elem_parser::base_type(elem)
+        slset_elem_parser() : slset_elem_parser::base_type(elem)
+        {
+                // create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
+                elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
+                                   var_cnt [_val = _val * _1] >>
+                                   *( (',' >> var_cnt) [_val = _val * _1] ) >> qi::lit(">\"")
+                    |  qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >> qi::lit(">\"");
+                var_cnt = (varidentifier >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
+                varidentifier = qi::as_string[+(qi::alnum)];
+        }
+        qi::rule<iterator_type, SemilinSetExp(), qi::space_type> elem;
+        qi::rule<iterator_type, SemilinSetExp(), qi::space_type> var_cnt;
+        qi::rule<iterator_type, std::string()> varidentifier;
+};
+
+// parser for a semilinear set expression semiring element
+// e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>" or "<>" (for the one-element)
+struct slsetndd_elem_parser : qi::grammar<iterator_type, SemilinSetNdd(), qi::space_type>
+{
+	slsetndd_elem_parser() : slsetndd_elem_parser::base_type(elem)
 	{
 		// create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
-		elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
+		elem = qi::lit("\"<") >> eps [_val = SemilinSetNdd::one()] >>
 				   var_cnt [_val = _val * _1] >>
 				   *( (',' >> var_cnt) [_val = _val * _1] ) >> qi::lit(">\"")
-		    |  qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >> qi::lit(">\"");
-		var_cnt = (varidentifier >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
+		    |  qi::lit("\"<") >> eps [_val = SemilinSetNdd::one()] >> qi::lit(">\"");
+		var_cnt = (varidentifier >> ':' >> qi::uint_) [_val = slsetndd_var(_1, _2)];
 		varidentifier = qi::as_string[+(qi::alnum)];
 	}
-	qi::rule<iterator_type, SemilinSetExp(), qi::space_type> elem;
-	qi::rule<iterator_type, SemilinSetExp(), qi::space_type> var_cnt;
+	qi::rule<iterator_type, SemilinSetNdd(), qi::space_type> elem;
+	qi::rule<iterator_type, SemilinSetNdd(), qi::space_type> var_cnt;
 	qi::rule<iterator_type, std::string()> varidentifier;
 };
 
@@ -323,6 +356,12 @@ std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(s
 std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
 {
         return commutative_parser<slset_elem_parser, SemilinSetExp>(input);
+}
+
+// wrapper function for ndd semilinear set equations
+std::vector<std::pair<VarId, Polynomial<SemilinSetNdd>>> Parser::slsetndd_parser(std::string input)
+{
+        return commutative_parser<slsetndd_elem_parser, SemilinSetNdd>(input);
 }
 
 // wrapper function for free semiring equations

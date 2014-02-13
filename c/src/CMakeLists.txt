@@ -16,8 +16,15 @@ else(${OLD_SEMILINEAR_SET})
   list(REMOVE_ITEM NEWTON_CPP ${SEMILIN_SET_EXP_CPP})
 endif(${OLD_SEMILINEAR_SET})
 
+if(NOT USE_GENEPI)
+	file(GLOB_RECURSE SEMILIN_SET_NDD_H "semilinSetNdd*.h")
+	file(GLOB_RECURSE SEMILIN_SET_NDD_CPP "semilinSetNdd*.cpp")
+	list(REMOVE_ITEM NEWTON_H ${SEMILIN_SET_NDD_H})
+	list(REMOVE_ITEM NEWTON_CPP ${SEMILIN_SET_NDD_CPP})
+endif(NOT USE_GENEPI)
+
 set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)
-target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${LPSOLVE_LIBRARIES})
+target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES} )

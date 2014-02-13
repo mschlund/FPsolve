@@ -14,6 +14,13 @@ find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
+option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
+
+if(USE_GENEPI)
+	find_package(PkgConfig)
+	pkg_check_modules(GENEPI genepi)
+endif(USE_GENEPI)
+
 # Cppunit; cmake configuration taken from:
 # http://www.cmake.org/pipermail/cmake/2006-December/012349.html
 
@@ -75,7 +82,6 @@ endif(${OLD_SEMILINEAR_SET})
 
 link_directories(${LPSOLVE_LIBRARY_DIRS})
 include_directories(${LPSOLVE_INCLUDE_DIRS})
-
 
 add_subdirectory("src")
 add_subdirectory("test")
