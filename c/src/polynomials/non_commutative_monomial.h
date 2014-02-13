@@ -41,7 +41,7 @@ class NonCommutativeMonomial {
       SR a = SR::one();
       SR b = SR::one();
 
-      assert(except_pos < variables_.size());
+      assert((unsigned int)except_pos < variables_.size());
 
       /*
        * go through the idx_-vector,
@@ -433,7 +433,7 @@ class NonCommutativeMonomial {
     	SR leadingSR = SR::one();
 
     	// give me a copy of the semiring factor on the leading side of the monomial
-    	for(int i = 0; i < idx_.size(); i++) {
+    	for(unsigned int i = 0; i < idx_.size(); i++) {
 
     		// multiply as long as there was no variable encountered
     		if(idx_.at(i).first == SemiringType) {

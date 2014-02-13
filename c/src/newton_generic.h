@@ -98,7 +98,7 @@ class GenericNewton {
     LinEqSolver LinSolver = LinEqSolver(polynomials, variables);
     DeltaGenerator DeltaGen = DeltaGenerator(polynomials, variables);
 
-    for (int i=0; i < max_iter; ++i) {
+    for (unsigned int i=0; i < max_iter; ++i) {
       newton_update = LinSolver.solve_lin_at(newton_values, delta, variables);
 
       /* No need to recompute delta if this is the last iteration... */
