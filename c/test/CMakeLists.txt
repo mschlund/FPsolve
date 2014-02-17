@@ -4,5 +4,12 @@ file(GLOB NEWTON_TEST_CPP "*.cpp")
 include_directories (${PROJECT_SOURCE_DIR}/src)
 link_directories (${PROJECT_BINARY_DIR}/src)
 
+if(NOT USE_GENEPI)
+	file(GLOB_RECURSE SEMILIN_SET_NDD_H "test-semilinSetNdd.h")
+	file(GLOB_RECURSE SEMILIN_SET_NDD_CPP "test-semilinSetNdd.cpp")
+	list(REMOVE_ITEM NEWTON_TEST_H ${SEMILIN_SET_NDD_H})
+	list(REMOVE_ITEM NEWTON_TEST_CPP ${SEMILIN_SET_NDD_CPP})
+endif(NOT USE_GENEPI)
+
 add_executable(newton_test ${NEWTON_TEST_H} ${NEWTON_TEST_CPP})
 target_link_libraries(newton_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES})

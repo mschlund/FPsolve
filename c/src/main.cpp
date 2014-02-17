@@ -24,7 +24,9 @@
 #include "semirings/semilinear_set.h"
 #endif
 
+#ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
+#endif
 
 #include "utils/timer.h"
 
@@ -204,8 +206,10 @@ int main(int argc, char* argv[]) {
     ( "float", "float semiring" )
     ( "rexp", "commutative regular expression semiring" )
     ( "slset", "explicit semilinear sets semiring, no simplification " )
+#ifdef USE_GENEPI
     ( "slsetndd", po::value<std::string>(), "ndd semilinear sets semiring, give plugin name (lash-msdf, mona)" )
     ( "n", po::value<int>(), "number of variables, used for slsetndd" )
+#endif
     ( "mlset", "abstraction over semilinear sets" )
     ( "vec-simpl", "vector simplification only (only semilinear and multilinear sets)" )
     ( "lin-simpl", "linear set simplification (only semilinear sets)" )
@@ -266,7 +270,9 @@ int main(int argc, char* argv[]) {
   if (!vm.count("float") &&
       !vm.count("rexp") &&
       !vm.count("slset") &&
+#ifdef USE_GENEPI
       !vm.count("slsetndd") &&
+#endif
       !vm.count("free") &&
       !vm.count("mlset") &&
       !vm.count("prefix") &&
@@ -306,15 +312,7 @@ int main(int argc, char* argv[]) {
   const auto graph_flag = vm.count("graphviz");
   const auto scc_flag = vm.count("scc");
 
-  if (vm.count("slsetndd")) {
-    SemilinSetNdd::genepi_init(vm["slsetndd"].as<std::string>(), vm["n"].as<int>());
-    auto equations = p.slsetndd_parser(input_all);
-    if (equations.empty()) return EXIT_FAILURE;
-    std::cout << result_string(
-        apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
-        ) << std::endl;
-    SemilinSetNdd::genepi_dealloc();
-  } else if (vm.count("slset")) {
+  if (vm.count("slset")) {
 
     auto equations = p.slset_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
@@ -341,7 +339,16 @@ int main(int argc, char* argv[]) {
           apply_newton(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
-
+#ifdef USE_GENEPI
+  } else if (vm.count("slsetndd")) {
+      SemilinSetNdd::genepi_init(vm["slsetndd"].as<std::string>(), vm["n"].as<int>());
+      auto equations = p.slsetndd_parser(input_all);
+      if (equations.empty()) return EXIT_FAILURE;
+      std::cout << result_string(
+          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+      SemilinSetNdd::genepi_dealloc();
+#endif
   } else if (vm.count("mlset")) {
 
     auto equations = p.slset_parser(input_all);

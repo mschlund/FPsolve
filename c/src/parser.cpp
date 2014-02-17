@@ -104,7 +104,7 @@ struct slset_var_impl
 };
 const phx::function<slset_var_impl> slset_var;
 
-
+#ifdef USE_GENEPI
 struct slsetndd_var_impl
 {
 	template <typename T, typename U>
@@ -117,7 +117,7 @@ struct slsetndd_var_impl
 	}
 };
 const phx::function<slsetndd_var_impl> slsetndd_var;
-
+#endif
 
 
 struct var_impl
@@ -200,6 +200,7 @@ struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space
         qi::rule<iterator_type, std::string()> varidentifier;
 };
 
+#ifdef USE_GENEPI
 // parser for a semilinear set expression semiring element
 // e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>" or "<>" (for the one-element)
 struct slsetndd_elem_parser : qi::grammar<iterator_type, SemilinSetNdd(), qi::space_type>
@@ -218,6 +219,7 @@ struct slsetndd_elem_parser : qi::grammar<iterator_type, SemilinSetNdd(), qi::sp
 	qi::rule<iterator_type, SemilinSetNdd(), qi::space_type> var_cnt;
 	qi::rule<iterator_type, std::string()> varidentifier;
 };
+#endif
 
 // parser for a free semiring element
 struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
@@ -358,11 +360,13 @@ std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(st
         return commutative_parser<slset_elem_parser, SemilinSetExp>(input);
 }
 
+#ifdef USE_GENEPI
 // wrapper function for ndd semilinear set equations
 std::vector<std::pair<VarId, Polynomial<SemilinSetNdd>>> Parser::slsetndd_parser(std::string input)
 {
         return commutative_parser<slsetndd_elem_parser, SemilinSetNdd>(input);
 }
+#endif
 
 // wrapper function for free semiring equations
 std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> Parser::free_parser(std::string input)

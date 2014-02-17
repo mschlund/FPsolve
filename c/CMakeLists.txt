@@ -14,7 +14,7 @@ find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
+option (USE_GENEPI "use genepi library and support semilinSetNdd" OFF)
 
 if(USE_GENEPI)
 	find_package(PkgConfig)
