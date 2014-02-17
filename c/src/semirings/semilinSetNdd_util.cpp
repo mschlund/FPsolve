@@ -84,20 +84,19 @@ int Genepi::getSize() const {
 }
 std::string Genepi::output(std::string prefix, int i, std::string postfix) const {
   std::stringstream ret;
-  // std::stringstream ss_filename;
-  // ss_filename << "automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot";
-  // std::cout << ss_filename.str() << std::endl;
-  // FILE* file = fopen(ss_filename.str().c_str(), "w");
-  // genepi_set_display_data_structure(solver, set, file);
-  // fclose(file);
-  // std::stringstream ss_sed;
-  // ss_sed << "sed -i \"4d\" automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot";
-  // int ignore = system(ss_sed.str().c_str());
-  // std::stringstream ss;
-  // ss << "dot -Tsvg automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot > svgs/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".svg";
-  // ignore = system(ss.str().c_str());
-  //
-  // ret << "Automaton written to file : " << ss_filename.str();
+  std::stringstream ss_filename;
+  ss_filename << "automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot";
+  std::cout << ss_filename.str() << std::endl;
+  FILE* file = fopen(ss_filename.str().c_str(), "w");
+  genepi_set_display_data_structure(solver, set, file);
+  fclose(file);
+  std::stringstream ss_sed;
+  ss_sed << "sed -i \"4d\" automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot";
+  int ignore = system(ss_sed.str().c_str());
+  std::stringstream ss;
+  ss << "dot -Tsvg automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot > svgs/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".svg";
+  ignore = system(ss.str().c_str());
+  ret << "Automaton written to file : " << ss_filename.str();
   return ret.str();
 }
 genepi_set* Genepi::createVector(genepi_solver* solver, std::vector<int> x) {

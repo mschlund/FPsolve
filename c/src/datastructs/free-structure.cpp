@@ -324,3 +324,4 @@ void NodeFactory::PrintDot(std::ostream &out) {
 
   out << "}" << std::endl;
 }
+

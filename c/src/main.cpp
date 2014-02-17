@@ -17,6 +17,7 @@
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
 #include "semirings/pseudo_linear_set.h"
+#include "datastructs/equations.h"
 
 #ifdef OLD_SEMILINEAR_SET
 #include "semirings/semilinSetExp.h"
@@ -430,12 +431,19 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("float")) {
 
-    auto equations = p.float_parser(input_all);
-    if (equations.empty()) return EXIT_FAILURE;
+    //auto equations = p.float_parser(input_all);
+    auto equations = p.free_parser(input_all);
+    auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> FloatSemiring {
+      auto srconv = SRConverter<FloatSemiring>();
+      return c.Eval(srconv);
+    });
+
+    if (equations2.empty()) return EXIT_FAILURE;
 
     //PrintEquations(equations);
+    //PrintEquations(equations2);
       std::cout << result_string(
-          apply_newton<NewtonCL>(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_newton<NewtonCL>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
   }

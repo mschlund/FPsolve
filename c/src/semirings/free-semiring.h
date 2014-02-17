@@ -8,6 +8,8 @@
 #include "../datastructs/var.h"
 #include "../datastructs/free-structure.h"
 
+#include "float-semiring.h"
+
 #include "semiring.h"
 
 template <typename SR>
@@ -174,7 +176,7 @@ class Evaluator : public NodeVisitor {
     static const bool is_idempotent = false;
     static const bool is_commutative = false;
 
-  private:
+  protected:
     void LookupEval(const NodePtr &node) {
       auto iter = evaled_.find(node);
       if (iter != evaled_.end()) {
@@ -189,6 +191,20 @@ class Evaluator : public NodeVisitor {
     std::unordered_map<NodePtr, SR*> evaled_;
     SR* result_;
 };
+
+template <typename SR>
+class SRConverter : public Evaluator<SR> {
+public:
+  SRConverter() : Evaluator<SR>(ValuationMap<SR>()){};
+  ~SRConverter() = default;
+
+  // @Override
+  void Visit(const Element &e) {
+    std::string str_val = Var::GetVar(e.GetVar()).string();
+    this->result_ = new SR(str_val);
+  }
+};
+
 
 template <typename SR>
 SR FreeSemiring::Eval(const ValuationMap<SR> &valuation) const {

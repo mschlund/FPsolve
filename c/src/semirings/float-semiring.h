@@ -8,6 +8,7 @@
 #include <string>
 
 #include "semiring.h"
+#include "free-semiring.h"
 #include "../utils/profiling-macros.h"
 
 class FloatSemiring : public StarableSemiring<FloatSemiring,
@@ -20,6 +21,17 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
     FloatSemiring() : value_(0) {}
 
     FloatSemiring(const double v) : value_(v) { assert(value_ >= 0); }
+
+    FloatSemiring(std::string str_val)
+    {
+      std::cout << "Float-Const.: "<< str_val << std::endl;
+      std::istringstream i(str_val);
+      if (!(i >> value_))
+      {
+        std::cerr << "ERROR: Bad string value (" << str_val << ") for float-SR constructor! Defaulting to 0.0"<< std::endl;
+        value_ = 0.0;
+      }
+    }
 
     ~FloatSemiring() = default;
 

@@ -183,11 +183,11 @@ private:
 
     /* convert this non-commutative-polynomial to a commutative one */
     Polynomial<SR> make_commutative() const {
-      Polynomial<SR> result;
+      Polynomial<SR> result = Polynomial<SR>::null();
 
       for(auto const &monomial : monomials_)
       {
-        result *= monomial.make_commutative();
+        result += monomial.first.make_commutative() * monomial.second;
       }
 
       return result;

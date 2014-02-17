@@ -27,8 +27,12 @@ class Polynomial : public Semiring<Polynomial<SR>,
                                    Commutativity::Commutative,
                                    SR::GetIdempotence()> {
   private:
-     static_assert(SR::IsCommutative(),
-         "The semiring SR must be commutative to be used with Polynomial!");
+
+     // FIXME: as a necessary intermediate step
+     // (when calling make_commutative() for non-comm. polys we can have polys over non-comm. SR)
+     //static_assert(SR::IsCommutative(),
+     //    "The semiring SR must be commutative to be used with Polynomial!");
+
 
     /* Invariant:  The map is never empty.  In particular the 0 element of
      * Polynomial is represented as singleton map with empty monomial pointing
