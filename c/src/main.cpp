@@ -315,9 +315,14 @@ int main(int argc, char* argv[]) {
 
   if (vm.count("slset")) {
 
-    auto equations = p.slset_parser(input_all);
+    auto equations_raw = p.free_parser(input_all);
+    auto equations = MakeCommEquationsAndMap(equations_raw, [](const FreeSemiring &c) -> SemilinSetExp {
+      auto srconv = SRConverter<SemilinSetExp>();
+      return c.Eval(srconv);
+    });
+
     if (equations.empty()) return EXIT_FAILURE;
-    //PrintEquations(equations);
+    PrintEquations(equations);
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("A");
       std::cout << result_string(
@@ -352,7 +357,12 @@ int main(int argc, char* argv[]) {
 #endif
   } else if (vm.count("mlset")) {
 
-    auto equations = p.slset_parser(input_all);
+    auto equations_raw = p.free_parser(input_all);
+    auto equations = MakeCommEquationsAndMap(equations_raw, [](const FreeSemiring &c) -> SemilinSetExp {
+      auto srconv = SRConverter<SemilinSetExp>();
+      return c.Eval(srconv);
+    });
+
     if (equations.empty()) return EXIT_FAILURE;
     if (vm.count("vec-simpl")) {
       auto m_equations = SemilinearToPseudoLinearEquations<
@@ -369,7 +379,6 @@ int main(int argc, char* argv[]) {
           apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
-
 
   } else if (vm.count("rexp")) {
 
@@ -431,7 +440,6 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("float")) {
 
-    //auto equations = p.float_parser(input_all);
     auto equations = p.free_parser(input_all);
     auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> FloatSemiring {
       auto srconv = SRConverter<FloatSemiring>();

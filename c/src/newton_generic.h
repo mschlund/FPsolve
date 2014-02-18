@@ -19,10 +19,6 @@
 #include "polynomials/polynomial.h"
 
 #include "semirings/semiring.h"
-#include "semirings/semilinear_set.h"
-#include "semirings/float-semiring.h"
-#include "semirings/free-semiring.h"
-
 
 // Lin_Eq_Solver is parametrized by a semiring
 #define LIN_EQ_SOLVER_TYPE template <typename> class

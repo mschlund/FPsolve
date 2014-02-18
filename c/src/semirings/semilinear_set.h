@@ -9,10 +9,12 @@
 #include "../string_util.h"
 #include "../utils/profiling-macros.h"
 
+#include <boost/algorithm/string.hpp>
+
 class VarId;
 
 template <
-  typename Var = VarId,
+  typename VarType = VarId,
   typename Value = Counter,
   DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
   VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier,
@@ -37,20 +39,20 @@ typedef SemilinearSet<VarId, Counter, DummyDivider,
  * is an over-approximation, the result might no longer be precise. */
 typedef SemilinearSet< VarId, Counter, GcdDivider> DivSemilinearSet;
 
-template <typename Var,
+template <typename VarType,
           typename Value,
           DIVIDER_TEMPLATE_TYPE VecDivider,
           VEC_SIMPL_TEMPLATE_TYPE VecSimpl,
           LIN_SIMPL_TEMPLATE_TYPE LinSimpl>
-class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivider,
+class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, VecDivider,
                                                      VecSimpl, LinSimpl>,
                                        Commutativity::Commutative,
                                        Idempotence::Idempotent > {
   public:
-    typedef SparseVec<Var, Value, DummyDivider> OffsetType;
-    typedef SparseVec<Var, Value, VecDivider> GeneratorType;
-    typedef LinearSet<Var, Value, VecDivider, VecSimpl> LinearSetType;
-    typedef LinSimpl<Var, Value, VecDivider, VecSimpl> LinSimplType;
+    typedef SparseVec<VarType, Value, DummyDivider> OffsetType;
+    typedef SparseVec<VarType, Value, VecDivider> GeneratorType;
+    typedef LinearSet<VarType, Value, VecDivider, VecSimpl> LinearSetType;
+    typedef LinSimpl<VarType, Value, VecDivider, VecSimpl> LinSimplType;
 
     SemilinearSet() = default;
     SemilinearSet(std::initializer_list<LinearSetType> list)
@@ -61,19 +63,57 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<Var, Value, VecDivi
     SemilinearSet(const LinearSetType &lset) : set_({lset}) {}
     SemilinearSet(LinearSetType &&lset) : set_({std::move(lset)}) {}
 
-    SemilinearSet(const Var &v, Counter c)
+    SemilinearSet(const VarType &v, Counter c)
       : set_({ LinearSetType{ OffsetType{v, c} } }) {}
-    SemilinearSet(const Var &v) : SemilinearSet(v, 1) {}
+    SemilinearSet(const VarType &v) : SemilinearSet(v, 1) {}
 
     template <DIVIDER_TEMPLATE_TYPE OldVecDivider,
               VEC_SIMPL_TEMPLATE_TYPE OldVecSimpl,
               LIN_SIMPL_TEMPLATE_TYPE OldLinSimpl>
-    SemilinearSet(const SemilinearSet<Var, Value, OldVecDivider,
+    SemilinearSet(const SemilinearSet<VarType, Value, OldVecDivider,
                                       OldVecSimpl, OldLinSimpl> &slset) {
       for (const auto &lset : slset) {
         /* Elements of slset are already sorted, so it's safe to use
          * emplace_back. */
         set_.emplace_back(LinearSetType{lset});
+      }
+    }
+
+    // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
+    SemilinearSet(const std::string str_val) {
+      //SemilinSetExp(Var::GetVarId(s), cnt);
+      assert(str_val.length() > 0);
+      if(str_val.front() == '<') {
+        //split by "," , then every component by ":"
+        std::vector<std::string> elems;
+        boost::split(elems, str_val, boost::is_any_of(",<>"), boost::algorithm::token_compress_on);
+
+        for (std::string s : elems) {
+          if(s.empty())
+            continue;
+          //std::cout << "Token: " << s << std::endl;
+          std::vector<std::string> var_val;
+          boost::split(var_val, s, boost::is_any_of(":"), boost::algorithm::token_compress_on);
+
+          if(var_val.size() != 2) {
+            std::cerr << "Bad Input (semilinear set): \"" << str_val << "\"" << std::endl;
+          }
+          else {
+            std::istringstream i(var_val[1]);
+            Counter c;
+            if (!(i >> c))
+            {
+              std::cerr << "ERROR: Bad string value (" << var_val[1] << ") for semilinear-set constructor (element count) --defaulting to 0!"<< std::endl;
+              c = 0;
+            }
+            VarType v = Var::GetVarId(var_val[0]);
+            if(c != 0)
+              set_.emplace_back(LinearSetType{ OffsetType{v, c} } );
+          }
+        }
+      }
+      else {
+        set_.emplace_back(LinearSetType{ OffsetType{Var::GetVarId(str_val), 1} } );
       }
     }
 

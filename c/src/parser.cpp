@@ -91,19 +91,6 @@ struct prefix_impl
 };
 const phx::function<prefix_impl> prefix;
 
-struct slset_var_impl
-{
-        template <typename T, typename U>
-        struct result { typedef SemilinSetExp type; }; // this tells Boost the return type
-
-        const SemilinSetExp operator()(std::string& s, unsigned int& cnt) const
-        {
-                // create an element with the given var
-                return SemilinSetExp(Var::GetVarId(s), cnt);
-        }
-};
-const phx::function<slset_var_impl> slset_var;
-
 #ifdef USE_GENEPI
 struct slsetndd_var_impl
 {
@@ -161,16 +148,6 @@ using phx::ref;
 
 typedef std::string::const_iterator iterator_type;
 
-// parser for a float semiring element
-struct float_elem_parser : qi::grammar<iterator_type, FloatSemiring()>
-{
-	float_elem_parser() : float_elem_parser::base_type(elem)
-	{
-		elem %= qi::double_;
-	}
-	qi::rule<iterator_type, FloatSemiring()> elem;
-};
-
 // parser for a commutative regular expression semiring element
 struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 {
@@ -179,25 +156,6 @@ struct rexp_elem_parser : qi::grammar<iterator_type, CommutativeRExp()>
 		elem = '"' >> qi::as_string[lexeme[+(ascii::char_ -'"')]] [_val = rexp_var(_1)] >> '"';
 	}
 	qi::rule<iterator_type, CommutativeRExp()> elem;
-};
-
-// parser for a semilinear set expression semiring element
-// e.g.: "<a:2, b:5, c:7>" or "<a:1, b:2>" or "<>" (for the one-element)
-struct slset_elem_parser : qi::grammar<iterator_type, SemilinSetExp(), qi::space_type>
-{
-        slset_elem_parser() : slset_elem_parser::base_type(elem)
-        {
-                // create new sl-set elements for each entry e.g. "a:2" and aggregate them by using multiplication!
-                elem = qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >>
-                                   var_cnt [_val = _val * _1] >>
-                                   *( (',' >> var_cnt) [_val = _val * _1] ) >> qi::lit(">\"")
-                    |  qi::lit("\"<") >> eps [_val = SemilinSetExp::one()] >> qi::lit(">\"");
-                var_cnt = (varidentifier >> ':' >> qi::uint_) [_val = slset_var(_1, _2)];
-                varidentifier = qi::as_string[+(qi::alnum)];
-        }
-        qi::rule<iterator_type, SemilinSetExp(), qi::space_type> elem;
-        qi::rule<iterator_type, SemilinSetExp(), qi::space_type> var_cnt;
-        qi::rule<iterator_type, std::string()> varidentifier;
 };
 
 #ifdef USE_GENEPI
@@ -342,22 +300,10 @@ std::vector<std::pair<VarId, Polynomial<SR>>> commutative_parser(std::string inp
 	return result;
 }
 
-// wrapper function for float equations
-std::vector<std::pair<VarId, Polynomial<FloatSemiring>>> Parser::float_parser(std::string input)
-{
-	return commutative_parser<float_elem_parser, FloatSemiring>(input);
-}
-
 // wrapper function for regular expression equations
 std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
 {
 	return commutative_parser<rexp_elem_parser, CommutativeRExp>(input);
-}
-
-// wrapper function for explicit semilinear set equations
-std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> Parser::slset_parser(std::string input)
-{
-        return commutative_parser<slset_elem_parser, SemilinSetExp>(input);
 }
 
 #ifdef USE_GENEPI

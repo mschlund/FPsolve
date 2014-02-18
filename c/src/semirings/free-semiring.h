@@ -8,8 +8,6 @@
 #include "../datastructs/var.h"
 #include "../datastructs/free-structure.h"
 
-#include "float-semiring.h"
-
 #include "semiring.h"
 
 template <typename SR>
