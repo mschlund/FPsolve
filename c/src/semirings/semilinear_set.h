@@ -83,7 +83,11 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
     SemilinearSet(const std::string str_val) {
       //SemilinSetExp(Var::GetVarId(s), cnt);
       assert(str_val.length() > 0);
-      if(str_val.front() == '<') {
+
+      if(str_val.compare("<>") == 0) {
+        set_.emplace_back(LinearSetType{ OffsetType() } );
+      }
+      else if(str_val.front() == '<') {
         //split by "," , then every component by ":"
         std::vector<std::string> elems;
         boost::split(elems, str_val, boost::is_any_of(",<>"), boost::algorithm::token_compress_on);
