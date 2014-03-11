@@ -69,8 +69,7 @@ SemilinSetNdd::SemilinSetNdd(VarId var, int cnt) {
   alpha.at(position) = cnt;
 
   this->set = Genepi(solver, alpha, false);
-  this->offsets.push_back(std::vector<int>(k,0));
-  this->offsets.at(0).at(position) = cnt;
+  this->offsets.push_back(alpha);
 }
 SemilinSetNdd::SemilinSetNdd(Genepi set, std::vector<std::vector<int>> offsets) : set(set), offsets(offsets){
 }
@@ -151,7 +150,7 @@ bool SemilinSetNdd::operator == (const SemilinSetNdd& term) const {
 SemilinSetNdd SemilinSetNdd::star () const {
   SemilinSetNdd offset_star = one();
   for(auto offset : this->offsets) {
-    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true),{}); // offsets are used and converted to generators
+    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true),{std::vector<int>(k,0)}); // offsets are used and converted to generators
   }
 
   SemilinSetNdd result = one(); // result = 1
