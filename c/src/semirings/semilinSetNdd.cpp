@@ -156,13 +156,12 @@ SemilinSetNdd SemilinSetNdd::star () const {
 
   SemilinSetNdd result = one(); // result = 1
 
-  SemilinSetNdd temp = one(); // do not try to optimize this by init this with offset_star... multiplication slows down dramatically
+  SemilinSetNdd temp = one();
   for(int i = 1; i <= k; i++) { // 1..k
     temp *= *this; // temp = S^i
-
-    auto temp2 = temp * offset_star; // S^i * offset_star
-    result += temp2;
+    result += temp;
   }
+  result = one() + (result * offset_star); // S^i * offset_star
   return result;
 }
 
