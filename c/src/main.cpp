@@ -386,15 +386,22 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
-    // parse to lossy semiring polynomial; an element a of the semiring
+    // parse to lossy semiring polynomial; an element "a" of the semiring
     // will be parsed to "1+a" while variables do not get the "1+" bit
     auto equations = p.lossy_fa_parser(input_all);
+    std::cout << "hooray for parsing" << std::endl;
     if (equations.empty()) return EXIT_FAILURE;
 
     ValuationMap<LossyFiniteAutomaton> valuation = LossyFiniteAutomaton::solvePolynomialSystem(equations);
-    std::cout << result_string(valuation) << std::endl;
 
     PrintEquations(equations);
+    std::cout << "Fixpoints:" << std::endl;
+    std::cout << result_string(valuation) << std::endl;
+
+//    for (auto it = valuation.begin(); it != valuation.end(); ++it ) {
+//        std::cout << "fixpoint of " << it->first << ": " << it->second;
+//        std::cout << std::endl;
+//    }
 
   } else if (vm.count("prefix")) {
 

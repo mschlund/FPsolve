@@ -2,6 +2,8 @@
 
 #include <iosfwd>
 #include <map>
+#include <climits>
+#include <forward_list>
 
 #include "../datastructs/var_degree_map.h"
 #include "../semirings/free-semiring.h"
@@ -73,6 +75,129 @@ private:
 
 		return NonCommutativeMonomial(info, vars, sr);
 	}
+
+	/*
+	 * Used to recursively generate all monomials for an intersection grammar between a CFG
+	 * and a FiniteAutomaton. See intersectionPolynomial(..) for details.
+	 *
+	 * currentStateIndex determines the state in which the FA "currently" would be, i.e. if
+	 * we are currently generating all nonterminals <s_i, A, s_{i+1}> of the new grammar, then
+	 * currentStateIndex would refer us to s_i.
+	 *
+	 * See Nederhof & Satta, "Probabilistic Parsing", 2008 for details on the generated nonterminals.
+	 */
+    NonCommutativePolynomial<SR> generateIntersectionMonomials(const std::vector<unsigned long> &states,
+            const std::map<unsigned long,
+                std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+            const unsigned long currentStateIndex,
+            const unsigned long targetStateIndex,
+            const unsigned long monomialFactorIndex,
+            /*const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar,*/
+            const std::map<VarId, unsigned long> &oldVariablesToIndices,
+            const std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
+
+        NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
+
+        // if the current position in the monomial is a semiring element, we see where the transitions using the element
+        // starting at currentStartIndex can take us and recurse from there
+        // otherwise, we replace the variable with all replacement variables and recursive from there
+        if(idx_[monomialFactorIndex].first == SemiringType) { // we have a semiring element
+
+            // check if we hit the last factor of the monomial
+            if(monomialFactorIndex == idx_.size() - 1) {
+                if(srs_[idx_[monomialFactorIndex].second] == SR::one()) {
+                    if(currentStateIndex == targetStateIndex) {
+                        return result += srs_[idx_[monomialFactorIndex].second];
+                    }
+                } else {
+
+                    // get a string representation of the semiring element, see where that string takes us in the FA
+                    std::string transitionsToDo = srs_[idx_[monomialFactorIndex].second].string();
+
+                    // for later debug purposes
+                    std::cout << "transitionsToDo during intersection:\t" + transitionsToDo << std::endl;
+
+                    std::set<unsigned long> reachable, temp;
+                    reachable.insert(currentStateIndex);
+
+                    for(int i = 0; i < transitionsToDo.size(); i++) {
+                        for(auto &intermediateState: reachable) {
+                            for(auto &nextIntermediateState: transitionTable.at(intermediateState).at(transitionsToDo[i])) {
+                                temp.insert(nextIntermediateState);
+                            }
+                        }
+
+                        reachable.swap(temp);
+                        temp.clear();
+                    }
+
+                    // if we can reach the intended state with the given transitions, we allow the semiring element
+                    if(reachable.count(targetStateIndex) != 0) {
+                        return result += srs_[idx_[monomialFactorIndex].second];
+                    }
+                }
+            } else { // if this is not the last factor of the monomial, continue the recursion
+                    if(srs_[idx_[monomialFactorIndex].second] == SR::one()) {
+                        return generateIntersectionMonomials(states, transitionTable, currentStateIndex, targetStateIndex,
+                                monomialFactorIndex+1, oldVariablesToIndices, newVariables);
+                    }
+
+                    // get a string representation of the semiring element, see where that string takes us in the FA
+                    std::string transitionsToDo = srs_[idx_[monomialFactorIndex].second].string();
+
+                    // for later debug purposes
+                    std::cout << "transitionsToDo during intersection:\t" + transitionsToDo << std::endl;
+
+                    std::set<unsigned long> reachable, temp;
+                    reachable.insert(currentStateIndex);
+
+                    for(int i = 0; i < transitionsToDo.size(); i++) {
+                        for(auto &intermediateState: reachable) {
+                            for(auto &nextIntermediateState: transitionTable.at(intermediateState).at(transitionsToDo[i])) {
+                                temp.insert(nextIntermediateState);
+                            }
+                        }
+
+                        reachable.swap(temp);
+                        temp.clear();
+                    }
+
+                    // if we can reach the intended state with the given transitions, we allow the semiring element
+                    // and append the generated monomials for the suffix after the semiring element
+                    for(auto &nextIndex: reachable) {
+                        return result += NonCommutativePolynomial<SR>(srs_[idx_[monomialFactorIndex].second])
+                                         *
+                                         generateIntersectionMonomials(states, transitionTable, nextIndex, targetStateIndex,
+                                                                         monomialFactorIndex+1, oldVariablesToIndices, newVariables);
+                    }
+                }
+         } else { // we have a variable at the current index
+
+            // check if we hit the last factor of the monomial
+            if(monomialFactorIndex == idx_.size() - 1) {
+
+                return result += newVariables[currentStateIndex]
+                                          [targetStateIndex]
+                                           [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])];
+
+            } else { // if this is not the last factor of the monomial, continue the recursion
+                for(auto &nextIndex: states) {
+
+                    // we want to replace some nonterminal X by <currentState, X, nextState> for all nextState;
+                    // after that we need to append all possible monomials generated from the suffix of this monomial
+                    // that starts one symbol after X and uses nextState
+                    result += NonCommutativePolynomial<SR>(newVariables[currentStateIndex]
+                                       [nextIndex]
+                                        [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])])
+                              * generateIntersectionMonomials(states, transitionTable, nextIndex, targetStateIndex,
+                                    monomialFactorIndex+1, oldVariablesToIndices, newVariables);
+
+                }
+            }
+        }
+
+        return result;
+    }
 
 public:
 
@@ -471,10 +596,23 @@ public:
 	}
 
 	/*
-	 * Finds all the constants appearing in this polynomial and appends each new one to the vector.
+	 * Quick check to see whether this monomial is just an epsilon.
 	 */
-	void findAllConstants(std::set<NonCommutativePolynomial<SR>> constants) const {
-		NonCommutativePolynomial<SR> temp;
+	bool isEpsilonMonomial() const {
+	    return (get_degree() == 0) && (getLeadingSR() == SR::one());
+	}
+
+	/*
+	 * Finds all the constants appearing in this monomial (under the condition that the monomial
+	 * has length at least 2, where any semiring element is counted as having length 1) and appends
+	 * each new one to the vector.
+	 */
+	void findConstantsInNontrivialMonomials(std::set<SR> &constants) const {
+
+	    // we only replace the constants in monomials of length >= 2 with new variables
+	    if(get_degree() == 0 || (get_degree() == 1 && getLeadingSR() * getTrailingSR() == SR::one())) {
+	        return;
+	    }
 
 		for(int i = idx_.size() - 1; i >= 0; i--) {
 
@@ -482,21 +620,22 @@ public:
 			if(idx_.at(i).first == SemiringType) {
 
 				//std::set.insert(..) does its own checking whether the element already is in the set
-				temp = NonCommutativePolynomial<SR>(srs_.at(idx_.at(i).second));
-				constants.insert(temp);
+				constants.insert(srs_.at(idx_.at(i).second));
 			}
 		}
+
+		return;
 	}
 
 	/*
 	 * Replaces all constants in the polynomial with their respective VarId mapping.
 	 * Used in transformation to Chomsky Normal Form.
 	 */
-	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId> constantsVariables) const {
+	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId> &constantsToVariables) const {
 		NonCommutativePolynomial<SR> temp;
 
 		if(idx_.at(0).first == SemiringType) {
-			temp = NonCommutativePolynomial<SR>(constantsVariables[srs_.at(idx_.at(0).second)]);
+			temp = NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(0).second)]);
 		} else {
 			temp = NonCommutativePolynomial<SR>(variables_.at(idx_.at(0).second));
 		}
@@ -505,13 +644,38 @@ public:
 
 			// multiply as long as there was no variable encountered
 			if(idx_.at(i).first == SemiringType) {
-				temp *= constantsVariables[srs_.at(idx_.at(i).second)];
+				temp *= NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(i).second)]);
 			} else {
 				temp *= variables_.at(idx_.at(i).second);
 			}
 		}
 
+//		std::cout << "poly in CNF:\t"+ temp.string() << std::endl;
 		return temp;
+	}
+
+	/*
+	 * This produces the polynomial (that derives from this monomial) that is generated while
+	 * building the intersection grammar of a CFG and an FA.
+	 *
+	 * See NonCommutativePolynomial<SR>::intersectionPolynomial(..) for further documentation.
+	 *
+     * WARNING: if you use an SR where the string representations of elements are NOT strings over
+     * the English alphabet (e.g. they may contain 1s to represent epsilons, or they may use a
+     * different character set), then this function will most likely not do what you want it to do.
+	 */
+	NonCommutativePolynomial<SR> intersectionPolynomial(const std::vector<unsigned long> &states,
+	            const std::map<unsigned long,
+	                std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+	            const unsigned long startStateIndex,
+	            const unsigned long targetStateIndex,
+//	            const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar,
+	            const std::map<VarId, unsigned long> &oldVariablesToIndices,
+	            const std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
+
+        return (NonCommutativePolynomial<SR>::one() *
+                generateIntersectionMonomials(states, transitionTable, startStateIndex,
+                        targetStateIndex, 0, oldVariablesToIndices, newVariables));
 	}
 
 	/*
@@ -525,54 +689,132 @@ public:
 		NonCommutativePolynomial<SR> temp;
 		NonCommutativePolynomial<SR> suffix;
 
-		// if this monomial is a single variable, replace the variable by the constant it maps to;
-		// otherwise we have at least two variables; we need to shorten that to exactly two by
+		// we have at least two variables; we need to shorten that to exactly two by
 		// introducing new variables where needed
-		if(get_degree() == 1) {
-			temp = NonCommutativePolynomial<SR>(variablesToConstants[variables_.at(0)]);
-		} else {
-			int variablesProcessed = 0;
-			int index = 0;
-			VarId var;
+		int variablesProcessed = 0;
+		int index = 0;
+		VarId var;
 
-			// loop over all suffixes to see which need new variables introduced for them
-			while(variablesProcessed < get_degree() - 1) {
+		// loop over all suffixes to see which need new variables introduced for them
+		while(variablesProcessed < get_degree() - 1) {
 
-				// if this is the first iteration, we start with the leftmost variable
-				if(variablesProcessed == 0) {
-					index = variables_.size() - 1;
+			// if this is the first iteration, we start with the leftmost variable
+			if(variablesProcessed == 0) {
+				index = variables_.size() - 1;
 
-					temp = NonCommutativePolynomial<SR>(variables_.at(index));
-					suffix = NonCommutativePolynomial<SR>(variables_.at(index));
-				} else { /* if this is not the first iteration, that means we already remembered a variable
-						  * ti produce the current suffix of the monomial; multiply the next variable from left,
-						  * check if some variable already maps to the current suffix, if none does introduce
-						  * a new variable that produces the product of the now two variables we have, and
-						  * make this new variable the starting point for the next iteration; also remember
-						  * the suffix so far so we can check whether maybe we already have a variable that
-						  * produces that suffix in the next iteration
-						  */
-					temp = NonCommutativePolynomial<SR>(variables_.at(index)) * temp; // multiplication from left is relevant -> noncommutative!
-					suffix = NonCommutativePolynomial<SR>(variables_.at(index)) * suffix;
+				temp = NonCommutativePolynomial<SR>(variables_.at(index));
+				suffix = NonCommutativePolynomial<SR>(variables_.at(index));
+			} else { /* if this is not the first iteration, that means we already remembered a variable
+					  * to produce the current suffix of the monomial; multiply the next variable from left,
+					  * check if some variable already maps to the current suffix, if none does introduce
+					  * a new variable that produces the product of the now two variables we have, and
+					  * make this new variable the starting point for the next iteration; also remember
+					  * the suffix so far so we can check whether maybe we already have a variable that
+					  * produces that suffix in the next iteration
+					  */
+				temp = NonCommutativePolynomial<SR>(variables_.at(index)) * temp; // multiplication from left is relevant -> noncommutative!
+				suffix = NonCommutativePolynomial<SR>(variables_.at(index)) * suffix;
 
-					// check if we already have a variable for the current suffix; if we do, proceed from there;
-					// else, introduce a new one
-					if(chomskyVariables.find(suffix.string()) != chomskyVariables.end()) {
-						temp = NonCommutativePolynomial<SR>(chomskyVariables[suffix.string()]);
-					} else {
-						var = Var::GetVarId();
-						chomskyVariableEquations.push_back(std::make_pair(var, temp));
-						chomskyVariables.insert(std::make_pair(suffix.string(), var));
-						temp = NonCommutativePolynomial<SR>(var);
-					}
+				// check if we already have a variable for the current suffix; if we do, proceed from there;
+				// else, introduce a new one
+				if(chomskyVariables.find(suffix.string()) != chomskyVariables.end()) {
+					temp = NonCommutativePolynomial<SR>(chomskyVariables[suffix.string()]);
+				} else {
+					var = Var::GetVarId();
+					chomskyVariableEquations.push_back(std::make_pair(var, temp));
+					chomskyVariables.insert(std::make_pair(suffix.string(), var));
+					temp = NonCommutativePolynomial<SR>(var);
 				}
-
-				index--;
-				variablesProcessed++;
 			}
+
+			index--;
+			variablesProcessed++;
 		}
 
+
 		return NonCommutativePolynomial<SR>(variables_.at(0)) * temp;
+	}
+
+	/*
+	 * Used when finding the shortest word derivable from a CFG. This method tells us whether
+	 * the algorithm already knows a terminal string that derives from this monomial.
+	 */
+	bool findLengthOfDerivableStrings(std::map<VarId, unsigned long> &lengthOfShortestTerminal,
+	        std::map<VarId, NonCommutativeMonomial<SR>> &productionsForShortestWords,
+	        VarId &lhsOfProduction) const {
+
+	    // if this is a terminal, remember its length if we don't already know it; otherwise, see if we already
+	    // know the length of some derivable string and update it if necessary
+	    if(variables_.size() == 0){
+
+	        // if this is the shortest terminal the lefthand side of the production can produce, update
+	        if(getLeadingSR() != SR::null() && lengthOfShortestTerminal[lhsOfProduction] > getLeadingSR().string().size()) {
+	            lengthOfShortestTerminal[lhsOfProduction] = getLeadingSR().string().size();
+	            productionsForShortestWords[lengthOfShortestTerminal] = *this;
+	            return true;
+	        }
+
+	        return false;
+	    } else {
+
+	        unsigned long shortestMonomialLength = 0;
+
+	        // check for all variables whether we know how to derive a terminal
+	        for(VarId var: variables_) {
+	            if(lengthOfShortestTerminal.at(var) == ULONG_MAX) {
+	                shortestMonomialLength = ULONG_MAX;
+	                break;
+	            }
+
+	            shortestMonomialLength += lengthOfShortestTerminal.at(var);
+	        }
+
+	        // if we found a shorter word than previously known for the nonterminal this production
+	        // belongs to, update
+	        if(shortestMonomialLength < ULONG_MAX
+	                && shortestMonomialLength < lengthOfShortestTerminal.at(lhsOfProduction)) {
+
+//	            // update the map remembering the best monomials we can use for derivation
+//	            // if you remove the "typename", you will get a compiler error
+//	            typename std::map<VarId, NonCommutativeMonomial<SR>>::iterator itBestProductions
+//	                = productionsForShortestWords.find(lhsOfProduction);
+//	            if (itBestProductions != productionsForShortestWords.end()) {
+//	                itBestProductions->second = *this;
+//	            } else {
+//	                productionsForShortestWords.insert(std::make_pair(lhsOfProduction, *this));
+//	            }
+
+	            // update the map with the lengths of shortest terminals
+	            productionsForShortestWords[lhsOfProduction] = *this;
+	            lengthOfShortestTerminal[lhsOfProduction] = shortestMonomialLength;
+	            return true;
+	        }
+
+	        return false;
+	    }
+	}
+
+	/*
+	 * Derives the shortest derivable terminal for this monomial, assuming the info in productionsForShortestWords
+	 * is correct.
+	 */
+	SR shortestDerivableTerminal(std::map<VarId, NonCommutativeMonomial<SR>> &productionsForShortestWords) const {
+	    SR terminal = SR::one();
+
+	    if(get_degree() == 0) {
+	        terminal = getLeadingSR();
+	    } else {
+	        for(auto &indexpair: idx_) {
+	            if(indexpair.first == SemiringType) {
+	                terminal *= srs_.at(indexpair.second);
+	            } else {
+	                assert(productionsForShortestWords.find(variables_.at(indexpair.second)) != productionsForShortestWords.end());
+	                terminal *= productionsForShortestWords[variables_.at(indexpair.second)];
+	            }
+	        }
+	    }
+
+	    return terminal;
 	}
 
 	/*
@@ -588,7 +830,7 @@ public:
 		}
 
 		// check if all variables of this monomial are productive
-		for(auto variable: variables_) {
+		for(auto &variable: variables_) {
 
 			// if there is any variable that is not known to be productive in
 			// the current monomial, then it isn't productive
@@ -602,26 +844,11 @@ public:
 	}
 
 	/*
-	 * Checks whether this monomial only contains productive variables.
+	 * Checks if this monomial is a chain production, that is if it contains
+	 * exactly one variable and nothing else.
 	 */
-	bool containsOnlyProductiveVariables(const std::map<VarId, bool> &productiveVariables) const {
-
-		// no variables to check
-		if(get_degree() == 0) {
-			return true;
-		}
-
-		// check all variables whether they are productive
-		for(auto variable: variables_) {
-
-			// if we found one that is unproductive, then the monomial does
-			// not only contain productive variables
-			if(!productiveVariables.at(variable)) {
-				return false;
-			}
-		}
-
-		return true;
+	bool isChainProduction() const {
+	    return (get_degree() == 1 && getLeadingSR() * getTrailingSR() == SR::one());
 	}
 
 	std::string string() const {

@@ -7,6 +7,7 @@
 template<typename RL>
 class RegularLanguage {
 public:
+    virtual ~RegularLanguage(){};
 	bool empty();
 	RegularLanguage<RL> minimize();
 	RegularLanguage<RL> complement();

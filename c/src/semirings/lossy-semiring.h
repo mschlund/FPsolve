@@ -52,8 +52,6 @@ public:
             middle += elem_mapping.second;
         }
 
-
-
         // build the differential of the system
         std::map<VarId, NonCommutativePolynomial<LSR>> differential;
         for(auto &equation: normalForm) {
@@ -63,7 +61,7 @@ public:
         // sum all polynomials of the differential of the system; we don't need attribution
         // of each polynomial to the respective variable since we only care about the
         // leading and trailing coefficients of each monomial
-        NonCommutativePolynomial<LSR> differential_sum;
+        NonCommutativePolynomial<LSR> differential_sum = NonCommutativePolynomial<LSR>::null();
         for(auto &equation: differential) {
             differential_sum += equation.second;
         }
@@ -94,19 +92,35 @@ private:
             // clean the system
             normalFormSystem = cleanSystem(equations);
 
+//            std::cout << "clean system:" << std::endl;
+//            for(auto &equation: normalFormSystem) {
+//                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//            }
+
             // bring the clean system into Chomsky Normal Form
             normalFormSystem = NonCommutativePolynomial<LSR>::chomskyNormalForm(normalFormSystem);
 
+            std::cout << "CNF system:" << std::endl;
+            for(auto &equation: normalFormSystem) {
+                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+            }
+
+
             // add 1 to each equation
-            for(auto equation: normalFormSystem) {
+            for(auto &equation: normalFormSystem) {
                 equation.second = equation.second + NonCommutativePolynomial<LSR>::one();
+            }
+
+            std::cout << "CNF + 1:" << std::endl;
+            for(auto &equation: normalFormSystem) {
+                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
             }
 
             // add the monomials of degree 1; since we are in a lossy semiring, we have 1+1 = 1 and so
             // we don't need to worry about the number of occurrences of each variable
             std::set<VarId> vars;
             NonCommutativePolynomial<LSR> monomialsOfDegreeOne;
-            for(auto equation: normalFormSystem) {
+            for(auto &equation: normalFormSystem) {
                 vars = equation.second.get_variables();
                 monomialsOfDegreeOne = NonCommutativePolynomial<LSR>::null();
 
@@ -115,6 +129,11 @@ private:
                 }
 
                 equation.second = equation.second + monomialsOfDegreeOne;
+            }
+
+            std::cout << "QNF:" << std::endl;
+            for(auto &equation: normalFormSystem) {
+                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
             }
 
             return normalFormSystem;
@@ -126,52 +145,15 @@ private:
     static std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> cleanSystem
         (const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations) {
 
-        std::queue<VarId> queueForChecking, temp; // to store the variables that still need checking
-        std::map<VarId, bool> productiveVariables;
-        std::map<VarId, NonCommutativePolynomial<LSR>> polyMap;
+        std::queue<VarId> worklist;
 
-        // build the data structures that will store the info about which variables still
-        // need checking and which variables are known to be productive
-        for(auto equation: equations) {
-            queueForChecking.push(equation.first);
-            productiveVariables.insert(std::make_pair(equation.first, false));
-            polyMap.insert(std::make_pair(equation.first, equation.second));
+        for(auto &equation: equations) {
+            worklist.push(equation.first);
         }
 
-        // keep checking the variables that are not yet known to be productive
-        // until no further variable becomes known to be productive
-        bool update = false;
-        VarId var;
-        while(update) {
-            update = false;
-
-            while(!queueForChecking.empty()) {
-                var = queueForChecking.front();
-                queueForChecking.pop();
-
-                // if the variable was found to be productive, remember the update
-                // and change the flag for the variable
-                if(polyMap[var].isProductive(productiveVariables)) {
-                    productiveVariables[var] = true;
-                    update = true;
-                } else { // if the variable isn't productive, put it in the queue for the next iteration
-                     temp.push(var);
-                }
-            }
-
-            queueForChecking.swap(temp);
-        }
-
-        // build the clean system: only use productive variables and remove unproductive monomials
-        std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> cleanEquations;
-        for(auto equation: equations) {
-            if(productiveVariables[equation.first]) {
-                cleanEquations.push_back(std::make_pair(equation.first,
-                        equation.second.removeUnproductiveMonomials(productiveVariables)));
-            }
-        }
-
-        return cleanEquations;
+        // just hand the system to the cleaning procedure for grammars and use the set of all
+        // variables for which there exist productions as the set of initial nonterminals
+        return NonCommutativePolynomial<LSR>::cleanSystem(equations, worklist);
     }
 
     /*
@@ -179,7 +161,7 @@ private:
      */
     static std::map<VarId, LSR> evaluateSystem
         (std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations,
-        int& times, std::map<VarId, LSR> &initialValuation) {
+        int &times, std::map<VarId, LSR> &initialValuation) {
 
         std::map<VarId, LSR> valuation, tempValuation;
         valuation = initialValuation;
