@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include "semilinSetNdd_util.h"
+#include "semilinSetNdd_getoffsets.h"
 
 Genepi::Genepi() : solver(0), set(0) {
   // invalid state ...
@@ -86,7 +87,7 @@ std::string Genepi::output(std::string prefix, int i, std::string postfix) const
   std::stringstream ret;
   std::stringstream ss_filename;
   ss_filename << "automata/" << prefix << std::setfill('0') << std::setw(2) << std::hex << i << postfix << ".dot";
-  std::cout << ss_filename.str() << std::endl;
+  // std::cout << ss_filename.str() << std::endl;
   FILE* file = fopen(ss_filename.str().c_str(), "w");
   genepi_set_display_data_structure(solver, set, file);
   fclose(file);
@@ -99,6 +100,30 @@ std::string Genepi::output(std::string prefix, int i, std::string postfix) const
   ret << "Automaton written to file : " << ss_filename.str();
   return ret.str();
 }
+
+std::vector<std::vector<int>> Genepi::getOffsets() const {
+  // TODO: make this more beautiful...
+  std::string filename = "read_offsets_from_automaton.dot";
+  FILE* file = fopen(filename.c_str(), "w");
+  genepi_set_display_data_structure(solver, set, file);
+  fclose(file);
+  int dummy = system("bash convert.sh read_offsets_from_automaton.dot > read_offsets_from_automaton.parseable");
+  int k = genepi_set_get_width(this->solver, this->set);
+  Parsed information = parse_automaton(k, "read_offsets_from_automaton.parseable");
+
+  std::vector<std::vector<int>> offsets;
+  for(auto f : information.finals) {
+    std::vector<int> visited;
+    visited.push_back(information.init);
+    auto result = DepthFirst(&(information.graph), visited, f, k);
+    offsets.insert(offsets.end(), result.begin(), result.end());
+  }
+
+  unlink("read_offsets_from_automaton.parseable");
+  unlink(filename.c_str());
+  return offsets;
+}
+
 genepi_set* Genepi::createVector(genepi_solver* solver, std::vector<int> x) {
   genepi_set *aux1;
   genepi_set *aux2;

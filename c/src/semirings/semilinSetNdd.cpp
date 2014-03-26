@@ -176,9 +176,31 @@ SemilinSetNdd SemilinSetNdd::one() {
   return *SemilinSetNdd::elem_one;
 }
 
+std::string serialize_offsets(const std::vector<std::vector<int>>& offsets) {
+  std::stringstream result;
+  result << "[";
+  for(const auto& offset : offsets) {
+    if(&offset != &offsets.at(0))
+      result << ",";
+    result << "(";
+    for(const auto& o : offset) {
+      if(&o != &offset.at(0))
+        result << ",";
+      result << o;
+    }
+    result << ")";
+  }
+  result << "]";
+  return result.str();
+}
+
 std::string SemilinSetNdd::string() const {
-  // TODO: is there a better way to express the automaton than producing a graph?
-  return this->set.output("result", static_i++, "");
+  std::stringstream result;
+  result << "explicit offsets:\t" << serialize_offsets(this->offsets) << std::endl;
+  auto calculated_offsets = this->set.getOffsets();
+  result << "calculated offsets:\t" << serialize_offsets(calculated_offsets) << std::endl;
+  result << "automaton written:\t" << this->set.output("result", static_i++, "") << std::endl;
+  return result.str();
 }
 
 const bool SemilinSetNdd::is_idempotent = true;
