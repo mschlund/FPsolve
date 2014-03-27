@@ -27,6 +27,7 @@ public:
   // TODO: ints needed? smaller type?
   Genepi project(const std::vector<int>& selection) const;
   Genepi invproject(const std::vector<int>& selection) const;
+  bool isSolution(const std::vector<int>& solution) const;
   std::vector<std::vector<int>> getOffsets() const;
   bool operator<(const Genepi& g) const;
   bool operator==(const Genepi& g) const;

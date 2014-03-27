@@ -72,6 +72,11 @@ Genepi Genepi::invproject(const std::vector<int>& selection) const {
   return Genepi(this->solver, genepi_set_invproject(this->solver, this->set, selection.data(), selection.size()));
 }
 
+bool Genepi::isSolution(const std::vector<int>& solution) const {
+  // TODO: figure out if 1 is correct for the xden parameter
+  return genepi_set_is_solution(this->solver, this->set, solution.data(), solution.size(), 1);
+}
+
 bool Genepi::operator<(const Genepi& g) const {
   return genepi_set_compare(this->solver, this->set, GENEPI_LT, g.set);
 }
