@@ -51,80 +51,32 @@ private:
 
 
     /*
-     * Transforms a polynomial into its Chomsky Normal Form.
-     * Only works for polynomials in which no chain productions exist.
+     * Binarizes this polynomial, as one would when calculating a CNF of a grammar. Make sure all monomials
+     * either have no terminals (i.e. semiring elements) or no nonterminals (i.e. variables) as factors.
+     *
+     * If a monomial consists of exactly one variable, it will not be changed (chain productions are not eliminated).
+     *
+     * Make sure there are no productions with both terminals and nonterminals as factors; those will be eliminated if
+     * they have at least 3 variables as factors. Call eliminateTerminalsInNonterminalProductions(..) first to avoid this.
+     *
+     * The variables and productions that are introduced during that process will be stored in binarizationVariables
+     * and binarizationVariablesEquations, respectively.
      */
-    NonCommutativePolynomial<SR> chomskyNormalForm(std::map<std::string, VarId> &chomskyVariables,
-            std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &chomskyVariableEquations,
-            std::map<VarId, SR> variablesToConstants) const {
-        NonCommutativePolynomial<SR> temp = null();
+    NonCommutativePolynomial<SR> binarize(std::map<std::string, VarId> &binarizationVariables,
+            std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &binarizationVariablesEquations,
+            std::map<VarId, SR> &variablesToConstants) const {
+        NonCommutativePolynomial<SR> binarizedPoly = null();
 
         // delegate to the monomials
         for(auto &monomial: monomials_) {
-            if(monomial.first.get_degree() > 2) {
-                temp += monomial.first.chomskyNormalForm(chomskyVariables, chomskyVariableEquations, variablesToConstants);
+            if(monomial.first.get_degree() > 2) { // only binarize productions that have at least 3 variables in them
+                binarizedPoly += monomial.first.binarize(binarizationVariables, binarizationVariablesEquations, variablesToConstants);
             } else {
-                InsertMonomial(temp.monomials_, monomial.first, monomial.second);
+                InsertMonomial(binarizedPoly.monomials_, monomial.first, monomial.second);
             }
         }
 
-        return temp;
-    }
-
-    /*
-     * Eliminates chain productions while creating the Chomsky Normal Form of a system. Puts the cleaned
-     * system into "equationsWithoutChainProductions".
-     */
-    static void eliminateChainProductions (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
-            std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equationsWithoutChainProductions,
-            std::map<VarId, NonCommutativePolynomial<SR>> &polyMap) {
-
-        // used to mark the variables for which chain productions have already been eliminated
-        std::set<VarId> hadChainsEliminated;
-        std::map<VarId, NonCommutativePolynomial<SR>> eliminatedChainsPolyMap;
-
-        for(auto &equation: equations) {
-            NonCommutativePolynomial<SR> chainfreeProduction = NonCommutativePolynomial<SR>::null();
-            std::queue<VarId> worklist;
-            worklist.push(equation.first);
-            std::set<VarId> visitedVars;
-            visitedVars.insert(equation.first);
-
-            while(!worklist.empty()) {
-                VarId currVar = worklist.front();
-                worklist.pop();
-
-                // check if we already know a chainfree polynomial for the current variable
-                // if no, check it for chain productions; if yes, just add that polynomial
-                if(hadChainsEliminated.find(currVar) == hadChainsEliminated.end()) {
-
-                    // check all productions the current variable produces for being chain productions
-                    for(auto &monomial: polyMap.at(currVar).monomials_) {
-
-                        // if the current production is a chain production, insert it into the work list
-                        // if we have not already seen it; otherwise, add it to the cleaned productions
-                        if(monomial.first.isChainProduction()) {
-                            VarId newVar = *(monomial.first.get_variables().begin());
-
-                            if(visitedVars.find(newVar) == visitedVars.end()) {
-                                worklist.push(newVar);
-                                visitedVars.insert(newVar);
-                            }
-                        } else {
-                            InsertMonomial(chainfreeProduction.monomials_, monomial.first, monomial.second);
-                        }
-                    }
-                } else {
-                    assert(eliminatedChainsPolyMap.find(currVar) != eliminatedChainsPolyMap.end());
-                    chainfreeProduction += eliminatedChainsPolyMap[currVar];
-                }
-            }
-
-            // remember that we eliminated the chain productions for this variable, also remember the "clean" production
-            hadChainsEliminated.insert(equation.first);
-            eliminatedChainsPolyMap.insert(std::make_pair(equation.first, chainfreeProduction));
-            equationsWithoutChainProductions.push_back(std::make_pair(equation.first, chainfreeProduction));
-        }
+        return binarizedPoly;
     }
 
 public:
@@ -322,6 +274,9 @@ public:
 		for (const auto &monomial : monomials_) {
 			result = result + (monomial.first.eval(values) * monomial.second);
 		}
+
+
+//        std::cout << "poly result of eval:\t\t" + result.string() << std::endl;
 		return result;
 	}
 
@@ -330,7 +285,7 @@ public:
 	NonCommutativePolynomial<SR> partial_eval(const std::map<VarId, SR> &values) const {
 		NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
 		for(const auto &monomial : monomials_) {
-			result.monomials_.insert(monomial.partial_eval(values));
+			result.monomials_.insert(std::make_pair(monomial.first.partial_eval(values), monomial.second));
 		}
 		return result;
 	}
@@ -441,35 +396,36 @@ public:
 	}
 
 	/*
-	 * Finds all the constants appearing in this polynomial and appends each new one to the vector.
+	 * Finds all the constants appearing in nonterminal monomials of this polynomial and appends each new one to the vector.
+	 *
+	 * Only checks linear monomials if checkLinearTerms is true.
 	 */
-	void findConstantsInNontrivialMonomials(std::set<SR> &constants) const {
+	void findConstants(std::set<SR> &constants, bool checkLinearTerms) const {
 
 		// delegate to the monomials
 		for(auto &monomial: monomials_) {
-			monomial.first.findConstantsInNontrivialMonomials(constants);
+			monomial.first.findConstants(constants, checkLinearTerms);
 		}
 	}
 
 	/*
-	 * Replaces all constants in the polynomial with their respective VarId mapping.
+	 * Replaces all constants in the nonterminal monomials of the polynomial with their respective VarId mapping.
 	 * Used in transformation to Chomsky Normal Form.
+	 *
+	 * Only replaces constants in linear monomials if replaceInLinearMonomials is true.
 	 */
-	NonCommutativePolynomial<SR> replaceConstantsWithVariables(std::map<SR, VarId> &constantsToVariables) const {
+	NonCommutativePolynomial<SR> replaceConstants(std::map<SR, VarId> &constantsToVariables,
+	        bool replaceInLinearMonomials) const {
 		NonCommutativePolynomial<SR> temp = null();
 
 		// delegate to the monomials
 		for(auto &monomial: monomials_) {
 
-		    // chain productions are eliminated (so there are no productions with one variable and nothing else),
-		    // and we will leave terminal productions since introducing new variables for those would be
-		    // a waste of performance; the only productions that need to have semiring elements replaced
-		    // by variables producing those semiring elements are therefore those that have at least one variable
-		    //
-		    // if you ever read this again and worry about monomials of the form SR::one() * X, those don't appear
-		    // either because those are considered to be chain productions
-		    if(monomial.first.get_degree() != 0) {
-	            temp += monomial.first.replaceConstantsWithVariables(constantsToVariables);
+		    // we only replace constants in nonterminal monomials, all terminal monomials are added to the polynomial as is
+		    // only replace constants in linear monomials if replaceInLinearMonomials is true
+		    if((monomial.first.get_degree() != 0)
+		            && (replaceInLinearMonomials || monomial.first.get_degree() != 1)) {
+	            temp += monomial.first.replaceConstants(constantsToVariables);
 		    } else {
                 InsertMonomial(temp.monomials_, monomial.first, monomial.second);
 		    }
@@ -530,10 +486,19 @@ public:
         std::map<VarId, NonCommutativePolynomial<SR>> productions; // to map variables to their productions
 
         VarId var;
-
+        std::set<VarId> vars;
         // build the data structures that will store the info about which variables still
         // need checking and which variables are known to be productive
         for(auto &equation: equations) {
+            vars = equation.second.get_variables();
+
+            // just to make sure we catch all variables in case someone inputs a grammar with a terminal
+            // that only appears in a lefthand side of a production
+            for(auto &prodVar: vars) {
+                encounteredVariables.insert(std::make_pair(prodVar, 0));
+                productiveVariables.insert(std::make_pair(prodVar, false));
+            }
+
             encounteredVariables.insert(std::make_pair(equation.first, 0));
             productiveVariables.insert(std::make_pair(equation.first, false));
             productions.insert(std::make_pair(equation.first, equation.second));
@@ -604,6 +569,7 @@ public:
 
         // build the clean system: only use variables that are both productive and reachable;
         // remove unproductive monomials
+        std::cout << "clean system:" << std::endl;
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanEquations;
         for(auto &equation: equations) {
             if(productiveVariables[equation.first]) {
@@ -613,10 +579,146 @@ public:
                 // found to be productive
                 cleanEquations.push_back(std::make_pair(equation.first,
                         equation.second.removeUnproductiveMonomials(productiveVariables)));
+                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
             }
         }
 
         return cleanEquations;
+    }
+
+    /*
+     * Eliminates chain productions while creating the Chomsky Normal Form of a system. Puts the cleaned
+     * system into "equationsWithoutChainProductions".
+     */
+    static void eliminateChainProductions (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
+            std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equationsWithoutChainProductions,
+            std::map<VarId, NonCommutativePolynomial<SR>> &polyMap) {
+
+        // used to mark the variables for which chain productions have already been eliminated
+        std::set<VarId> hadChainsEliminated;
+        std::map<VarId, NonCommutativePolynomial<SR>> eliminatedChainsPolyMap;
+
+        for(auto &equation: equations) {
+            NonCommutativePolynomial<SR> chainfreeProduction = NonCommutativePolynomial<SR>::null();
+            std::queue<VarId> worklist;
+            worklist.push(equation.first);
+            std::set<VarId> visitedVars;
+            visitedVars.insert(equation.first);
+
+            while(!worklist.empty()) {
+                VarId currVar = worklist.front();
+                worklist.pop();
+
+                // check if we already know a chainfree polynomial for the current variable
+                // if no, check it for chain productions; if yes, just add that polynomial
+                if(hadChainsEliminated.find(currVar) == hadChainsEliminated.end()) {
+
+                    // check all productions the current variable produces for being chain productions
+                    for(auto &monomial: polyMap.at(currVar).monomials_) {
+
+                        // if the current production is a chain production, insert it into the work list
+                        // if we have not already seen it; otherwise, add it to the cleaned productions
+                        if(monomial.first.isChainProduction()) {
+                            VarId newVar = *(monomial.first.get_variables().begin());
+
+                            if(visitedVars.find(newVar) == visitedVars.end()) {
+                                worklist.push(newVar);
+                                visitedVars.insert(newVar);
+                            }
+                        } else {
+                            InsertMonomial(chainfreeProduction.monomials_, monomial.first, monomial.second);
+                        }
+                    }
+                } else {
+                    assert(eliminatedChainsPolyMap.find(currVar) != eliminatedChainsPolyMap.end());
+                    chainfreeProduction += eliminatedChainsPolyMap[currVar];
+                }
+            }
+
+            // remember that we eliminated the chain productions for this variable, also remember the "clean" production
+            hadChainsEliminated.insert(equation.first);
+            eliminatedChainsPolyMap.insert(std::make_pair(equation.first, chainfreeProduction));
+            equationsWithoutChainProductions.push_back(std::make_pair(equation.first, chainfreeProduction));
+        }
+    }
+
+    /*
+     * Equations can contain productions that are sentential forms, and variablefiedEquations will afterwards hold
+     * productions that are either terminal or only contain nonterminals (i.e. the monomials in each polynomial
+     * are either semiring elements or only contain variables).
+     *
+     * Linear terms (i.e. such with exactly one variable in them) will have their terminals replaced by variables
+     * iff eliminateInLinearTerms is true. This way, we can produce a quadratic normal form with needlessly blowing
+     * up linear terms, for example.
+     */
+    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> eliminateTerminalsInNonterminalProductions
+                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
+                       std::map<VarId, SR> &variablesToConstants, bool eliminateInLinearTerms) {
+
+        std::set<SR> constants; // will hold all terminals appearing in nonterminal productions
+
+        // find all constants in nonterminal productions in the system
+        for(auto &equation: equations) {
+            equation.second.findConstants(constants, eliminateInLinearTerms);
+        }
+
+        // return value
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> variablefiedEquations;
+
+        // introduce a new variable for each constant found, add the respective equation to the system
+        VarId var;
+        std::map<SR, VarId> constantsToVariables; // will hold a mapping from terminals to variables that produce them
+        for(auto &constant: constants) {
+            var = Var::GetVarId();
+            variablefiedEquations.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
+            constantsToVariables.insert(std::make_pair(constant, var));
+            variablesToConstants.insert(std::make_pair(var,constant));
+            std::cout << "new production during constant elimination:\t" << Var::GetVar(var).string() << " -> " << constant.string() << std::endl;
+        }
+
+        // replace the constants in each nonterminal production with the new constant variables
+        NonCommutativePolynomial<SR> allVariablesPoly;
+        for(auto &equation: equations) {
+            allVariablesPoly = equation.second.replaceConstants(constantsToVariables, eliminateInLinearTerms);
+            variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
+        }
+
+        return variablefiedEquations;
+    }
+
+    /*
+     * Binarizes nonterminal productions the way it is done when constructing a CNF of a grammar.
+     */
+    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> binarizeProductions
+                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
+                       std::map<VarId, SR> &variablesToConstants) {
+
+        // stores mappings between suffixes of monomials and the variables that are introduced
+        // during binarization to produce those suffixes
+        std::map<std::string, VarId> binarizationVariables;
+
+        // stores the productions (i.e. equations) that are introduced while producing the
+        // Chomsky Normal Form
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> binarizationVariablesEquations;
+
+        // to store the result
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> binarizedEquations;
+
+        // determine the necessary new variables to give all non-terminal productions that need binarizing
+        // (i.e. monomials of degree > 2) the form "X = YZ"
+        NonCommutativePolynomial<SR> binarizedPoly;
+        for(auto &equation: equations) {
+            binarizedPoly =
+                    equation.second.binarize(binarizationVariables, binarizationVariablesEquations, variablesToConstants);
+            binarizedEquations.push_back(std::make_pair(equation.first, binarizedPoly));
+        }
+
+        // finally, add the productions to the system that were introduced during the last step
+        for(auto &equation: binarizationVariablesEquations) {
+            binarizedEquations.push_back(std::make_pair(equation.first, equation.second));
+        }
+
+        return binarizedEquations;
     }
 
     /*
@@ -628,86 +730,84 @@ public:
      * (e.g. you might get 3*(SabcXVad) instead of 2*(SabcXVad) that). If you want to fix this,
      * have a look at eliminateChainProductions(..) and remove the memoization of "clean" productions.
      */
-    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalForm
-                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations) {
-
-        // only the completely done stuff goes in here
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalFormEquations;
-
-        std::map<SR, VarId> constantsToVariables;
-        std::map<VarId, SR> variablesToConstants;
-        std::set<SR> constants;
-
-        // map for quick access to productions
-        std::map<VarId, NonCommutativePolynomial<SR>> polyMap;
-        for(auto &equation: equations) {
-            polyMap.insert(std::make_pair(equation.first, equation.second));
-        }
-
-        // first point of order: chain productions
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> noChains;
-        eliminateChainProductions(equations, noChains, polyMap);
-
-//        std::cout << "chains eliminated:" << std::endl;
+//    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalForm
+//                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations) {
+//
+//        // only the completely done stuff goes in here
+//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalFormEquations;
+//
+//        std::map<SR, VarId> constantsToVariables;
+//        std::map<VarId, SR> variablesToConstants;
+//        std::set<SR> constants;
+//
+//        // map for quick access to productions
+//        std::map<VarId, NonCommutativePolynomial<SR>> polyMap;
+//        for(auto &equation: equations) {
+//            polyMap.insert(std::make_pair(equation.first, equation.second));
+//        }
+//
+//        // first point of order: chain productions
+//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> noChains;
+//        eliminateChainProductions(equations, noChains, polyMap);
+//
+////        std::cout << "chains eliminated:" << std::endl;
+////        for(auto &equation: noChains) {
+////            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+////        }
+//
+//        // find all constants in nonterminal productions in the system
 //        for(auto &equation: noChains) {
-//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//            equation.second.findConstantsInNonterminalMonomials(constants);
 //        }
-
-        // find all constants in nonterminal productions in the system
-        for(auto &equation: noChains) {
-            equation.second.findConstantsInNontrivialMonomials(constants);
-        }
-
-        // introduce a new variable for each constant found, add the respective equation to the system
-        VarId var;
-        std::map<VarId, SR> nullMap; // dummy map to call NonCommutativePolynomial<SR>.eval(..)
-                                     // without any valuations
-        for(auto &constant: constants) {
-            var = Var::GetVarId();
-            noChains.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
-            constantsToVariables.insert(std::make_pair(constant, var));
-            variablesToConstants.insert(std::make_pair(var,constant));
-        }
-
-        // replace the constants in each nonterminal production with the new constant variables
-        NonCommutativePolynomial<SR> allVariablesPoly;
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> variablefiedEquations;
-        for(auto &equation: noChains) {
-            allVariablesPoly = equation.second.replaceConstantsWithVariables(constantsToVariables);
-            variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
-        }
-
-//        std::cout << "done replacing constants, system so far:" << std::endl;
+//
+//        // introduce a new variable for each constant found, add the respective equation to the system
+//        VarId var;
+//        for(auto &constant: constants) {
+//            var = Var::GetVarId();
+//            noChains.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
+//            constantsToVariables.insert(std::make_pair(constant, var));
+//            variablesToConstants.insert(std::make_pair(var,constant));
+//        }
+//
+//        // replace the constants in each nonterminal production with the new constant variables
+//        NonCommutativePolynomial<SR> allVariablesPoly;
+//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> variablefiedEquations;
+//        for(auto &equation: noChains) {
+//            allVariablesPoly = equation.second.replaceConstants(constantsToVariables);
+//            variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
+//        }
+//
+////        std::cout << "done replacing constants, system so far:" << std::endl;
+////        for(auto &equation: variablefiedEquations) {
+////            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+////        }
+//
+//        // stores mappings between suffixes of monomials and the variables
+//        // that are introduced to produce those suffixes in the process of generating
+//        // the Chomsky Normal Form
+//        std::map<std::string, VarId> chomskyVariables;
+//
+//        // stores the productions (i.e. equations) that are introduced while producing the
+//        // Chomsky Normal Form
+//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations;
+//
+//        // determine the necessary new variables to give all non-terminal productions
+//        // (i.e. monomials of degree > 2) the form "X = YZ"
+//        NonCommutativePolynomial<SR> chomskyPoly;
 //        for(auto &equation: variablefiedEquations) {
-//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//            chomskyPoly =
+//                    equation.second.binarize(chomskyVariables, chomskyVariableEquations, variablesToConstants);
+//            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, chomskyPoly));
 //        }
-
-        // stores mappings between suffixes of monomials and the variables
-        // that are introduced to produce those suffixes in the process of generating
-        // the Chomsky Normal Form
-        std::map<std::string, VarId> chomskyVariables;
-
-        // stores the productions (i.e. equations) that are introduced while producing the
-        // Chomsky Normal Form
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations;
-
-        // determine the necessary new variables to give all non-terminal productions
-        // (i.e. monomials of degree > 2) the form "X = YZ"
-        NonCommutativePolynomial<SR> chomskyPoly;
-        for(auto &equation: variablefiedEquations) {
-            chomskyPoly =
-                    equation.second.chomskyNormalForm(chomskyVariables, chomskyVariableEquations, variablesToConstants);
-            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, chomskyPoly));
-        }
-
-        // finally, add the productions to the system that were introduced during the last step
-        for(auto &equation: chomskyVariableEquations) {
-            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, equation.second));
-        }
-
-        // we are done
-        return chomskyNormalFormEquations;
-    }
+//
+//        // finally, add the productions to the system that were introduced during the last step
+//        for(auto &equation: chomskyVariableEquations) {
+//            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, equation.second));
+//        }
+//
+//        // we are done
+//        return chomskyNormalFormEquations;
+//    }
 
 
 
@@ -798,14 +898,13 @@ public:
 	 * A -> X_1 X_2 X_3 ... X_m where the (X_i)s are all elements of either the terminal or the
 	 * nonterminal alphabet, so having any symbols in the grammar that don't belong to either
 	 */
-	NonCommutativePolynomial<SR> intersectionPolynomial(const std::vector<unsigned long> &states,
-	        const std::map<unsigned long,
-	            std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
-	        const unsigned long startStateIndex,
-	        const unsigned long targetStateIndex,
-//	        const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar,
-	        const std::map<VarId, unsigned long> &oldVariablesToIndices,
-	        const std::vector<std::vector<std::vector<VarId>>> &newVariables) {
+	NonCommutativePolynomial<SR> intersectionPolynomial(std::vector<unsigned long> &states,
+	        std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+	        unsigned long &startState,
+	        unsigned long &targetState,
+	        std::map<unsigned long, unsigned long> &statesToIndices,
+	        std::map<VarId, unsigned long> &oldVariablesToIndices,
+	        std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
 	    NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
 
@@ -813,15 +912,15 @@ public:
 	    for(auto &monomial: monomials_) {
 
 	        // if the nonterminal can produce epsilon, then the new grammar can produce epsilon only without
-	        // the FA changing state (since we assume that the FA does not have epsilon transitions)
+	        // the FA changing state (since the FA does not have epsilon transitions)
 	        if(monomial.first.isEpsilonMonomial()) {
-	            if(startStateIndex == targetStateIndex) {
+	            if(startState == targetState) {
 	                result += NonCommutativePolynomial<SR>::one();
 	            }
 	        } else { // if this is a non-epsilon production, we calculate the new productions that derive from it
 	            result += monomial.first.intersectionPolynomial
-	                    (states, transitionTable, startStateIndex, targetStateIndex,
-	                            /*oldGrammar,*/ oldVariablesToIndices, newVariables);
+	                    (states, transitionTable, startState, targetState,
+	                            statesToIndices, oldVariablesToIndices, newVariables);
 	        }
 	    }
 
@@ -831,9 +930,23 @@ public:
 	/*
 	 * Finds a shortest word in the language described by the grammar starting from "startSymbol" and having
 	 * productions "productions". Will be null if the language is empty. Undefined behavior if startSymbol is
-	 * not productive in the grammar defined by productions.
+	 * not productive in the grammar defined by productions - "productions" must define a clean grammar starting
+	 * from "startSymbol".
 	 */
-	static SR shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, VarId startSymbol) {
+	static SR shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, VarId &startSymbol) {
+
+	    // check that the grammar contains the start symbol
+        bool startSymbolIsProductive = false;
+        for(auto &equation: productions) {
+            if(equation.first == startSymbol) {
+                startSymbolIsProductive = true;
+            }
+        }
+
+        if(!startSymbolIsProductive) {
+            return SR::null();
+        }
+
 	    std::map<VarId, unsigned long> lengthOfShortestWords;
 	    std::map<VarId, NonCommutativeMonomial<SR>> productionsForShortestWords;
 
@@ -848,8 +961,8 @@ public:
 	        update = false;
 
 	        for(auto &equation: productions) {
-	            for(auto &monomial: equation.monomials_) {
-	                update |= monomial.first.findLengthOfDerivableStrings(lengthOfShortestWords, productionsForShortestWords);
+	            for(auto &monomial: equation.second.monomials_) {
+	                update |= monomial.first.findLengthOfDerivableStrings(lengthOfShortestWords, productionsForShortestWords, equation.first);
 	            }
 	        }
 	    } while(update);
@@ -894,7 +1007,7 @@ public:
 			if(monomial != monomials_.begin())
 			ss << " + ";
 //    	ss << "[degree: " << monomial->first.get_degree() << "]";
-			ss << monomial->second << " * ";
+			/*ss << monomial->second << " * ";*/
 			ss << monomial->first;
 		}
 		return ss.str();

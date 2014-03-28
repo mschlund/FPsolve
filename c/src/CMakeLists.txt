@@ -16,6 +16,7 @@ else(${OLD_SEMILINEAR_SET})
   list(REMOVE_ITEM NEWTON_CPP ${SEMILIN_SET_EXP_CPP})
 endif(${OLD_SEMILINEAR_SET})
 
+set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)

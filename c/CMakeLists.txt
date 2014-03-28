@@ -14,6 +14,13 @@ find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
+option (USE_GENEPI "use genepi library and support semilinSetNdd" OFF)
+
+if(USE_GENEPI)
+find_package(PkgConfig)
+pkg_check_modules(GENEPI genepi)
+endif(USE_GENEPI)
+
 # Cppunit; cmake configuration taken from:
 # http://www.cmake.org/pipermail/cmake/2006-December/012349.html
 
@@ -40,19 +47,20 @@ else(DEFINED ENV{LPSOLVE_ROOT})
   set(LPSOLVE_INCLUDE_DIRS "/usr/include/lpsolve/")
   set(LPSOLVE_LIBRARY_DIRS "/usr/lib/lp_solve/")
   set(LPSOLVE_LIBRARIES "lpsolve55")
-#  include(FindPkgConfig)
-#  pkg_check_modules(LPSOLVE lpsolve55)
+# include(FindPkgConfig)
+# pkg_check_modules(LPSOLVE lpsolve55)
 endif(DEFINED ENV{LPSOLVE_ROOT})
 
 # CXXFLAGS
 
-# Optimizing at -O1 actually results in lower compile time for me.  Probably due
+# Optimizing at -O1 actually results in lower compile time for me. Probably due
 # to optimizations getting rid of some of the code (and not pushing it through
 # the backend)...
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")
 
@@ -74,7 +82,6 @@ endif(${OLD_SEMILINEAR_SET})
 
 link_directories(${LPSOLVE_LIBRARY_DIRS})
 include_directories(${LPSOLVE_INCLUDE_DIRS})
-
 
 add_subdirectory("src")
 add_subdirectory("test")

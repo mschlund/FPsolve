@@ -8,18 +8,17 @@ template<typename RL>
 class RegularLanguage {
 public:
     virtual ~RegularLanguage(){};
-	bool empty();
-	RegularLanguage<RL> minimize();
-	RegularLanguage<RL> complement();
-	RegularLanguage<RL> intersectionWith(RegularLanguage<RL> other);
-	RegularLanguage<RL> unionWith(RegularLanguage<RL> other);
-    RegularLanguage<RL> concatenate(RegularLanguage<RL> other);
-	RegularLanguage<RL> kleeneStar();
+	bool empty() const;
+	RegularLanguage<RL> minimize() const;
+	RegularLanguage<RL> complement() const;
+	RegularLanguage<RL> intersectionWith(RegularLanguage<RL> other) const;
+	RegularLanguage<RL> unionWith(RegularLanguage<RL> other) const;
+    RegularLanguage<RL> concatenate(RegularLanguage<RL> other) const;
+	RegularLanguage<RL> kleeneStar() const;
 
-	std::string string();
+	std::string string() const;
 
-	bool disjoint(RegularLanguage<RL> other);
-	bool containedIn(RegularLanguage<RL> super);
-	bool contains(RegularLanguage<RL> sub);
-	bool equals(RegularLanguage<RL> other);
+	bool disjoint(RegularLanguage<RL> other) const;
+	bool contains(RegularLanguage<RL> sub) const;
+	bool equals(RegularLanguage<RL> other) const;
 };

@@ -20,8 +20,7 @@ public:
      * FA that accepts the empty language, i.e. no strings, not even the empty string.
      */
     FiniteAutomaton() {
-        automaton = fa_make_basic(0);
-        assert(automaton!=NULL);
+        automaton = fa_make_basic(fa_basic::FA_EMPTY);
     }
 
     /*
@@ -31,71 +30,110 @@ public:
      */
     FiniteAutomaton(std::string regularExpression) {
         fa_compile(regularExpression.c_str(), regularExpression.size(), &automaton);
-        std::cout << "automaton language:\t" + string() << std::endl;
         assert(automaton!=NULL);
     }
 
-    // every other way I tried to build an automaton for epsilon messed something up,
-    // so we're doing it the ugly way
+    /*
+     * Returns an automaton that accepts exactly the empty word.
+     */
     static FiniteAutomaton epsilon() {
-        FiniteAutomaton returnMe = FiniteAutomaton();
-        returnMe.automaton = fa_make_basic(1);
-        return returnMe;
+        return FiniteAutomaton(fa_make_basic(fa_basic::FA_EPSILON));
     }
 
-    bool empty() {
-        return fa_equals(automaton, fa_make_basic(0)) == 1;
+    /*
+     * True iff the language of this FA is empty.
+     */
+    bool empty() const {
+        return fa_equals(automaton, fa_make_basic(fa_basic::FA_EMPTY)) == 1;
     }
 
-    FiniteAutomaton minimize() {
-        struct fa* automatonClone = automaton;
-        fa_minimize(automatonClone);
-
-        return FiniteAutomaton(automatonClone);
+    /*
+     * Minimizes the automaton of this FA. The returned automaton is the one on which the method was invoked;
+     * there is no copy involved. This is due to restrictions of the library we are using.
+     */
+    FiniteAutomaton minimize() const {
+        fa_minimize(automaton);
+        return *this;
     }
 
-    FiniteAutomaton complement() {
+    /*
+     * Complements the language of this automaton.
+     */
+    FiniteAutomaton complement() const {
         return FiniteAutomaton(fa_complement(automaton));
     }
 
-    FiniteAutomaton intersectionWith(FiniteAutomaton other) {
+    /*
+     * Automaton for the intersection between the languages of two automata.
+     */
+    FiniteAutomaton intersectionWith(FiniteAutomaton other) const {
             return FiniteAutomaton(fa_intersect(automaton, other.automaton));
     }
 
-    FiniteAutomaton unionWith(FiniteAutomaton other) {
+    /*
+     * Automaton for the union of the languages of two automata.
+     */
+    FiniteAutomaton unionWith(FiniteAutomaton other) const {
             return FiniteAutomaton(fa_union(automaton, other.automaton));
     }
 
-    FiniteAutomaton concatenate(FiniteAutomaton other) {
+    /*
+     * Automaton for the concatenation of the languages of two automata.
+     *
+     * The concatenation order is this.append(other).
+     */
+    FiniteAutomaton concatenate(FiniteAutomaton other) const {
         return FiniteAutomaton(fa_concat(automaton, other.automaton));
     }
 
+    /*
+     * Automaton for the Kleene iteration of this automaton.
+     */
     FiniteAutomaton kleeneStar() const {
         return FiniteAutomaton(fa_iter(automaton, 0, -1));
     }
 
-    bool disjoint(FiniteAutomaton other) {
+    /*
+     * True iff L(this) and L(other) are disjoint, i.e. there is no word that is in both languages.
+     */
+    bool disjoint(FiniteAutomaton other) const {
         return intersectionWith(other).empty();
     }
 
-    bool containedIn(FiniteAutomaton super) {
-        return (fa_contains(automaton, super.automaton) == 1);
-    }
-
-    bool contains(FiniteAutomaton sub) {
+    /**
+     * True iff L(this) is a superset of L(sub).
+     */
+    bool contains(FiniteAutomaton sub) const {
         return (fa_contains(sub.automaton, automaton) == 1);
     }
 
-    bool equals(FiniteAutomaton other) {
-        return contains(other) && containedIn(other);
+    /*
+     * True iff L(this) == L(other).
+     */
+    bool equals(FiniteAutomaton other) const {
+        return (fa_equals(automaton, other.automaton) == 1);
     }
 
+    /*
+     * A string representation of the language of this automaton. Since we lack a symbol for it,
+     * the empty language will be represented by the string "__EMPTYLANGUAGE__".
+     */
     std::string string() const {
+
+        // first handle empty and epsilon separately because
+        // the library doesn't handle those the way we would want it to
+        if(empty()) {
+            return std::string("__EMPTYLANGUAGE__");
+        }
+
+        if(equals(epsilon())) {
+            return std::string("()");
+        }
+
         char *regularExpression;
         size_t size;
         fa_as_regexp(automaton, &regularExpression, &size);
-        std::string str(regularExpression);
-        return str;
+        return std::string(regularExpression);
     }
 
     /*
@@ -117,8 +155,11 @@ public:
      */
     template<typename SR>
     std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> intersectionWithCFG
-        (VarId &S, const VarId &oldS,
+        (VarId &newS, const VarId &oldS,
                 std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) {
+
+        // for the new grammar
+        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
         // we don't want to start out with useless stuff because the intersection grammar
         // will blow up anyway
@@ -126,6 +167,12 @@ public:
         worklist.push(oldS);
         oldGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
 
+        // if the grammar doesn't produce anything, there is no need to do anything else;
+        // return an empty grammar
+        // the same applies if the automaton represents the empty language
+        if(oldGrammar.size() == 0 || empty()) {
+            return resultGrammar;
+        }
         /*
          * assuming anyone at all will have to change something here in the future, I expect they
          * won't want to go through the hassle of sifting through the undocumented implementation
@@ -142,15 +189,31 @@ public:
         // so all this stuff is represented by simple numbers - hooray for numbers
         std::vector<unsigned long> states;
 
-        // the number of states in the FA since forward_list doesn't have that information available
-        long numberOfStates = 0;
-
         // hashes of all final states of the FA
         std::set<unsigned long> finalStates;
 
         // initial state of the FA
         unsigned long initialState = 0;
-        extractTransitionTable(transitionTable, states, numberOfStates, finalStates, initialState);
+
+//        std::cout << "lets see if we can get that FA info" << std::endl;
+        extractTransitionTable(transitionTable, states, finalStates, initialState);
+
+//        for(auto &transitions: transitionTable){
+//            std::cout << "transitions for state:\t" << transitions.first << std::endl;
+//
+//            for(auto &trans: transitions.second) {
+//                for(auto &target: trans.second) {
+//                    std::cout << "delta(" << transitions.first << "," << trans.first << ") = " << target << std::endl;
+//                }
+//
+//            }
+//        }
+
+//        if(transitionTable.size() == 0) {
+//            std::cout << "something is fishy; transition table is empty" << std::endl;
+//        }
+//
+//        std::cout << "extraction of FA info does not cause segfault" << std::endl;
 
         // we will need a three-dimensional lookup table for the new variables so we don't mess up
         // the assignment of polynomials to nonterminals while constructing the grammar
@@ -158,6 +221,7 @@ public:
 
         // the lookup table will represent states_FA x states_FA x nonterminals_grammar;
         // initialize its dimensions accordingly
+        auto numberOfStates = states.size();
         newVariables.resize(numberOfStates);
         for(unsigned long i = 0 ; i < numberOfStates ; ++i) {
             newVariables[i].resize(numberOfStates);
@@ -176,23 +240,30 @@ public:
             }
         }
 
+//        std::cout << "neither does generating new variables" << std::endl;
+
         // build a map from variables to indices, where the index of a variable is the line in oldGrammar
         // that contains the productions of the variable
         std::map<VarId, unsigned long> oldVariablesToIndices;
-        unsigned long index = 0;
-        for(auto equation: oldGrammar) {
-            oldVariablesToIndices.insert(std::make_pair(equation.first, index));
-            index++;
+        for(unsigned long i = 0; i < oldGrammar.size(); i++) {
+            oldVariablesToIndices.insert(std::make_pair(oldGrammar[i].first, i));
+        }
+
+        // map states to indices; this is just to avoid having to look through the states vector in linear time
+        // to find out at which index it lies
+        std::map<unsigned long, unsigned long> statesToIndices;
+        for(unsigned long i = 0; i < states.size(); i++) {
+            statesToIndices.insert(std::make_pair(states[i], i));
         }
 
         /*
-         * now we the productions of the new grammar
+         * now we generate the productions of the new grammar
          */
 
-        // for the new grammar
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
-        // the indices are intended this way; we first choose some nonterminal of the grammar
+        std::cout << "the problem must lie in the actual intersection algorithm" << std::endl;
+
+        // the indices k, i, j are intended this way; we first choose some nonterminal of the grammar
         // and then generate all productions derived from that nonterminal; this mirrors the way
         // in which the algorithm is described in the paper referred to above
         NonCommutativePolynomial<SR> poly;
@@ -200,14 +271,24 @@ public:
             for(unsigned long i = 0; i < numberOfStates; i++) {
                 for(unsigned long j = 0; j < numberOfStates; j++) {
                     poly = oldGrammar[k].second.intersectionPolynomial
-                            (states, transitionTable, i, j, /*oldGrammar,*/ oldVariablesToIndices, newVariables);
+                            (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
                     resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
                 }
             }
         }
+
+        // finally, use a new variable as initial variable and generate the productions; they are of the form
+        // newS -> <q_0, oldS, q_f> where q_0 is the initial state of the FA and q_f is some final state of the FA
+        NonCommutativePolynomial<SR> startPolynomial = NonCommutativePolynomial<SR>::null();
+        for(auto &target: finalStates) {
+            startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
+        }
+        newS = Var::GetVarId();
+        resultGrammar.push_back(std::make_pair(newS, startPolynomial));
+
+        return resultGrammar;
     }
 
-    //static const FiniteAutomaton UNIVERSE_AUTOMATON;
 private:
     FiniteAutomaton(struct fa *FA) {
         automaton = FA;
@@ -222,30 +303,29 @@ private:
     void extractTransitionTable(std::map<unsigned long, std::map<unsigned char,
                 std::forward_list<unsigned long>>> &transitionTable,
             std::vector<unsigned long> &states,
-            long &numberOfStates,
             std::set<unsigned long> &finalStates,
             unsigned long &initialState) {
 
         initialState = automaton->initial->hash;
+//        std::cout << "the initial state is:\t" << initialState << std::endl;
 
         // iterate through all states, build the transition table state for state
         struct trans *trans;
-        for (auto s = automaton->initial->next; s != automaton->initial; s = s->next){
+        for (auto s = automaton->initial; s != NULL; s = s->next){
 
             // remember each state by its hash, also count them
             states.push_back(s->hash);
-            numberOfStates++;
+//            std::cout << "some state:\t" << s->hash << std::endl;
 
             // remember the state as being final if it is
             if(s->accept) {
                 finalStates.insert(s->hash);
+//                std::cout << "found a final state:\t" << s->hash << std::endl;
             }
 
             // we build a transition table for each state, i.e. what would be a line in the
             // transition table of the whole FA
             std::map<unsigned char, std::forward_list<unsigned long>> stateTable;
-            transitionTable.insert(std::pair<unsigned long,
-                    std::map<unsigned char, std::forward_list<unsigned long>>>(s->hash, stateTable));
 
             // trans is an array of transitions
             trans = s->trans;
@@ -256,11 +336,17 @@ private:
                 // iterate over all symbols of this transition
                 for(unsigned char c = (trans+i)->min; c <= (trans+i)->max; c++) {
 
-                    // the map[] operator will create a new set of target states if none yet exists
+                    // the map[] operator will create a new empty list of target states if none yet exists
                     stateTable[c].push_front((trans+i)->to->hash);
+//                    std::cout << "a transition:\tdelta(" << s->hash << "," << c << ") = " << (trans+i)->to->hash << std::endl;
                 }
             }
+
+            transitionTable.insert(std::make_pair(s->hash, stateTable));
+//            std::cout << "extracting for this state is done" << std::endl;
         }
+
+//        std::cout << "done extracting" << std::endl;
     }
 
     struct fa* automaton;
