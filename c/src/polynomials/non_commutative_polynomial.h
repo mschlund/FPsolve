@@ -569,7 +569,7 @@ public:
 
         // build the clean system: only use variables that are both productive and reachable;
         // remove unproductive monomials
-        std::cout << "clean system:" << std::endl;
+//        std::cout << "clean system:" << std::endl;
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanEquations;
         for(auto &equation: equations) {
             if(productiveVariables[equation.first]) {
@@ -579,7 +579,7 @@ public:
                 // found to be productive
                 cleanEquations.push_back(std::make_pair(equation.first,
                         equation.second.removeUnproductiveMonomials(productiveVariables)));
-                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
             }
         }
 

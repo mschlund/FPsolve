@@ -215,9 +215,9 @@ private:
             }
 
 //            std::cout << "lossy QNF:" << std::endl;
-            for(auto &equation: systemBeingProcessed) {
-                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-            }
+//            for(auto &equation: systemBeingProcessed) {
+//                std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//            }
 
             return systemBeingProcessed;
     }
