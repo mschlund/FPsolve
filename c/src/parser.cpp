@@ -279,7 +279,6 @@ std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> non_commutative_pars
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> result;
         if(!(qi::phrase_parse(iter, end, equation, qi::space, result) && iter == end))
                 std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
-
         return result;
 }
 

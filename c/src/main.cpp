@@ -108,16 +108,16 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
   return grouped_equations;
 }
 
-// apply Newton's method to the given input
-template <template <typename> class NewtonType = Newton, typename SR>
-ValuationMap<SR> apply_newton(
+// apply solution method to the given input
+template <template <typename> class SolverType, typename SR>
+ValuationMap<SR> apply_solver(
     const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
     bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output) {
 
   // TODO: sanity checks on the input!
 
-  // generate an instance of the newton solver
-  NewtonType<SR> newton;
+  // generate an instance of the solver
+  SolverType<SR> solver;
 
   // if we use the scc method, group the equations
   // the outer vector contains SCCs starting with a bottom SCC at 0
@@ -158,7 +158,7 @@ ValuationMap<SR> apply_newton(
     }
 
     // do some real work here
-    ValuationMap<SR> result = newton.solve_fixpoint(equations2[j], iterations);
+    ValuationMap<SR> result = solver.solve_fixpoint(equations2[j], iterations);
 
     // copy the results into the solution map
     solution.insert(result.begin(), result.end());
@@ -326,7 +326,7 @@ int main(int argc, char* argv[]) {
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("A");
       std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else if (vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("B");
@@ -334,7 +334,7 @@ int main(int argc, char* argv[]) {
         return SemilinearSetV{s};
       });
       std::cout << result_string(
-          apply_newton(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       DMSG("C");
@@ -342,7 +342,7 @@ int main(int argc, char* argv[]) {
         return SemilinearSetL{s};
       });
       std::cout << result_string(
-          apply_newton(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
 #ifdef USE_GENEPI
@@ -351,7 +351,7 @@ int main(int argc, char* argv[]) {
       auto equations = p.slsetndd_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
       std::cout << result_string(
-          apply_newton(equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
       SemilinSetNdd::genepi_dealloc();
 #endif
@@ -369,14 +369,14 @@ int main(int argc, char* argv[]) {
         DummyDivider, SparseVecSimplifier>(equations);
       //PrintEquations(m_equations);
       std::cout << result_string(
-          apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       auto m_equations = SemilinearToPseudoLinearEquations<
         DummyDivider, DummyVecSimplifier>(equations);
       //PrintEquations(m_equations);
       std::cout << result_string(
-          apply_newton(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<Newton>(m_equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
 
@@ -389,7 +389,7 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations);
 
     // apply Newton's method to the equations
-    auto result = apply_newton(equations, vm.count("scc"),
+    auto result = apply_solver<Newton>(equations, vm.count("scc"),
                                vm.count("iterations"), iterations,
                                vm.count("graphviz"));
     std::cout << result_string(result) << std::endl;
@@ -403,7 +403,7 @@ int main(int argc, char* argv[]) {
     PrintEquations(equations);
 
     // apply the newton method to the equations
-    //auto result = apply_newton<FreeSemiring>(equations,
+    //auto result = apply_solver<Kleene, FreeSemiring>(equations,
     //                                         vm.count("scc"),
     //                                         vm.count("iterations"),
     //                                         iterations,
@@ -431,7 +431,7 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations);
 
     // apply the newton method to the equations
-    //auto result = apply_newton<PrefixSemiring>(equations,
+    //auto result = apply_solver<Kleene, PrefixSemiring>(equations,
     //                                           vm.count("scc"),
     //                                           vm.count("iterations"),
     //                                           iterations,
@@ -439,8 +439,8 @@ int main(int argc, char* argv[]) {
     //std::cout << result_string(result) << std::endl;
 
   } else if (vm.count("float")) {
-
     auto equations = p.free_parser(input_all);
+    //PrintEquations(equations);
     auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> FloatSemiring {
       auto srconv = SRConverter<FloatSemiring>();
       return c.Eval(srconv);
@@ -451,7 +451,7 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations);
     //PrintEquations(equations2);
       std::cout << result_string(
-          apply_newton<NewtonCL>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          apply_solver<NewtonCL>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
   }

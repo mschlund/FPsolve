@@ -54,6 +54,11 @@ def p_rules_end(p) :
   'rules : rule'
   p[0] = p[1] + ";"
 
+def p_rule_empty(p) :
+  'rule : COLON SEMICOLON'
+#  p[0] = "\"<>\""
+  p[0] = "\"()\""
+
 def p_rule(p) :
   'rule : COLON symbollist SEMICOLON'
   p[0] = p[2]
@@ -66,18 +71,14 @@ def p_symbollist_end(p) :
   'symbollist : symbol'
   p[0] = p[1]
 
-def p_symbollist_empty(p) :
-  'symbollist : empty'
-  p[0] = "\"<>\""
-
 def p_symbol_NT(p) :
   'symbol : NONTERMINAL'
   p[0] = "<"+p[1]+">"
 
 def p_symbol_Terminal(p) :
   'symbol : TERMINAL'
-  p[0] = "\"<"+p[1]+":1>\""
-
+#  p[0] = "\"<"+p[1]+":1>\""
+  p[0] = "\""+p[1]+"\""
 def p_error(p):
     print "Syntax error in input!"
 

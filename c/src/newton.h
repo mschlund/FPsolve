@@ -387,6 +387,9 @@ class Newton {
 
         /* We want to calculate all possible derivatives of at least second
          * order, but lower or equal to the degree of polynomial. */
+        // TODO: this is exponential in the degree and unnecessary!
+        // d^2 suffices (n choose 2 positions for the previous update)
+        // scheme to generate tree of dim d: (d --> [<d] [=d-1] [<d-1] [=d-1] [<d-1])
         Generator generator{current_max_degree, 2, polynomial_max_degree};
 
         while (generator.NextCombination()) {
