@@ -11,14 +11,14 @@
 #include <algorithm>
 #include <cstdint>
 
-#include "datastructs/matrix.h"
-#include "matrix_free_semiring.h"
-#include "datastructs/var_degree_map.h"
+#include "../datastructs/matrix.h"
+#include "../datastructs/var_degree_map.h"
 
+#include "../matrix_free_semiring.h"
 
-#include "polynomials/polynomial.h"
+#include "../polynomials/polynomial.h"
 
-#include "semirings/semiring.h"
+#include "../semirings/semiring.h"
 
 // Lin_Eq_Solver is parametrized by a semiring
 #define LIN_EQ_SOLVER_TYPE template <typename> class

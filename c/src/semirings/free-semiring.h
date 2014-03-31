@@ -22,6 +22,7 @@ class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCom
 
     FreeSemiring(const VarId var) {
       node_ = factory_.NewElement(var);
+      //std::cout << Var::GetVar(var).string() << std::endl;
     }
 
     static FreeSemiring null() {
@@ -190,6 +191,11 @@ class Evaluator : public NodeVisitor {
     SR* result_;
 };
 
+/* A Semiring-converter is a special evaluator that interprets the constants
+ * by referring to the string-constructor of the semiring
+ * (this delegates parsing work to the specific semiring, so that we can always parse to the free-SR
+ * and do not have to touch the parser if we want to implement a new SR)
+ */
 template <typename SR>
 class SRConverter : public Evaluator<SR> {
 public:

@@ -34,8 +34,7 @@
 
 #include "parser.h"
 
-//#include "newton.h"
-#include "newton_generic.h"
+#include "solvers/newton_generic.h"
 
 template <typename SR>
 struct VertexProp {
