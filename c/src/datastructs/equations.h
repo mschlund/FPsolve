@@ -2,12 +2,12 @@
 
 #include <vector>
 
-#include "../polynomials/polynomial.h"
+#include "../polynomials/commutative_polynomial.h"
 #include "../polynomials/non_commutative_polynomial.h"
 #include "../semirings/free-semiring.h"
 
 template <typename A>
-using Equations = std::vector< std::pair< VarId, Polynomial<A> > >;
+using Equations = std::vector< std::pair< VarId, CommutativePolynomial<A> > >;
 
 template <typename A>
 using NCEquations = std::vector< std::pair< VarId, NonCommutativePolynomial<A> > >;

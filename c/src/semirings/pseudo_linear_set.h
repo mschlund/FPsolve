@@ -4,15 +4,15 @@
 #include <sstream>
 
 #include "../datastructs/sparse_vec.h"
-
-#include "../debug_output.h"
 #include "../datastructs/equations.h"
-#include "../string_util.h"
+
+#include "../utils/debug_output.h"
+#include "../utils/string_util.h"
+#include "../utils/profiling-macros.h"
 
 #include "semilinear_util.h"
 #include "linear_set.h"
 #include "semilinear_set.h"
-#include "../utils/profiling-macros.h"
 
 class VarId;
 

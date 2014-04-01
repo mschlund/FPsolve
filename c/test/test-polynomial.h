@@ -4,7 +4,7 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "../src/semirings/commutativeRExp.h"
-#include "../src/polynomials/polynomial.h"
+#include "../src/polynomials/commutative_polynomial.h"
 #include "../src/datastructs/matrix.h"
 #include "../src/matrix_free_semiring.h"
 
@@ -37,7 +37,7 @@ protected:
 
 private:
 	CommutativeRExp *a, *b, *c, *d, *e;
-	Polynomial<CommutativeRExp> *null, *one, *first, *second, *p1;
+	CommutativePolynomial<CommutativeRExp> *null, *one, *first, *second, *p1;
 };
 
 #endif

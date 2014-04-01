@@ -9,7 +9,7 @@
 #include <vector>
 #include <limits>
 
-#include "../debug_output.h"
+#include "../utils/debug_output.h"
 
 class Var;
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../debug_output.h"
+#include "../utils/debug_output.h"
 #include "../datastructs/vec_set.h"
 
 template <typename Simpl, typename Elem>

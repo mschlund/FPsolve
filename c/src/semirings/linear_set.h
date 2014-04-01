@@ -6,7 +6,7 @@
 
 #include "../datastructs/sparse_vec.h"
 #include "../datastructs/unique_set.h"
-#include "../string_util.h"
+#include "../utils/string_util.h"
 
 #include "semilinear_util.h"
 

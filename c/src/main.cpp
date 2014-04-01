@@ -10,27 +10,22 @@
 #include <boost/program_options.hpp>
 
 #include "datastructs/matrix.h"
+#include "datastructs/equations.h"
 
-#include "polynomials/polynomial.h"
+#include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
 #include "semirings/pseudo_linear_set.h"
-#include "datastructs/equations.h"
-
-#ifdef OLD_SEMILINEAR_SET
-#include "semirings/semilinSetExp.h"
-#else
 #include "semirings/semilinear_set.h"
-#endif
+
 
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
 #endif
 
 #include "utils/timer.h"
-
 
 #include "parser.h"
 
@@ -40,13 +35,13 @@ template <typename SR>
 struct VertexProp {
   std::string name;   // used for graphviz output
   VarId var;         // var and rex combines the equations in the vertex
-  Polynomial<SR> rex;
+  CommutativePolynomial<SR> rex;
 };
 
 // group the equations to SCCs
 template <typename SR>
-std::vector< std::vector< std::pair< VarId, Polynomial<SR> > > >
-group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
+std::vector< std::vector< std::pair< VarId, CommutativePolynomial<SR> > > >
+group_by_scc(const std::vector< std::pair< VarId, CommutativePolynomial<SR> > > &equations,
              bool graphviz_output) {
   // create map of variables to [0..n]. this is used to enumerate important variables in a clean way from 0 to n during graph construction
   std::unordered_map<VarId, int> var_key;
@@ -93,7 +88,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
 
   // group neccessary equations together
   int num_comp = *std::max_element(component.begin(), component.end()) + 1; // find the number of components
-  std::vector< std::vector< std::pair< VarId,Polynomial<SR> > > >
+  std::vector< std::vector< std::pair< VarId,CommutativePolynomial<SR> > > >
     grouped_equations(num_comp);
   // grouped_equations.resize(num_comp);
 
@@ -101,7 +96,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
   // collect the necessary variables + equations for every component
   for (std::size_t j = 0; j != component.size(); ++j) {
     //std::cout << j << ", " << graph[j].var << " is in component " << component[j] << std::endl;
-    grouped_equations[component[j]].push_back(std::pair<VarId,Polynomial<SR>>(graph[j].var, graph[j].rex));
+    grouped_equations[component[j]].push_back(std::pair<VarId,CommutativePolynomial<SR>>(graph[j].var, graph[j].rex));
   }
 
   return grouped_equations;
@@ -110,7 +105,7 @@ group_by_scc(const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
 // apply solution method to the given input
 template <template <typename> class SolverType, typename SR>
 ValuationMap<SR> apply_solver(
-    const std::vector< std::pair< VarId, Polynomial<SR> > > &equations,
+    const std::vector< std::pair< VarId, CommutativePolynomial<SR> > > &equations,
     bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output) {
 
   // TODO: sanity checks on the input!
@@ -120,7 +115,7 @@ ValuationMap<SR> apply_solver(
 
   // if we use the scc method, group the equations
   // the outer vector contains SCCs starting with a bottom SCC at 0
-  std::vector< std::vector< std::pair< VarId,Polynomial<SR> > > > equations2;
+  std::vector< std::vector< std::pair< VarId,CommutativePolynomial<SR> > > > equations2;
   if (scc) {
     auto tmp = group_by_scc(equations, graphviz_output);
     equations2.insert(equations2.begin(), tmp.begin(), tmp.end());
@@ -141,11 +136,11 @@ ValuationMap<SR> apply_solver(
   for (std::size_t j = 0; j != equations2.size(); ++j) {
     // use the solutions to get rid of variables in the remaining equations
     // does nothing in the first round
-    std::vector<std::pair<VarId, Polynomial<SR>>> tmp1;
+    std::vector<std::pair<VarId, CommutativePolynomial<SR>>> tmp1;
     for (auto it = equations2[j].begin(); it != equations2[j].end(); ++it)
     { // it = (VarId, Polynomial[SR])
       auto tmp2 = it->second.partial_eval(solution);
-      tmp1.push_back(std::pair<VarId, Polynomial<SR>>(it->first, tmp2));
+      tmp1.push_back(std::pair<VarId, CommutativePolynomial<SR>>(it->first, tmp2));
     }
     // replace old equations with simplified ones
     equations2[j] = tmp1;
@@ -229,10 +224,10 @@ int main(int argc, char* argv[]) {
     variables.push_back(Var::GetVarId("x"));
     std::cout << "- newton (cnt-SR):" << std::endl;
 
-    std::vector<Polynomial<SemilinSetExp> > polynomials;
-    Polynomial<SemilinSetExp> f1 = Polynomial<SemilinSetExp>({
-        { SemilinSetExp(Var::GetVarId("a")), Monomial{ {Var::GetVarId("x"),Var::GetVarId("x")} } },
-        { SemilinSetExp(Var::GetVarId("c")), Monomial{} } });
+    std::vector<CommutativePolynomial<SemilinSetExp> > polynomials;
+    CommutativePolynomial<SemilinSetExp> f1 = CommutativePolynomial<SemilinSetExp>({
+        { SemilinSetExp(Var::GetVarId("a")), CommutativeMonomial{ {Var::GetVarId("x"),Var::GetVarId("x")} } },
+        { SemilinSetExp(Var::GetVarId("c")), CommutativeMonomial{} } });
 
     polynomials.push_back(f1);
 

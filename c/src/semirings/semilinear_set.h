@@ -6,7 +6,7 @@
 #include "linear_set.h"
 #include "semiring.h"
 #include "../datastructs/sparse_vec.h"
-#include "../string_util.h"
+#include "../utils/string_util.h"
 #include "../utils/profiling-macros.h"
 
 #include <boost/algorithm/string.hpp>

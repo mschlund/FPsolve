@@ -5,7 +5,7 @@
 
 #include "../datastructs/var_degree_map.h"
 #include "../semirings/free-semiring.h"
-#include "polynomial.h"
+#include "commutative_polynomial.h"
 
 template <typename SR>
 class NonCommutativePolynomial;
@@ -177,8 +177,8 @@ class NonCommutativeMonomial {
     /* convert this monomial into an commutative one
      * return a Polynomial, because the semiring element is not saved
      * in the commutative version of the monomial but in the polynomial */
-    Polynomial<SR> make_commutative() const {
-      Polynomial<SR> result_polynomial = Polynomial<SR>::one();
+    CommutativePolynomial<SR> make_commutative() const {
+      CommutativePolynomial<SR> result_polynomial = CommutativePolynomial<SR>::one();
 
       for(auto const &sr : srs_) {
         result_polynomial *= sr;

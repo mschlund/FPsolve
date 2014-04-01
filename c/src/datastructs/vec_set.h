@@ -5,7 +5,7 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 
-#include "../debug_output.h"
+#include "../utils/debug_output.h"
 #include "hash.h"
 
 /*

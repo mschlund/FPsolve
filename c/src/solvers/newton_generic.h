@@ -16,7 +16,7 @@
 
 #include "../matrix_free_semiring.h"
 
-#include "../polynomials/polynomial.h"
+#include "../polynomials/commutative_polynomial.h"
 
 #include "../semirings/semiring.h"
 
@@ -37,7 +37,7 @@ class GenericNewton {
 
   public:
   ValuationMap<SR> solve_fixpoint(const Equations<SR>& equations, int max_iter) {
-    std::vector<Polynomial<SR>> F;
+    std::vector<CommutativePolynomial<SR>> F;
     std::vector<VarId> poly_vars;
     for (const auto &eq : equations) {
       poly_vars.push_back(eq.first);
@@ -73,12 +73,12 @@ class GenericNewton {
    *
   */
   Matrix<SR> solve_fixpoint(
-      const std::vector< Polynomial<SR> > &polynomials,
+      const std::vector< CommutativePolynomial<SR> > &polynomials,
       const std::vector<VarId> &variables, std::size_t max_iter) {
 
     assert(polynomials.size() == variables.size());
 
-    Matrix< Polynomial<SR> > F_mat{polynomials.size(), polynomials};
+    Matrix< CommutativePolynomial<SR> > F_mat{polynomials.size(), polynomials};
 
     Matrix<SR> newton_values{polynomials.size(), 1};
     Matrix<SR> previous_newton_values{polynomials.size(), 1};
@@ -87,7 +87,7 @@ class GenericNewton {
     for (auto &variable : variables) {
       values.insert(std::make_pair(variable, SR::null()));
     }
-    Matrix<SR> delta= Polynomial<SR>::eval(F_mat, values); //TODO: use delta_at here as well??
+    Matrix<SR> delta= CommutativePolynomial<SR>::eval(F_mat, values); //TODO: use delta_at here as well??
 
     Matrix<SR> newton_update{polynomials.size(), 1};
 
@@ -128,14 +128,14 @@ class CommutativeSymbolicLinSolver {
   // TODO: use initialization lists instead of temporaries+copying? see
   // http://www.parashift.com/c++-faq-lite/init-lists.html
   CommutativeSymbolicLinSolver(
-      const std::vector< Polynomial<SR> >& F,
+      const std::vector< CommutativePolynomial<SR> >& F,
       const std::vector<VarId>& variables) {
 
-    Matrix< Polynomial<SR> > jacobian = Polynomial<SR>::jacobian(F, variables);
+    Matrix< CommutativePolynomial<SR> > jacobian = CommutativePolynomial<SR>::jacobian(F, variables);
 
     std::unordered_map<SR, VarId, SR> valuation_tmp;
 
-    Matrix<FreeSemiring> jacobian_free = Polynomial<SR>::make_free(jacobian, &valuation_tmp);
+    Matrix<FreeSemiring> jacobian_free = CommutativePolynomial<SR>::make_free(jacobian, &valuation_tmp);
     jacobian_star_ = new Matrix<FreeSemiring>(jacobian_free.star());
 
     // For benchmarking only ->
@@ -188,9 +188,9 @@ template <typename SR>
 class CommutativeConcreteLinSolver {
   public:
   CommutativeConcreteLinSolver(
-      const std::vector< Polynomial<SR> >& F,
+      const std::vector< CommutativePolynomial<SR> >& F,
       const std::vector<VarId>& variables)
-    : jacobian_(Polynomial<SR>::jacobian(F, variables)) {}
+    : jacobian_(CommutativePolynomial<SR>::jacobian(F, variables)) {}
 
   Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
                           const std::vector<VarId>& variables) {
@@ -214,7 +214,7 @@ class CommutativeConcreteLinSolver {
   }
 
   private:
-    Matrix< Polynomial<SR> > jacobian_;
+    Matrix< CommutativePolynomial<SR> > jacobian_;
     /* We don't want to allocate the map every time, especially since the keys
      * do not change... */
     ValuationMap<SR> valuation_;
@@ -225,7 +225,7 @@ template <typename SR>
 class CommutativeDeltaGeneratorOld {
 public:
   CommutativeDeltaGeneratorOld(
-      const std::vector< Polynomial<SR> > &ps, const std::vector<VarId> &pvs)
+      const std::vector< CommutativePolynomial<SR> > &ps, const std::vector<VarId> &pvs)
       : polynomials(ps), poly_vars(pvs) {
     index_map_.reserve(poly_vars.size());
     for (std::size_t i = 0; i < poly_vars.size(); ++i) {
@@ -294,7 +294,7 @@ public:
   }
 
 private:
-  const std::vector< Polynomial<SR> > &polynomials;
+  const std::vector< CommutativePolynomial<SR> > &polynomials;
   const std::vector<VarId> &poly_vars;
   std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
@@ -310,7 +310,7 @@ template <typename SR>
 class CommutativeDeltaGenerator {
 public:
   CommutativeDeltaGenerator(
-      const std::vector< Polynomial<SR> > &ps, const std::vector<VarId> &pvs)
+      const std::vector< CommutativePolynomial<SR> > &ps, const std::vector<VarId> &pvs)
       : polynomials(ps), poly_vars(pvs) {
     index_map_.reserve(poly_vars.size());
     for (std::size_t i = 0; i < poly_vars.size(); ++i) {
@@ -362,7 +362,7 @@ public:
   }
 
 private:
-  const std::vector< Polynomial<SR> > &polynomials;
+  const std::vector< CommutativePolynomial<SR> > &polynomials;
   const std::vector<VarId> &poly_vars;
   std::unordered_map<VarId, std::size_t> index_map_;
   /* We cache the std::map so that we can avoid reallocating it every time.  And
@@ -442,7 +442,7 @@ private:
 template <typename SR>
 class NonCommutativeDeltaGenerator {
 public:
-        NonCommutativeDeltaGenerator(const std::vector< Polynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
+        NonCommutativeDeltaGenerator(const std::vector< CommutativePolynomial<SR> >& polynomials, const std::vector<VarId> &poly_vars) {
     //FIXME: no need for copying... just keep a pointer to the polynomial system and the vars
     this->polynomials_ = polynomials;
     this->poly_vars = poly_vars;
@@ -465,7 +465,7 @@ public:
   }
 
 private:
-  std::vector< Polynomial<SR> > polynomials_;
+  std::vector< CommutativePolynomial<SR> > polynomials_;
   std::vector<VarId> poly_vars;
 
   ValuationMap<SR> make_valmap(const std::vector<VarId>& variables, const Matrix<SR>& rhs) {
@@ -490,8 +490,10 @@ using NewtonCL =
   GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator>;
 
 // default NonCommutative Newton implementation using naive Kleene iteration
-template <typename SR>
+// TODO: does not work yet ! :)
+/*template <typename SR>
 using NonCommutativeNewton =
   GenericNewton<SR, SimpleKleeneLinSolver, NonCommutativeDeltaGenerator>;
+*/
 
 #endif /* NEWTON_GENERIC_H_ */

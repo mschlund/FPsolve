@@ -14,18 +14,18 @@ void PolynomialTest::setUp() {
   c = new CommutativeRExp(Var::GetVarId("c"));
   d = new CommutativeRExp(Var::GetVarId("d"));
   e = new CommutativeRExp(Var::GetVarId("e"));
-  null = new Polynomial<CommutativeRExp>(CommutativeRExp::null());
-  one = new Polynomial<CommutativeRExp>(CommutativeRExp::one());
-  first = new Polynomial<CommutativeRExp>({
+  null = new CommutativePolynomial<CommutativeRExp>(CommutativeRExp::null());
+  one = new CommutativePolynomial<CommutativeRExp>(CommutativeRExp::one());
+  first = new CommutativePolynomial<CommutativeRExp>({
     {*a, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*b, {Var::GetVarId("z")}}
   }); // a*xx+b*z
-  second = new Polynomial<CommutativeRExp>({
+  second = new CommutativePolynomial<CommutativeRExp>({
     {*c, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
     {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
   }); // c*xx+d*xy+e*yy
-  p1 = new Polynomial<CommutativeRExp>({
+  p1 = new CommutativePolynomial<CommutativeRExp>({
     {*a, {Var::GetVarId("x")}},
     {*b, {Var::GetVarId("x")}}
   }); // should be a*x+b*x
@@ -51,7 +51,7 @@ void PolynomialTest::testAddition() {
   // poly + 0 = poly
   CPPUNIT_ASSERT( *first + *null == *first);
 
-  Polynomial<CommutativeRExp> result({
+  CommutativePolynomial<CommutativeRExp> result({
     {*a + *c, {Var::GetVarId("x"),Var::GetVarId("x")}},
     {*b, {Var::GetVarId("z")}},
     {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
@@ -70,7 +70,7 @@ void PolynomialTest::testMultiplication() {
   // poly * 0 = 0
   CPPUNIT_ASSERT( *first * *null == *null);
 
-  Polynomial<CommutativeRExp> result({
+  CommutativePolynomial<CommutativeRExp> result({
       {*a * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x")}},
       {*a * *d, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("y")}},
       {*b * *c, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("z")}},
@@ -82,31 +82,31 @@ void PolynomialTest::testMultiplication() {
 }
 
 void PolynomialTest::testJacobian() {
-  std::vector<Polynomial<CommutativeRExp> > polys = {*first, *second};
+  std::vector<CommutativePolynomial<CommutativeRExp> > polys = {*first, *second};
   std::vector<VarId> vars = {Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("z")};
 
-  std::vector<Polynomial<CommutativeRExp> > polys2 = {
-    Polynomial<CommutativeRExp>({ {*a+*a, {Var::GetVarId("x")}} }),
-    Polynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} }),
-    Polynomial<CommutativeRExp>({ {*b, {}} }),
-    Polynomial<CommutativeRExp>({
+  std::vector<CommutativePolynomial<CommutativeRExp> > polys2 = {
+    CommutativePolynomial<CommutativeRExp>({ {*a+*a, {Var::GetVarId("x")}} }),
+    CommutativePolynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} }),
+    CommutativePolynomial<CommutativeRExp>({ {*b, {}} }),
+    CommutativePolynomial<CommutativeRExp>({
       {*c+*c, {Var::GetVarId("x")}}, {*d, {Var::GetVarId("y")}}
     }),
-    Polynomial<CommutativeRExp>({
+    CommutativePolynomial<CommutativeRExp>({
         {*d, {Var::GetVarId("x")}}, {*e+*e, {Var::GetVarId("y")}}
     }),
-    Polynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} })
+    CommutativePolynomial<CommutativeRExp>({ {CommutativeRExp::null(), {}} })
   };
 
-  Matrix<Polynomial<CommutativeRExp> > result = Matrix<Polynomial<CommutativeRExp> >(2,polys2);
+  Matrix<CommutativePolynomial<CommutativeRExp> > result = Matrix<CommutativePolynomial<CommutativeRExp> >(2,polys2);
 
-  CPPUNIT_ASSERT( Polynomial<CommutativeRExp>::jacobian(polys, vars) == result );
+  CPPUNIT_ASSERT( CommutativePolynomial<CommutativeRExp>::jacobian(polys, vars) == result );
 
   polys = {*p1};
   vars = {Var::GetVarId("x")};
-  polys2 = { Polynomial<CommutativeRExp>({ {*a+*b, {}} }) };
-  result = Matrix<Polynomial<CommutativeRExp> >(1,polys2);
-  CPPUNIT_ASSERT( Polynomial<CommutativeRExp>::jacobian(polys, vars) == result );
+  polys2 = { CommutativePolynomial<CommutativeRExp>({ {*a+*b, {}} }) };
+  result = Matrix<CommutativePolynomial<CommutativeRExp> >(1,polys2);
+  CPPUNIT_ASSERT( CommutativePolynomial<CommutativeRExp>::jacobian(polys, vars) == result );
 
 }
 

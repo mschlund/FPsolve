@@ -186,7 +186,7 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
         {
           //quotes are optional, but if they are present they must surround the constant
           elem = (qi::as_string[lexeme[+(ascii::char_ - '"' - '|' - '<' - ';')]] [_val = free_var(_1)])
-               | ('"' >> qi::as_string[lexeme[+(ascii::char_ - '"' - '|' - '<' - ';')]] [_val = free_var(_1)] >> '"');
+               | ('"' >> qi::as_string[lexeme[+(ascii::char_ - '"')]] [_val = free_var(_1)] >> '"');
 
         }
         qi::rule<iterator_type, FreeSemiring()> elem;
@@ -287,15 +287,15 @@ std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> non_commutative_pars
 
 // commutative generic function for using the parser
 template <typename SR_Parser, typename SR> 
-std::vector<std::pair<VarId, Polynomial<SR>>> commutative_parser(std::string input)
+std::vector<std::pair<VarId, CommutativePolynomial<SR>>> commutative_parser(std::string input)
 {
-	typedef equation_parser<SR_Parser, Polynomial<SR>> equation_parser;
+	typedef equation_parser<SR_Parser, CommutativePolynomial<SR>> equation_parser;
 	equation_parser equation;
 
 	iterator_type iter = input.begin();
 	iterator_type end = input.end();
 
-	std::vector<std::pair<VarId, Polynomial<SR>>> result;
+	std::vector<std::pair<VarId, CommutativePolynomial<SR>>> result;
 	if(!(qi::phrase_parse(iter, end, equation, qi::space, result) && iter == end))
 		std::cout << "bad input, failed at: " << std::string(iter, end) << std::endl;
 
@@ -303,14 +303,14 @@ std::vector<std::pair<VarId, Polynomial<SR>>> commutative_parser(std::string inp
 }
 
 // wrapper function for regular expression equations
-std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
+std::vector<std::pair<VarId, CommutativePolynomial<CommutativeRExp>>> Parser::rexp_parser(std::string input)
 {
 	return commutative_parser<rexp_elem_parser, CommutativeRExp>(input);
 }
 
 #ifdef USE_GENEPI
 // wrapper function for ndd semilinear set equations
-std::vector<std::pair<VarId, Polynomial<SemilinSetNdd>>> Parser::slsetndd_parser(std::string input)
+std::vector<std::pair<VarId, CommutativePolynomial<SemilinSetNdd>>> Parser::slsetndd_parser(std::string input)
 {
         return commutative_parser<slsetndd_elem_parser, SemilinSetNdd>(input);
 }

@@ -8,18 +8,18 @@
 #include <boost/math/special_functions/binomial.hpp>
 
 template <typename SR>
-class Polynomial;
+class CommutativePolynomial;
 
-class Monomial {
+class CommutativeMonomial {
   private:
     /* Maps each variable to its degree. */
     VarDegreeMap variables_;
 
     template <typename SR>
-    friend class Polynomial;
+    friend class CommutativePolynomial;
 
     /* Private constructor to not leak the internal data structure. */
-    Monomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
+    CommutativeMonomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
 
   public:
     typedef typename VarDegreeMap::iterator iterator;
@@ -28,13 +28,13 @@ class Monomial {
 
     /* Since we don't manage any resources, we can simply use the default
      * constructors and assignment operators. */
-    Monomial() = default;
-    Monomial(const Monomial &m) = default;
-    Monomial(Monomial &&m) = default;
-    Monomial& operator=(const Monomial &m) = default;
-    Monomial& operator=(Monomial &&m) = default;
+    CommutativeMonomial() = default;
+    CommutativeMonomial(const CommutativeMonomial &m) = default;
+    CommutativeMonomial(CommutativeMonomial &&m) = default;
+    CommutativeMonomial& operator=(const CommutativeMonomial &m) = default;
+    CommutativeMonomial& operator=(CommutativeMonomial &&m) = default;
 
-    Monomial(std::initializer_list<VarId> vs) {
+    CommutativeMonomial(std::initializer_list<VarId> vs) {
       for (auto var : vs) {
         variables_.Insert(var);
       }
@@ -42,37 +42,37 @@ class Monomial {
 
     /* std::vector seems to be a neutral data type and does not leak internal
      * data structure. */
-    Monomial(std::vector< std::pair<VarId, Degree> > vs) {
+    CommutativeMonomial(std::vector< std::pair<VarId, Degree> > vs) {
       for (auto var_degree : vs) {
         variables_.Insert(var_degree.first, var_degree.second);
       }
     }
 
     /* Multiply two monomials. */
-    Monomial operator*(const Monomial &monomial) const {
+    CommutativeMonomial operator*(const CommutativeMonomial &monomial) const {
       auto tmp_variables = variables_;
       for (auto var_degree : monomial.variables_) {
         tmp_variables.Insert(var_degree.first, var_degree.second);
       }
-      return Monomial(std::move(tmp_variables));
+      return CommutativeMonomial(std::move(tmp_variables));
     }
 
     /* Multiply a monomial with a variable. */
-    Monomial operator*(const VarId &var) const {
+    CommutativeMonomial operator*(const VarId &var) const {
       auto tmp_variables = variables_;
       tmp_variables.Insert(var);
-      return Monomial{std::move(tmp_variables)};
+      return CommutativeMonomial{std::move(tmp_variables)};
     }
 
     /* Commutative version of derivative. */
-    std::pair<Degree, Monomial> derivative(const VarId &var) const {
+    std::pair<Degree, CommutativeMonomial> derivative(const VarId &var) const {
 
       auto var_degree_iter = variables_.find(var);
 
       /* If the variable does not appear in the monomial, the derivative
        * must be 0. */
       if (var_degree_iter == variables_.end()) {
-        return { 0, Monomial{} };
+        return { 0, CommutativeMonomial{} };
       }
 
       /* Remove one of these by removing the first of them and then "multiply"
@@ -80,7 +80,7 @@ class Monomial {
       auto tmp_variables = variables_;
       tmp_variables.Erase(var);
 
-      return { var_degree_iter->second, Monomial{std::move(tmp_variables)} };
+      return { var_degree_iter->second, CommutativeMonomial{std::move(tmp_variables)} };
     }
 
     /*
@@ -90,7 +90,7 @@ class Monomial {
      *  with binom{D}{i} where D is the vector of variable degrees
      *  i.e. if above operator d/dx^2y^3 is applied to the monomial x^5y^6 the result is (5*4 * 6*5*4) * x^3y^3
      */
-    std::pair<Degree, Monomial> derivative_binom(const VarDegreeMap &vars) const {
+    std::pair<Degree, CommutativeMonomial> derivative_binom(const VarDegreeMap &vars) const {
       Degree multiplicity = 1;
       auto tmp_variables = variables_;
 
@@ -99,12 +99,12 @@ class Monomial {
         /* If the variable does not appear in the monomial, the derivative
          * must be 0. */
         if (var_degree_iter == tmp_variables.end()) {
-          return { 0, Monomial{} };
+          return { 0, CommutativeMonomial{} };
         }
         else if (var.second > var_degree_iter->second){
           /* If we derive more often wrt. some var than this variable is present, we get 0.
            */
-          return { 0, Monomial{} };
+          return { 0, CommutativeMonomial{} };
         }
         /*
          * this would give the usual derivative:
@@ -121,7 +121,7 @@ class Monomial {
 
       /* Remove one of these by removing the first of them and then "multiply"
        * the coefficient with degree_before. */
-      return {multiplicity, Monomial{std::move(tmp_variables)} };
+      return {multiplicity, CommutativeMonomial{std::move(tmp_variables)} };
     }
 
     /* Evaluate the monomial given the map from variables to values,
@@ -144,11 +144,11 @@ class Monomial {
 
     /* Partially evaluate the monomial. */
     template <typename SR>
-    std::pair<SR, Monomial> partial_eval(
+    std::pair<SR, CommutativeMonomial> partial_eval(
         const ValuationMap<SR> &values) const {
 
       SR result_value = SR::one();
-      Monomial result_monomial;
+      CommutativeMonomial result_monomial;
 
 
       for (auto var_degree : variables_) {
@@ -173,7 +173,7 @@ class Monomial {
     }
 
     /* Variable substitution. */
-    Monomial subst(const std::unordered_map<VarId, VarId> &mapping) const {
+    CommutativeMonomial subst(const std::unordered_map<VarId, VarId> &mapping) const {
       VarDegreeMap tmp_variables;
 
       for (const auto &var_degree : variables_) {
@@ -185,7 +185,7 @@ class Monomial {
         }
       }
 
-      return Monomial{std::move(tmp_variables)};
+      return CommutativeMonomial{std::move(tmp_variables)};
     }
 
     /* Convert this monomial to an element of the free semiring. */
@@ -200,11 +200,11 @@ class Monomial {
       return result;
     }
 
-    bool operator<(const Monomial &rhs) const {
+    bool operator<(const CommutativeMonomial &rhs) const {
       return variables_ < rhs.variables_;
     }
 
-    bool operator==(const Monomial &rhs) const {
+    bool operator==(const CommutativeMonomial &rhs) const {
       return variables_ == rhs.variables_;
     }
 
@@ -254,8 +254,8 @@ class Monomial {
 namespace std {
 
 template<>
-struct hash<Monomial> {
-  inline std::size_t operator()(const Monomial &m) const {
+struct hash<CommutativeMonomial> {
+  inline std::size_t operator()(const CommutativeMonomial &m) const {
     return m.Hash();
   }
 };
@@ -263,4 +263,4 @@ struct hash<Monomial> {
 }  /* namespace std */
 
 
-std::ostream& operator<<(std::ostream &out, const Monomial &monomial);
+std::ostream& operator<<(std::ostream &out, const CommutativeMonomial &monomial);

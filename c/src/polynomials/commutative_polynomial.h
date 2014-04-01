@@ -18,12 +18,12 @@
 
 #include "../utils/deriv_generator.h"
 
-#include "monomial.h"
+#include "commutative_monomial.h"
 
-template <typename SR> using MonomialMap = std::map<Monomial, SR> ;
+template <typename SR> using MonomialMap = std::map<CommutativeMonomial, SR> ;
 
 template <typename SR>
-class Polynomial : public Semiring<Polynomial<SR>,
+class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
                                    Commutativity::Commutative,
                                    SR::GetIdempotence()> {
   private:
@@ -45,9 +45,9 @@ class Polynomial : public Semiring<Polynomial<SR>,
     VarDegreeMap variables_;
 
     template <typename SR2>
-    friend class Polynomial;
+    friend class CommutativePolynomial;
 
-    static void InsertMonomial(MonomialMap<SR> &map, const Monomial &m,
+    static void InsertMonomial(MonomialMap<SR> &map, const CommutativeMonomial &m,
         const SR &c) {
       if (c == SR::null()) {
         return;
@@ -57,7 +57,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       map.insert(std::make_pair(m, c));
     }
 
-    void InsertMonomial(MonomialMap<SR> &map, Monomial &&m, SR &&c) {
+    void InsertMonomial(MonomialMap<SR> &map, CommutativeMonomial &&m, SR &&c) {
       if (c == SR::null()) {
         return;
       }
@@ -66,21 +66,21 @@ class Polynomial : public Semiring<Polynomial<SR>,
       map.insert(std::make_pair(std::move(m), std::move(c)));
     }
 
-    void InsertMonomial(const Monomial &m, const SR &c) {
+    void InsertMonomial(const CommutativeMonomial &m, const SR &c) {
       InsertMonomial(monomials_, m, c);
     }
 
-    void InsertMonomial(Monomial &&m, SR &&c) {
+    void InsertMonomial(CommutativeMonomial &&m, SR &&c) {
       InsertMonomial(monomials_, std::move(m), std::move(c));
     }
 
-    Polynomial(MonomialMap<SR> &&ms, VarDegreeMap &&vs)
+    CommutativePolynomial(MonomialMap<SR> &&ms, VarDegreeMap &&vs)
         : monomials_(std::move(ms)), variables_(std::move(vs)) {
       assert(SanityCheck());
     }
 
     /* Private constructor to hide the internal data structure. */
-    Polynomial(const MonomialMap<SR> &ms) : monomials_(ms) {
+    CommutativePolynomial(const MonomialMap<SR> &ms) : monomials_(ms) {
       for (auto &monomial_coeff : monomials_) {
         variables_.Merge(monomial_coeff.first.variables_);
       }
@@ -99,16 +99,16 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
   public:
-    Polynomial() = default;
+    CommutativePolynomial() = default;
 
-    Polynomial(SR &&c, Monomial &&m) {
+    CommutativePolynomial(SR &&c, CommutativeMonomial &&m) {
       variables_ = m.variables_;
       InsertMonomial(std::move(m), std::move(c));
 
       assert(SanityCheck());
     }
 
-    Polynomial(std::initializer_list< std::pair<SR, Monomial> > init_list) {
+    CommutativePolynomial(std::initializer_list< std::pair<SR, CommutativeMonomial> > init_list) {
       for (const auto &coeff_monomial : init_list) {
         auto iter = monomials_.find(coeff_monomial.second);
         if (iter == monomials_.end()) {
@@ -125,24 +125,24 @@ class Polynomial : public Semiring<Polynomial<SR>,
       assert(SanityCheck());
     }
 
-    Polynomial(const Polynomial &p) = default;
-    Polynomial(Polynomial &&p) = default;
+    CommutativePolynomial(const CommutativePolynomial &p) = default;
+    CommutativePolynomial(CommutativePolynomial &&p) = default;
 
     /* Create a 'constant' polynomial. */
-    Polynomial(const SR &elem) { InsertMonomial(Monomial{}, elem); }
-    Polynomial(SR &&elem) { InsertMonomial(Monomial{}, std::move(elem)); }
+    CommutativePolynomial(const SR &elem) { InsertMonomial(CommutativeMonomial{}, elem); }
+    CommutativePolynomial(SR &&elem) { InsertMonomial(CommutativeMonomial{}, std::move(elem)); }
 
     /* Create a polynomial which consists only of one variable. */
-    Polynomial(const VarId var) {
-      InsertMonomial(Monomial{var}, SR::one());
+    CommutativePolynomial(const VarId var) {
+      InsertMonomial(CommutativeMonomial{var}, SR::one());
       variables_.Insert(var);
       assert(SanityCheck());
     }
 
-    Polynomial<SR>& operator=(const Polynomial<SR> &p) = default;
-    Polynomial<SR>& operator=(Polynomial<SR> &&p) = default;
+    CommutativePolynomial<SR>& operator=(const CommutativePolynomial<SR> &p) = default;
+    CommutativePolynomial<SR>& operator=(CommutativePolynomial<SR> &&p) = default;
 
-    Polynomial<SR>& operator+=(const Polynomial<SR> &polynomial) {
+    CommutativePolynomial<SR>& operator+=(const CommutativePolynomial<SR> &polynomial) {
       for (const auto &monomial_coeff : polynomial.monomials_) {
         auto iter = monomials_.find(monomial_coeff.first);
         if (iter == monomials_.end()) {
@@ -161,7 +161,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return *this;
     }
 
-    Polynomial<SR>& operator*=(const Polynomial<SR> &rhs) {
+    CommutativePolynomial<SR>& operator*=(const CommutativePolynomial<SR> &rhs) {
       if (monomials_.empty()) {
         return *this;
       } else if (rhs.monomials_.empty()) {
@@ -200,7 +200,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     // multiplying a polynomial with a variable
-    Polynomial<SR> operator*(const VarId &var) const {
+    CommutativePolynomial<SR> operator*(const VarId &var) const {
       MonomialMap<SR> tmp_monomials;
       VarDegreeMap tmp_variables;
       for (const auto &monomial_coeff : monomials_) {
@@ -210,11 +210,11 @@ class Polynomial : public Semiring<Polynomial<SR>,
                                       monomial_coeff.second);
       }
 
-      return Polynomial{std::move(tmp_monomials)};
+      return CommutativePolynomial{std::move(tmp_monomials)};
     }
 
-    friend Polynomial<SR> operator*(const SR &elem,
-        const Polynomial<SR> &polynomial) {
+    friend CommutativePolynomial<SR> operator*(const SR &elem,
+        const CommutativePolynomial<SR> &polynomial) {
 
       MonomialMap<SR> tmp_monomials;
 
@@ -223,21 +223,21 @@ class Polynomial : public Semiring<Polynomial<SR>,
                        elem * monomial_coeff.second);
       }
 
-      return Polynomial{std::move(tmp_monomials)};
+      return CommutativePolynomial{std::move(tmp_monomials)};
     }
 
-    bool operator==(const Polynomial<SR> &polynomial) const {
+    bool operator==(const CommutativePolynomial<SR> &polynomial) const {
 
       return variables_ == polynomial.variables_ &&
              monomials_ == polynomial.monomials_;
 
     }
 
-    Polynomial<SR> derivative(const VarId &var) const {
+    CommutativePolynomial<SR> derivative(const VarId &var) const {
       return derivative_binom(VarDegreeMap{std::make_pair(var,1)});
     }
 
-    Polynomial<SR> derivative_binom(const VarDegreeMap &vars) const {
+    CommutativePolynomial<SR> derivative_binom(const VarDegreeMap &vars) const {
       MonomialMap<SR> tmp_monomials;
       VarDegreeMap tmp_variables;
 
@@ -255,7 +255,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
           iter->second += std::move(tmp_coeff);
         }
       }
-      return Polynomial{std::move(tmp_monomials), std::move(tmp_variables)};
+      return CommutativePolynomial{std::move(tmp_monomials), std::move(tmp_variables)};
     }
 
     SR AllNewtonDerivatives(const ValuationMap<SR> &previous_newton,
@@ -278,10 +278,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return result;
     }
 
-    static Matrix< Polynomial<SR> > jacobian(
-        const std::vector< Polynomial<SR> > &polynomials,
+    static Matrix< CommutativePolynomial<SR> > jacobian(
+        const std::vector< CommutativePolynomial<SR> > &polynomials,
         const std::vector<VarId> &variables) {
-    	Matrix< Polynomial<SR> > result(polynomials.size(),variables.size());
+    	Matrix< CommutativePolynomial<SR> > result(polynomials.size(),variables.size());
 
     	std::unordered_map<VarId, unsigned int> varpos;
     	for(unsigned int j=0; j<variables.size(); ++j){
@@ -294,7 +294,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     				//variables_ is a var_degree_map
     				int j = varpos[v.first];
     				auto mult_mon = monomial_coeff.first.derivative(v.first);
-    				result.At(i,j) += Polynomial(monomial_coeff.second*mult_mon.first, std::move(mult_mon.second));
+    				result.At(i,j) += CommutativePolynomial(monomial_coeff.second*mult_mon.first, std::move(mult_mon.second));
     			}
     		}
     	}
@@ -312,18 +312,18 @@ class Polynomial : public Semiring<Polynomial<SR>,
     /* Evaluate as much as possible (depending on the provided values) and
      * return both the concrete result and the remaining (i.e., unevaluated)
      * monomial. */
-    Polynomial<SR> partial_eval(const ValuationMap<SR> &values) const {
-      Polynomial<SR> result = Polynomial<SR>::null();
+    CommutativePolynomial<SR> partial_eval(const ValuationMap<SR> &values) const {
+      CommutativePolynomial<SR> result = CommutativePolynomial<SR>::null();
       for (const auto &monomial_coeff : monomials_) {
         auto tmp_coeff_monomial = monomial_coeff.first.partial_eval(values);
-        result += Polynomial(monomial_coeff.second * tmp_coeff_monomial.first,
+        result += CommutativePolynomial(monomial_coeff.second * tmp_coeff_monomial.first,
                              std::move(tmp_coeff_monomial.second));
       }
       return result;
     }
 
     /* Variable substitution. */
-    Polynomial<SR> subst(const std::unordered_map<VarId, VarId> &mapping) const {
+    CommutativePolynomial<SR> subst(const std::unordered_map<VarId, VarId> &mapping) const {
       MonomialMap<SR> tmp_monomials;
 
       for (const auto &monomial_coeff : monomials_) {
@@ -331,12 +331,12 @@ class Polynomial : public Semiring<Polynomial<SR>,
                        monomial_coeff.second);
       }
 
-      return Polynomial<SR>{std::move(tmp_monomials)};
+      return CommutativePolynomial<SR>{std::move(tmp_monomials)};
     }
 
-    static Matrix<SR> eval(const Matrix< Polynomial<SR> > &poly_matrix,
+    static Matrix<SR> eval(const Matrix< CommutativePolynomial<SR> > &poly_matrix,
         const ValuationMap<SR> &values) {
-      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      const std::vector< CommutativePolynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<SR> result;
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
@@ -344,14 +344,14 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return Matrix<SR>{poly_matrix.getRows(), std::move(result)};
     }
 
-    static Matrix<Polynomial<SR> > eval(Matrix<Polynomial<SR> > poly_matrix,
-        const std::unordered_map<VarId,Polynomial<SR> >& values) {
-      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
-      std::vector< Polynomial<SR> > result;
+    static Matrix<CommutativePolynomial<SR> > eval(Matrix<CommutativePolynomial<SR> > poly_matrix,
+        const std::unordered_map<VarId,CommutativePolynomial<SR> >& values) {
+      const std::vector< CommutativePolynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      std::vector< CommutativePolynomial<SR> > result;
       for (const auto &polynomial : tmp_polynomials) {
         result.emplace_back(polynomial.eval(values));
       }
-      return Matrix< Polynomial<SR> >{poly_matrix.getRows(), result};
+      return Matrix< CommutativePolynomial<SR> >{poly_matrix.getRows(), result};
     }
 
     /* Convert this polynomial to an element of the free semiring.  Note that
@@ -387,12 +387,12 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
     /* Same as make_free but for matrix form. */
     static Matrix<FreeSemiring> make_free(
-        const Matrix< Polynomial<SR> > &poly_matrix,
+        const Matrix< CommutativePolynomial<SR> > &poly_matrix,
         std::unordered_map<SR, VarId, SR> *valuation) {
 
       assert(valuation);
 
-      const std::vector< Polynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
+      const std::vector< CommutativePolynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector<FreeSemiring> result;
 
       for (const auto &polynomial : tmp_polynomials) {
@@ -422,7 +422,6 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return variables_;
     }
 
-    /* FIXME: Get rid of this. */
     std::set<VarId> get_variables() const {
       std::set<VarId> vars;
       for (auto var_degree : variables_) {
@@ -431,12 +430,12 @@ class Polynomial : public Semiring<Polynomial<SR>,
       return vars;
     }
 
-    static Polynomial<SR> null() {
-      return Polynomial<SR>{};
+    static CommutativePolynomial<SR> null() {
+      return CommutativePolynomial<SR>{};
     }
 
-    static Polynomial<SR> one() {
-      return Polynomial<SR>{SR::one()};
+    static CommutativePolynomial<SR> one() {
+      return CommutativePolynomial<SR>{SR::one()};
     }
 
     static bool is_idempotent;
@@ -458,7 +457,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
     }
 
     template <typename F>
-    auto Map(F fun) const -> Polynomial<typename std::result_of<F(SR)>::type> {
+    auto Map(F fun) const -> CommutativePolynomial<typename std::result_of<F(SR)>::type> {
       typedef typename std::result_of<F(SR)>::type SR2;
 
       /* Variables don't change, so just copy them over. */
@@ -468,10 +467,10 @@ class Polynomial : public Semiring<Polynomial<SR>,
       std::transform(
         monomials_.begin(), monomials_.end(),
         std::inserter(result_monomials, result_monomials.begin()),
-        [&fun](const std::pair< Monomial, SR > &pair) {
+        [&fun](const std::pair< CommutativeMonomial, SR > &pair) {
           return std::make_pair(pair.first, fun(pair.second));
         });
-      return Polynomial<SR2>{std::move(result_monomials),
+      return CommutativePolynomial<SR2>{std::move(result_monomials),
                              std::move(result_variables)};
     }
 };
@@ -479,7 +478,7 @@ class Polynomial : public Semiring<Polynomial<SR>,
 
 
 template <typename SR>
-SR Polynomial<SR>::AllNewtonDerivatives(
+SR CommutativePolynomial<SR>::AllNewtonDerivatives(
     const ValuationMap<SR> &previous_newton,
     const ValuationMap<SR> &newton_update) const {
 
@@ -612,7 +611,7 @@ SR Polynomial<SR>::AllNewtonDerivatives(
 
 
 template <typename SR>
-SR Polynomial<SR>::DerivativeBinomAt(
+SR CommutativePolynomial<SR>::DerivativeBinomAt(
     const std::unordered_map<VarId, Degree> &deriv_variables,
     const ValuationMap<SR> &valuation) const {
 
@@ -712,7 +711,7 @@ std::ostream& operator<<(std::ostream& os, const ValuationMap<SR>& values) {
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os,
-    const std::unordered_map<VarId, Polynomial<SR> >& values) {
+    const std::unordered_map<VarId, CommutativePolynomial<SR> >& values) {
   for (const auto &key_value : values) {
     os << key_value->first << "→" << key_value->second << ";";
   }
