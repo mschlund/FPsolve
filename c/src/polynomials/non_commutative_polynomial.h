@@ -245,6 +245,8 @@ private:
       return result;
     }
 
+    static constexpr Commutativity GetCommutativity() { return Commutativity::NonCommutative; }
+
     /* Evaluate as much as possible (depending on the provided values) and
      * return the remaining (i.e., unevaluated) monomial. */
     NonCommutativePolynomial<SR> partial_eval(const std::map<VarId, SR> &values) const {

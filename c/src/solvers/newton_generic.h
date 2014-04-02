@@ -26,17 +26,20 @@
 // DeltaGenerator is parametrized by a semiring
 #define DELTA_GEN_TYPE template <typename> class
 
-
+// Polynomial is parametrized by a semiring
+#define POLY_TYPE template <typename> class
 
 template <typename SR,
           LIN_EQ_SOLVER_TYPE LinEqSolverTemplate,
-          DELTA_GEN_TYPE DeltaGeneratorTemplate>
+          DELTA_GEN_TYPE DeltaGeneratorTemplate,
+          POLY_TYPE Poly>
 class GenericNewton {
   typedef LinEqSolverTemplate<SR> LinEqSolver;
   typedef DeltaGeneratorTemplate<SR> DeltaGenerator;
+  typedef std::vector< std::pair< VarId, Poly<SR> > > GenericEquations;
 
   public:
-  ValuationMap<SR> solve_fixpoint(const Equations<SR>& equations, int max_iter) {
+  ValuationMap<SR> solve_fixpoint(const GenericEquations& equations, int max_iter) {
     std::vector<CommutativePolynomial<SR>> F;
     std::vector<VarId> poly_vars;
     for (const auto &eq : equations) {
@@ -73,12 +76,12 @@ class GenericNewton {
    *
   */
   Matrix<SR> solve_fixpoint(
-      const std::vector< CommutativePolynomial<SR> > &polynomials,
+      const std::vector< Poly<SR> > &polynomials,
       const std::vector<VarId> &variables, std::size_t max_iter) {
 
     assert(polynomials.size() == variables.size());
 
-    Matrix< CommutativePolynomial<SR> > F_mat{polynomials.size(), polynomials};
+    Matrix< Poly<SR> > F_mat{polynomials.size(), polynomials};
 
     Matrix<SR> newton_values{polynomials.size(), 1};
     Matrix<SR> previous_newton_values{polynomials.size(), 1};
@@ -87,7 +90,7 @@ class GenericNewton {
     for (auto &variable : variables) {
       values.insert(std::make_pair(variable, SR::null()));
     }
-    Matrix<SR> delta= CommutativePolynomial<SR>::eval(F_mat, values); //TODO: use delta_at here as well??
+    Matrix<SR> delta= Poly<SR>::eval(F_mat, values); //TODO: use delta_at here as well??
 
     Matrix<SR> newton_update{polynomials.size(), 1};
 
@@ -483,11 +486,11 @@ private:
 // compatability with old implementation
 template <typename SR>
 using Newton =
-  GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator>;
+  GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
 
 template <typename SR>
 using NewtonCL =
-  GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator>;
+  GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
 
 // default NonCommutative Newton implementation using naive Kleene iteration
 // TODO: does not work yet ! :)

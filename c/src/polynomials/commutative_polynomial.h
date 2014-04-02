@@ -309,6 +309,8 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
       return result;
     }
 
+    static constexpr Commutativity GetCommutativity() { return Commutativity::Commutative; }
+
     /* Evaluate as much as possible (depending on the provided values) and
      * return both the concrete result and the remaining (i.e., unevaluated)
      * monomial. */
