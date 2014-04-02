@@ -108,6 +108,9 @@ std::string Genepi::output(std::string prefix, int i, std::string postfix) const
 
 std::vector<std::vector<int>> Genepi::getOffsets() const {
   // TODO: make this more beautiful...
+  if(genepi_set_is_empty(this->solver, this->set)) // this is the empty set
+    return {}; // nothing to return...
+
   std::string filename = "read_offsets_from_automaton.dot";
   FILE* file = fopen(filename.c_str(), "w");
   genepi_set_display_data_structure(solver, set, file);
@@ -119,8 +122,10 @@ std::vector<std::vector<int>> Genepi::getOffsets() const {
   std::vector<std::vector<int>> offsets;
   for(auto f : information.finals) {
     std::vector<int> visited;
+    std::vector<bool> visited_bool(information.node_count+1);
     visited.push_back(information.init);
-    auto result = DepthFirst(&(information.graph), visited, f, k);
+    visited_bool.at(information.init) = true;
+    auto result = DepthFirst(&(information.graph), visited, visited_bool, f, k);
     offsets.insert(offsets.end(), result.begin(), result.end());
   }
 
