@@ -16,7 +16,8 @@ struct Parsed {
   int init;
   std::vector<int> finals;
   Graph graph;
+  int node_count;
 };
 
 Parsed parse_automaton(int k, std::string filename);
-std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, int end, int k);
+std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k);

@@ -39,17 +39,18 @@ std::vector<int> addTo(std::vector<int> first, std::vector<int> second) {
   return result;
 }
 
-std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, int end, int k) {
+std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k) {
   int back = visited.back();
   auto adjNodes = graph->nodes[back].neighbours;
 
   std::vector<std::vector<Match>> offsets;
   // examine adjacent nodes
   for(auto node : adjNodes) {
-    if(std::find(visited.begin(), visited.end(), node.first) != visited.end())
+    if(visited_bool.at(node.first))
       continue; // we already visited the node.
     if(node.first == end) {
       visited.push_back(node.first);
+      visited_bool.at(node.first) = true;
       int hops = (int) visited.size();
       std::vector<std::vector<Match>> tmp; // build up the path of matches in tmp
       // std::cout << visited[0];
@@ -75,8 +76,8 @@ std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, i
       // tmp now holds one complete path to an end node, collect this path in offsets
       offsets.insert(offsets.end(), tmp.begin(), tmp.end());
 
-      int n = (int) visited.size()-1;
-      visited.erase(visited.begin()+n);
+      visited_bool.at(visited.back()) = false;
+      visited.pop_back(); // delete last element → backtracking
       break;
     }
 
@@ -100,14 +101,15 @@ std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, i
 
   // in breadt-first, recursion needs to come after visiting adjacent nodes
   for(auto node : adjNodes) {
-    if(std::find(visited.begin(), visited.end(), node.first) != visited.end() || node.first == end)
+    if(visited_bool.at(node.first) || node.first == end)
       continue; // we already visited the node.
     visited.push_back(node.first);
-    auto ret = DepthFirst(graph, visited, end, k);
+    visited_bool.at(node.first) = true;
+    auto ret = DepthFirst(graph, visited, visited_bool, end, k);
     result.insert(ret.begin(), ret.end());
 
-    int n = (int) visited.size()-1;
-    visited.erase(visited.begin()+n);
+    visited_bool.at(visited.back()) = false;
+    visited.pop_back(); // delete last element → backtracking
   }
 
   return result;
@@ -118,6 +120,7 @@ Parsed parse_automaton(int k, std::string filename) {
   std::ifstream file(filename);
   int init;
   int number;
+  int node_count;
   Graph graph;
   while(file >> number)
   {
@@ -182,6 +185,7 @@ Parsed parse_automaton(int k, std::string filename) {
     }
     graph.nodes[first].neighbours[second] = matches2;
     // std::cout << std::endl;
+    node_count = std::max(std::max(first, second), node_count);
   }
-  return {init, finals, graph};
+  return {init, finals, graph, node_count};
 }

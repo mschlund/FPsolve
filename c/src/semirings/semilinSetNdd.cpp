@@ -27,6 +27,24 @@ std::vector<std::vector<int>> multiply_offsets(const std::vector<std::vector<int
   return offsets;
 }
 
+std::string serialize_offsets(const std::vector<std::vector<int>>& offsets) {
+  std::stringstream result;
+  result << "[";
+  for(const auto& offset : offsets) {
+    if(&offset != &offsets.at(0))
+      result << ",";
+    result << "(";
+    for(const auto& o : offset) {
+      if(&o != &offset.at(0))
+        result << ",";
+      result << o;
+    }
+    result << ")";
+  }
+  result << "]";
+  return result.str();
+}
+
 std::vector<int> add_vectors(const std::vector<int>& vec1, const std::vector<int>& vec2) {
   assert(vec1.size() == vec2.size());
   std::vector<int> result(vec1.size());
@@ -43,11 +61,11 @@ std::vector<int> subtract_vectors(const std::vector<int>& vec1, const std::vecto
 }
 
 // check if the given candidate is truly a generator starting at the given offset
-bool SemilinSetNdd::isGenerator(const std::vector<int>& offset, const std::vector<int>& candidate) const {
+// n is number of offsets
+bool SemilinSetNdd::isGenerator(const std::vector<int>& offset, const std::vector<int>& candidate, int n) const {
   // try to sample enough points in the solution space
   // from the given offset to be sure this is a generator.
   // First guess is, n is enough for n > offsets.size()
-  int n = offsets.size();
   auto solution = offset; // start at offset
   for(int i = 0; i<=n; ++i) {
     // solution += candidate;
@@ -143,7 +161,7 @@ std::vector<std::vector<int>> SemilinSetNdd::getUniqueOffsets(const std::vector<
 
       auto candidate_generator = subtract_vectors(offset2,offset1);
       if(isPositiveNotNull(candidate_generator)) {
-        if(isGenerator(offset1, candidate_generator)) {
+        if(isGenerator(offset1, candidate_generator, offsets.size())) {
           // offset2 was indeed created by offset1+candidate
           // TODO: be careful! there might be another offset which created offset1...
           // but maybe this may not be the case because of the order in which we
@@ -165,7 +183,7 @@ std::vector<std::vector<int>> SemilinSetNdd::getUniqueOffsets(const std::vector<
             auto new_candidate_generator = subtract_vectors(offset2,original_offset);
 
             if(isPositiveNotNull(new_candidate_generator)) {
-              if(isGenerator(original_offset, new_candidate_generator)) {
+              if(isGenerator(original_offset, new_candidate_generator, offsets.size())) {
                 // std::cout << "offset2 is created by original_offset: → ";
                 generated_by[j] = generated_by.at(i);
                 generated.at(j) = true;
@@ -263,12 +281,11 @@ SemilinSetNdd::SemilinSetNdd(VarId var, int cnt) {
   alpha.at(position) = cnt;
 
   this->set = Genepi(solver, alpha, false);
-  this->offsets.push_back(alpha);
 }
-SemilinSetNdd::SemilinSetNdd(Genepi set, std::vector<std::vector<int>> offsets) : set(set), offsets(offsets){
+SemilinSetNdd::SemilinSetNdd(Genepi set) :set(set) {
 }
 
-SemilinSetNdd::SemilinSetNdd(const SemilinSetNdd& expr) : set(expr.set), offsets(expr.offsets) {
+SemilinSetNdd::SemilinSetNdd(const SemilinSetNdd& expr) : set(expr.set) {
 }
 
 SemilinSetNdd::~SemilinSetNdd() {
@@ -276,27 +293,21 @@ SemilinSetNdd::~SemilinSetNdd() {
 
 SemilinSetNdd SemilinSetNdd::operator=(const SemilinSetNdd& term) {
   this->set = term.set;
-  this->offsets = term.offsets;
   return *this;
 }
 
 SemilinSetNdd SemilinSetNdd::operator+=(const SemilinSetNdd& term) {
   this->set = this->set.union_op(term.set);
-  for(auto offset : term.offsets)
-    insert_offset(this->offsets, offset);
   return *this;
 }
-
 
 SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
   std::vector<int> sel_a(3*k, 1);
   std::vector<int> sel_b(3*k, 1);
-  std::vector<int> sel_res(3*k, 1);
   for(int i = 0; i < k; i++)
   {
     sel_a[3*i]     = 0;
     sel_b[3*i+1]   = 0;
-    sel_res[3*i+2] = 0;
   }
 
   // inverse projection from original dimensions to an extended version, which is intersected with the natural numbers
@@ -306,31 +317,42 @@ SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
   std::vector<int> generic_alpha = {1, 1, -1}; // 1*a[i]+1*b[i]-1*c[i]=0
   Genepi generic_sum(solver, generic_alpha, 0);
 
-  std::vector<int> component_selection(3*k, 1);
+  std::vector<int> component_selection(3*k, 1); // TODO: maybe we only use k+2 or so elements
+  std::vector<int> component_projection(3*k, 0); // we want to project away component 3i and 3i+1
 
   // initialize the result automaton with (a_i,b_i,N) for i in 0..k-1
   Genepi result(solver, 3*k, true); // natural numbers
   result = result.intersect(a_ext).intersect(b_ext);
 
   // one run for each variable
+  // at the end of each loop run we delete the used a and b component
+  // the new sum component will be at position i at the end of the loop run
+  // (a,b,a+b) component relevant for current run is at position (i,i+1,i+2) at the begin of a run
   for(int i = 0; i < k; i++)
   {
+    component_selection.resize(3*k-2*i);
+    component_projection.resize(3*k-2*i);
     // TODO: figure out, if precalculating this and apply inv_project has better complexity
     // than always create a new sum automaton for different components
-    component_selection[3*i]   = 0;
-    component_selection[3*i+1] = 0;
-    component_selection[3*i+2] = 0;
+    component_selection[i]   = 0;
+    component_selection[i+1] = 0;
+    component_selection[i+2] = 0;
     // inverse projection on generic sum automaton to create automaton for component i
     Genepi component_sum(generic_sum.invproject(component_selection));
     // use this sum automaton on the intermediate result
     result = result.intersect(component_sum);
 
-    component_selection[3*i]   = 1; // reset component_selection
-    component_selection[3*i+1] = 1;
-    component_selection[3*i+2] = 1;
+    component_selection[i]   = 1; // reset component_selection
+    component_selection[i+1] = 1;
+    component_selection[i+2] = 1;
+
+    component_projection[i]   = 1; // project away the already used a and b component at position (i,i+1)
+    component_projection[i+1] = 1;
+    result = result.project(component_projection);
+    component_projection[i]   = 0;
+    component_projection[i+1] = 0;
   }
-  this->offsets = multiply_offsets(this->offsets, term.offsets);
-  this->set = result.project(sel_res);
+  this->set = result;
   return *this;
 
 }
@@ -343,8 +365,10 @@ bool SemilinSetNdd::operator == (const SemilinSetNdd& term) const {
 }
 SemilinSetNdd SemilinSetNdd::star () const {
   SemilinSetNdd offset_star = one();
-  for(auto offset : this->offsets) {
-    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true),{std::vector<int>(k,0)}); // offsets are used and converted to generators
+  auto calculated_offsets = this->set.getOffsets();
+  auto clean_offsets = this->getUniqueOffsets(calculated_offsets);
+  for(auto offset : clean_offsets) {
+    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true));
   }
 
   SemilinSetNdd result = one(); // result = 1
@@ -366,33 +390,13 @@ SemilinSetNdd SemilinSetNdd::null() {
 
 SemilinSetNdd SemilinSetNdd::one() {
   if(!SemilinSetNdd::elem_one)
-    SemilinSetNdd::elem_one = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd(Genepi(solver, std::vector<int>(k,0), false), {std::vector<int>(k,0)}));
+    SemilinSetNdd::elem_one = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd(Genepi(solver, std::vector<int>(k,0), false)));
   return *SemilinSetNdd::elem_one;
 }
 
-std::string serialize_offsets(const std::vector<std::vector<int>>& offsets) {
-  std::stringstream result;
-  result << "[";
-  for(const auto& offset : offsets) {
-    if(&offset != &offsets.at(0))
-      result << ",";
-    result << "(";
-    for(const auto& o : offset) {
-      if(&o != &offset.at(0))
-        result << ",";
-      result << o;
-    }
-    result << ")";
-  }
-  result << "]";
-  return result.str();
-}
 
 std::string SemilinSetNdd::string() const {
   std::stringstream result;
-  result << "explicit offsets:\t\t" << serialize_offsets(this->offsets) << std::endl;
-  auto cleaned_offsets = this->getUniqueOffsets(this->offsets);
-  result << "explicit offsets (clean):\t" << serialize_offsets(cleaned_offsets) << std::endl;
   auto calculated_offsets = this->set.getOffsets();
   result << "calculated offsets:\t\t" << serialize_offsets(calculated_offsets) << std::endl;
   auto cleaned_calculated_offsets = this->getUniqueOffsets(calculated_offsets);
