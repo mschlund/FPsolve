@@ -134,10 +134,12 @@ class CommutativeMonomial {
         auto value_iter = values.find(var_degree.first);
         /* All variables should be in the values map. */
         assert(value_iter != values.end());
-        //TODO: square-and-multiply, resp. pow(n)-function for semiring!
-        for (Degree i = 0; i < var_degree.second; ++i) {
+        // exponentiation is more efficient than iterated multiplication (binary exp.)
+        result *= (value_iter->second ^ var_degree.second);
+
+        /*for (Degree i = 0; i < var_degree.second; ++i) {
           result *= value_iter->second;
-        }
+        }*/
       }
 
       return result;

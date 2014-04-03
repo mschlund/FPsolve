@@ -74,15 +74,19 @@ class Semiring {
         return SR::null();  // 0^0 is caught before
       }
 
-      SR result = SR::one();
+      SR tmp = lhs;
       std::uint_fast16_t tmpexp = exp;
+      SR result = SR::one();
 
-      while (tmpexp > 0) {
-        result *= result;
-        if (tmpexp % 2 == 1) {
-          result *= lhs;
+      while (true) {
+        if (tmpexp % 2 ==1 ) {
+          result *= tmp;
         }
         tmpexp = tmpexp/2;
+
+        if(0 == tmpexp)
+          break;
+        tmp *= tmp; //square
       }
 
       return result;

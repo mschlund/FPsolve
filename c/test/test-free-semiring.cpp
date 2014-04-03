@@ -21,6 +21,7 @@ void FreeSemiringTest::tearDown()
 void FreeSemiringTest::testSemiring()
 {
   generic_test_semiring(*a,*b);
+  CPPUNIT_ASSERT(!( (*a) * (*b) == (*b) * (*a)));
 }
 
 void FreeSemiringTest::testAddition()

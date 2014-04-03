@@ -4,9 +4,14 @@
 #include <cppunit/extensions/HelperMacros.h>
 
 #include "../src/semirings/commutativeRExp.h"
+#include "../src/semirings/semilinSetNdd.h"
+#include "../src/semirings/free-semiring.h"
+
 #include "../src/polynomials/commutative_polynomial.h"
 #include "../src/datastructs/matrix.h"
 #include "../src/matrix_free_semiring.h"
+
+#define TEST_SR CommutativeRExp
 
 class PolynomialTest : public CppUnit::TestFixture
 {
@@ -36,8 +41,8 @@ protected:
 	void testDerivativeBinomAt();
 
 private:
-	CommutativeRExp *a, *b, *c, *d, *e;
-	CommutativePolynomial<CommutativeRExp> *null, *one, *first, *second, *p1;
+	TEST_SR *a, *b, *c, *d, *e;
+	CommutativePolynomial<TEST_SR> *null, *one, *first, *second, *p1;
 };
 
 #endif
