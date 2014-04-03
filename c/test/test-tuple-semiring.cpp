@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(TupleSemiringTest);
 
 void TupleSemiringTest::setUp()
 {
+  std::cout << "Tuple-SR-Test :" << std::endl;
   first = new TupleSemiring<FloatSemiring,BoolSemiring>(FloatSemiring(0.2), BoolSemiring(false));
   second = new TupleSemiring<FloatSemiring,BoolSemiring>(FloatSemiring(0.5), BoolSemiring(true));
 }

@@ -19,7 +19,7 @@ public:
 	void tearDown();
 
 protected:
-        void testSemiring();
+  void testSemiring();
 	void testAddition();
 	void testMultiplication();
 	void testStar();

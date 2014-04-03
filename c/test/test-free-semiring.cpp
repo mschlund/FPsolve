@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(FreeSemiringTest);
 
 void FreeSemiringTest::setUp()
 {
+  std::cout << "FreeSR-Test :" << std::endl;
 	a = new FreeSemiring(Var::GetVarId("a"));
 	b = new FreeSemiring(Var::GetVarId("b"));
 	c = new FreeSemiring(Var::GetVarId("c"));

@@ -134,6 +134,7 @@ class CommutativeMonomial {
         auto value_iter = values.find(var_degree.first);
         /* All variables should be in the values map. */
         assert(value_iter != values.end());
+        //TODO: square-and-multiply, resp. pow(n)-function for semiring!
         for (Degree i = 0; i < var_degree.second; ++i) {
           result *= value_iter->second;
         }
@@ -141,6 +142,36 @@ class CommutativeMonomial {
 
       return result;
     }
+
+    /*
+     * for a monomial \sum_i X_i^{d_i}, the height unfolding is:
+     * sum_{i=1}^n
+     * \prod_{k=1}^{i-1} values(X_k)^d_k *
+     * (\sum_{k=0}^{d_i -1} values(X_i)^{d_i-k-1}) * previous_update(X_i) * previous_values(X_i)^k )
+     * \prod_{k=i+1}^{n} previous_values(X_k)^{d_k}
+     *
+     * Important to note: X^{<h+1} is computed one round _before_ X^{=h+1}
+     *
+     * Explanation:
+     * example rule X -> X Y Z, becomes X^{=h+1} -> X^{=h} Y^{<h} Z^{<h} + X^{<h+1} Y^{=h} Z^{<h} + X^{<h+1} Y^{<h+1} Z^{=h}
+     * (in general we can have variables with exponents >1... this requires the ugly sum-expression in the second line above :))
+     * To derive an X-tree of height =h+1, every variable on the rhs can derive a tree of height =h (that is the outer sum)
+     * The variables "to the left" of this =h-variable generate trees of height <h,
+     * the variables "to the right" of it generate trees of height <(h-1).
+     * This way we enumerate every possibility to generate a tree of height =h+1 exactly once
+     * (first we choose the "last" variable i to become the =h, then in this block of variables we have to sum over all
+     * (d_i-1) partition-points k of the remaining variables into those of type "<h+1" and "<h".
+     */
+    template <typename SR>
+    SR HeightUnfoldingAt(const ValuationMap<SR> &values,
+        const ValuationMap<SR> &previous_update,
+        const ValuationMap<SR> &previous_values) const {
+
+      //TODO: implement this!
+      assert(false);
+      return SR::null();
+    }
+
 
     /* Partially evaluate the monomial. */
     template <typename SR>

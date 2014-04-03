@@ -265,17 +265,16 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
     SR DerivativeBinomAt(const std::unordered_map<VarId, Degree> &deriv_variables,
                          const ValuationMap<SR> &valuation) const;
 
-    SR derivative_at(const std::unordered_map<VarId, Degree> &vars, const ValuationMap<SR> &valuation) const {
-
+    /*
+     * Evaluate every unfolded monomial and sum up everything
+     */
+    SR HeightUnfoldingAt(const ValuationMap<SR> &values,
+        const ValuationMap<SR> &previous_update,
+        const ValuationMap<SR> &previous_values) const {
       SR result = SR::null();
-      /*
-       * sum over all monomials collect the binomial derivative_at
-       */
       for (const auto &monomial_coeff : monomials_) {
-        result += monomial_coeff.second * monomial_coeff.first.derivative_binom_at(vars, valuation);
+        result += monomial_coeff.second * monomial_coeff.first.HeightUnfoldingAt(values, previous_update, previous_values);
       }
-
-      return result;
     }
 
     static Matrix< CommutativePolynomial<SR> > jacobian(
@@ -552,8 +551,6 @@ SR CommutativePolynomial<SR>::AllNewtonDerivatives(
             monomial_value *= value_lookup->second;
           }
         }
-
-
       }
 
       /* If the current monomial_value is 0 (and thus it'll remain to be 0),
@@ -697,9 +694,6 @@ SR CommutativePolynomial<SR>::DerivativeBinomAt(
   //       tmp = coefficient * BinomCoeff(deegre, deriv_degree)
   //     if it doesn't exist return lookup the variable in valuation
 }
-
-
-
 
 
 template <typename SR>

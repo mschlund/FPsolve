@@ -4,6 +4,7 @@
 #include <iosfwd>
 #include <string>
 #include <functional> // for std::hash
+#include <iostream>
 
 enum class Commutativity {NonCommutative, Commutative};
 enum class Idempotence {NonIdempotent, Idempotent};
@@ -63,6 +64,30 @@ class Semiring {
       return result;
     }
 
+    // compute power by binary exponentiation
+    friend SR operator^(const SR& lhs, const std::uint_fast16_t& exp) {
+      if(0 == exp || lhs == SR::one()) {
+        return SR::one(); //we set 0^0=1
+      }
+
+      if(lhs == SR::null()) {
+        return SR::null();  // 0^0 is caught before
+      }
+
+      SR result = SR::one();
+      std::uint_fast16_t tmpexp = exp;
+
+      while (tmpexp > 0) {
+        result *= result;
+        if (tmpexp % 2 == 1) {
+          result *= lhs;
+        }
+        tmpexp = tmpexp/2;
+      }
+
+      return result;
+    }
+
     virtual bool operator==(const SR& elem) const = 0;
 
     virtual bool operator<(const SR& elem) const {
@@ -83,15 +108,18 @@ class Semiring {
     // for all SRs we have 0*S = 0 and
     // if the SR is idempotent then for any n in Nat if n>0: n*S = S
     friend SR operator*=(SR& lhs, const std::uint_fast16_t& cnt) {
-      if (0 == cnt)
+      if (0 == cnt) {
         lhs = SR::null();
-
+        return SR::null();
+      }
+      SR result = lhs;
       if (!IsIdempotent()) {
         for (std::uint_fast16_t i = 1; i < cnt; ++i) {
-          lhs += lhs;
+          result += lhs;
         }
       }
-      return lhs;
+      lhs = result;
+      return result;
     }
 
     static SR null();

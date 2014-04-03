@@ -4,6 +4,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(VarTest);
 
 void VarTest::setUp()
 {
+  std::cout << "Var-Test :" << std::endl;
 }
 
 void VarTest::tearDown()

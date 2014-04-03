@@ -7,6 +7,7 @@ typedef TropicalSemiring TS;
 
 void MatrixTest::setUp()
 {
+  std::cout << "Matrix-Test :" << std::endl;
 	a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
 	c = new FreeSemiring(Var::GetVarId("c"));d = new FreeSemiring(Var::GetVarId("d"));
 	e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));

@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(FloatSemiringTest);
 
 void FloatSemiringTest::setUp()
 {
+  std::cout << "Float-SR-Test :" << std::endl;
 	null = new FloatSemiring(0.0);
 	one = new FloatSemiring(1.0);
 	first = new FloatSemiring(1.2);

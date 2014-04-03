@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(PrefixSemiringTest);
 
 void PrefixSemiringTest::setUp()
 {
+  std::cout << "Prefix-SR-Test :" << std::endl;
   auto a = Var::GetVarId("a");
   auto b = Var::GetVarId("b");
   auto c = Var::GetVarId("c");

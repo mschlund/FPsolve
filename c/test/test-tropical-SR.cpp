@@ -12,6 +12,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(TropicalSemiringTest);
 
 void TropicalSemiringTest::setUp()
 {
+  std::cout << "Tropical-SR-Test :" << std::endl;
   first = new TropicalSemiring(2);
   second = new TropicalSemiring(5);
 }

@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(BoolSemiringTest);
 
 void BoolSemiringTest::setUp()
 {
+  std::cout << "Bool-SR-Test :" << std::endl;
 }
 
 void BoolSemiringTest::tearDown()
