@@ -269,22 +269,22 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
 
     /*
      * Unfold each monomial and sum up everything
-     * returns mappings from variables X_i to X_i^{<}
+     * updates the given mappings from variables X_i to X_i^{<h}, resp. X_i^{<h+1}
      */
-    std::tuple<CommutativePolynomial<SR>,
-               std::unordered_map<VarId, VarId>,
-               std::unordered_map<VarId, VarId> > HeightUnfolding() const {
-
-      std::unordered_map<VarId,VarId> prev_var_map;
-      std::unordered_map<VarId,VarId> var_map;
+    CommutativePolynomial<SR> HeightUnfolding(SubstitutionMap& prev_var_map,
+                                              SubstitutionMap& var_map) const {
 
       std::set<VarId> vars = get_variables();
-      for (VarId v : vars) {
-        VarId tmp = Var::GetVarId(); // get a fresh variable
-        var_map.insert({v,tmp});
 
-        VarId tmp2 = Var::GetVarId();
-        prev_var_map.insert({v,tmp2});
+      for (VarId v : vars) {
+        if(var_map.find(v) == var_map.end()) {
+          VarId tmp = Var::GetVarId(); // get a fresh variable
+          var_map.insert({v,tmp});
+        }
+        if(prev_var_map.find(v) == var_map.end()) {
+          VarId tmp2 = Var::GetVarId();
+          prev_var_map.insert({v,tmp2});
+        }
       }
 
       //std::cout << "(poly) X^{<h}: "<< prev_var_map << std::endl;
@@ -295,7 +295,7 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
       for (const auto &monomial_coeff : monomials_) {
         result += monomial_coeff.first.HeightUnfolding(monomial_coeff.second, prev_var_map, var_map);
       }
-      return std::make_tuple(result, prev_var_map, var_map);
+      return result;
     }
 
     static Matrix< CommutativePolynomial<SR> > jacobian(
@@ -345,7 +345,7 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
     }
 
     /* Variable substitution. */
-    CommutativePolynomial<SR> subst(const std::unordered_map<VarId, VarId> &mapping) const {
+    CommutativePolynomial<SR> subst(const SubstitutionMap& mapping) const {
       MonomialMap<SR> tmp_monomials;
 
       for (const auto &monomial_coeff : monomials_) {
@@ -367,7 +367,7 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
     }
 
     static Matrix<CommutativePolynomial<SR> > eval(Matrix<CommutativePolynomial<SR> > poly_matrix,
-        const std::unordered_map<VarId,CommutativePolynomial<SR> >& values) {
+        const ValuationMap<CommutativePolynomial<SR> >& values) {
       const std::vector< CommutativePolynomial<SR> > &tmp_polynomials = poly_matrix.getElements();
       std::vector< CommutativePolynomial<SR> > result;
       for (const auto &polynomial : tmp_polynomials) {
@@ -720,7 +720,7 @@ SR CommutativePolynomial<SR>::DerivativeBinomAt(
 
 template <typename SR>
 std::ostream& operator<<(std::ostream& os,
-    const std::unordered_map<VarId, CommutativePolynomial<SR> >& values) {
+    const ValuationMap<CommutativePolynomial<SR> >& values) {
   for (const auto &key_value : values) {
     os << key_value->first << "→" << key_value->second << ";";
   }

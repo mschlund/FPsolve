@@ -121,7 +121,7 @@ void PolynomialTest::testJacobian() {
 }
 
 void PolynomialTest::testEvaluation() {
-  std::unordered_map<VarId,TEST_SR> values = {
+  ValuationMap<TEST_SR> values = {
     { Var::GetVarId("x"), TEST_SR(Var::GetVarId("a")) },
     { Var::GetVarId("y"), TEST_SR(Var::GetVarId("b")) },
     { Var::GetVarId("z"), TEST_SR(Var::GetVarId("c")) }
@@ -146,15 +146,24 @@ void PolynomialTest::testEvaluation() {
                   second->eval(values) == (ebb + dab) + caa
                 );
 
-  std::unordered_map<VarId, VarId> m1;
-  std::unordered_map<VarId, VarId> m2;
+  SubstitutionMap m1;
+  SubstitutionMap m2;
   CommutativePolynomial<TEST_SR>  poly;
-  std::tie(poly,m1,m2) = third->HeightUnfolding();
+  poly = third->HeightUnfolding(m1, m2);
   std::cout << "Height-Unfolding of " << (*third) << std::endl << "    "
       << poly << std::endl
       << "X^{<h}: " << m1 << std::endl
       << "X^{<h+1}: " << m2 << std::endl
       ;
+
+  poly = second->HeightUnfolding(m1, m2);
+  std::cout << "Height-Unfolding of " << (*second) << std::endl << "    "
+      << poly << std::endl
+      << "X^{<h}: " << m1 << std::endl
+      << "X^{<h+1}: " << m2 << std::endl
+      ;
+
+
 }
 
 void PolynomialTest::testMatrixEvaluation() { }
@@ -164,7 +173,7 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
   std::unordered_map<TEST_SR, VarId, TEST_SR> valuation;
   FreeSemiring elem = second->make_free(&valuation);
   //std::cout << "poly2free: " << std::endl << (*second) << " → " << elem << std::endl;
-  std::unordered_map<VarId, TEST_SR> r_valuation;
+  ValuationMap<TEST_SR> r_valuation;
   for (auto &pair : valuation) {
     r_valuation.emplace(pair.second, pair.first);
   }
@@ -178,7 +187,7 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
 
   TEST_SR eval_elem = FreeSemiring_eval<TEST_SR>(elem, &r_valuation);
 
-  std::unordered_map<VarId,TEST_SR> values = {
+  ValuationMap<TEST_SR> values = {
     std::pair<VarId,TEST_SR>(Var::GetVarId("x"),TEST_SR(Var::GetVarId("a"))),
     std::pair<VarId,TEST_SR>(Var::GetVarId("y"),TEST_SR(Var::GetVarId("b"))),
     std::pair<VarId,TEST_SR>(Var::GetVarId("z"),TEST_SR(Var::GetVarId("c")))};
@@ -189,7 +198,7 @@ void PolynomialTest::testPolynomialToFreeSemiring() {
 }
 
 void PolynomialTest::testDerivativeBinomAt() {
-  std::unordered_map<VarId, TEST_SR> values = {
+  ValuationMap<TEST_SR> values = {
     { Var::GetVarId("x"), TEST_SR(Var::GetVarId("d")) },
     { Var::GetVarId("y"), TEST_SR(Var::GetVarId("e")) },
     { Var::GetVarId("z"), TEST_SR(Var::GetVarId("f")) }

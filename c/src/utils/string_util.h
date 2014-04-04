@@ -23,6 +23,13 @@ std::ostream& operator<<(std::ostream& os, const std::unordered_map<A,B>& values
   return os;
 }
 
+template <typename A, typename B>
+std::ostream& operator<<(std::ostream& os, const std::map<A,B>& values) {
+  for (auto value = values.begin(); value != values.end(); ++value) {
+    os << value->first << "→" << value->second << ";";
+  }
+  return os;
+}
 
 /* Print contents of a container in a sorted order using the given separator.
  * The sorting is done at the level of strings. */

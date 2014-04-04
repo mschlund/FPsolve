@@ -74,7 +74,7 @@ void NonCommutativePolynomialTest::testMultiplication() {
 }
 
 void NonCommutativePolynomialTest::testEvaluation() {
-  std::map<VarId,FreeSemiring> values = {
+  ValuationMap<FreeSemiring> values = {
       { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
       { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
   };
@@ -93,7 +93,7 @@ void NonCommutativePolynomialTest::testNonCommutativePolynomialToFreeSemiring() 
   std::unordered_map<FreeSemiring, VarId, FreeSemiring> valuation;
   FreeSemiring elem = second->make_free(&valuation);
   //std::cout << "poly2free: " << std::endl << (*second) << " → " << elem << std::endl;
-  std::unordered_map<VarId, FreeSemiring> r_valuation;
+  ValuationMap<FreeSemiring> r_valuation;
   for (auto &pair : valuation) {
     r_valuation.emplace(pair.second, pair.first);
   }
@@ -106,7 +106,7 @@ void NonCommutativePolynomialTest::testNonCommutativePolynomialToFreeSemiring() 
 
   FreeSemiring eval_elem = FreeSemiring_eval<FreeSemiring>(elem, &r_valuation);
 
-  std::map<VarId,FreeSemiring> values = {
+  ValuationMap<FreeSemiring> values = {
       std::pair<VarId,FreeSemiring>(Var::GetVarId("X"),FreeSemiring(Var::GetVarId("a"))),
       std::pair<VarId,FreeSemiring>(Var::GetVarId("Y"),FreeSemiring(Var::GetVarId("b")))};
   FreeSemiring eval_elem2 = second->eval(values);
@@ -116,7 +116,7 @@ void NonCommutativePolynomialTest::testNonCommutativePolynomialToFreeSemiring() 
 }
 
 void NonCommutativePolynomialTest::testDerivative() {
-  std::map<VarId,FreeSemiring> values = {
+  ValuationMap<FreeSemiring> values = {
       { Var::GetVarId("X"), FreeSemiring(Var::GetVarId("a")) },
       { Var::GetVarId("Y"), FreeSemiring(Var::GetVarId("b")) }
   };

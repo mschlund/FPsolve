@@ -97,16 +97,16 @@ public:
 				ValuationMap<LossySemiring> solution;
 
 				// build a zero vector
-				std::map<VarId, LossySemiring> zeroSystem;
+				ValuationMap<LossySemiring> zeroSystem;
 				for(auto &equation: equations) {
 					zeroSystem.insert(std::pair<VarId, LossySemiring>(equation.first, LossySemiring::null()));
 				}
 
 				// build the vectors f(0) and f^n(0), where n is the number of variables in the system
 				int times = 1;
-				std::map<VarId, LossySemiring> f_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
+				const ValuationMap<LossySemiring> f_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
 				times = equations.size();
-				std::map<VarId, LossySemiring> f_n_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
+				ValuationMap<LossySemiring> f_n_0 = NonCommutativePolynomial<LossySemiring>::evaluateSystem(equations, times, zeroSystem);
 
 				// find the LossySemiring element in the "middle" of the expression
 				LossySemiring middle = LossySemiring::null();
@@ -115,7 +115,7 @@ public:
 				}
 
 				// build the differential of the system
-				std::map<VarId, NonCommutativePolynomial<LossySemiring>> differential;
+				ValuationMap<NonCommutativePolynomial<LossySemiring>> differential;
 				for(auto &equation: equations) {
 					differential.insert(std::make_pair(equation.first, equation.second.differential_at(f_0)));
 				}

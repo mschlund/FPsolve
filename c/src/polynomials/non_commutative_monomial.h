@@ -38,7 +38,7 @@ class NonCommutativeMonomial {
      * returns a monomial of the form aXb where a,b are in SR.
      * TODO: check, that all variables are present in the valuation!
      */
-    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const std::map<VarId, SR>& valuation) const {
+    NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const ValuationMap<SR>& valuation) const {
       SR a = SR::one();
       SR b = SR::one();
 
@@ -193,7 +193,7 @@ class NonCommutativeMonomial {
 
     /* derivation function which is used in the polynomial derivative function.
      * for the variables for the d-1-th iterand we use the given map 'substitution' */
-    NonCommutativePolynomial<SR> derivative(const std::map<VarId, VarId> &substitution) const {
+    NonCommutativePolynomial<SR> derivative(const SubstitutionMap &substitution) const {
       NonCommutativePolynomial<SR> result; // empty polynomial
       auto subst_monomial = this->subst(substitution); // substitute all variables
       for(unsigned int position = 0; position < variables_.size(); position++) {
@@ -209,7 +209,7 @@ class NonCommutativeMonomial {
      * compute the linearization of the polynomial at the given point "valuation"
      * to this end, we linearize every monomial and sum them up
      */
-    NonCommutativePolynomial<SR> differential_at(const std::map<VarId, SR> &valuation) const {
+    NonCommutativePolynomial<SR> differential_at(const ValuationMap<SR> &valuation) const {
       NonCommutativePolynomial<SR> result; // empty polynomial = 0 (constant monomials have differential f(x)=0)
 
       for(unsigned int position = 0; position < variables_.size(); position++) {
@@ -221,8 +221,8 @@ class NonCommutativeMonomial {
 
     SR calculate_delta_helper(
       const std::vector<bool> &permutation,
-      const std::map<VarId, SR> &de2, // [d-2], true
-      const std::map<VarId, SR> &dl1  // (d-1), false
+      const ValuationMap<SR> &de2, // [d-2], true
+      const ValuationMap<SR> &dl1  // (d-1), false
       ) const {
       SR tmp = SR::one();
       for(auto const &p : idx_) {
@@ -243,8 +243,8 @@ class NonCommutativeMonomial {
     }
 
     SR calculate_delta(
-      const std::map<VarId, SR> &de2, // [d-2], true
-      const std::map<VarId, SR> &dl1  // (d-1), false
+      const ValuationMap<SR> &de2, // [d-2], true
+      const ValuationMap<SR> &dl1  // (d-1), false
       ) const {
       SR result = SR::null();
 
@@ -265,7 +265,7 @@ class NonCommutativeMonomial {
     }
 
     /* Evaluate the monomial given the map from variables to values. */
-    SR eval(const std::map<VarId, SR> &values) const {
+    SR eval(const ValuationMap<SR> &values) const {
       auto result = SR::one();
 
       for (const auto &p : idx_)
@@ -286,7 +286,7 @@ class NonCommutativeMonomial {
 
     /* Partially evaluate the monomial. */
     NonCommutativeMonomial partial_eval(
-        const std::map<VarId, SR> &values) const {
+        const ValuationMap<SR> &values) const {
 
       NonCommutativeMonomial result_monomial;
 
@@ -334,7 +334,7 @@ class NonCommutativeMonomial {
     }
 
     /* Variable substitution. */
-    NonCommutativeMonomial subst(const std::map<VarId, VarId> &mapping) const {
+    NonCommutativeMonomial subst(const SubstitutionMap &mapping) const {
       VarDegreeMap tmp_variables;
 
       auto result_monomial = *this; // copy it to work with it

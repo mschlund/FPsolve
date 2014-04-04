@@ -173,8 +173,8 @@ class CommutativeMonomial {
      * the second one for variables of type <h, all remaining variables will be of type =h
      */
     template <typename SR>
-    CommutativePolynomial<SR> HeightUnfolding(const SR& coeff, const std::unordered_map<VarId,VarId>& prev_var_map,
-                                                          const std::unordered_map<VarId,VarId>& var_map)  const{
+    CommutativePolynomial<SR> HeightUnfolding(const SR& coeff, const SubstitutionMap& prev_var_map,
+                                                          const SubstitutionMap& var_map)  const{
       //std::cout << "(mon) X^{<h}: "<< prev_var_map << std::endl;
       //std::cout << "(mon) X^{<h+1}: "<< var_map << std::endl;
 

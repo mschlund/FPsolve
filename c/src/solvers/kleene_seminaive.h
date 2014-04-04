@@ -8,65 +8,78 @@
 #ifndef KLEENE_SEMINAIVE_H_
 #define KLEENE_SEMINAIVE_H_
 
+
+#include <vector>
+#include "../datastructs/var.h"
+
 // Polynomial is parametrized by a semiring
 #define POLY_TYPE template <typename> class
-
 
 template <typename SR, POLY_TYPE Poly>
 class Kleene {
   typedef std::vector< std::pair< VarId, Poly<SR> > > GenericEquations;
-  public:
-  ValuationMap<SR> solve_fixpoint(const GenericEquations& equations, int max_iter) {
-    std::vector<Poly<SR>> F;
-    std::vector<VarId> poly_vars;
-    for (const auto &eq : equations) {
-      poly_vars.push_back(eq.first);
-      F.push_back(eq.second);
-    }
-    Matrix<SR> result = solve_fixpoint(F, poly_vars, max_iter);
 
-    // repack everything and return it
-    ValuationMap<SR> solution;
-    auto result_vec = result.getElements();
-    assert(result_vec.size() == poly_vars.size());
-    for (std::size_t i = 0; i < result_vec.size(); ++i) {
-      solution.insert(std::make_pair(poly_vars[i], result_vec[i]));
-    }
-    return solution;
-  }
-
+public:
   /*
    * Init:
    * previous_values = 0
    * values = F(0)
    * update = F(0)
    *
+   * precompute compute polynomials.HeightUnfolding()
+   *
    * Each iteration consists of :
    *
-   * update = polynomials.HeightUnfoldingAt(values, update, previous_values)
+   * update = evaluate the height unfolding at respective values
    * previous_values = values
    * values = values + update
   */
-  Matrix<SR> solve_fixpoint(
-    const std::vector< Poly<SR> > &polynomials,
-    const std::vector<VarId> &variables, std::size_t max_iter) {
+  ValuationMap<SR> solve_fixpoint(const GenericEquations& equations, int max_iter) {
 
-    assert(polynomials.size() == variables.size());
+    std::vector<Poly<SR>> F;
+    std::vector<VarId> poly_vars;
 
-    Matrix< Poly<SR> > F_mat{polynomials.size(), polynomials};
-
-    Matrix<SR> values{polynomials.size(), 1};
-
-    ValuationMap<SR> values;
-    for (auto &variable : variables) {
-      values.insert(std::make_pair(variable, SR::null()));
+    for (const auto &eq : equations) {
+      poly_vars.push_back(eq.first);
+      F.push_back(eq.second);
     }
+
+    std::vector<Poly<SR> > unfolded_polys;
+
+    // we use the original poly_vars for the "X^{=h+1}"-variables
+    std::unordered_map<VarId, VarId> prev_val_map; // X^{<h}
+    std::unordered_map<VarId, VarId> val_map;      // X^{<h+1}
+
+
+    for (Poly<SR> f : F) {
+      //the new anonymous unfolding-variables are accumulated in the two maps!
+      unfolded_polys.push_back(f.HeightUnfolding(prev_val_map, val_map));
+    }
+
+    //TODO: use vectors for better cache efficiency?
+    ValuationMap<SR> prev_values; // valuations of X^{<h}
+    ValuationMap<SR> values; // valuations of X^{<h+1}
+    ValuationMap<SR> updates; // valuations of X^{=h+1}
+
+    ValuationMap<SR> zeros;
+    for (unsigned int i=0; i<poly_vars.size(); ++i) {
+      zeros.insert({poly_vars[i], SR::null()});
+    }
+
+    // Init all values, note that they all talk about different variable names (connected via the two maps above)
+    for (unsigned int i=0; i<poly_vars.size(); ++i) {
+      SR f_0 = F[i].eval(zeros);
+      prev_values.insert({prev_val_map.at(poly_vars[i]), SR::null()});
+      values.insert({val_map.at(poly_vars[i]), f_0});
+      updates.insert(poly_vars[i], f_0);
+    }
+
 
     for (unsigned int i=0; i < max_iter; ++i) {
 
     }
 
-    return values;
+
   }
 };
 

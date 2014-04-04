@@ -141,3 +141,10 @@ class Var {
 std::ostream& operator<<(std::ostream &out, const std::vector<VarId> vids);
 
 template <typename SR> using ValuationMap = std::unordered_map<VarId, SR>;
+
+typedef std::unordered_map<VarId,VarId> SubstitutionMap;
+
+
+
+
+

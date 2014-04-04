@@ -14,6 +14,8 @@
 #include "../datastructs/var.h"
 #include "../datastructs/var_degree_map.h"
 
+#include "../utils/string_util.h"
+
 #include "non_commutative_monomial.h"
 #include "commutative_polynomial.h"
 
@@ -197,8 +199,8 @@ private:
      * de2 is data from newton iterand for d-2
      * dl1 is data from newton update for d-1 */
     SR calculate_delta(
-        const std::map<VarId, SR> &de2,
-        const std::map<VarId, SR> &dl1) const {
+        const ValuationMap<SR> &de2,
+        const ValuationMap<SR> &dl1) const {
       SR result = SR::null();
       for(auto const &monomial : monomials_) {
         result += monomial.first.calculate_delta(de2, dl1) * monomial.second;
@@ -209,13 +211,13 @@ private:
 
     /* calculates the derivative of this polynomial
      * return a schema and the used mapping from X to X[d-1]*/
-    std::pair<NonCommutativePolynomial<SR>,std::map<VarId,VarId>> derivative() const {
+    std::pair<NonCommutativePolynomial<SR>,SubstitutionMap> derivative() const {
       NonCommutativePolynomial<SR> result;
 
       /* get a mapping for all variables X s.t. X -> X[d-1]
        * X[d-1] has to be a fresh variable*/
       auto vars = get_variables();
-      std::map<VarId, VarId> mapping;
+      SubstitutionMap mapping;
       for(auto const &var : vars) {
         auto tmp = Var::GetVarId();
         mapping.insert({var, tmp});
@@ -229,7 +231,7 @@ private:
       return {result, mapping};
     }
 
-   NonCommutativePolynomial<SR> differential_at(const std::map<VarId,SR> valuation) const {
+   NonCommutativePolynomial<SR> differential_at(const ValuationMap<SR>& valuation) const {
      NonCommutativePolynomial<SR> result;
      for(auto const &monomial : monomials_) {
        result += monomial.first.differential_at(valuation) * monomial.second;
@@ -237,7 +239,7 @@ private:
      return result;
    }
 
-    SR eval(const std::map<VarId, SR> &values) const {
+    SR eval(const ValuationMap<SR> &values) const {
       SR result = SR::null();
       for (const auto &monomial : monomials_) {
         result += monomial.first.eval(values) * monomial.second;
@@ -249,7 +251,7 @@ private:
 
     /* Evaluate as much as possible (depending on the provided values) and
      * return the remaining (i.e., unevaluated) monomial. */
-    NonCommutativePolynomial<SR> partial_eval(const std::map<VarId, SR> &values) const {
+    NonCommutativePolynomial<SR> partial_eval(const ValuationMap<SR> &values) const {
       NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
       for(const auto &monomial : monomials_) {
         result.monomials_.insert(monomial.partial_eval(values));
@@ -258,7 +260,7 @@ private:
     }
 
     /* Variable substitution. */
-    NonCommutativePolynomial<SR> subst(const std::map<VarId, VarId> &mapping) const {
+    NonCommutativePolynomial<SR> subst(const SubstitutionMap &mapping) const {
       NonCommutativePolynomial result_polynomial;
 
       for (const auto &monomial : monomials_) {
@@ -268,7 +270,7 @@ private:
     }
 
     static Matrix<SR> eval(const Matrix< NonCommutativePolynomial<SR> > &poly_matrix,
-        const std::map<VarId, SR> &values) {
+        const ValuationMap<SR> &values) {
       const std::vector<NonCommutativePolynomial<SR>> &tmp_polynomials = poly_matrix.getElements();
       std::vector<SR> result;
       for (const auto &polynomial : tmp_polynomials) {
@@ -278,7 +280,7 @@ private:
     }
 
     static Matrix<NonCommutativePolynomial<SR> > eval(Matrix<NonCommutativePolynomial<SR> > poly_matrix,
-        std::map<VarId,NonCommutativePolynomial<SR> > values) {
+        ValuationMap<NonCommutativePolynomial<SR> > values) {
       const std::vector<NonCommutativePolynomial<SR>> &tmp_polynomials = poly_matrix.getElements();
       std::vector<NonCommutativePolynomial<SR>> result;
       for (const auto &polynomial : tmp_polynomials) {
@@ -290,11 +292,11 @@ private:
     /*
      * Evaluates a polynomial system at a given vector.
      */
-    static std::map<VarId, SR> evaluateSystem
+    static ValuationMap<SR> evaluateSystem
     (std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
-        int& times, std::map<VarId, SR> &initialValuation) {
+        int& times, ValuationMap<SR> &initialValuation) {
 
-      std::map<VarId, SR> valuation, tempValuation;
+      ValuationMap<SR> valuation, tempValuation;
       valuation = initialValuation;
       VarId variable;
 
@@ -416,21 +418,3 @@ private:
 
 template <typename SR> bool NonCommutativePolynomial<SR>::is_commutative = false;
 template <typename SR> bool NonCommutativePolynomial<SR>::is_idempotent = false;
-
-/*template <typename SR>
-std::ostream& operator<<(std::ostream& os, const std::map<VarId, SR>& values) {
-  for (auto value = values.begin(); value != values.end(); ++value) {
-    os << value->first << "→" << value->second << ";";
-  }
-  return os;
-}*/
-
-
-template <typename SR>
-std::ostream& operator<<(std::ostream& os, const std::map<VarId, NonCommutativePolynomial<SR> >& values) {
-  for (const auto &key_value : values) {
-    os << key_value->first << "→" << key_value->second << ";";
-  }
-  return os;
-}
-
