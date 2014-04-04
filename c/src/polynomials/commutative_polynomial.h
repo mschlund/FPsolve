@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <tuple>
 
-#include <cppunit/extensions/HelperMacros.h>
 #include "../semirings/semiring.h"
 #include "../semirings/free-semiring.h"
 

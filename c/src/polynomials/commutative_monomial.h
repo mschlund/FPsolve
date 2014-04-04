@@ -2,7 +2,6 @@
 
 #include <iosfwd>
 
-//#include "commutative_polynomial.h"
 #include "../semirings/free-semiring.h"
 #include "../datastructs/var_degree_map.h"
 #include "../utils/string_util.h"
