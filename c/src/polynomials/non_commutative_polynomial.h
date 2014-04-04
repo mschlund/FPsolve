@@ -427,8 +427,7 @@ std::ostream& operator<<(std::ostream& os, const std::map<VarId, SR>& values) {
 
 
 template <typename SR>
-std::ostream& operator<<(std::ostream& os,
-    const std::map<VarId, NonCommutativePolynomial<SR> >& values) {
+std::ostream& operator<<(std::ostream& os, const std::map<VarId, NonCommutativePolynomial<SR> >& values) {
   for (const auto &key_value : values) {
     os << key_value->first << "→" << key_value->second << ";";
   }

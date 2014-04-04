@@ -8,28 +8,6 @@
 CPPUNIT_TEST_SUITE_REGISTRATION(PolynomialTest);
 
 void PolynomialTest::setUp() {
-  /*std::cout << "Poly-Test:" << std::endl;
-  a = new TEST_SR(Var::GetVarId("a"));
-  b = new TEST_SR(Var::GetVarId("b"));
-  c = new TEST_SR(Var::GetVarId("c"));
-  d = new TEST_SR(Var::GetVarId("d"));
-  e = new TEST_SR(Var::GetVarId("e"));
-  null = new CommutativePolynomial<TEST_SR>(TEST_SR::null());
-  one = new CommutativePolynomial<TEST_SR>(TEST_SR::one());
-  first = new CommutativePolynomial<TEST_SR>({
-    {*a, {Var::GetVarId("x"),Var::GetVarId("x")}},
-    {*b, {Var::GetVarId("z")}}
-  }); // a*xx+b*z
-  second = new CommutativePolynomial<TEST_SR>({
-    {*c, {Var::GetVarId("x"),Var::GetVarId("x")}},
-    {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
-    {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
-  }); // c*xx+d*xy+e*yy
-  p1 = new CommutativePolynomial<TEST_SR>({
-    {*a, {Var::GetVarId("x")}},
-    {*b, {Var::GetVarId("x")}}
-  }); // should be a*x+b*x
-  */
   std::cout << "Poly-Test:" << std::endl;
   a = new TEST_SR(Var::GetVarId("a"));
   b = new TEST_SR(Var::GetVarId("b"));
@@ -47,6 +25,13 @@ void PolynomialTest::setUp() {
     {*d, {Var::GetVarId("x"),Var::GetVarId("y")}},
     {*e, {Var::GetVarId("y"),Var::GetVarId("y")}}
   }); // c*xx+d*xy+e*yy
+  third = new CommutativePolynomial<TEST_SR>({
+    {*a, {Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("x"),Var::GetVarId("y"),Var::GetVarId("y"),Var::GetVarId("z"),Var::GetVarId("z"),Var::GetVarId("z")}},
+    {*b, {Var::GetVarId("x")}
+    }
+  });
+  (*third) += (*c); // "third" is c + bX + aXXX ZZZ YY
+
   p1 = new CommutativePolynomial<TEST_SR>({
     {*a, {Var::GetVarId("x")}},
     {*b, {Var::GetVarId("x")}}
@@ -59,13 +44,15 @@ void PolynomialTest::tearDown() {
   delete one;
   delete first;
   delete second;
+  delete third;
   delete p1;
   delete a; delete b; delete c; delete d; delete e;
 }
 
 void PolynomialTest::testSemiring()
 {
- // generic_test_semiring(*first, *second);
+  generic_test_semiring(*first, *second);
+  generic_test_semiring(*third, *first); //third has a constant
 }
 
 void PolynomialTest::testAddition() {
@@ -158,6 +145,16 @@ void PolynomialTest::testEvaluation() {
                   second->eval(values) == (dab + ebb) + caa ||
                   second->eval(values) == (ebb + dab) + caa
                 );
+
+  std::unordered_map<VarId, VarId> m1;
+  std::unordered_map<VarId, VarId> m2;
+  CommutativePolynomial<TEST_SR>  poly;
+  std::tie(poly,m1,m2) = third->HeightUnfolding();
+  std::cout << "Height-Unfolding of " << (*third) << std::endl << "    "
+      << poly << std::endl
+      << "X^{<h}: " << m1 << std::endl
+      << "X^{<h+1}: " << m2 << std::endl
+      ;
 }
 
 void PolynomialTest::testMatrixEvaluation() { }

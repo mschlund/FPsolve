@@ -40,7 +40,7 @@ void NonCommutativePolynomialTest::tearDown() {
 
 void NonCommutativePolynomialTest::testSemiring()
 {
-  //generic_test_semiring(*first, *second);
+  generic_test_semiring(*first, *second);
 }
 
 void NonCommutativePolynomialTest::testAddition() {

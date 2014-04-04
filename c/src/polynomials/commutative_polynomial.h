@@ -8,7 +8,9 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <tuple>
 
+#include <cppunit/extensions/HelperMacros.h>
 #include "../semirings/semiring.h"
 #include "../semirings/free-semiring.h"
 
@@ -17,6 +19,7 @@
 #include "../datastructs/var_degree_map.h"
 
 #include "../utils/deriv_generator.h"
+#include "../utils/string_util.h"
 
 #include "commutative_monomial.h"
 
@@ -266,15 +269,34 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
                          const ValuationMap<SR> &valuation) const;
 
     /*
-     * Evaluate every unfolded monomial and sum up everything
+     * Unfold each monomial and sum up everything
+     * returns mappings from variables X_i to X_i^{<}
      */
-    SR HeightUnfoldingAt(const ValuationMap<SR> &values,
-        const ValuationMap<SR> &previous_update,
-        const ValuationMap<SR> &previous_values) const {
-      SR result = SR::null();
-      for (const auto &monomial_coeff : monomials_) {
-        result += monomial_coeff.second * monomial_coeff.first.HeightUnfoldingAt(values, previous_update, previous_values);
+    std::tuple<CommutativePolynomial<SR>,
+               std::unordered_map<VarId, VarId>,
+               std::unordered_map<VarId, VarId> > HeightUnfolding() const {
+
+      std::unordered_map<VarId,VarId> prev_var_map;
+      std::unordered_map<VarId,VarId> var_map;
+
+      std::set<VarId> vars = get_variables();
+      for (VarId v : vars) {
+        VarId tmp = Var::GetVarId(); // get a fresh variable
+        var_map.insert({v,tmp});
+
+        VarId tmp2 = Var::GetVarId();
+        prev_var_map.insert({v,tmp2});
       }
+
+      //std::cout << "(poly) X^{<h}: "<< prev_var_map << std::endl;
+      //std::cout << "(poly) X^{<h+1}: "<< var_map << std::endl;
+
+      CommutativePolynomial<SR> result = CommutativePolynomial<SR>::null();
+
+      for (const auto &monomial_coeff : monomials_) {
+        result += monomial_coeff.first.HeightUnfolding(monomial_coeff.second, prev_var_map, var_map);
+      }
+      return std::make_tuple(result, prev_var_map, var_map);
     }
 
     static Matrix< CommutativePolynomial<SR> > jacobian(
@@ -695,14 +717,6 @@ SR CommutativePolynomial<SR>::DerivativeBinomAt(
   //     if it doesn't exist return lookup the variable in valuation
 }
 
-
-template <typename SR>
-std::ostream& operator<<(std::ostream& os, const ValuationMap<SR>& values) {
-  for (auto value = values.begin(); value != values.end(); ++value) {
-    os << value->first << "→" << value->second << ";";
-  }
-  return os;
-}
 
 
 template <typename SR>

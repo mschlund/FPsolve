@@ -2,8 +2,10 @@
 
 #include <iosfwd>
 
+//#include "commutative_polynomial.h"
 #include "../semirings/free-semiring.h"
 #include "../datastructs/var_degree_map.h"
+#include "../utils/string_util.h"
 
 #include <boost/math/special_functions/binomial.hpp>
 
@@ -145,14 +147,15 @@ class CommutativeMonomial {
       return result;
     }
 
+
     /*
      * for a monomial \sum_i X_i^{d_i}, the height unfolding is:
      * sum_{i=1}^n
-     * \prod_{k=1}^{i-1} values(X_k)^d_k *
-     * (\sum_{k=0}^{d_i -1} values(X_i)^{d_i-k-1}) * previous_update(X_i) * previous_values(X_i)^k )
+     * \prod_{k=1}^{i-1} (X_k^{<h+1})^d_k *
+     * (\sum_{k=0}^{d_i -1} (X_i^{<h+1})^{d_i-k-1}) * (X_i^{=h}) * previous_values(X_i)^k )
      * \prod_{k=i+1}^{n} previous_values(X_k)^{d_k}
      *
-     * Important to note: X^{<h+1} is computed one round _before_ X^{=h+1}
+     * Important to note: the valuation of X^{<h+1} is computed one round _before_ X^{=h+1}
      *
      * Explanation:
      * example rule X -> X Y Z, becomes X^{=h+1} -> X^{=h} Y^{<h} Z^{<h} + X^{<h+1} Y^{=h} Z^{<h} + X^{<h+1} Y^{<h+1} Z^{=h}
@@ -164,14 +167,52 @@ class CommutativeMonomial {
      * (first we choose the "last" variable i to become the =h, then in this block of variables we have to sum over all
      * (d_i-1) partition-points k of the remaining variables into those of type "<h+1" and "<h".
      */
-    template <typename SR>
-    SR HeightUnfoldingAt(const ValuationMap<SR> &values,
-        const ValuationMap<SR> &previous_update,
-        const ValuationMap<SR> &previous_values) const {
 
-      //TODO: implement this!
-      assert(false);
-      return SR::null();
+
+    /* Return the unfolding of the monomial (i.e. a polynomial) using the two variable-renaming-maps given
+     * the first for the variables of type <h-1
+     * the second one for variables of type <h, all remaining variables will be of type =h
+     */
+    template <typename SR>
+    CommutativePolynomial<SR> HeightUnfolding(const SR& coeff, const std::unordered_map<VarId,VarId>& prev_var_map,
+                                                          const std::unordered_map<VarId,VarId>& var_map)  const{
+      //std::cout << "(mon) X^{<h}: "<< prev_var_map << std::endl;
+      //std::cout << "(mon) X^{<h+1}: "<< var_map << std::endl;
+
+      CommutativePolynomial<SR> result = CommutativePolynomial<SR>::null();
+
+      // holds \prod_{k=1}^{i-1} (X_k^{<h+1})^d_k, initially empty, then add factor in every run of the loop
+      VarDegreeMap left_prod = VarDegreeMap();
+
+      // holds \prod_{k=i+1}^{n} previous_values(X_k)^{d_k},
+      // initially prod of _all_ vars then remove variables in the loop
+      VarDegreeMap right_prod = VarDegreeMap();
+      for (auto var_degree : variables_) {
+        right_prod.Insert(prev_var_map.at(var_degree.first), var_degree.second);
+      }
+      SR coeff_copy = coeff;
+
+      for (auto var_degree : variables_) {
+        right_prod.EraseAll(prev_var_map.at(var_degree.first));
+
+        for (Degree k=0; k < var_degree.second; ++k) {
+          VarDegreeMap center_prod = VarDegreeMap();
+
+          center_prod.Insert(var_map.at(var_degree.first), k);
+          center_prod.Insert(var_degree.first, 1);
+          center_prod.Insert(prev_var_map.at(var_degree.first), var_degree.second - k -1);
+
+          center_prod.Merge(left_prod);
+          center_prod.Merge(right_prod);
+
+          result += CommutativePolynomial<SR>(std::move(coeff_copy), std::move(CommutativeMonomial(std::move(center_prod))));
+        }
+
+        left_prod.Insert(var_map.at(var_degree.first), var_degree.second);
+
+      }
+
+      return result;
     }
 
 
@@ -191,9 +232,7 @@ class CommutativeMonomial {
           result_monomial.variables_.Insert(var_degree.first, var_degree.second);
         } else {
           /* Variable found, use it for evaluation. */
-          for (Degree i = 0; i < var_degree.second; ++i) {
-            result_value *= value_iter->second;
-          }
+          result_value *= (value_iter->second ^ var_degree.second);
         }
       }
 

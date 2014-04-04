@@ -11,7 +11,7 @@
 #include "../src/datastructs/matrix.h"
 #include "../src/matrix_free_semiring.h"
 
-#define TEST_SR CommutativeRExp
+#define TEST_SR FreeSemiring
 
 class PolynomialTest : public CppUnit::TestFixture
 {
@@ -31,7 +31,7 @@ public:
 	void tearDown();
 
 protected:
-        void testSemiring();
+  void testSemiring();
 	void testAddition();
 	void testMultiplication();
 	void testJacobian();
@@ -42,7 +42,7 @@ protected:
 
 private:
 	TEST_SR *a, *b, *c, *d, *e;
-	CommutativePolynomial<TEST_SR> *null, *one, *first, *second, *p1;
+	CommutativePolynomial<TEST_SR> *null, *one, *first, *second, *third, *p1;
 };
 
 #endif
