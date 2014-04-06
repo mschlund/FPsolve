@@ -16,7 +16,7 @@
 #define POLY_TYPE template <typename> class
 
 template <typename SR, POLY_TYPE Poly>
-class Kleene {
+class KleeneSeminaive {
   typedef std::vector< std::pair< VarId, Poly<SR> > > GenericEquations;
 
 public:
@@ -47,8 +47,8 @@ public:
     std::vector<Poly<SR> > unfolded_polys;
 
     // we use the original poly_vars for the "X^{=h+1}"-variables
-    std::unordered_map<VarId, VarId> prev_val_map; // X^{<h}
-    std::unordered_map<VarId, VarId> val_map;      // X^{<h+1}
+    SubstitutionMap prev_val_map; // X^{<h}
+    SubstitutionMap val_map;      // X^{<h+1}
 
 
     for (Poly<SR> f : F) {
@@ -57,9 +57,13 @@ public:
     }
 
     //TODO: use vectors for better cache efficiency?
-    ValuationMap<SR> prev_values; // valuations of X^{<h}
-    ValuationMap<SR> values; // valuations of X^{<h+1}
-    ValuationMap<SR> updates; // valuations of X^{=h+1}
+
+    // valuations of X^{<h},  X^{<h+1}, and X (representing X^{=h+1})
+    // keep all in one map to pass it easily to eval
+    ValuationMap<SR> all_values;
+
+    ValuationMap<SR> updates;
+
 
     ValuationMap<SR> zeros;
     for (unsigned int i=0; i<poly_vars.size(); ++i) {
@@ -69,19 +73,40 @@ public:
     // Init all values, note that they all talk about different variable names (connected via the two maps above)
     for (unsigned int i=0; i<poly_vars.size(); ++i) {
       SR f_0 = F[i].eval(zeros);
-      prev_values.insert({prev_val_map.at(poly_vars[i]), SR::null()});
-      values.insert({val_map.at(poly_vars[i]), f_0});
-      updates.insert(poly_vars[i], f_0);
+      all_values.insert({prev_val_map.at(poly_vars[i]), SR::null()});
+      all_values.insert({val_map.at(poly_vars[i]), f_0});
+      all_values.insert({poly_vars[i], f_0});
     }
 
 
-    for (unsigned int i=0; i < max_iter; ++i) {
+    for (unsigned int n=0; n < max_iter; ++n) {
 
+      for (unsigned int i=0; i<poly_vars.size(); ++i) {
+      // compute new update, note that we cannot modify all_values, yet!
+        updates[poly_vars[i]] = unfolded_polys[i].eval(all_values);
+      }
+
+      // now all effects have been computed -> update the valuation
+      for (unsigned int i=0; i<poly_vars.size(); ++i) {
+        all_values.at(poly_vars[i]) = updates.at(poly_vars[i]);
+        all_values.at(prev_val_map.at(poly_vars[i])) = all_values.at(val_map.at(poly_vars[i])); //safe vals
+        all_values.at(val_map.at(poly_vars[i])) += all_values.at(poly_vars[i]); // add update to vals
+      }
     }
 
-
+    ValuationMap<SR> result;
+    for (unsigned int i=0; i<poly_vars.size(); ++i) {
+      result.insert({poly_vars[i], all_values.at(val_map.at(poly_vars[i]))});
+    }
+    return result;
   }
 };
+
+// compatability with old implementation
+template <typename SR>
+using KleeneComm =
+    KleeneSeminaive<SR, CommutativePolynomial>;
+
 
 
 

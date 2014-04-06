@@ -30,6 +30,7 @@
 #include "parser.h"
 
 #include "solvers/newton_generic.h"
+#include "solvers/kleene_seminaive.h"
 
 template <typename SR>
 struct VertexProp {
@@ -212,6 +213,7 @@ int main(int argc, char* argv[]) {
     ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
+    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newton\", \"newtonCL\" or \"kleene\")" )
     ;
 
   po::variables_map vm;
@@ -296,6 +298,13 @@ int main(int argc, char* argv[]) {
       input.push_back(line);
     }
   }
+
+  /*if (vm.count("solver")) {
+    if(0 == vm["file"].as<std::string>().compare("newton")) {
+
+    }
+  }*/
+
 
   // join the input into one string
   std::string input_all =

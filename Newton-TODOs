@@ -11,7 +11,7 @@
 #---------------
 # More Semirings
 #---------------
-- Product-Semiring-Construction (simple: (iterated) pair)
+[DONE] Product-Semiring-Construction (simple: (iterated) pair)
 - "Exotic" Semirings (tropical, arctic)
 - Viterbi-Semiring
 - ... (see: "Semirings for Breakfast"-presentation ---only the starable ones! additional element "infty" needed sometimes :)) use GMP for arbitrary precision ints/floats/...
@@ -20,7 +20,7 @@
 - Finite Semirings (e.g. finite Lattices) <--> specification (see UI)
 
 - Counting-Semiring (representation of Semiliniear-Sets)
-  - As Presburger-Formulae --> Automata (Mona)
+  [IN PROGRESS] As Presburger-Formulae --> Automata (Mona)
   [DONE] As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
   - As (short!) rational Generating Functions (same as second one???)
 
@@ -46,7 +46,7 @@
 # Non-commutative Newton
 #-----------------------
 - Semiring of Contexts (over some alphabet)
-- non-commutative Polynomials (non-comm. derivative, Jacobian can produce a matrix over the SR of Contexts)
+[DONE] non-commutative Polynomials
 
 
 
@@ -64,7 +64,7 @@
 # Tools/Libs to help us
 #----------------------
 - Vaucanson (automata, wrexp, semirings, series+polynomials)
-- Mona (automata, regexp, MSO/Presburger)
+[DONE] Mona (automata, regexp, MSO/Presburger)
 
 
 

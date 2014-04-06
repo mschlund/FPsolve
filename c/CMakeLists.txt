@@ -75,9 +75,6 @@ else(${LPSOLVE})
   set(LPSOLVE_LIBRARIES "")
 endif(${LPSOLVE})
 
-if(${OLD_SEMILINEAR_SET})
-  add_definitions(-DOLD_SEMILINEAR_SET)
-endif(${OLD_SEMILINEAR_SET})
 
 #add_definitions(-DOPCOUNT)
 
