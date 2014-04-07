@@ -6,11 +6,16 @@
 #include "../polynomials/non_commutative_polynomial.h"
 #include "../semirings/free-semiring.h"
 
-template <typename A>
-using Equations = std::vector< std::pair< VarId, CommutativePolynomial<A> > >;
+template<template <typename> class Poly, typename SR>
+using GenericEquations = std::vector< std::pair< VarId, Poly<SR> > > ;
+
 
 template <typename A>
-using NCEquations = std::vector< std::pair< VarId, NonCommutativePolynomial<A> > >;
+using Equations = GenericEquations<CommutativePolynomial, A>;
+
+template <typename A>
+using NCEquations = GenericEquations<NonCommutativePolynomial, A>;
+
 
 
 template <typename A, typename F>

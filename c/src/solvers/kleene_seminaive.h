@@ -17,7 +17,6 @@
 
 template <typename SR, POLY_TYPE Poly>
 class KleeneSeminaive {
-  typedef std::vector< std::pair< VarId, Poly<SR> > > GenericEquations;
 
 public:
   /*
@@ -34,7 +33,7 @@ public:
    * previous_values = values
    * values = values + update
   */
-  ValuationMap<SR> solve_fixpoint(const GenericEquations& equations, int max_iter) {
+  ValuationMap<SR> solve_fixpoint(const GenericEquations<Poly, SR>& equations, int max_iter) {
 
     std::vector<Poly<SR>> F;
     std::vector<VarId> poly_vars;
@@ -53,7 +52,9 @@ public:
 
     for (Poly<SR> f : F) {
       //the new anonymous unfolding-variables are accumulated in the two maps!
-      unfolded_polys.push_back(f.HeightUnfolding(prev_val_map, val_map));
+      Poly<SR> t = f.HeightUnfolding(prev_val_map, val_map);
+      unfolded_polys.push_back(t);
+      std::cout << t << std::endl;
     }
 
     //TODO: use vectors for better cache efficiency?
@@ -61,7 +62,6 @@ public:
     // valuations of X^{<h},  X^{<h+1}, and X (representing X^{=h+1})
     // keep all in one map to pass it easily to eval
     ValuationMap<SR> all_values;
-
     ValuationMap<SR> updates;
 
 

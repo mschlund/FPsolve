@@ -40,9 +40,9 @@ struct VertexProp {
 };
 
 // group the equations to SCCs
-template <typename SR>
-std::vector< std::vector< std::pair< VarId, CommutativePolynomial<SR> > > >
-group_by_scc(const std::vector< std::pair< VarId, CommutativePolynomial<SR> > > &equations,
+template <typename SR, template <typename> class Poly>
+std::vector< GenericEquations<Poly, SR> >
+group_by_scc(const GenericEquations<Poly, SR> &equations,
              bool graphviz_output) {
   // create map of variables to [0..n]. this is used to enumerate important variables in a clean way from 0 to n during graph construction
   std::unordered_map<VarId, int> var_key;
@@ -104,9 +104,11 @@ group_by_scc(const std::vector< std::pair< VarId, CommutativePolynomial<SR> > > 
 }
 
 // apply solution method to the given input
-template <template <typename> class SolverType, typename SR>
+template <template <typename> class SolverType,
+          template <typename> class Poly,
+          typename SR>
 ValuationMap<SR> apply_solver(
-    const std::vector< std::pair< VarId, CommutativePolynomial<SR> > > &equations,
+    const GenericEquations<Poly, SR> &equations,
     bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output) {
 
   // TODO: sanity checks on the input!
@@ -116,7 +118,7 @@ ValuationMap<SR> apply_solver(
 
   // if we use the scc method, group the equations
   // the outer vector contains SCCs starting with a bottom SCC at 0
-  std::vector< std::vector< std::pair< VarId,CommutativePolynomial<SR> > > > equations2;
+  std::vector<GenericEquations<Poly, SR>> equations2;
   if (scc) {
     auto tmp = group_by_scc(equations, graphviz_output);
     equations2.insert(equations2.begin(), tmp.begin(), tmp.end());
@@ -137,11 +139,11 @@ ValuationMap<SR> apply_solver(
   for (std::size_t j = 0; j != equations2.size(); ++j) {
     // use the solutions to get rid of variables in the remaining equations
     // does nothing in the first round
-    std::vector<std::pair<VarId, CommutativePolynomial<SR>>> tmp1;
+    GenericEquations<Poly, SR> tmp1;
     for (auto it = equations2[j].begin(); it != equations2[j].end(); ++it)
     { // it = (VarId, Polynomial[SR])
       auto tmp2 = it->second.partial_eval(solution);
-      tmp1.push_back(std::pair<VarId, CommutativePolynomial<SR>>(it->first, tmp2));
+      tmp1.push_back(std::pair<VarId, Poly<SR>>(it->first, tmp2));
     }
     // replace old equations with simplified ones
     equations2[j] = tmp1;
@@ -183,6 +185,23 @@ void PrintEquations(const Container &equations) {
   std::cout << "Equations:" << std::endl;
   for (auto &eq : equations) {
     std::cout << "* " << eq.first << " → " << eq.second << std::endl;
+  }
+}
+
+template <typename SR, template <typename> class Poly>
+ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Poly, SR> &equations,
+   bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output){
+  if(0 == solver_name.compare("newton")) {
+    std::cout << "Newton Symbolic" << std::endl;
+    return apply_solver<Newton, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+  }
+  else if(0 == solver_name.compare("newtonCL")) {
+    std::cout << "Newton Concrete"<< std::endl;
+    return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+  }
+  else if(0 == solver_name.compare("kleene")) {
+    std::cout << "Kleene solver"<< std::endl;
+    return apply_solver<KleeneComm, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
 }
 
@@ -278,8 +297,6 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-
-
   std::vector<std::string> input;
   std::string line;
   if (vm.count("file")) {
@@ -299,25 +316,26 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  /*if (vm.count("solver")) {
-    if(0 == vm["file"].as<std::string>().compare("newton")) {
-
-    }
-  }*/
-
-
   // join the input into one string
   std::string input_all =
     std::accumulate(input.begin(), input.end(), std::string(""));
 
   Parser p;
+  std::string solver_name;
+
+  if(vm.count("solver")) {
+    solver_name = vm["solver"].as<std::string>();
+  }
+  else {
+    solver_name = "newtonCL"; //seems to be the fastest
+  }
+
 
   const auto iter_flag = vm.count("iterations");
   const auto graph_flag = vm.count("graphviz");
   const auto scc_flag = vm.count("scc");
 
   if (vm.count("slset")) {
-
     auto equations_raw = p.free_parser(input_all);
     auto equations = MakeCommEquationsAndMap(equations_raw, [](const FreeSemiring &c) -> SemilinSetExp {
       auto srconv = SRConverter<SemilinSetExp>();
@@ -329,15 +347,16 @@ int main(int argc, char* argv[]) {
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("A");
       std::cout << result_string(
-          apply_solver<Newton>(equations, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
+
     } else if (vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("B");
       auto equations2 = MapEquations(equations, [](const SemilinearSet<> &s) {
         return SemilinearSetV{s};
       });
       std::cout << result_string(
-          apply_solver<Newton>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       DMSG("C");
@@ -345,7 +364,7 @@ int main(int argc, char* argv[]) {
         return SemilinearSetL{s};
       });
       std::cout << result_string(
-          apply_solver<Newton>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
 #ifdef USE_GENEPI
@@ -354,7 +373,7 @@ int main(int argc, char* argv[]) {
       auto equations = p.slsetndd_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
       std::cout << result_string(
-          apply_solver<Newton>(equations, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
       SemilinSetNdd::genepi_dealloc();
 #endif
@@ -372,14 +391,14 @@ int main(int argc, char* argv[]) {
         DummyDivider, SparseVecSimplifier>(equations);
       //PrintEquations(m_equations);
       std::cout << result_string(
-          apply_solver<Newton>(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     } else {
       auto m_equations = SemilinearToPseudoLinearEquations<
         DummyDivider, DummyVecSimplifier>(equations);
       //PrintEquations(m_equations);
       std::cout << result_string(
-          apply_solver<Newton>(m_equations, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
 
@@ -391,11 +410,10 @@ int main(int argc, char* argv[]) {
 
     //PrintEquations(equations);
 
-    // apply Newton's method to the equations
-    auto result = apply_solver<Newton>(equations, vm.count("scc"),
-                               vm.count("iterations"), iterations,
-                               vm.count("graphviz"));
-    std::cout << result_string(result) << std::endl;
+    // apply solver to the equations
+    std::cout << result_string(
+        call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
+        ) << std::endl;
 
   } else if (vm.count("free")) {
 
@@ -405,13 +423,9 @@ int main(int argc, char* argv[]) {
 
     PrintEquations(equations);
 
-    // apply the newton method to the equations
-    //auto result = apply_solver<Kleene, FreeSemiring>(equations,
-    //                                         vm.count("scc"),
-    //                                         vm.count("iterations"),
-    //                                         iterations,
-    //                                         vm.count("graphviz"));
-    //std::cout << result_string(result) << std::endl;
+    //std::cout << result_string(
+    //    apply_solver<KleeneNonComm>(...)
+    //    ) << std::endl;
 
   } else if (vm.count("lossy")) {
 
@@ -441,6 +455,10 @@ int main(int argc, char* argv[]) {
     //                                           vm.count("graphviz"));
     //std::cout << result_string(result) << std::endl;
 
+    //std::cout << result_string(
+    //    call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
+    //    ) << std::endl;
+
   } else if (vm.count("float")) {
     auto equations = p.free_parser(input_all);
     //PrintEquations(equations);
@@ -454,7 +472,7 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations);
     //PrintEquations(equations2);
       std::cout << result_string(
-          apply_solver<NewtonCL>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
   }

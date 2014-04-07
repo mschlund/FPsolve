@@ -29,6 +29,7 @@
 // Polynomial is parametrized by a semiring
 #define POLY_TYPE template <typename> class
 
+
 template <typename SR,
           LIN_EQ_SOLVER_TYPE LinEqSolverTemplate,
           DELTA_GEN_TYPE DeltaGeneratorTemplate,
@@ -36,10 +37,10 @@ template <typename SR,
 class GenericNewton {
   typedef LinEqSolverTemplate<SR> LinEqSolver;
   typedef DeltaGeneratorTemplate<SR> DeltaGenerator;
-  typedef std::vector< std::pair< VarId, Poly<SR> > > GenericEquations;
 
   public:
-  ValuationMap<SR> solve_fixpoint(const GenericEquations& equations, int max_iter) {
+
+  ValuationMap<SR> solve_fixpoint(const GenericEquations<Poly, SR>& equations, int max_iter) {
     std::vector<CommutativePolynomial<SR>> F;
     std::vector<VarId> poly_vars;
     for (const auto &eq : equations) {

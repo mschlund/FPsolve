@@ -37,20 +37,6 @@ endif(DEFINED ENV{CPPUNIT_ROOT})
 link_directories(${CPPUNIT_LIBRARY_DIRS})
 include_directories(${CPPUNIT_INCLUDE_DIRS})
 
-# lpsolve
-
-if(DEFINED ENV{LPSOLVE_ROOT})
-  set(CPPUNIT_INCLUDE_DIRS "$ENV{LPSOLVE_ROOT}/include/")
-  set(CPPUNIT_LIBRARY_DIRS "$ENV{LPSOLVE_ROOT}/lib/")
-  set(CPPUNIT_LIBRARIES "lpsolve55")
-else(DEFINED ENV{LPSOLVE_ROOT})
-  set(LPSOLVE_INCLUDE_DIRS "/usr/include/lpsolve/")
-  set(LPSOLVE_LIBRARY_DIRS "/usr/lib/lp_solve/")
-  set(LPSOLVE_LIBRARIES "lpsolve55")
-#  include(FindPkgConfig)
-#  pkg_check_modules(LPSOLVE lpsolve55)
-endif(DEFINED ENV{LPSOLVE_ROOT})
-
 # CXXFLAGS
 
 # Optimizing at -O1 actually results in lower compile time for me.  Probably due
@@ -67,19 +53,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O2 -DNDEBUG")
 
-if(${LPSOLVE})
-  add_definitions(-DLPSOLVE_OPT)
-else(${LPSOLVE})
-  set(LPSOLVE_INCLUDE_DIRS "")
-  set(LPSOLVE_LIBRARY_DIRS "")
-  set(LPSOLVE_LIBRARIES "")
-endif(${LPSOLVE})
-
 
 #add_definitions(-DOPCOUNT)
-
-link_directories(${LPSOLVE_LIBRARY_DIRS})
-include_directories(${LPSOLVE_INCLUDE_DIRS})
 
 add_subdirectory("src")
 add_subdirectory("test")
