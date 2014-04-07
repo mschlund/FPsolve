@@ -28,6 +28,10 @@ public:
         node_ = factory_.NewAddition(factory_.NewElement(var), factory_.GetEpsilon());
     }
 
+    LossyRegularExpression lossify() const {
+        return *this;
+    }
+
     static LossyRegularExpression null() {
         return LossyRegularExpression { factory_.GetEmpty() };
     }

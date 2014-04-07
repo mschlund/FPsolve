@@ -192,12 +192,15 @@ public:
         // hashes of all final states of the FA
         std::set<unsigned long> finalStates;
 
+
         // initial state of the FA
         unsigned long initialState = 0;
 
 //        std::cout << "lets see if we can get that FA info" << std::endl;
         extractTransitionTable(transitionTable, states, finalStates, initialState);
 
+//        std::cout << "number of final states: " << finalStates.size() << std::endl;
+//        std::cout << "number of states: " << states.size() << std::endl;
 //        for(auto &transitions: transitionTable){
 //            std::cout << "transitions for state:\t" << transitions.first << std::endl;
 //
@@ -235,7 +238,11 @@ public:
         for(unsigned long i = 0; i < numberOfStates; i++) {
             for(unsigned long j = 0; j < numberOfStates; j++) {
                 for(unsigned long k = 0; k < oldGrammar.size(); k++) {
-                    newVariables[i][j][k] = Var::GetVarId();
+                    std::stringstream ss;
+                    ss << "<" << i << "," << Var::GetVar(oldGrammar[k].first).string() << "," << j << ">";
+                    newVariables[i][j][k] = Var::GetVarId(ss.str());
+//                    newVariables[i][j][k] = Var::GetVarId();
+//                    std::cout << "new var introduced: " << Var::GetVar(newVariables[i][j][k]).string() << std::endl;
                 }
             }
         }
@@ -261,7 +268,7 @@ public:
          */
 
 
-        std::cout << "the problem must lie in the actual intersection algorithm" << std::endl;
+//        std::cout << "the problem must lie in the actual intersection algorithm" << std::endl;
 
         // the indices k, i, j are intended this way; we first choose some nonterminal of the grammar
         // and then generate all productions derived from that nonterminal; this mirrors the way
@@ -270,6 +277,7 @@ public:
         for(unsigned long k = 0; k < oldGrammar.size(); k++) {
             for(unsigned long i = 0; i < numberOfStates; i++) {
                 for(unsigned long j = 0; j < numberOfStates; j++) {
+//                    std::cout << "k, i, j: " << k << ", " << i << ", " << j << std::endl;
                     poly = oldGrammar[k].second.intersectionPolynomial
                             (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
                     resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
@@ -277,15 +285,28 @@ public:
             }
         }
 
+//        for(auto state: states) {
+//            std::cout << "state: " << state << std::endl;
+//            std::cout << "statesToIndices[state]: " << statesToIndices[state] << std::endl;
+//        }
+
         // finally, use a new variable as initial variable and generate the productions; they are of the form
         // newS -> <q_0, oldS, q_f> where q_0 is the initial state of the FA and q_f is some final state of the FA
         NonCommutativePolynomial<SR> startPolynomial = NonCommutativePolynomial<SR>::null();
-        for(auto &target: finalStates) {
+//        std::cout << "start polynomial initially: " << startPolynomial.string() << std::endl;
+//        std::cout << "initial state: " << initialState << std::endl;
+        for(auto target: finalStates) {
+//            std::cout << "current final state: " << target << std::endl;
+//            std::cout << "index mapping: " << statesToIndices[target] << std::endl;
             startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
+//            std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         }
-        newS = Var::GetVarId();
+        newS = Var::GetVarId(std::string("<S>"));
         resultGrammar.push_back(std::make_pair(newS, startPolynomial));
 
+        auto startProduction = resultGrammar[resultGrammar.size() - 1];
+        resultGrammar[resultGrammar.size() - 1] = resultGrammar[0];
+        resultGrammar[0] = startProduction;
         return resultGrammar;
     }
 

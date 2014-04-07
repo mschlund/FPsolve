@@ -3,6 +3,7 @@
 #include <iosfwd>
 #include <map>
 #include <climits>
+#include <ctype.h>
 #include <forward_list>
 
 #include "../datastructs/var_degree_map.h"
@@ -198,6 +199,7 @@ private:
             // check if we hit the last factor of the monomial; we stop the recursion here
             if(monomialFactorIndex == idx_.size() - 1) {
 //                std::cout << "last index variable" << std::endl;
+//                std::cout << "statesToIndices[currentState]: " << statesToIndices[currentState] << std::endl;
                 result = NonCommutativePolynomial<SR>(newVariables[statesToIndices[currentState]][statesToIndices[targetState]]
                             [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]);
             } else { // if this is not the last factor of the monomial, continue the recursion
@@ -207,6 +209,7 @@ private:
                     // we want to replace some nonterminal X by <currentState, X, nextState> for all nextState;
                     // after that we need to append all possible monomials generated from the suffix of this monomial
                     // that starts one symbol after X and uses nextState
+//                    std::cout << "statesToIndices[currentState]: " << statesToIndices[currentState] << std::endl;
                     result += NonCommutativePolynomial<SR>(newVariables[statesToIndices[currentState]][statesToIndices[nextState]]
                                   [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]) *
                               generateIntersectionMonomials(states, transitionTable, nextState, targetState,
@@ -572,11 +575,37 @@ public:
 	}
 
 	/*
+	 * Extracts the terminal letters used in this monomial. Currently only recognizes alphanumeric characters.
+	 */
+	std::set<unsigned char> get_terminals() const {
+	    std::set<unsigned char> terminals;
+
+	    for(auto &semiring_element: srs_) {
+	        if(!(semiring_element == SR::null()) && !(semiring_element == SR::one())) {
+	            std::string regex = semiring_element.string();
+
+	            for(int i = 0; i < regex.size(); i++) {
+	                if(isalnum(regex[i])) {
+	                    terminals.insert(regex[i]);
+	                }
+	            }
+	        }
+	    }
+
+	    return terminals;
+	}
+
+	/*
 	 * If the monomial has form xYz where x is an element of the semiring,
 	 * Y is a monomial over the semiring, and z is an element of the semiring,
 	 * this method gives back x wrapped in a monomial.
 	 */
 	SR getLeadingSR() const {
+
+	    if(get_degree() == 0) {
+	        return srs_[0];
+	    }
+
 		SR leadingSR = SR::one();
 
 		// give me a copy of the semiring factor on the leading side of the monomial
@@ -599,12 +628,17 @@ public:
 	 * this method gives back z wrapped in a monomial.
 	 */
 	SR getTrailingSR() const {
+
+	    if(get_degree() == 0) {
+	        return srs_[0];
+	    }
+
 		SR trailingSR = SR::one();
 
 		// give me a copy of the semiring factor on the trailing side of the monomial
 		for(int i = idx_.size() - 1; i >= 0; i--) {
 
-			// multiply as long as there was no variable encountered
+			// multiply as long as no variable is encountered
 			if(idx_.at(i).first == SemiringType) {
 				trailingSR = srs_.at(idx_.at(i).second) * trailingSR;
 			} else {
@@ -626,20 +660,19 @@ public:
 	 * Finds all the constants appearing in this monomial if it has degree at least 1 if checkLinearMonomials is true,
 	 * otherwise if it has degree at least 2.
 	 */
-	void findConstants(std::set<SR> &constants, bool checkLinearMonomials) const {
+	void findConstantsInNonterminalMonomials(std::set<SR> &constants, bool checkLinearMonomials) const {
 
 
 	    // we only replace the constants in monomials of length >= 2 with new variables; we also ignore linear
 	    // monomials depending on checkLinearMonomials
 	    if(get_degree() == 0 || (!checkLinearMonomials && get_degree() == 1)
-	            || (get_degree() == 1 && getLeadingSR() * getTrailingSR() == SR::one())) {
+	            || (get_degree() == 1 && getLeadingSR() == SR::one() && getTrailingSR() == SR::one())) {
 	        return;
 	    }
 
 		for(int i = idx_.size() - 1; i >= 0; i--) {
-
-			//we only want to extract the constants from the monomial
-			if(idx_.at(i).first == SemiringType) {
+			//we only want to extract the constants from the monomial; we also don't care about epsilon
+			if((idx_.at(i).first == SemiringType) && !(srs_.at(idx_.at(i).second) == SR::one())) {
 
 				//std::set.insert(..) does its own checking whether the element already is in the set
 				constants.insert(srs_.at(idx_.at(i).second));
@@ -649,23 +682,60 @@ public:
 		return;
 	}
 
+    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
+            std::map<VarId, int> &varToComponent,
+            int component) const {
+
+        if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
+            return;
+        }
+
+        linearMonomialsOfLowerOrder.insert(*this);
+    }
+
 	/*
 	 * Replaces all constants in the polynomial with their respective VarId mapping.
+	 *
+	 * WARNING: This function will fail if there is an SR element in this monomial that does
+	 * not have a mapped VarId. Will not change the monomial consisting exclusively of epsilon.
 	 */
 	NonCommutativePolynomial<SR> replaceConstants(std::map<SR, VarId> &constantsToVariables) const {
 		NonCommutativePolynomial<SR> temp;
 
-		if(idx_.at(0).first == SemiringType) {
-			temp = NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(0).second)]);
+		bool firstFactorIsSR = (idx_.at(0).first == SemiringType);
+		bool firstFactorIsEpsilon = false;
+
+		if(firstFactorIsSR) {
+		    firstFactorIsEpsilon = (srs_.at(idx_.at(0).second) == SR::one());
+		}
+
+		if((idx_.size() == 1) && firstFactorIsSR && firstFactorIsEpsilon) {
+		    return NonCommutativePolynomial<SR>::one();
+		}
+
+		int startIndex = 1;
+		if(firstFactorIsSR) {
+
+		    // we don't want unnecessary epsilon-factors
+		    if(firstFactorIsEpsilon) {
+		        temp = NonCommutativePolynomial<SR>(variables_.at(idx_.at(1).second));
+		        startIndex = 2;
+		    } else {
+	            temp = NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(0).second)]);
+		    }
 		} else {
 			temp = NonCommutativePolynomial<SR>(variables_.at(idx_.at(0).second));
 		}
 
-		for(int i = 1; i < idx_.size(); i++) {
+		for(int i = startIndex; i < idx_.size(); i++) {
 
 			// multiply as long as there was no variable encountered
 			if(idx_.at(i).first == SemiringType) {
-				temp *= NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(i).second)]);
+
+			    // ignore all epsilon factors
+			    if(!(srs_.at(idx_.at(i).second) == SR::one())) {
+	                temp *= NonCommutativePolynomial<SR>(constantsToVariables[srs_.at(idx_.at(i).second)]);
+			    }
 			} else {
 				temp *= variables_.at(idx_.at(i).second);
 			}
@@ -876,11 +946,101 @@ public:
 	}
 
 	/*
+	 * See NonCommutativePolynomial<SR>::componentIsSquarable(..) for commentary.
+	 */
+    bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
+        int count = 0;
+
+        // if the monomial contains any two variables from the same component,
+        // then we can duplicate all variables in the component
+        for(auto var: variables_) {
+            if(varToComponent[var] == component) {
+                count++;
+
+                if(count >= 2) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
+                std::map<VarId, int> &varToComponent, int component) const {
+        if(get_degree() != 2) {
+            return;
+        }
+
+        int lhsComponent = varToComponent[variables_[0]];
+        int rhsComponent = varToComponent[variables_[1]];
+
+        if((lhsComponent != component) && (rhsComponent != component)) {
+            quadraticLHStoRHS[component][lhsComponent].insert(rhsComponent);
+//            for(auto entry: quadraticLHStoRHS[component][lhsComponent]) {
+//                std::cout << "entry in quadraticLHStoRHS[" << component << "][" << lhsComponent << "]: " << rhsComponent << std::endl;
+//            }
+        }
+    }
+
+    void calculateLowerComponentVariables(
+                std::map<int, std::set<int>> &lhsLowerComponentVariables,
+                std::map<int, std::set<int>> &rhsLowerComponentFactors,
+                std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
+                std::map<VarId, int> &varToComponent,
+                int component) const {
+
+        if(get_degree() != 2) {
+            return;
+        }
+
+        int lhsComponent = varToComponent[variables_[0]];
+        int rhsComponent = varToComponent[variables_[1]];
+
+        if(lhsComponent == component) {
+            rhsLowerComponentFactors[component].insert(rhsComponent);
+        } else if(rhsComponent == component) {
+            lhsLowerComponentVariables[component].insert(lhsComponent);
+        }
+    }
+
+    void calculateSameComponentLetters(
+            std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+            std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+            std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
+            std::map<VarId, int> &varToComponent,
+            int component) const {
+
+        if(get_degree() != 1) {
+            return;
+        }
+
+        int varComponent = varToComponent[variables_[0]];
+
+        if(varComponent == component) {
+            std::string lhsString = getLeadingSR().string();
+            std::string rhsString = getTrailingSR().string();
+
+            for(int i = 0; i < lhsString.size(); i++) {
+                if(isalnum(lhsString[i])) {
+                    lhsSameComponentLetters[component].insert(lhsString[i]);
+                }
+            }
+
+            for(int i = 0; i < rhsString.size(); i++) {
+                if(isalnum(rhsString[i])) {
+                    rhsSameComponentLetters[component].insert(rhsString[i]);
+                }
+            }
+        }
+    }
+
+	/*
 	 * Checks if this monomial is a chain production, that is if it contains
 	 * exactly one variable and nothing else.
 	 */
 	bool isChainProduction() const {
-	    return (get_degree() == 1 && getLeadingSR() * getTrailingSR() == SR::one());
+	    return (get_degree() == 1 && getLeadingSR() == SR::one() && getTrailingSR() == SR::one());
 	}
 
 	std::string string() const {

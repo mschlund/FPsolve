@@ -136,7 +136,7 @@ public:
                 }
 
                 ss << regex[i] << "|())"; // don't forget the ']'
-            } else if(isalpha(regex[i])) {
+            } else if(isalnum(regex[i])) {
                 ss << "(" << regex[i] << "|())"; // lossify alphabet characters
             } else {
                 ss << regex[i]; // leave "syntax characters" unchanged
@@ -270,27 +270,45 @@ public:
         for(auto &equation: equations) {
             if(Var::GetVar(equation.first).string() == "S") {
                 oldS = equation.first;
-                std::cout << "found S:\t" + Var::GetVar(oldS).string() << std::endl;
+//                std::cout << "found S:\t" + Var::GetVar(oldS).string() << std::endl;
                 break;
             }
         }
 
-        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a([efg]*|bio)(l|k)ccc*");
+        std::cout << "Grammar:" << std::endl;
+        for(auto &equation: equations) {
+            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+        }
+
+        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a([efg]*|bo)(l|k)c*|h*");
+        std::cout << "regular language:\t" << dummy.string() << std::endl;
         VarId newS;
         std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> intersection =
                 dummy.intersectionWithCFG(newS, oldS, equations);
+
+//        std::cout << "raw intersection system, start symbol: " << Var::GetVar(newS).string() << std::endl;
+//        for(auto &equation: intersection) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
 
         std::queue<VarId> worklist;
         worklist.push(newS);
         auto cleanIntersection = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersection, worklist);
 
-        std::cout << "clean intersection system" << std::endl;
+        std::cout << "clean intersection system, start symbol: " << Var::GetVar(newS).string() << std::endl;
         for(auto &equation: cleanIntersection) {
             std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
         }
 
         LossyFiniteAutomaton shortestWord = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord(cleanIntersection, newS);
         std::cout << "shortest word in intersection:\t" + shortestWord.string() << std::endl;
+
+        std::cout << "Testing regex []*:" << std::endl;
+        LossyFiniteAutomaton testLFA = LossyFiniteAutomaton("[]*");
+        std::cout << testLFA.string() << std::endl;
+        std::cout << "Testing regex []:" << std::endl;
+        LossyFiniteAutomaton testLFA2 = LossyFiniteAutomaton("[]*");
+        std::cout << testLFA2.string() << std::endl;
     }
 
 private:

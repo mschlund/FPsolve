@@ -370,6 +370,41 @@ public:
 	}
 
 	/*
+	 * As with get_variables(), make sure you cache this if you use it.
+	 *
+	 * Only considers monomials with exactly two variables; used in generating the lossy quadratic normal form
+	 * of a system, see LossySemiring::downwardClosureDerivationTrees(..).
+	 */
+	std::set<VarId> get_variables_quadratic_monomials() const {
+        std::set<VarId> vars;
+
+        for(auto const &monomial : monomials_) {
+            if(monomial.first.get_degree() == 2) {
+                auto tmp = monomial.first.get_variables();
+                vars.insert(tmp.begin(), tmp.end());
+            }
+        }
+
+        return vars;
+	}
+
+	/*
+	 * Extracts the terminal letters used in this polynomial; only recognizes alphanumeric characters.
+	 *
+	 * Use this as little as possible; cache it if you need it.
+	 */
+	std::set<unsigned char> get_terminals() const {
+	    std::set<unsigned char> terminals;
+
+	    for(auto const &monomial: monomials_) {
+	        auto monomial_terminals = monomial.first.get_terminals();
+	        terminals.insert(monomial_terminals.begin(), monomial_terminals.end());
+	    }
+
+	    return terminals;
+	}
+
+	/*
 	 * Returns the sum of the leading constant factors of all monomials in this polynomial.
 	 */
 	SR getSumOfLeadingFactors() {
@@ -400,13 +435,34 @@ public:
 	 *
 	 * Only checks linear monomials if checkLinearTerms is true.
 	 */
-	void findConstants(std::set<SR> &constants, bool checkLinearTerms) const {
+	void findConstantsInNonterminalMonomials(std::set<SR> &constants, bool checkLinearTerms) const {
 
 		// delegate to the monomials
 		for(auto &monomial: monomials_) {
-			monomial.first.findConstants(constants, checkLinearTerms);
+			monomial.first.findConstantsInNonterminalMonomials(constants, checkLinearTerms);
 		}
 	}
+
+    SR sumOfConstantMonomials() const {
+        SR sum = SR::null();
+
+        for(auto &monomial: monomials_) {
+            if(monomial.first.get_degree() == 0) {
+                sum = sum + monomial.first.getLeadingSR();
+            }
+        }
+
+        return sum;
+    }
+
+    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
+            std::map<VarId, int> &varToComponent,
+            int component) const {
+
+        for(auto &monomial: monomials_) {
+            monomial.first.findLowerLinearTerms(linearMonomialsOfLowerOrder, varToComponent, component);
+        }
+    }
 
 	/*
 	 * Replaces all constants in the nonterminal monomials of the polynomial with their respective VarId mapping.
@@ -659,7 +715,7 @@ public:
 
         // find all constants in nonterminal productions in the system
         for(auto &equation: equations) {
-            equation.second.findConstants(constants, eliminateInLinearTerms);
+            equation.second.findConstantsInNonterminalMonomials(constants, eliminateInLinearTerms);
         }
 
         // return value
@@ -682,6 +738,8 @@ public:
             allVariablesPoly = equation.second.replaceConstants(constantsToVariables, eliminateInLinearTerms);
             variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
         }
+
+        std::cout << "constant elimination done" << std::endl;
 
         return variablefiedEquations;
     }
@@ -884,6 +942,64 @@ public:
 	}
 
 	/*
+	 * Decides whether the variables in a strongly connected component of a polynomial system can
+	 * duplicate themselves via this polynomial. In order to decide that, the map "varToComponent"
+	 * needs to hold the information in which component each variable lies, while "component" is
+	 * the component we are interested in.
+	 */
+	bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
+	    bool squarable = false;
+
+	    for(auto &monomial: monomials_) {
+
+	        // skip monomials that don't have at least two variables
+	        if(monomial.first.get_degree() >= 2) {
+	            squarable |= monomial.first.componentIsSquarable(varToComponent, component);
+
+	            // don't do work we don't need
+	            if(squarable) {
+	                break;
+	            }
+	        }
+	    }
+
+	    return squarable;
+	}
+
+	void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
+	        std::map<VarId, int> &varToComponent, int component) const {
+	    for(auto &monomial: monomials_) {
+	        monomial.first.mapQuadraticLHStoRHS(quadraticLHStoRHS, varToComponent, component);
+	    }
+	}
+
+	void calculateLowerComponentVariables(
+	            std::map<int, std::set<int>> &lhsLowerComponentVariables,
+	            std::map<int, std::set<int>> &rhsLowerComponentFactors,
+	            std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
+	            std::map<VarId, int> &varToComponent,
+	            int component) {
+
+        for(auto &monomial: monomials_) {
+            monomial.first.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentFactors,
+                    components, varToComponent, component);
+        }
+	}
+
+	void calculateSameComponentLetters(
+            std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+            std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+            std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
+            std::map<VarId, int> &varToComponent,
+            int component) {
+
+        for(auto &monomial: monomials_) {
+            monomial.first.calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
+                    components, varToComponent, component);
+        }
+	}
+
+	/*
 	 * Used during the generation of the intersection between a CFG and a FiniteAutomaton.
 	 * Generates all productions for a triple in states x states x nonterminals, represented
 	 * by their indices in the vectors "states" and "oldGrammar",
@@ -907,15 +1023,16 @@ public:
 	        std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
 	    NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
-
+	    bool epsilonAdded = false;
 	    // delegate to the monomials
 	    for(auto &monomial: monomials_) {
 
 	        // if the nonterminal can produce epsilon, then the new grammar can produce epsilon only without
 	        // the FA changing state (since the FA does not have epsilon transitions)
 	        if(monomial.first.isEpsilonMonomial()) {
-	            if(startState == targetState) {
+	            if(startState == targetState && !epsilonAdded) {
 	                result += NonCommutativePolynomial<SR>::one();
+	                epsilonAdded = true;
 	            }
 	        } else { // if this is a non-epsilon production, we calculate the new productions that derive from it
 	            result += monomial.first.intersectionPolynomial
