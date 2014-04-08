@@ -84,7 +84,7 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
       //SemilinSetExp(Var::GetVarId(s), cnt);
       assert(str_val.length() > 0);
 
-      if(str_val.compare("<>") == 0) {
+      if(str_val.compare("<>") == 0 || str_val.compare("()") == 0) {
         set_.emplace_back(LinearSetType{ OffsetType() } );
       }
       else if(str_val.front() == '<') {
@@ -218,6 +218,7 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
     }
 
     SemilinearSet star() const {
+      OPSTAR;
       SemilinearSet result = one();
       for (auto &ls : set_) {
         result *= star(ls);

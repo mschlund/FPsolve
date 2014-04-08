@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <fstream>
 
 #include "../datastructs/matrix.h"
 #include "../datastructs/var_degree_map.h"
@@ -149,9 +150,15 @@ class CommutativeSymbolicLinSolver {
               << jacobian_star_->getColumns()
               << std::endl;
     FreeSemiring::one().PrintStats();
+
+
+    std::ofstream dotfile;
+    dotfile.open("free-structure.dot");
+    FreeSemiring::one().PrintDot(dotfile);
+    dotfile.close();
     // <-
 
-    //std::cout << "J*: " << *jacobian_star_ << std::endl;
+    std::cout << "J*: " << *jacobian_star_ << std::endl;
 
     for (auto &pair : valuation_tmp) {
       valuation_.insert(std::make_pair(pair.second, pair.first));

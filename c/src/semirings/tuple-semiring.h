@@ -76,6 +76,7 @@ bool TupleSemiring<SR_A,SR_B>::operator==(const TupleSemiring<SR_A,SR_B>& elem) 
 template <typename SR_A, typename SR_B>
 TupleSemiring<SR_A,SR_B> TupleSemiring<SR_A,SR_B>::star() const
 {
+  OPSTAR;
   TupleSemiring<SR_A,SR_B> result = {std::get<0>(this->val).star(), std::get<1>(this->val).star()};
   return result;
 }

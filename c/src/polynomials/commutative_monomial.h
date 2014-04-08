@@ -189,13 +189,14 @@ class CommutativeMonomial {
       for (auto var_degree : variables_) {
         right_prod.Insert(prev_var_map.at(var_degree.first), var_degree.second);
       }
-      SR coeff_copy = coeff;
+
 
       for (auto var_degree : variables_) {
         right_prod.EraseAll(prev_var_map.at(var_degree.first));
 
         for (Degree k=0; k < var_degree.second; ++k) {
           VarDegreeMap center_prod = VarDegreeMap();
+          SR coeff_copy = coeff;
 
           center_prod.Insert(var_map.at(var_degree.first), k);
           center_prod.Insert(var_degree.first, 1);
@@ -203,6 +204,7 @@ class CommutativeMonomial {
 
           center_prod.Merge(left_prod);
           center_prod.Merge(right_prod);
+          //std::cout << "coeff+mon "<< coeff_copy << " . " << center_prod << std::endl;
 
           result += CommutativePolynomial<SR>(std::move(coeff_copy), std::move(CommutativeMonomial(std::move(center_prod))));
         }

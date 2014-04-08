@@ -39,6 +39,7 @@ bool BoolSemiring::operator==(const BoolSemiring& elem) const
 
 BoolSemiring BoolSemiring::star() const
 {
+  OPSTAR;
   return BoolSemiring(true);
 }
 

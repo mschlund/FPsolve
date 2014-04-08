@@ -453,6 +453,7 @@ bool CommutativeRExp::operator ==(const CommutativeRExp& expr) const
 // star the whole RExp
 CommutativeRExp CommutativeRExp::star() const
 {
+  OPSTAR;
 	if(this->type == Star)
 		return *this; // absorb the star
 	else if (this->type == Empty)

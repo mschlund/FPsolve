@@ -58,6 +58,7 @@ bool TropicalSemiring::operator==(const TropicalSemiring& elem) const
 
 TropicalSemiring TropicalSemiring::star() const
 {
+  OPSTAR;
   return TropicalSemiring::one();
 }
 

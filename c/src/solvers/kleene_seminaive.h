@@ -49,12 +49,12 @@ public:
     SubstitutionMap prev_val_map; // X^{<h}
     SubstitutionMap val_map;      // X^{<h+1}
 
-
+    std::cout << "Unfolding polys" << std::endl;
     for (Poly<SR> f : F) {
       //the new anonymous unfolding-variables are accumulated in the two maps!
       Poly<SR> t = f.HeightUnfolding(prev_val_map, val_map);
       unfolded_polys.push_back(t);
-      std::cout << t << std::endl;
+      //std::cout << t << std::endl;
     }
 
     //TODO: use vectors for better cache efficiency?
