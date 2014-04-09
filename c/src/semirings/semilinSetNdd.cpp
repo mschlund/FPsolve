@@ -281,11 +281,12 @@ SemilinSetNdd::SemilinSetNdd(VarId var, int cnt) {
   alpha.at(position) = cnt;
 
   this->set = Genepi(solver, alpha, false);
+  this->offsets.push_back(alpha);
 }
-SemilinSetNdd::SemilinSetNdd(Genepi set) :set(set) {
+SemilinSetNdd::SemilinSetNdd(Genepi set, std::vector<std::vector<int>> offsets) : set(set), offsets(offsets) {
 }
 
-SemilinSetNdd::SemilinSetNdd(const SemilinSetNdd& expr) : set(expr.set) {
+SemilinSetNdd::SemilinSetNdd(const SemilinSetNdd& expr) : set(expr.set), offsets(expr.offsets) {
 }
 
 SemilinSetNdd::~SemilinSetNdd() {
@@ -293,11 +294,14 @@ SemilinSetNdd::~SemilinSetNdd() {
 
 SemilinSetNdd SemilinSetNdd::operator=(const SemilinSetNdd& term) {
   this->set = term.set;
+  this->offsets = term.offsets;
   return *this;
 }
 
 SemilinSetNdd SemilinSetNdd::operator+=(const SemilinSetNdd& term) {
   this->set = this->set.union_op(term.set);
+  for(auto offset : term.offsets)
+    insert_offset(this->offsets, offset);
   return *this;
 }
 
@@ -353,6 +357,7 @@ SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
     component_projection[i+1] = 0;
   }
   this->set = result;
+  this->offsets = this->getUniqueOffsets(multiply_offsets(this->offsets, term.offsets));
   return *this;
 
 }
@@ -365,10 +370,8 @@ bool SemilinSetNdd::operator == (const SemilinSetNdd& term) const {
 }
 SemilinSetNdd SemilinSetNdd::star () const {
   SemilinSetNdd offset_star = one();
-  auto calculated_offsets = this->set.getOffsets();
-  auto clean_offsets = this->getUniqueOffsets(calculated_offsets);
-  for(auto offset : clean_offsets) {
-    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true));
+  for(auto offset : this->offsets) {
+    offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true),{std::vector<int>(k,0)});
   }
 
   SemilinSetNdd result = one(); // result = 1
@@ -390,14 +393,14 @@ SemilinSetNdd SemilinSetNdd::null() {
 
 SemilinSetNdd SemilinSetNdd::one() {
   if(!SemilinSetNdd::elem_one)
-    SemilinSetNdd::elem_one = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd(Genepi(solver, std::vector<int>(k,0), false)));
+    SemilinSetNdd::elem_one = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd(Genepi(solver, std::vector<int>(k,0), false), {std::vector<int>(k,0)}));
   return *SemilinSetNdd::elem_one;
 }
 
 
 std::string SemilinSetNdd::string() const {
   std::stringstream result;
-  auto calculated_offsets = this->set.getOffsets();
+  auto calculated_offsets = this->offsets;
   result << "calculated offsets:\t\t" << serialize_offsets(calculated_offsets) << std::endl;
   auto cleaned_calculated_offsets = this->getUniqueOffsets(calculated_offsets);
   result << "calculated offsets (clean):\t" << serialize_offsets(cleaned_calculated_offsets) << std::endl;
