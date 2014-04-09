@@ -39,7 +39,7 @@ std::vector<int> addTo(std::vector<int> first, std::vector<int> second) {
   return result;
 }
 
-std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k) {
+std::vector<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k) {
   int back = visited.back();
   auto adjNodes = graph->nodes[back].neighbours;
 
@@ -83,7 +83,7 @@ std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, s
 
   }
 
-  std::set<std::vector<int>> result;
+  std::vector<std::vector<int>> result;
   int i = 0;
   for(auto offset : offsets) {
     std::vector<int> sum(k);
@@ -96,7 +96,7 @@ std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, s
       pow++;
     }
     for(auto s : sum)
-    result.insert(sum);
+    result.push_back(sum);
   }
 
   // in breadt-first, recursion needs to come after visiting adjacent nodes
@@ -106,7 +106,7 @@ std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, s
     visited.push_back(node.first);
     visited_bool.at(node.first) = true;
     auto ret = DepthFirst(graph, visited, visited_bool, end, k);
-    result.insert(ret.begin(), ret.end());
+    result.insert(result.begin(), ret.begin(), ret.end());
 
     visited_bool.at(visited.back()) = false;
     visited.pop_back(); // delete last element → backtracking

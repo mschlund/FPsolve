@@ -20,4 +20,4 @@ struct Parsed {
 };
 
 Parsed parse_automaton(int k, std::string filename);
-std::set<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k);
+std::vector<std::vector<int>> DepthFirst(Graph* graph, std::vector<int>& visited, std::vector<bool>& visited_bool, int end, int k);
