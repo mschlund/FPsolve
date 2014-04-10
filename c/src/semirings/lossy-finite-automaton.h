@@ -164,6 +164,10 @@ public:
         return LossyFiniteAutomaton(language.complement().minimize());
     }
 
+    LossyFiniteAutomaton minus(const LossyFiniteAutomaton &x) const {
+        return LossyFiniteAutomaton(language.minus(x.language)).minimize();
+    }
+
     bool contains(LossyFiniteAutomaton &other) const {
         return language.contains(other.language);
     }
@@ -253,6 +257,10 @@ public:
 
     std::string lossyString() const {
         return lossifiedRegex(string());
+    }
+
+    int size() {
+        return language.size();
     }
 
     /*

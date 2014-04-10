@@ -359,11 +359,10 @@ public:
 	 */
 	NonCommutativePolynomial<SR> differential_at(const std::map<VarId, SR> &valuation) const {
 		NonCommutativePolynomial<SR> result; // empty polynomial = 0 (constant monomials have differential f(x)=0)
-
-		for(unsigned int position = 0; position < variables_.size(); position++) {
-			// the variable at the position is the variable which should not be touched, all others will be evaluated
-			result += this->eval_all_except(position, valuation);
-		}
+        for(unsigned int position = 0; position < variables_.size(); position++) {
+            // the variable at the position is the variable which should not be touched, all others will be evaluated
+            result += this->eval_all_except(position, valuation);
+        }
 		return result;
 	}
 
@@ -985,7 +984,7 @@ public:
 
     void calculateLowerComponentVariables(
                 std::map<int, std::set<int>> &lhsLowerComponentVariables,
-                std::map<int, std::set<int>> &rhsLowerComponentFactors,
+                std::map<int, std::set<int>> &rhsLowerComponentVariables,
                 std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
                 std::map<VarId, int> &varToComponent,
                 int component) const {
@@ -998,7 +997,7 @@ public:
         int rhsComponent = varToComponent[variables_[1]];
 
         if(lhsComponent == component) {
-            rhsLowerComponentFactors[component].insert(rhsComponent);
+            rhsLowerComponentVariables[component].insert(rhsComponent);
         } else if(rhsComponent == component) {
             lhsLowerComponentVariables[component].insert(lhsComponent);
         }

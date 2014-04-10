@@ -312,7 +312,7 @@ int main(int argc, char* argv[]) {
     // we are reading the input from the given second file
     std::ifstream file;
     file.open(vm["file2"].as<std::string>(), std::ifstream::in);
-    std::cout << "--file2 string:\t" << vm["file2"].as<std::string>() << std::endl;
+//    std::cout << "--file2 string:\t" << vm["file2"].as<std::string>() << std::endl;
     if (file.fail()) {
       std::cerr << "Could not open input file: " << vm["file2"].as<std::string>() << std::endl;
     } else {
@@ -417,9 +417,75 @@ int main(int argc, char* argv[]) {
     VarId S_1 = equations[0].first;
 
 //              std::cout << "approximating language..." << std::endl;
-    auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-    std::string approx = approximation.string();
-    std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+
+    if (vm.count("file2")) {
+        auto equations_2 = p.lossy_fa_parser(input_2_all);
+        VarId S_2 = equations_2[0].first;
+
+        auto approx_1 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+        auto approx_2 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations_2, S_2);
+
+        bool A1_subset_A2 = approx_2.contains(approx_1);
+        bool A2_subset_A1 = approx_1.contains(approx_2);
+
+        if(A1_subset_A2 && A2_subset_A1) {
+            std::cout << "Both languages have the same downward closure:\t" << approx_1.lossify().string() << std::endl;
+        } else {
+            LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
+            bool L1_intersect_A2c_changed = false;
+            LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
+            bool L2_intersect_A1c_changed = false;
+
+            if(!A1_subset_A2) {
+                VarId startSymbol_1_2;
+                auto intersectionGrammar = approx_2.complement().intersectionWithCFG(startSymbol_1_2, S_1, equations);
+                std::queue<VarId> worklist;
+                worklist.push(startSymbol_1_2);
+                intersectionGrammar = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar, worklist);
+
+                L1_intersect_A2c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                        (intersectionGrammar, startSymbol_1_2);
+                L1_intersect_A2c_changed = true;
+            }
+
+            if(!A2_subset_A1) {
+                VarId startSymbol_2_1;
+                auto intersectionGrammar_2 = approx_1.complement().intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+                std::queue<VarId> worklist;
+                worklist.push(startSymbol_2_1);
+                intersectionGrammar_2 = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar_2, worklist);
+
+                L2_intersect_A1c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                        (intersectionGrammar_2, startSymbol_2_1);
+                L2_intersect_A1c_changed = true;
+            }
+
+            if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+                auto first = L1_intersect_A2c.string();
+                auto second = L2_intersect_A1c.string();
+
+                if(first.size() <= second.size()) {
+                    std::cout << "There is a word in L1 that is not in L2." << std::endl;
+                    std::cout << "Shortest such word:\t" << first << std::endl;
+                } else {
+                    std::cout << "There is a word in L2 that is not in L1." << std::endl;
+                    std::cout << "Shortest such word:\t" << second << std::endl;
+                }
+            } else {
+                if(L1_intersect_A2c_changed) {
+                    std::cout << "There is a word in L1 that is not in L2." << std::endl;
+                    std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
+                } else {
+                    std::cout << "There is a word in L2 that is not in L1." << std::endl;
+                    std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
+                }
+            }
+        }
+    } else {
+        auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+        std::string approx = approximation.string();
+        std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+    }
 //                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
 //                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
   } else if(vm.count("lossyC")) {
@@ -430,9 +496,93 @@ int main(int argc, char* argv[]) {
       VarId S_1 = equations[0].first;
 
   //              std::cout << "approximating language..." << std::endl;
-      auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
-      std::string approx = approximation.string();
-      std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+
+      if (vm.count("file2")) {
+          auto equations_2 = p.lossy_fa_parser(input_2_all);
+          VarId S_2 = equations_2[0].first;
+
+          auto approx_1 = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+//          std::cout << "A1: " << approx_1.string() << "\t";
+          auto approx_2 = LossyFiniteAutomaton::downwardClosureCourcelle(equations_2, S_2);
+//          std::cout << "A2: " << approx_2.string() << std::endl;
+
+          bool A1_subset_A2 = approx_2.contains(approx_1);
+          bool A2_subset_A1 = approx_1.contains(approx_2);
+
+          if(A1_subset_A2 && A2_subset_A1) {
+              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
+          } else {
+              LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
+              bool L1_intersect_A2c_changed = false;
+              LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
+              bool L2_intersect_A1c_changed = false;
+
+              if(!A1_subset_A2) {
+                  VarId startSymbol_1_2;
+                  auto A2c = approx_1.minus(approx_2);
+//                  std::cout << "A2c size: " << A2c.size() << std::endl;
+//                  std::cout << "A2c: " << A2c.string() << std::endl;
+                  auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations);
+                  std::queue<VarId> worklist;
+                  worklist.push(startSymbol_1_2);
+                  intersectionGrammar = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar, worklist);
+//                  std::cout << "clean intersection grammar 1 x A2c:" << std::endl;
+//                  for(auto &equation: intersectionGrammar) {
+//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                  }
+
+                  L1_intersect_A2c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                          (intersectionGrammar, startSymbol_1_2);
+                  L1_intersect_A2c_changed = true;
+              }
+
+              if(!A2_subset_A1) {
+                  VarId startSymbol_2_1;
+                  auto A1c = approx_2.minus(approx_1);
+//                  std::cout << "A1c size: " << A1c.size() << std::endl;
+//                  std::cout << "A1c: " << A1c.string() << std::endl;
+                  auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+                  std::queue<VarId> worklist;
+                  worklist.push(startSymbol_2_1);
+                  intersectionGrammar_2 = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar_2, worklist);
+//                  std::cout << "clean intersection grammar 2 x A1c:" << std::endl;
+//                  for(auto &equation: intersectionGrammar_2) {
+//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                  }
+
+                  L2_intersect_A1c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                          (intersectionGrammar_2, startSymbol_2_1);
+                  L2_intersect_A1c_changed = true;
+              }
+
+              if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+                  auto first = L1_intersect_A2c.string();
+                  auto second = L2_intersect_A1c.string();
+
+                  if(first.size() <= second.size()) {
+                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
+                  } else {
+                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
+//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+//                      std::cout << "Shortest such word:\t" << second << std::endl;
+                  }
+              } else {
+                  if(L1_intersect_A2c_changed) {
+                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
+//                      std::cout << "There is a word in L1 that is not in L2." << std::endl;
+//                      std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
+                  } else {
+                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
+//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+//                      std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
+                  }
+              }
+          }
+      } else {
+          auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+          std::string approx = approximation.string();
+          std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+      }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
@@ -441,41 +591,23 @@ int main(int argc, char* argv[]) {
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
 
+      VarId S_1 = equations[0].first;
+      auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+      auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
 
-      VarId S_1;
-      bool found_S_1 = false;
-
-      for(auto &equation: equations) {
-          if(Var::GetVar(equation.first).string() == "S") {
-              S_1 = equation.first;
-              found_S_1 = true;
-              break;
-          }
-      }
-
-      if(!found_S_1) {
-          std::cout << "Your grammar needs to contain a start symbol labelled \"S\"!" << std::endl;
+      if(!(derivationTreeClosure == courcelleClosure)) {
+          std::cout << "Closures not equal, grammar: " << vm["file"].as<std::string>() << "\t size: " << equations.size();
+          std::cout << "\t Derivation tree closure: " << derivationTreeClosure.string();
+          std::cout << "\t Courcelle closure: " << courcelleClosure.string() << std::endl;
       } else {
-          auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-          auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
-
-          if(!(derivationTreeClosure == courcelleClosure)) {
-              std::cout << "\n\n" << std::endl;
-              std::cout << "Closures not equal, grammar: " << vm["file"].as<std::string>() << std::endl;
-              std::cout << "Derivation tree closure: " << derivationTreeClosure.string() << std::endl;
-              std::cout << "Courcelle closure: " << courcelleClosure.string() << std::endl;
-              std::cout << "\n\n" << std::endl;
-          } else {
-              std::cout << "same results" << std::endl;
-              std::cout << "closure derivation trees: " << derivationTreeClosure.lossify().string() << std::endl;
-              std::cout << "closure courcelle: " << courcelleClosure.string() << std::endl;
-              std::cout << "grammar:" << std::endl;
-              for(auto &equation: equations) {
-                  std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-              }
-          }
+          std::cout << vm["file"].as<std::string>() << "\t size: " << equations.size() << "\t same results" << std::endl;
+//          std::cout << "closure derivation trees: " << derivationTreeClosure.lossify().string() << std::endl;
+//          std::cout << "closure courcelle: " << courcelleClosure.string() << std::endl;
+//          std::cout << "grammar:" << std::endl;
+//          for(auto &equation: equations) {
+//              std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//          }
       }
-
   } else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])

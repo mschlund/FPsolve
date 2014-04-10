@@ -975,13 +975,13 @@ public:
 
 	void calculateLowerComponentVariables(
 	            std::map<int, std::set<int>> &lhsLowerComponentVariables,
-	            std::map<int, std::set<int>> &rhsLowerComponentFactors,
+	            std::map<int, std::set<int>> &rhsLowerComponentVariables,
 	            std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>>> &components,
 	            std::map<VarId, int> &varToComponent,
 	            int component) {
 
         for(auto &monomial: monomials_) {
-            monomial.first.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentFactors,
+            monomial.first.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
                     components, varToComponent, component);
         }
 	}
@@ -1051,6 +1051,10 @@ public:
 	 * from "startSymbol".
 	 */
 	static SR shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, VarId &startSymbol) {
+
+	    if(productions.size() == 0) {
+	        return SR::null();
+	    }
 
 	    // check that the grammar contains the start symbol
         bool startSymbolIsProductive = false;

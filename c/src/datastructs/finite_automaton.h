@@ -63,6 +63,10 @@ public:
         return FiniteAutomaton(fa_complement(automaton));
     }
 
+    FiniteAutomaton minus(FiniteAutomaton other) const {
+        return FiniteAutomaton(fa_minus(automaton, other.automaton));
+    }
+
     /*
      * Automaton for the intersection between the languages of two automata.
      */
@@ -147,6 +151,16 @@ public:
         size_t size;
         fa_as_regexp(automaton, &regularExpression, &size);
         return std::string(regularExpression);
+    }
+
+    int size() const {
+        int states = 0;
+
+        for (auto s = automaton->initial; s != NULL; s = s->next){
+            states++;
+        }
+
+        return states;
     }
 
     /*

@@ -104,14 +104,19 @@ public:
                 differential.insert(std::make_pair(equation.first, equation.second.differential_at(f_n_0)));
         }
 
-        //        std::cout << "f(0):" << std::endl;
-        //        for(auto &mapping: f_0) {
-        //            std::cout << Var::GetVar(mapping.first).string() + ":\t\t" + mapping.second.string() << std::endl;
-        //        }
-        //        std::cout << "f^n(0):" << std::endl;
-        //        for(auto &mapping: f_n_0) {
-        //            std::cout << Var::GetVar(mapping.first).string() + ":\t\t" + mapping.second.string() << std::endl;
-        //        }
+//                std::cout << "differential:" << std::endl;
+//                for(auto &mapping: differential) {
+//                    std::cout << Var::GetVar(mapping.first).string() + " -> " + mapping.second.string() << std::endl;
+//                }
+//
+//                std::cout << "f(0):" << std::endl;
+//                for(auto &mapping: f_0) {
+//                    std::cout << Var::GetVar(mapping.first).string() + ":\t\t" + mapping.second.string() << std::endl;
+//                }
+//                std::cout << "f^n(0):" << std::endl;
+//                for(auto &mapping: f_n_0) {
+//                    std::cout << Var::GetVar(mapping.first).string() + ":\t\t" + mapping.second.string() << std::endl;
+//                }
 
         // sum all polynomials of the differential of the system; we don't need attribution
         // of each polynomial to the respective variable since we only care about the
@@ -121,10 +126,15 @@ public:
             differential_sum += equation.second;
         }
 
+//        // add the constant summands appearing in any component of the differential
+//        middle += differential_sum.eval(zeroSystem);
+//                            std::cout << "middle: " << middle.string() << std::endl;
+
         // get the lefthand and righthand semiring element of the fixpoint
         LSR lefthandSum = differential_sum.getSumOfLeadingFactors();
+//                            std::cout << "LHS: " << lefthandSum.string() << std::endl;
         LSR righthandSum = differential_sum.getSumOfTrailingFactors();
-
+//                            std::cout << "RHS: " << righthandSum.string() << std::endl;
         // fixpoint element
         LSR fixpoint = lefthandSum.star() * middle * righthandSum.star();
 
@@ -671,7 +681,7 @@ private:
 
     static void calculateLowerComponentVariables(
             std::map<int, std::set<int>> &lhsLowerComponentVariables,
-            std::map<int, std::set<int>> &rhsLowerComponentFactors,
+            std::map<int, std::set<int>> &rhsLowerComponentVariables,
             std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>>> &components,
             std::map<VarId, int> &varToComponent,
             std::set<int> &squarableComponents) {
@@ -679,7 +689,7 @@ private:
         for(int i = 0; i < components.size(); i++) {
             if(squarableComponents.count(i) == 0) {
                 for(auto &equation: components[i]) {
-                    equation.second.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentFactors,
+                    equation.second.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
                             components, varToComponent, i);
                 }
             }
@@ -711,17 +721,12 @@ private:
         for(int i = 0; i < components.size(); i++) {
             if(squarableComponents.count(i) == 0) {
                 LSR closure = LSR::null();
-                bool closureNotNull = false;
 
                 for(auto &equation: components[i]) {
                     closure = closure + equation.second.sumOfConstantMonomials();
                 }
 
-                if(!(closure == LSR::null())) {
-                    closure = closure.lossify();
-                }
-
-                closuresOfConstantMonomials[i] = closure;
+                closuresOfConstantMonomials[i] = closure.lossify();
 //                std::cout << "closure of constant monomials component " << i << ": " << closure.string() << std::endl;
             }
         }
