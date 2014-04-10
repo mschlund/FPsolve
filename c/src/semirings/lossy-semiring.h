@@ -86,10 +86,10 @@ public:
 
         // build the vectors f(0) and f^n(0) where n is the number of equations in the system
         int times = 1;
-        std::cout << "f(0), 1 iteration:" << std::endl;
+//        std::cout << "f(0), 1 iteration:" << std::endl;
         std::map<VarId, LSR> f_0 = evaluateSystem(qnf, times, zeroSystem);
         times = qnf.size() - 1;
-        std::cout << "f^n(0), "<< times << " iterations total:" << std::endl;
+//        std::cout << "f^n(0), "<< times << " iterations total:" << std::endl;
         std::map<VarId, LSR> f_n_0 = evaluateSystem(qnf, times, f_0);
 
         // find the LossySemiring element in the "middle" of the expression
@@ -145,10 +145,10 @@ public:
         std::queue<VarId> worklist;
         worklist.push(S);
 
-        std::cout << "system:" << std::endl;
-        for(auto &equation: equations) {
-            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-        }
+//        std::cout << "system:" << std::endl;
+//        for(auto &equation: equations) {
+//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//        }
 
         auto cleanEquations = cleanSystem(equations, worklist);
 
@@ -162,17 +162,17 @@ public:
         lossifyQNF(cleanQNF);
         auto components = group_by_scc(cleanQNF);
 
-
-        for(int i = 0; i < components.size(); i++) {
-            std::cout << "component: " << i << std::endl;
-            for(auto &equation: components[i]) {
-                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-            }
-        }
+//        std::cout << "derivation trees components" << std::endl;
+//        for(int i = 0; i < components.size(); i++) {
+//            std::cout << "component: " << i << std::endl;
+//            for(auto &equation: components[i]) {
+//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//            }
+//        }
 
         std::map<VarId, LSR> knownValuations;
         for(int i = 0; i < components.size(); i++) {
-            std::cout << "component: " << i << "\t size: " << components[i].size() << std::endl;
+//            std::cout << "component: " << i << "\t size: " << components[i].size() << std::endl;
             // if this is not the bottom component, substitute known valuations
             if(i != 0) {
                 for(auto &equation: components[i]) {
@@ -187,7 +187,7 @@ public:
             }
         }
 
-        return knownValuations[S];
+        return knownValuations[S].lossify();
     }
 
     /*
@@ -202,10 +202,10 @@ public:
         std::queue<VarId> worklist;
         worklist.push(S);
 
-        std::cout << "system:" << std::endl;
-        for(auto &equation: equations) {
-            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-        }
+//        std::cout << "system:" << std::endl;
+//        for(auto &equation: equations) {
+//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//        }
 
         auto cleanEquations = cleanSystem(equations, worklist);
 
@@ -218,12 +218,12 @@ public:
         auto cleanQNF = quadraticNormalForm(cleanEquations);
         auto components = group_by_scc(cleanQNF);
 
-        for(int i = 0; i < components.size(); i++) {
-            std::cout << "component: " << i << std::endl;
-            for(auto &equation: components[i]) {
-                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-            }
-        }
+//        for(int i = 0; i < components.size(); i++) {
+//            std::cout << "component: " << i << std::endl;
+//            for(auto &equation: components[i]) {
+//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//            }
+//        }
 
         // will hold the downward closure of all components
         std::map<int, LSR> componentToClosure;
@@ -231,45 +231,45 @@ public:
         // map variables to their components
         std::map<VarId, int> varToComponent = mapVariablesToComponents(components);
 
-        std::cout << "mapped variables to their components" << std::endl;
+//        std::cout << "mapped variables to their components" << std::endl;
 
         // these components will have as their closure simply the star of the letters reachable
         // from the variables of the component
         std::set<int> squarableComponents = findSquarableComponents(components, varToComponent);
 
-        std::cout << "found squarable components" << std::endl;
+//        std::cout << "found squarable components" << std::endl;
 
         // we need this map for the case where we can duplicate a variable
         std::map<int, std::set<unsigned char>> componentToReachableLetters =
                 findReachableLetters(components, varToComponent);
 
-        std::cout << "mapped components to reachable letters" << std::endl;
+//        std::cout << "mapped components to reachable letters" << std::endl;
 
         // we can already calculate the downward closures of squarable components
         calculateClosuresOfSquarableComponents(componentToReachableLetters, squarableComponents, componentToClosure);
 
-        std::cout << "closures of squarable components done" << std::endl;
+//        std::cout << "closures of squarable components done" << std::endl;
 
         // this map holds for each component all pairs AB where A and B are in a lower component;
         // we use the downward closure for those pairs and concatenate accordingly to construct the
         // "middle" part of the downward closure the way Courcelle calculates it
         std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS = mapQuadraticLHStoRHS(components, varToComponent, squarableComponents);
-        std::cout << "quadraticLHStoRHS[4][3] contains 3: " << quadraticLHStoRHS[4][3].count(3) << std::endl;
-        std::cout << "quadraticLHStoRHS[5][1] contains 4: " << quadraticLHStoRHS[5][1].count(4) << std::endl;
-        std::cout << "quadraticLHStoRHS is not null, size: " << quadraticLHStoRHS.size() << std::endl;
-        for(auto &entry: quadraticLHStoRHS) {
-            std::cout << "quadraticLHStoRHS component: " << entry.first << std::endl;
+//        std::cout << "quadraticLHStoRHS[4][3] contains 3: " << quadraticLHStoRHS[4][3].count(3) << std::endl;
+//        std::cout << "quadraticLHStoRHS[5][1] contains 4: " << quadraticLHStoRHS[5][1].count(4) << std::endl;
+//        std::cout << "quadraticLHStoRHS is not null, size: " << quadraticLHStoRHS.size() << std::endl;
+//        for(auto &entry: quadraticLHStoRHS) {
+//            std::cout << "quadraticLHStoRHS component: " << entry.first << std::endl;
 
-            for(auto &mapping: entry.second) {
-                for(auto target: mapping.second) {
-                    std::cout << "mapping: " << mapping.first << " to " << target << std::endl;
-                }
-            }
-        }
+//            for(auto &mapping: entry.second) {
+//                for(auto target: mapping.second) {
+//                    std::cout << "mapping: " << mapping.first << " to " << target << std::endl;
+//                }
+//            }
+//        }
 
 
 
-        std::cout << "mapped quadratic lhs to rhs" << std::endl;
+//        std::cout << "mapped quadratic lhs to rhs" << std::endl;
 
         // get the components of variables Y_l and Y_r such that there is a monomial in the component of any nonsquarable B
         // that has the form Y_l*B or B*Y_r;
@@ -279,7 +279,7 @@ public:
         calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
                 components, varToComponent, squarableComponents);
 
-        std::cout << "got lower component variables" << std::endl;
+//        std::cout << "got lower component variables" << std::endl;
 
         // get the lefthand/righthand letters for each nonsquarable component, i.e. the letters occurring in terms xBy
         // where x, y are strings over the terminal alphabet and B is a variable from the same component as the current one
@@ -288,14 +288,14 @@ public:
         calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
                 components, varToComponent, squarableComponents);
 
-        std::cout << "got same component letters" << std::endl;
+//        std::cout << "got same component letters" << std::endl;
 
         // for the middle part of each component, we also need the sum of the closures of all constant monomials
         // appearing in that component
         std::map<int, LSR> closuresOfConstantMonomials;
         calculateClosuresOfConstantMonomials(closuresOfConstantMonomials, components, squarableComponents);
 
-        std::cout << "closure of constant monomials done" << std::endl;
+//        std::cout << "closure of constant monomials done" << std::endl;
 
         // we have everything we can prepare beforehand; everything else will need to be dealt with while
         // putting the closures together
@@ -305,7 +305,7 @@ public:
                 lhsSameComponentLetters, rhsSameComponentLetters,
                 closuresOfConstantMonomials, varToComponent, componentToReachableLetters);
 
-        std::cout << "closures of nonsquarable components done" << std::endl;
+//        std::cout << "closures of nonsquarable components done" << std::endl;
 
         return componentToClosure[varToComponent[S]];
     }
@@ -357,19 +357,19 @@ private:
             systemBeingProcessed = NonCommutativePolynomial<LSR>::eliminateTerminalsInNonterminalProductions
                     (equations, variablesToConstants, false);
 
-            std::cout << "system after constant elimination:" << std::endl;
-            for(auto &equation: systemBeingProcessed) {
-                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-            }
+//            std::cout << "system after constant elimination:" << std::endl;
+//            for(auto &equation: systemBeingProcessed) {
+//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//            }
 
             // binarize all productions, i.e. nonterminal productions of length at least 3 will be split up until
             // there are only productions of length <= 2 left
             systemBeingProcessed = NonCommutativePolynomial<LSR>::binarizeProductions(systemBeingProcessed, variablesToConstants);
 
-            std::cout << "system after binarization:" << std::endl;
-            for(auto &equation: systemBeingProcessed) {
-                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-            }
+//            std::cout << "system after binarization:" << std::endl;
+//            for(auto &equation: systemBeingProcessed) {
+//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//            }
 
             return systemBeingProcessed;
     }
@@ -399,10 +399,10 @@ private:
             equation.second = equation.second + NonCommutativePolynomial<LSR>::one();
         }
 
-        std::cout << "lossy QNF:" << std::endl;
-        for(auto &equation: equations) {
-            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-        }
+//        std::cout << "lossy QNF:" << std::endl;
+//        for(auto &equation: equations) {
+//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//        }
     }
 
     /*
@@ -493,7 +493,7 @@ private:
         for(int i = 0; i < times; i++) {
             time_t rawtime;
             time (&rawtime);
-            std::cout << "system evaluation: iteration\t" << (i+1) << "\t at\t" << ctime (&rawtime);
+//            std::cout << "system evaluation: iteration\t" << (i+1) << "\t at\t" << ctime (&rawtime);
             // evaluate each polynomial and map the appropriate variable to the result
             for(auto &equation: equations) {
                 tempValuation.insert(std::make_pair(equation.first, equation.second.eval(valuation)));
@@ -644,7 +644,7 @@ private:
 
             ss << "]*";
             componentToClosure.insert(std::make_pair(i, LSR(ss.str())));
-            std::cout << "reachable letters for component " << i << ": " << LSR(ss.str()).string() << std::endl;
+//            std::cout << "reachable letters for component " << i << ": " << LSR(ss.str()).string() << std::endl;
         }
     }
 
@@ -722,7 +722,7 @@ private:
                 }
 
                 closuresOfConstantMonomials[i] = closure;
-                std::cout << "closure of constant monomials component " << i << ": " << closure.string() << std::endl;
+//                std::cout << "closure of constant monomials component " << i << ": " << closure.string() << std::endl;
             }
         }
     }
@@ -742,7 +742,7 @@ private:
 
         for(int i = 0; i < components.size(); i++) {
             if(squarableComponents.count(i) == 0){
-                std::cout << "component " << i << " of " << components.size() << std::endl;
+//                std::cout << "component " << i << " of " << components.size() << std::endl;
                 /*
                  * closures of elements in the middle
                  */
@@ -753,28 +753,28 @@ private:
                     equation.second.findLowerLinearTerms(lowerLinearTerms, varToComponent, i);
                 }
 
-                std::cout << "found lower linear terms; total of " << lowerLinearTerms.size() << ". Calculating their closure" << std::endl;
+//                std::cout << "found lower linear terms; total of " << lowerLinearTerms.size() << ". Calculating their closure" << std::endl;
                 LSR closureOfLowerLinearTerms = findClosureOfLowerLinearTerms(lowerLinearTerms, varToComponent, componentToClosure);
 
-                std::cout << "closure of lower linear terms done" << std::endl;
+//                std::cout << "closure of lower linear terms done" << std::endl;
 
                 // quadratic terms with variables in lower components
                 LSR closureOfLowerQuadraticTerms = LSR::null();
                 for(auto &entry: quadraticLHStoRHS[i]) {
                     for(auto rhs: entry.second) {
-                        std::cout << entry.first << " * " << rhs << " in quadratic stuff of component " << i << std::endl;
+//                        std::cout << entry.first << " * " << rhs << " in quadratic stuff of component " << i << std::endl;
                         closureOfLowerQuadraticTerms += componentToClosure[entry.first] * componentToClosure[rhs];
                     }
                 }
 
 
-                std::cout << "closure of lower quadratic terms done" << std::endl;
+//                std::cout << "closure of lower quadratic terms done" << std::endl;
 
                 // sum of the closures of: constant monomials in this component, linear and quadratic monomials with variables
                 // exclusively in lower components
                 LSR middle = closureOfLowerQuadraticTerms + closureOfLowerLinearTerms + closuresOfConstantMonomials[i];
 
-                std::cout << "middle calculated" << std::endl;
+//                std::cout << "middle calculated" << std::endl;
 
                 /*
                  * lefthand and righthand side reachable alphabets starred
@@ -789,7 +789,7 @@ private:
                             componentToReachableLetters[variable].end());
                 }
 
-                std::cout << "lefthand reachable letters done" << std::endl;
+//                std::cout << "lefthand reachable letters done" << std::endl;
 
                 std::set<unsigned char> righthandReachableLetters;
                 righthandReachableLetters.insert(rhsSameComponentLetters[i].begin(), rhsSameComponentLetters[i].end());
@@ -799,7 +799,7 @@ private:
                             componentToReachableLetters[variable].end());
                 }
 
-                std::cout << "righthand reachable letters done" << std::endl;
+//                std::cout << "righthand reachable letters done" << std::endl;
 
                 // build the automata
                 LSR lefthandAlphabetStar = LSR::one();
@@ -817,7 +817,7 @@ private:
                     lefthandAlphabetStar = LSR(ssLHS.str());
                 }
 
-                std::cout << "lefthand automaton: " << lefthandAlphabetStar.string() << std::endl;
+//                std::cout << "lefthand automaton: " << lefthandAlphabetStar.string() << std::endl;
 
                 LSR righthandAlphabetStar = LSR::one();
                 if(righthandReachableLetters.size() != 0) {
@@ -834,7 +834,7 @@ private:
                     righthandAlphabetStar = LSR(ssRHS.str());
                 }
 
-                std::cout << "righthand automaton: " << righthandAlphabetStar.string() << std::endl;
+//                std::cout << "righthand automaton: " << righthandAlphabetStar.string() << std::endl;
 
                 LSR closure = lefthandAlphabetStar * middle * righthandAlphabetStar;
 
@@ -851,45 +851,47 @@ private:
 
         for(auto &monomial: lowerLinearTerms) {
 
-            std::string leadingFactor = monomial.getLeadingSR().string();
-            std::string trailingFactor = monomial.getTrailingSR().string();
-
-            std::stringstream ssLHS;
-            ssLHS << "[";
-            for(int i = 0; i < leadingFactor.size(); i++) {
-                if(isalnum(leadingFactor[i])) {
-                    ssLHS << leadingFactor[i];
-                }
-            }
-            ssLHS << "]";
-
-            std::stringstream ssRHS;
-            ssRHS << "[";
-            for(int i = 0; i < trailingFactor.size(); i++) {
-                if(isalnum(trailingFactor[i])) {
-                    ssRHS << trailingFactor[i];
-                }
-            }
-            ssRHS << "]";
+//            std::string leadingFactor = monomial.getLeadingSR().string();
+//            std::string trailingFactor = monomial.getTrailingSR().string();
+//
+//            std::stringstream ssLHS;
+//            ssLHS << "[";
+//            for(int i = 0; i < leadingFactor.size(); i++) {
+//                if(isalnum(leadingFactor[i])) {
+//                    ssLHS << leadingFactor[i];
+//                }
+//            }
+//            ssLHS << "]";
+//
+//            std::stringstream ssRHS;
+//            ssRHS << "[";
+//            for(int i = 0; i < trailingFactor.size(); i++) {
+//                if(isalnum(trailingFactor[i])) {
+//                    ssRHS << trailingFactor[i];
+//                }
+//            }
+//            ssRHS << "]";
 
             LSR variableClosure = componentToClosure[varToComponent[*(monomial.get_variables().begin())]];
 
-            std::string lhsString = ssLHS.str();
-            std::string rhsString = ssRHS.str();
-
-            LSR lhsLSR;
-            if(lhsString.size() > 2) {
-                lhsLSR = LSR(lhsString);
-            } else {
-                lhsLSR = LSR::one();
-            }
-
-            LSR rhsLSR;
-            if(rhsString.size() > 2) {
-                rhsLSR = LSR(rhsString);
-            } else {
-                rhsLSR = LSR::one();
-            }
+//            std::string lhsString = ssLHS.str();
+//            std::string rhsString = ssRHS.str();
+//
+//            LSR lhsLSR;
+//            if(lhsString.size() > 2) {
+//                lhsLSR = LSR(lhsString);
+//            } else {
+//                lhsLSR = LSR::one();
+//            }
+//
+//            LSR rhsLSR;
+//            if(rhsString.size() > 2) {
+//                rhsLSR = LSR(rhsString);
+//            } else {
+//                rhsLSR = LSR::one();
+//            }
+            auto lhsLSR = monomial.getLeadingSR().lossify();
+            auto rhsLSR = monomial.getTrailingSR().lossify();
 
             closure += lhsLSR * variableClosure * rhsLSR;
         }

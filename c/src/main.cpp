@@ -203,6 +203,7 @@ int main(int argc, char* argv[]) {
     //( "debug", "enable debug output" )
     ( "test", "just for testing purposes ... explicit test defined in main()" )
     ( "file,f", po::value<std::string>(), "input file" )
+    ( "file2,f2", po::value<std::string>(), "input file 2" )
 //    ( "cfgequal", "cfgs equal via downward closure?" )
     ( "float", "float semiring" )
     ( "rexp", "commutative regular expression semiring" )
@@ -213,6 +214,7 @@ int main(int argc, char* argv[]) {
     ( "free", "free semiring" )
     ( "lossy", "lossy semiring" )
     ( "lossyC", "downward closure via Courcelle")
+    ( "lossyComp", "")
     ( "lossyIntersectTest", "lossy semiring intersection test" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
@@ -274,12 +276,11 @@ int main(int argc, char* argv[]) {
       !vm.count("prefix") &&
       !vm.count("lossy") &&
       !vm.count("lossyIntersectTest") &&
-      !vm.count("lossyC")) {
+      !vm.count("lossyC") &&
+      !vm.count("lossyComp")) {
     std::cout << "Please supply a supported semiring :)" << std::endl;
     return 0;
   }
-
-
 
   std::vector<std::string> input;
   std::string line;
@@ -300,29 +301,28 @@ int main(int argc, char* argv[]) {
     }
   }
 
-//  std::vector<std::string> input_2;
-//  if (vm.count("file2")) {
-//    // we are reading the input from the given second file
-//    std::ifstream file;
-//    file.open(vm["file2"].as<std::string>(), std::ifstream::in);
-//    if (file.fail()) {
-//      std::cerr << "Could not open input file: " << vm["file2"].as<std::string>() << std::endl;
-//    }
-//    while (std::getline(file, line)) {
-//        input_2.push_back(line);
-//    }
-//  } else {
-//    // we are reading from stdin
-//    while (std::getline(std::cin, line)) {
-//        input_2.push_back(line);
-//    }
-//  }
+   // join the input into one string
+   std::string input_all =
+     std::accumulate(input.begin(), input.end(), std::string(""));
 
-  // join the input into one string
-  std::string input_all =
-    std::accumulate(input.begin(), input.end(), std::string(""));
-//  std::string input_2_all =
-//    std::accumulate(input_2.begin(), input_2.end(), std::string(""));
+  // see to the input of the second file
+  std::string input_2_all = "";
+  std::vector<std::string> input_2;
+  if (vm.count("file2")) {
+    // we are reading the input from the given second file
+    std::ifstream file;
+    file.open(vm["file2"].as<std::string>(), std::ifstream::in);
+    std::cout << "--file2 string:\t" << vm["file2"].as<std::string>() << std::endl;
+    if (file.fail()) {
+      std::cerr << "Could not open input file: " << vm["file2"].as<std::string>() << std::endl;
+    } else {
+        while (std::getline(file, line)) {
+            input_2.push_back(line);
+        }
+
+        input_2_all = std::accumulate(input_2.begin(), input_2.end(), std::string(""));
+    }
+  }
 
   Parser p;
 
@@ -411,165 +411,36 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
-    // parse to lossy semiring polynomial; an element "a" of the semiring
-    // will be parsed to "1+a" while variables do not get the "1+" bit
     auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    VarId S_1;
-    bool found_S_1 = false;
+    VarId S_1 = equations[0].first;
 
-    for(auto &equation: equations) {
-        if(Var::GetVar(equation.first).string() == "S") {
-            S_1 = equation.first;
-            found_S_1 = true;
-            break;
-        }
-    }
-
-    if(!found_S_1) {
-        std::cout << "Your grammar needs to contain a start symbol labelled \"S\"!" << std::endl;
-    } else {
-
-//        if(vm.count("cfgequal")) { // we want to check two grammars for language equality
-//            std::cout << "input filename 2" << std::endl;
-//            std::string filename_2;
-//            std::getline(std::cin, filename_2);
-//
-//            std::vector<std::string> input_2;
-//            std::ifstream file2;
-//            file2.open(filename_2, std::ifstream::in);
-//            if (file2.fail()) {
-//                std::cerr << "Could not open input file: " << filename_2 << std::endl;
-//            }
-//            while (std::getline(file2, line)) {
-//                input_2.push_back(line);
-//            }
-//
-//            std::string input_2_all = std::accumulate(input_2.begin(), input_2.end(), std::string(""));;
-//            auto equations_2 = p.lossy_fa_parser(input_2_all);
-//            if (equations_2.empty()) return EXIT_FAILURE;
-//
-//            VarId S_2;
-//            bool found_S_2 = false;
-//
-//            for(auto &equation: equations_2) {
-//                if(Var::GetVar(equation.first).string() == "S") {
-//                    S_2 = equation.first;
-//                    found_S_2 = true;
-//                    break;
-//                }
-//            }
-//
-//            if(!found_S_2) {
-//                std::cout << "Both grammars need a start symbol labelled \"S\"!" << std::endl;
-//            } else {
-//                auto approx_1 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-//                auto approx_2 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations_2, S_2);
-//
-//                bool A1_subset_A2 = approx_2.contains(approx_1);
-//                bool A2_subset_A1 = approx_1.contains(approx_2);
-//
-//                if(A1_subset_A2 && A2_subset_A1) {
-//                    std::cout << "Both languages have the same downward closure:\t" << approx_1.lossify().string() << std::endl;
-//                } else {
-//                    LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
-//                    bool L1_intersect_A2c_changed = false;
-//                    LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
-//                    bool L2_intersect_A1c_changed = false;
-//
-//                    if(!A1_subset_A2) {
-//                        VarId startSymbol_1_2;
-//                        auto intersectionGrammar = approx_2.complement().intersectionWithCFG(startSymbol_1_2, S_1, equations);
-//                        L1_intersect_A2c =
-//                            NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-//                                (intersectionGrammar, startSymbol_1_2);
-//                        L1_intersect_A2c_changed = true;
-//                    }
-//
-//                    if(!A2_subset_A1) {
-//                        VarId startSymbol_2_1;
-//                        auto intersectionGrammar2 = approx_1.complement().intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
-//                        L2_intersect_A1c =
-//                            NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-//                                (intersectionGrammar2, startSymbol_2_1);
-//                        L2_intersect_A1c_changed = true;
-//                    }
-//
-//                    if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
-//                        auto first = L1_intersect_A2c.string();
-//                        auto second = L2_intersect_A1c.string();
-//
-//                        if(first.size() <= second.size()) {
-//                            std::cout << "There is a word in L1 that is not in L2." << std::endl;
-//                            std::cout << "Shortest such word:\t" << first << std::endl;
-//                        } else {
-//                            std::cout << "There is a word in L2 that is not in L1." << std::endl;
-//                            std::cout << "Shortest such word:\t" << second << std::endl;
-//                        }
-//                    } else {
-//                        if(L1_intersect_A2c_changed) {
-//                            std::cout << "There is a word in L1 that is not in L2." << std::endl;
-//                            std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
-//                        } else {
-//                            std::cout << "There is a word in L2 that is not in L1." << std::endl;
-//                            std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
-//                        }
-//                    }
-//                }
-//            }
-//        } else { // only approximate the given grammar
-            std::cout << "approximating language..." << std::endl;
-            auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-
-            if(!(approximation == LossyFiniteAutomaton::null())) {
-                std::string approx = approximation.string();
-                std::cout << "Downward closure of S as regex over lossy semiring:\t" << approx << std::endl;
-                std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
-                std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
-            } else {
-                std::cout << "S doesn't produce anything, downward closure of empty set is empty set" << std::endl;
-            }
-//        }
-    }
-
-//    ValuationMap<LossyFiniteAutomaton> valuation = LossyFiniteAutomaton::solvePolynomialSystem(equations, true);
-//
-//    PrintEquations(equations);
-
-
-//    std::cout << "Fixpoints:" << std::endl;
-//    std::cout << result_string(valuation) << std::endl;
-//
-//    std::cout << std::endl << std::endl;
-//    std::cout << "Lossified Fixpoints:" << std::endl;
-//    std::stringstream ss;
-//    for (auto &x : valuation) {
-//        ss << x.first << " == " << LossyFiniteAutomaton::lossifiedRegex(x.second.string()) << std::endl;
-//    }
-//    std::cout << ss.str() << std::endl;
-//
-//    std::cout << std::endl << std::endl;
-//    std::cout << "Lossified Fixpoints via automaton:" << std::endl;
-//    std::stringstream st;
-//    for (auto &x : valuation) {
-//        st << x.first << " == " << x.second.lossify() << std::endl;
-//    }
-//    std::cout << st.str() << std::endl;
-
-
-//    for (auto it = valuation.begin(); it != valuation.end(); ++it ) {
-//        std::cout << "fixpoint of " << it->first << ": " << it->second;
-//        std::cout << std::endl;
-//    }
-
+//              std::cout << "approximating language..." << std::endl;
+    auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+    std::string approx = approximation.string();
+    std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+//                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
+//                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
   } else if(vm.count("lossyC")) {
 
-
-      // parse to lossy semiring polynomial; an element "a" of the semiring
-      // will be parsed to "1+a" while variables do not get the "1+" bit
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
+
+      VarId S_1 = equations[0].first;
+
+  //              std::cout << "approximating language..." << std::endl;
+      auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+      std::string approx = approximation.string();
+      std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+  } else if(vm.count("lossyIntersectTest")) {
+      auto equations = p.lossy_fa_parser(input_all);
+      if (equations.empty()) return EXIT_FAILURE;
+      LossyFiniteAutomaton::intersectionTest(equations);
+  } else if(vm.count("lossyComp")) {
+      auto equations = p.lossy_fa_parser(input_all);
+      if (equations.empty()) return EXIT_FAILURE;
+
 
       VarId S_1;
       bool found_S_1 = false;
@@ -585,144 +456,26 @@ int main(int argc, char* argv[]) {
       if(!found_S_1) {
           std::cout << "Your grammar needs to contain a start symbol labelled \"S\"!" << std::endl;
       } else {
+          auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+          auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
 
-  //        if(vm.count("cfgequal")) { // we want to check two grammars for language equality
-  //            std::cout << "input filename 2" << std::endl;
-  //            std::string filename_2;
-  //            std::getline(std::cin, filename_2);
-  //
-  //            std::vector<std::string> input_2;
-  //            std::ifstream file2;
-  //            file2.open(filename_2, std::ifstream::in);
-  //            if (file2.fail()) {
-  //                std::cerr << "Could not open input file: " << filename_2 << std::endl;
-  //            }
-  //            while (std::getline(file2, line)) {
-  //                input_2.push_back(line);
-  //            }
-  //
-  //            std::string input_2_all = std::accumulate(input_2.begin(), input_2.end(), std::string(""));;
-  //            auto equations_2 = p.lossy_fa_parser(input_2_all);
-  //            if (equations_2.empty()) return EXIT_FAILURE;
-  //
-  //            VarId S_2;
-  //            bool found_S_2 = false;
-  //
-  //            for(auto &equation: equations_2) {
-  //                if(Var::GetVar(equation.first).string() == "S") {
-  //                    S_2 = equation.first;
-  //                    found_S_2 = true;
-  //                    break;
-  //                }
-  //            }
-  //
-  //            if(!found_S_2) {
-  //                std::cout << "Both grammars need a start symbol labelled \"S\"!" << std::endl;
-  //            } else {
-  //                auto approx_1 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-  //                auto approx_2 = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations_2, S_2);
-  //
-  //                bool A1_subset_A2 = approx_2.contains(approx_1);
-  //                bool A2_subset_A1 = approx_1.contains(approx_2);
-  //
-  //                if(A1_subset_A2 && A2_subset_A1) {
-  //                    std::cout << "Both languages have the same downward closure:\t" << approx_1.lossify().string() << std::endl;
-  //                } else {
-  //                    LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
-  //                    bool L1_intersect_A2c_changed = false;
-  //                    LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
-  //                    bool L2_intersect_A1c_changed = false;
-  //
-  //                    if(!A1_subset_A2) {
-  //                        VarId startSymbol_1_2;
-  //                        auto intersectionGrammar = approx_2.complement().intersectionWithCFG(startSymbol_1_2, S_1, equations);
-  //                        L1_intersect_A2c =
-  //                            NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-  //                                (intersectionGrammar, startSymbol_1_2);
-  //                        L1_intersect_A2c_changed = true;
-  //                    }
-  //
-  //                    if(!A2_subset_A1) {
-  //                        VarId startSymbol_2_1;
-  //                        auto intersectionGrammar2 = approx_1.complement().intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
-  //                        L2_intersect_A1c =
-  //                            NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-  //                                (intersectionGrammar2, startSymbol_2_1);
-  //                        L2_intersect_A1c_changed = true;
-  //                    }
-  //
-  //                    if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
-  //                        auto first = L1_intersect_A2c.string();
-  //                        auto second = L2_intersect_A1c.string();
-  //
-  //                        if(first.size() <= second.size()) {
-  //                            std::cout << "There is a word in L1 that is not in L2." << std::endl;
-  //                            std::cout << "Shortest such word:\t" << first << std::endl;
-  //                        } else {
-  //                            std::cout << "There is a word in L2 that is not in L1." << std::endl;
-  //                            std::cout << "Shortest such word:\t" << second << std::endl;
-  //                        }
-  //                    } else {
-  //                        if(L1_intersect_A2c_changed) {
-  //                            std::cout << "There is a word in L1 that is not in L2." << std::endl;
-  //                            std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
-  //                        } else {
-  //                            std::cout << "There is a word in L2 that is not in L1." << std::endl;
-  //                            std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
-  //                        }
-  //                    }
-  //                }
-  //            }
-  //        } else { // only approximate the given grammar
-              std::cout << "approximating language..." << std::endl;
-              auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
-
-              if(!(approximation == LossyFiniteAutomaton::null())) {
-                  std::string approx = approximation.string();
-                  std::cout << "Downward closure of S:\t" << approx << std::endl;
-//                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
-//                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
-              } else {
-                  std::cout << "S doesn't produce anything, downward closure of empty set is empty set" << std::endl;
+          if(!(derivationTreeClosure == courcelleClosure)) {
+              std::cout << "\n\n" << std::endl;
+              std::cout << "Closures not equal, grammar: " << vm["file"].as<std::string>() << std::endl;
+              std::cout << "Derivation tree closure: " << derivationTreeClosure.string() << std::endl;
+              std::cout << "Courcelle closure: " << courcelleClosure.string() << std::endl;
+              std::cout << "\n\n" << std::endl;
+          } else {
+              std::cout << "same results" << std::endl;
+              std::cout << "closure derivation trees: " << derivationTreeClosure.lossify().string() << std::endl;
+              std::cout << "closure courcelle: " << courcelleClosure.string() << std::endl;
+              std::cout << "grammar:" << std::endl;
+              for(auto &equation: equations) {
+                  std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
               }
-  //        }
+          }
       }
 
-  //    ValuationMap<LossyFiniteAutomaton> valuation = LossyFiniteAutomaton::solvePolynomialSystem(equations, true);
-  //
-  //    PrintEquations(equations);
-
-
-  //    std::cout << "Fixpoints:" << std::endl;
-  //    std::cout << result_string(valuation) << std::endl;
-  //
-  //    std::cout << std::endl << std::endl;
-  //    std::cout << "Lossified Fixpoints:" << std::endl;
-  //    std::stringstream ss;
-  //    for (auto &x : valuation) {
-  //        ss << x.first << " == " << LossyFiniteAutomaton::lossifiedRegex(x.second.string()) << std::endl;
-  //    }
-  //    std::cout << ss.str() << std::endl;
-  //
-  //    std::cout << std::endl << std::endl;
-  //    std::cout << "Lossified Fixpoints via automaton:" << std::endl;
-  //    std::stringstream st;
-  //    for (auto &x : valuation) {
-  //        st << x.first << " == " << x.second.lossify() << std::endl;
-  //    }
-  //    std::cout << st.str() << std::endl;
-
-
-  //    for (auto it = valuation.begin(); it != valuation.end(); ++it ) {
-  //        std::cout << "fixpoint of " << it->first << ": " << it->second;
-  //        std::cout << std::endl;
-  //    }
-
-
-  } else if(vm.count("lossyIntersectTest")) {
-      auto equations = p.lossy_fa_parser(input_all);
-      if (equations.empty()) return EXIT_FAILURE;
-      LossyFiniteAutomaton::intersectionTest(equations);
   } else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])

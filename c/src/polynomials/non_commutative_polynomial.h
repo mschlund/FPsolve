@@ -729,7 +729,7 @@ public:
             variablefiedEquations.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
             constantsToVariables.insert(std::make_pair(constant, var));
             variablesToConstants.insert(std::make_pair(var,constant));
-            std::cout << "new production during constant elimination:\t" << Var::GetVar(var).string() << " -> " << constant.string() << std::endl;
+//            std::cout << "new production during constant elimination:\t" << Var::GetVar(var).string() << " -> " << constant.string() << std::endl;
         }
 
         // replace the constants in each nonterminal production with the new constant variables
@@ -739,7 +739,7 @@ public:
             variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
         }
 
-        std::cout << "constant elimination done" << std::endl;
+//        std::cout << "constant elimination done" << std::endl;
 
         return variablefiedEquations;
     }

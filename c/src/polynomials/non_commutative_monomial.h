@@ -1024,12 +1024,46 @@ public:
             for(int i = 0; i < lhsString.size(); i++) {
                 if(isalnum(lhsString[i])) {
                     lhsSameComponentLetters[component].insert(lhsString[i]);
+                } else if (lhsString[i] == '[') {
+                    unsigned char letter, startOfRange, endOfRange;
+                    i++;
+                    while(lhsString[i] != ']') {
+                        if(lhsString[i+1] == '-') {
+                            startOfRange = lhsString[i];
+                            endOfRange = lhsString[i+2];
+                            i += 3;
+
+                            for(letter = startOfRange; letter <= endOfRange; letter++) {
+                                lhsSameComponentLetters[component].insert(letter);
+                            }
+                        } else {
+                            lhsSameComponentLetters[component].insert(lhsString[i]);
+                            i++;
+                        }
+                    }
                 }
             }
 
             for(int i = 0; i < rhsString.size(); i++) {
                 if(isalnum(rhsString[i])) {
                     rhsSameComponentLetters[component].insert(rhsString[i]);
+                } else if (rhsString[i] == '[') {
+                    unsigned char letter, startOfRange, endOfRange;
+                    i++;
+                    while(rhsString[i] != ']') {
+                        if(rhsString[i+1] == '-') {
+                            startOfRange = rhsString[i];
+                            endOfRange = rhsString[i+2];
+                            i += 3;
+
+                            for(letter = startOfRange; letter <= endOfRange; letter++) {
+                                rhsSameComponentLetters[component].insert(letter);
+                            }
+                        } else {
+                            rhsSameComponentLetters[component].insert(rhsString[i]);
+                            i++;
+                        }
+                    }
                 }
             }
         }

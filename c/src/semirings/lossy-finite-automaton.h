@@ -90,7 +90,11 @@ public:
     }
 
     LossyFiniteAutomaton lossify() const {
-        return LossyFiniteAutomaton(lossifiedRegex(string()));
+        if ((*this) == null()) {
+            return *this;
+        }
+
+        return LossyFiniteAutomaton(lossifiedRegex(string())).minimize();
     }
 
     static LossyFiniteAutomaton null() {

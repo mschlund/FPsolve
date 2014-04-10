@@ -115,6 +115,19 @@ public:
     }
 
     /*
+     * Clones this automaton, i.e. creates another automaton with the same set of states, transitions and final states
+     * as this one.
+     */
+    FiniteAutomaton clone() const {
+
+        /*
+         * Currently this workaround is required since we don't yet have access to the function fa_clone(..)
+         * that's available in libfa's sourcecode.
+         */
+        return concatenate(epsilon());
+    }
+
+    /*
      * A string representation of the language of this automaton. Since we lack a symbol for it,
      * the empty language will be represented by the string "__EMPTYLANGUAGE__".
      */
@@ -301,7 +314,7 @@ public:
             startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
 //            std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         }
-        newS = Var::GetVarId(std::string("<S>"));
+        newS = Var::GetVarId(std::string("S"));
         resultGrammar.push_back(std::make_pair(newS, startPolynomial));
 
         auto startProduction = resultGrammar[resultGrammar.size() - 1];
