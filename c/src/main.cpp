@@ -3,6 +3,8 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <time.h>
+#include <stdint.h>
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/strong_components.hpp>
@@ -42,6 +44,12 @@ struct VertexProp {
   VarId var;         // var and rex combines the equations in the vertex
   Polynomial<SR> rex;
 };
+
+int64_t timespecDiff(struct timespec *timeA_p, struct timespec *timeB_p)
+{
+  return ((timeA_p->tv_sec * 1000000000) + timeA_p->tv_nsec) -
+           ((timeB_p->tv_sec * 1000000000) + timeB_p->tv_nsec);
+}
 
 // group the equations to SCCs
 template <typename SR>
@@ -411,6 +419,7 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
+    struct timespec start, end;
     auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
@@ -482,14 +491,19 @@ int main(int argc, char* argv[]) {
             }
         }
     } else {
+        clock_gettime(CLOCK_MONOTONIC, &start);
         auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
         std::string approx = approximation.string();
-        std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+        std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
     }
 //                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
 //                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
   } else if(vm.count("lossyC")) {
 
+      struct timespec start, end;
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
 
@@ -510,7 +524,8 @@ int main(int argc, char* argv[]) {
           bool A2_subset_A1 = approx_1.contains(approx_2);
 
           if(A1_subset_A2 && A2_subset_A1) {
-              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
+              std::cout << "length of shortest word: -1" << std::endl;
+//              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
           } else {
               LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
               bool L1_intersect_A2c_changed = false;
@@ -560,34 +575,48 @@ int main(int argc, char* argv[]) {
                   auto second = L2_intersect_A1c.string();
 
                   if(first.size() <= second.size()) {
-                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
+                      std::cout << "length of shortest word: " << first.size() << std::endl;
                   } else {
-                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
+                      std::cout << "length of shortest word: " << second.size() << std::endl;
 //                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
 //                      std::cout << "Shortest such word:\t" << second << std::endl;
                   }
               } else {
                   if(L1_intersect_A2c_changed) {
-                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
+                      std::cout << "length of shortest word: " << L1_intersect_A2c.string().size() << std::endl;
 //                      std::cout << "There is a word in L1 that is not in L2." << std::endl;
 //                      std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
                   } else {
-                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
+                      std::cout << "length of shortest word: " << L2_intersect_A1c.string().size() << std::endl;
 //                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
 //                      std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
                   }
               }
           }
       } else {
+          clock_gettime(CLOCK_MONOTONIC, &start);
+
+//          clock_t startTime = clock();
           auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+//          clock_t endTime = clock();
+          clock_gettime(CLOCK_MONOTONIC, &end);
+//          auto totalTime = (endTime - startTime)/* / (CLOCKS_PER_SEC / 1000)*/;
+
+          uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
           std::string approx = approximation.string();
-          std::cout << vm["file"].as<std::string>() << " closure:\t " << approx << std::endl;
+          std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
       LossyFiniteAutomaton::intersectionTest(equations);
   } else if(vm.count("lossyComp")) {
+
+      struct timespec start, end;
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
 

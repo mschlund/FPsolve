@@ -197,6 +197,7 @@ public:
             }
         }
 
+//        std::cout << "size of closure automaton before lossification:\t" << knownValuations[S].size() << std::endl;
         return knownValuations[S].lossify();
     }
 
