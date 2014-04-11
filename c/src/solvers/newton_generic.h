@@ -220,6 +220,7 @@ class CommutativeConcreteLinSolver {
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
+    std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
     return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.star()
            * rhs;
   }

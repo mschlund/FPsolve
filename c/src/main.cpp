@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
   desc.add_options()
     ( "scc", "apply newton method iteratively to strongly connected components of the equation graph" )
     ( "help,h", "print this help message" )
-    ( "iterations,i", po::value<int>(), "specify the number of newton iterations. default is optimal number" )
+    ( "iterations,i", po::value<int>(), "specify the number of newton iterations. Default is number of equations + 1." )
     //( "verbose", "enable verbose output" )
     //( "debug", "enable debug output" )
     ( "test", "just for testing purposes ... explicit test defined in main()" )
