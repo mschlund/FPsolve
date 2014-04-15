@@ -53,8 +53,9 @@ set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")
 
 set(CMAKE_CXX_FLAGS_RELEASE "-march=native -O2 -DNDEBUG")
 
-
-add_definitions(-DOPCOUNT)
+#add_definitions(-DOPCOUNT)
 
 add_subdirectory("src")
 add_subdirectory("test")
+
+

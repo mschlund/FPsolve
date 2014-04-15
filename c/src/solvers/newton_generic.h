@@ -144,7 +144,7 @@ class CommutativeSymbolicLinSolver {
     jacobian_star_ = new Matrix<FreeSemiring>(jacobian_free.star());
 
     // For benchmarking only ->
-    std::cout << "Size of Jacobian: "
+    /*std::cout << "Size of Jacobian: "
               << jacobian_star_->getRows()
               << " x "
               << jacobian_star_->getColumns()
@@ -155,10 +155,9 @@ class CommutativeSymbolicLinSolver {
     std::ofstream dotfile;
     dotfile.open("free-structure.dot");
     FreeSemiring::one().PrintDot(dotfile);
-    dotfile.close();
+    dotfile.close();*/
     // <-
-
-    std::cout << "J*: " << *jacobian_star_ << std::endl;
+    //std::cout << "J*: " << *jacobian_star_ << std::endl;
 
     for (auto &pair : valuation_tmp) {
       valuation_.insert(std::make_pair(pair.second, pair.first));
@@ -220,7 +219,7 @@ class CommutativeConcreteLinSolver {
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
-    std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+    //std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
     return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.star()
            * rhs;
   }

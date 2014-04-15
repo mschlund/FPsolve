@@ -16,7 +16,7 @@ class Epsilon;
 class Empty;
 
 /* See [Note: Garbage] */
-typedef Node* NodePtr;
+typedef const Node* NodePtr;
 
 class NodeVisitor;
 

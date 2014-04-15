@@ -113,7 +113,7 @@ struct hash<FreeSemiring> {
  * We want to memoize the result of evaluating every subgraph, since we can
  * reach the same node (and thus the same subgraph) many times.  So only the
  * first one we will actually perform the computation, in all subsequent visits
- * we will reuse the memoized reslt.  Note that this is ok, because we never
+ * we will reuse the memoized result.  Note that this is ok, because we never
  * modify the actual semiring values.
  */
 template <typename SR>
@@ -123,53 +123,88 @@ class Evaluator : public NodeVisitor {
         : val_(v), evaled_(), result_() {}
 
     ~Evaluator() {
-      for (auto &pair : evaled_) { delete pair.second; }
-      /* Top level Node will not be in evaled_. */
-      if (result_ != nullptr) {
-        /* Why would anyone run the Evaluator and not get the result? */
-        assert(false);
-        delete result_;
+      for (auto &pair : evaled_) {
+        if (pair.second != nullptr) {
+          //std::cout << "deleting " << pair.second << std::endl;
+          delete pair.second;
+          //pair.second = nullptr;
+        }
       }
+      /* Top level Node will be in evaled_. is already deleted */
+
+      /*if (result_ != nullptr) {
+        std::cout << "deleting result_ " << result_ << std::endl;
+        delete result_;
+        result_ = nullptr;
+      }*/
     }
 
     void Visit(const Addition &a) {
+      //std::cout << "Add-eval" << std::endl;
+      if(Lookup(&a))
+        return;
+      //std::cout << "getting left" << std::endl;
       LookupEval(a.GetLhs());
+      //std::cout << "got left: " << result_ <<  *result_ << std::endl;
       auto temp = std::move(result_);
+      //std::cout << "getting right" << std::endl;
       LookupEval(a.GetRhs());
+      //std::cout << "got right:" << result_ << *result_ << std::endl;
       result_ = new SR(*temp + *result_);
+      evaled_.emplace(&a, result_);
+      //std::cout << "inserted.." << &a << " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Multiplication &m) {
+      //std::cout << "Mult-eval" << std::endl;
+      if(Lookup(&m))
+        return;
       LookupEval(m.GetLhs());
       auto temp = std::move(result_);
       LookupEval(m.GetRhs());
       result_ = new SR(*temp * *result_);
+      evaled_.emplace(&m, result_);
+      //std::cout << "inserted.." << &m << " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Star &s) {
+     //std::cout << "Star-eval" << std::endl;
+     if(Lookup(&s))
+        return;
       LookupEval(s.GetNode());
       result_ = new SR(result_->star());
+      evaled_.emplace(&s, result_);
+      //std::cout << "inserted.." << &s << " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Element &e) {
+      //std::cout << "Elem-eval" << std::endl;
       auto iter = val_.find(e.GetVar());
       assert(iter != val_.end());
       result_ = new SR(iter->second);
+      evaled_.emplace(&e, result_);
+      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Epsilon &e) {
       result_ = new SR(SR::one());
+      evaled_.emplace(&e, result_);
+      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Empty &e) {
       result_ = new SR(SR::null());
+      evaled_.emplace(&e, result_);
+      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     SR MoveResult() {
       SR tmp = std::move(*result_);
-      delete result_;
-      result_ = nullptr;
       return tmp;
+    }
+
+    SR GetResult() {
+      return *result_;
     }
 
     static const bool is_idempotent = false;
@@ -177,15 +212,31 @@ class Evaluator : public NodeVisitor {
 
   protected:
     void LookupEval(const NodePtr &node) {
+      //std::cout << "Do lookupEval..." << node; std::flush(std::cout);
       auto iter = evaled_.find(node);
       if (iter != evaled_.end()) {
+        //std::cout << " Found it!" <<std::endl;
         result_ = iter->second;
       } else {
+        //std::cout << " Decending .." <<std::endl;
         node->Accept(*this);  /* Sets the result_ correctly */
-        evaled_.emplace(node, result_);
+        //std::cout << " Got it:" << result_ << " " << *result_ <<std::endl;
       }
     }
 
+    bool Lookup(const NodePtr &node) {
+      //std::cout << "Do lookup..." << node; std::flush(std::cout);
+
+      auto iter = evaled_.find(node);
+      if (iter != evaled_.end()) {
+        result_ = iter->second;
+        //std::cout << " Successful!" <<std::endl;
+        return true;
+      } else {
+        //std::cout << " Fail!" <<std::endl;
+        return false;
+      }
+    }
     const ValuationMap<SR> &val_;
     std::unordered_map<NodePtr, SR*> evaled_;
     SR* result_;
@@ -200,12 +251,12 @@ template <typename SR>
 class SRConverter : public Evaluator<SR> {
 public:
   SRConverter() : Evaluator<SR>(ValuationMap<SR>()){};
-  ~SRConverter() = default;
 
   // @Override
   void Visit(const Element &e) {
     std::string str_val = Var::GetVar(e.GetVar()).string();
     this->result_ = new SR(str_val);
+    this->evaled_.emplace(&e, this->result_);
   }
 };
 
@@ -214,11 +265,11 @@ template <typename SR>
 SR FreeSemiring::Eval(const ValuationMap<SR> &valuation) const {
   Evaluator<SR> evaluator{valuation};
   node_->Accept(evaluator);
-  return evaluator.MoveResult();
+  return evaluator.GetResult();
 }
 
 template <typename SR>
 SR FreeSemiring::Eval(Evaluator<SR> &evaluator) const {
   node_->Accept(evaluator);
-  return evaluator.MoveResult();
+  return evaluator.GetResult();
 }

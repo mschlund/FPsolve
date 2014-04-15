@@ -274,8 +274,8 @@ void NodeFactory::PrintDot(std::ostream &out) {
     ~TypePrinter() = default;
 
     void Visit(const Addition &a) { out_ << "+"; }
-    void Visit(const Multiplication &m) { out_ << "*"; }
-    void Visit(const Star &s) { out_ << "(-)*"; }
+    void Visit(const Multiplication &m) { out_ << "."; }
+    void Visit(const Star &s) { out_ << "*"; }
     void Visit(const Element &e) { out_ << e.GetVar(); }
     void Visit(const Epsilon &e) { out_ << "epsilon"; }
     void Visit(const Empty &e) { out_ << "empty"; }

@@ -83,7 +83,8 @@ class VecIter : public boost::iterator_facade<VecIter<Const, A>,
     }
 
     inline A_& dereference() const {
-      assert(vector_ != nullptr && index_ < vector_->size());
+      assert(vector_ != nullptr);
+      assert(index_ < vector_->size());
       return (*vector_)[index_].value;
     }
 
@@ -96,8 +97,6 @@ class VecIter : public boost::iterator_facade<VecIter<Const, A>,
       }
       return true;
     }
-
-
 
     Vector_ *vector_;
     Index index_;

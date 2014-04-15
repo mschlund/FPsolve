@@ -17,6 +17,7 @@ Matrix<SR> FreeSemiringMatrixEval(const Matrix<FreeSemiring> &matrix,
   Evaluator<SR> evaluator{valuation};
 
   for(auto &elem : elements) {
+    //std::cout << "Matrix-Free-SR-eval -- Next entry" << std::endl;
     result.emplace_back(elem.Eval(evaluator));
   }
 

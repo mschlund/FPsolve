@@ -154,6 +154,8 @@ ValuationMap<SR> apply_solver(
       iterations = equations2[j].size() + 1;
     }
 
+    std::cout << "It: " << iterations << std::endl;
+
     // do some real work here
     ValuationMap<SR> result = solver.solve_fixpoint(equations2[j], iterations);
 

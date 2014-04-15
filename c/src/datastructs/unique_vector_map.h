@@ -21,6 +21,11 @@ class UniqueVMapDivider;
 template <typename K, typename V>
 class GcdDivider;
 
+/*
+ * This effectively realizes a Multimap (used as a map from Variables to Multiplicities)
+ * Represent the map as a vector internally, keep it sorted w.r.t. Variable-Ordering, i.e.
+ * insertions etc. will be made at the right place
+ */
 template <typename K, typename V>
 class UniqueVMap {
   typedef std::vector< std::pair<K, V> > Vector_;
@@ -258,6 +263,7 @@ class UniqueVMapBuilder {
         if (result->vector_.empty() || result->vector_.back().first < pair.first) {
           result->vector_.emplace_back(std::move(pair));
         } else {
+          //Variable exists, increment the multiplicity
           assert(result->vector_.back().first == pair.first);
           result->vector_.back().second += std::move(pair.second);
         }

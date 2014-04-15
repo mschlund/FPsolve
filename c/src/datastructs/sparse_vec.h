@@ -83,7 +83,7 @@ class SparseVec {
         : vmap_(GlobalVMapBuilder_::Get().template New<Divider>(*v.vmap_)) {}
 
     /* Allow casting a SparseVec to one with a different Divider, but without
-     * actually invoking the new Divider.  This is useful for simplifires that
+     * actually invoking the new Divider.  This is useful for simplifiers that
      * just need to check set membership or subtract vectors... */
     template <DIVIDER_TEMPLATE_TYPE AnyDivider>
     SparseVec<Var, Value, AnyDivider> Cast() const {
