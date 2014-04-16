@@ -156,7 +156,7 @@ class CommutativeSymbolicLinSolver {
     dotfile.open("free-structure.dot");
     FreeSemiring::one().PrintDot(dotfile);
     dotfile.close();*/
-    // <-
+
     //std::cout << "J*: " << *jacobian_star_ << std::endl;
 
     for (auto &pair : valuation_tmp) {

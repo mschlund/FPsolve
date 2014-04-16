@@ -208,10 +208,15 @@ class UniqueVMapBuilder {
     UniqueVMapBuilder() = default;
 
     ~UniqueVMapBuilder() {
-      for (auto &ptr : allocated_) { delete ptr; }
+      for (auto &ptr : allocated_) {
+        delete ptr;
+      }
       /* At this point there shouldn't be any outstanding pointers left... */
       assert(map_.empty());
-      for (auto &key_value : map_) { DMSG(*key_value.second); delete key_value.second; }
+      for (auto &key_value : map_) {
+        DMSG(*key_value.second);
+        delete key_value.second;
+      }
     }
 
     UniqueVMapBuilder(const UniqueVMapBuilder &f) = delete;

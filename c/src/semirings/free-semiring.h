@@ -130,72 +130,60 @@ class Evaluator : public NodeVisitor {
           //pair.second = nullptr;
         }
       }
-      /* Top level Node will be in evaled_. is already deleted */
-
-      /*if (result_ != nullptr) {
-        std::cout << "deleting result_ " << result_ << std::endl;
-        delete result_;
-        result_ = nullptr;
-      }*/
+      /* Top level Node (result_) will be in evaled_. is already deleted */
     }
 
     void Visit(const Addition &a) {
-      //std::cout << "Add-eval" << std::endl;
-      if(Lookup(&a))
+      if(Lookup(&a)) // if the node has already been evaluated do not generate a new value!
         return;
-      //std::cout << "getting left" << std::endl;
-      LookupEval(a.GetLhs());
-      //std::cout << "got left: " << result_ <<  *result_ << std::endl;
+      a.GetLhs()->Accept(*this); //decend recursively into left child
       auto temp = std::move(result_);
-      //std::cout << "getting right" << std::endl;
-      LookupEval(a.GetRhs());
-      //std::cout << "got right:" << result_ << *result_ << std::endl;
+      a.GetRhs()->Accept(*this); //decend recursively into right child
       result_ = new SR(*temp + *result_);
-      evaled_.emplace(&a, result_);
-      //std::cout << "inserted.." << &a << " " << result_ << *result_ <<std::endl;
+
+      //sanity-check: the element should not be in evaled_ (otherwise lookup would have returned true)
+      assert(evaled_.emplace(&a, result_).second);
     }
 
     void Visit(const Multiplication &m) {
-      //std::cout << "Mult-eval" << std::endl;
       if(Lookup(&m))
         return;
-      LookupEval(m.GetLhs());
+      m.GetLhs()->Accept(*this);
       auto temp = std::move(result_);
-      LookupEval(m.GetRhs());
+      m.GetRhs()->Accept(*this);
       result_ = new SR(*temp * *result_);
       evaled_.emplace(&m, result_);
-      //std::cout << "inserted.." << &m << " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Star &s) {
-     //std::cout << "Star-eval" << std::endl;
      if(Lookup(&s))
         return;
-      LookupEval(s.GetNode());
+      s.GetNode()->Accept(*this);
       result_ = new SR(result_->star());
       evaled_.emplace(&s, result_);
-      //std::cout << "inserted.." << &s << " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Element &e) {
-      //std::cout << "Elem-eval" << std::endl;
+      if(Lookup(&e))
+         return;
       auto iter = val_.find(e.GetVar());
       assert(iter != val_.end());
       result_ = new SR(iter->second);
       evaled_.emplace(&e, result_);
-      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Epsilon &e) {
+      if(Lookup(&e))
+         return;
       result_ = new SR(SR::one());
       evaled_.emplace(&e, result_);
-      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     void Visit(const Empty &e) {
+      if(Lookup(&e))
+         return;
       result_ = new SR(SR::null());
       evaled_.emplace(&e, result_);
-      //std::cout << "inserted.." << &e<< " " << result_ << *result_ <<std::endl;
     }
 
     SR MoveResult() {
@@ -211,29 +199,12 @@ class Evaluator : public NodeVisitor {
     static const bool is_commutative = false;
 
   protected:
-    void LookupEval(const NodePtr &node) {
-      //std::cout << "Do lookupEval..." << node; std::flush(std::cout);
-      auto iter = evaled_.find(node);
-      if (iter != evaled_.end()) {
-        //std::cout << " Found it!" <<std::endl;
-        result_ = iter->second;
-      } else {
-        //std::cout << " Decending .." <<std::endl;
-        node->Accept(*this);  /* Sets the result_ correctly */
-        //std::cout << " Got it:" << result_ << " " << *result_ <<std::endl;
-      }
-    }
-
     bool Lookup(const NodePtr &node) {
-      //std::cout << "Do lookup..." << node; std::flush(std::cout);
-
       auto iter = evaled_.find(node);
       if (iter != evaled_.end()) {
         result_ = iter->second;
-        //std::cout << " Successful!" <<std::endl;
         return true;
       } else {
-        //std::cout << " Fail!" <<std::endl;
         return false;
       }
     }
@@ -252,8 +223,10 @@ class SRConverter : public Evaluator<SR> {
 public:
   SRConverter() : Evaluator<SR>(ValuationMap<SR>()){};
 
-  // @Override
+  // Override the visit function for elements
   void Visit(const Element &e) {
+    if(this->Lookup(&e))
+       return;
     std::string str_val = Var::GetVar(e.GetVar()).string();
     this->result_ = new SR(str_val);
     this->evaled_.emplace(&e, this->result_);

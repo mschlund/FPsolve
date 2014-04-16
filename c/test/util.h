@@ -1,7 +1,8 @@
 
-#define MY_VERB_ASSERT(x)  std::cout << "Running test: "<< #x << std::endl;\
+/* #define MY_VERB_ASSERT(x)  std::cout << "Running test: "<< #x << std::endl;\
             CPPUNIT_ASSERT(x); std::cout << " DONE."<< std::endl;
-
+*/
+#define MY_VERB_ASSERT(x) CPPUNIT_ASSERT(x)
 
 template <typename SR>
 void generic_test_semiring(const SR& a, const SR& b)
