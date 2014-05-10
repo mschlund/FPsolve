@@ -50,7 +50,7 @@ public:
     SubstitutionMap val_map;      // X^{<h+1}
 
     //std::cout << "Unfolding polys" << std::endl;
-    for (Poly<SR> f : F) {
+    for (const Poly<SR> f : F) {
       //the new anonymous unfolding-variables are accumulated in the two maps!
       Poly<SR> t = f.HeightUnfolding(prev_val_map, val_map);
       unfolded_polys.push_back(t);
@@ -73,20 +73,27 @@ public:
 
 
     ValuationMap<SR> zeros;
-    for (unsigned int i=0; i<poly_vars.size(); ++i) {
-      zeros.insert({poly_vars[i], SR::null()});
+    for (const auto v : poly_vars) {
+      zeros.insert({v, SR::null()});
     }
 
     // Init all values, note that they all talk about different variable names (connected via the two maps above)
 
-    // FIXME: if a variable DOES NOT appear on the rhs (e.g. start symbol S for a PCFG) this will give an exception!!!
-
-
     for (unsigned int i=0; i<poly_vars.size(); ++i) {
       SR f_0 = F[i].eval(zeros);
+      // check if variable does appear in the rhs of some eqn!
+      if(val_map.find(poly_vars[i]) == val_map.end()) {
+        // var does not appear (i.e. it is a "start-symbol" or "sink" only)
+        VarId tmp = Var::GetVarId(); // get fresh variables, this avoids missing updates to all_values below
+        VarId tmp2 = Var::GetVarId();
+        val_map.insert({poly_vars[i],tmp});
+        prev_val_map.insert({poly_vars[i],tmp2});
+      }
+
+      all_values.insert({poly_vars[i], f_0});
       all_values.insert({prev_val_map.at(poly_vars[i]), SR::null()});
       all_values.insert({val_map.at(poly_vars[i]), f_0});
-      all_values.insert({poly_vars[i], f_0});
+
     }
 
 
@@ -100,7 +107,7 @@ public:
       // now all effects have been computed -> update the valuation
       for (unsigned int i=0; i<poly_vars.size(); ++i) {
         all_values.at(poly_vars[i]) = updates.at(poly_vars[i]);
-        all_values.at(prev_val_map.at(poly_vars[i])) = all_values.at(val_map.at(poly_vars[i])); //safe vals
+        all_values.at(prev_val_map.at(poly_vars[i])) = all_values.at(val_map.at(poly_vars[i])); //save vals
         all_values.at(val_map.at(poly_vars[i])) += all_values.at(poly_vars[i]); // add update to vals
       }
     }
