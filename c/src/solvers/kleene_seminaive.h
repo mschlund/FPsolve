@@ -49,13 +49,20 @@ public:
     SubstitutionMap prev_val_map; // X^{<h}
     SubstitutionMap val_map;      // X^{<h+1}
 
-    std::cout << "Unfolding polys" << std::endl;
+    //std::cout << "Unfolding polys" << std::endl;
     for (Poly<SR> f : F) {
       //the new anonymous unfolding-variables are accumulated in the two maps!
       Poly<SR> t = f.HeightUnfolding(prev_val_map, val_map);
       unfolded_polys.push_back(t);
       //std::cout << t << std::endl;
     }
+
+    //std::cout << "Unfolding done!" << std::endl;
+    //for (int i=0; i<poly_vars.size(); i++)
+    //  std::cout << poly_vars[i] << std::endl;
+
+    //std::cout << prev_val_map<< std::endl;
+    //std::cout << val_map<< std::endl;
 
     //TODO: use vectors for better cache efficiency?
 
@@ -71,6 +78,10 @@ public:
     }
 
     // Init all values, note that they all talk about different variable names (connected via the two maps above)
+
+    // FIXME: if a variable DOES NOT appear on the rhs (e.g. start symbol S for a PCFG) this will give an exception!!!
+
+
     for (unsigned int i=0; i<poly_vars.size(); ++i) {
       SR f_0 = F[i].eval(zeros);
       all_values.insert({prev_val_map.at(poly_vars[i]), SR::null()});
@@ -98,6 +109,7 @@ public:
     for (unsigned int i=0; i<poly_vars.size(); ++i) {
       result.insert({poly_vars[i], all_values.at(val_map.at(poly_vars[i]))});
     }
+
     return result;
   }
 };
