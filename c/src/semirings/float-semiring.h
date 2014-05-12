@@ -11,6 +11,8 @@
 #include "free-semiring.h"
 #include "../utils/profiling-macros.h"
 
+#define INFTY (std::numeric_limits<double>::max())
+
 class FloatSemiring : public StarableSemiring<FloatSemiring,
                                       Commutativity::Commutative,
                                       Idempotence::NonIdempotent> {
@@ -37,13 +39,19 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
 
     FloatSemiring& operator+=(const FloatSemiring &elem) {
       OPADD;
-      value_ += elem.value_;
+      if (isInf(elem) || isInf(*this))
+        value_ = INFTY;
+      else
+        value_ += elem.value_;
       return *this;
     }
 
     FloatSemiring& operator*=(const FloatSemiring &elem) {
       OPMULT;
-      value_ *= elem.value_;
+      if(isInf(elem) || isInf(*this))
+        value_ = INFTY;
+      else
+        value_ *= elem.value_;
       return *this;
     }
 
@@ -56,9 +64,10 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
 
     FloatSemiring star() const {
       OPSTAR;
-      // if value_ == 1 this returns inf
-      if(value_ > 1)
-         std::cout << value_<< " is > 1!" << std::endl;
+      // if value_ >= 1 this returns inf
+      if(value_ >= 1 || isInf(*this))
+          return FloatSemiring(INFTY);
+
       assert(0 < 1 - value_);
       return FloatSemiring(1 / (1 - value_));
     }
@@ -73,9 +82,20 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
 
     std::string string() const {
       std::stringstream ss;
-      ss << value_;
+      if(isInf(*this))
+        ss << "\u221E";
+      else
+        ss << value_;
       return ss.str();
     }
+
+    bool isInf(const FloatSemiring& elem) const {
+      if(INFTY == elem.value_)
+        return true;
+      else
+        return false;
+    }
+
 
 };
 

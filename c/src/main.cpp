@@ -193,11 +193,11 @@ void PrintEquations(const Container &equations) {
 template <typename SR, template <typename> class Poly>
 ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Poly, SR> &equations,
    bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output){
-  if(0 == solver_name.compare("newton")) {
+  if(0 == solver_name.compare("newtonSymb")) {
     std::cout << "Newton Symbolic" << std::endl;
     return apply_solver<Newton, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
-  else if(0 == solver_name.compare("newtonCL")) {
+  else if(0 == solver_name.compare("newtonConc")) {
     std::cout << "Newton Concrete"<< std::endl;
     return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }

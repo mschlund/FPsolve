@@ -35,7 +35,7 @@ public:
   static TropicalSemiring one();  // zero (natural number)
   std::string string() const;
 
-  friend bool isInf(const TropicalSemiring& elem) {
+  bool isInf(const TropicalSemiring& elem) const {
     if(INFTY == elem.val)
       return true;
     else
