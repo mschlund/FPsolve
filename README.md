@@ -1,7 +1,7 @@
-Overview
+FPsolve -- Overview
 ========
 
-This project is a proof-of-concept implementation of a fixed-point solver based
+FPsolve is a proof-of-concept implementation of a fixed-point solver based
 on Newton's method generalized to omega-continuous semirings.  For some
 introduction about this idea, have a look at this
 [paper](http://www7.in.tum.de/um/bibdb/info/esparza.EKL10:newtProgAn.shtml).
@@ -13,7 +13,7 @@ Installing
 Basic requirements
 ------------------
 
-Currently to build newton you will need a C++ compiler with C++0x/C++11 support
+Currently to build FPsolve you will need a C++ compiler with C++0x/C++11 support
 (tested on GCC 4.6 and 4.7 as well as Clang 3.2), as well as Boost libraries.
 For tests we additionally depend on Cppunit.
 
