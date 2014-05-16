@@ -6,12 +6,14 @@
 #include "../src/semirings/commutativeRExp.h"
 #include "../src/semirings/semilinSetNdd.h"
 #include "../src/semirings/free-semiring.h"
+#include "../src/semirings/why-set.h"
 
 #include "../src/polynomials/commutative_polynomial.h"
 #include "../src/datastructs/matrix.h"
 #include "../src/matrix_free_semiring.h"
 
-#define TEST_SR FreeSemiring
+//TODO: use here other semirings that are more informative...
+#define TEST_SR WhySemiring
 
 class PolynomialTest : public CppUnit::TestFixture
 {

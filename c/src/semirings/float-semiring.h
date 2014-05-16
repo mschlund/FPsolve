@@ -26,7 +26,7 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
 
     FloatSemiring(std::string str_val)
     {
-      std::cout << "Float-Const.: "<< str_val << std::endl;
+      //std::cout << "Float-Const.: "<< str_val << std::endl;
       std::istringstream i(str_val);
       if (!(i >> value_))
       {

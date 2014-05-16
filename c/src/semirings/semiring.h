@@ -89,6 +89,7 @@ class Semiring {
         tmp *= tmp; //square
       }
 
+      //std::cout << "lhs " << lhs << "^" << exp << "=" << result << std::endl;
       return result;
     }
 

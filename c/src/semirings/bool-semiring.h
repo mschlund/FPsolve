@@ -15,6 +15,7 @@ private:
 public:
 	BoolSemiring();
 	BoolSemiring(bool val);
+	BoolSemiring(std::string str_val);
 	virtual ~BoolSemiring();
 	BoolSemiring operator += (const BoolSemiring& elem);
 	BoolSemiring operator *= (const BoolSemiring& elem);

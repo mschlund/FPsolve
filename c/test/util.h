@@ -46,4 +46,7 @@ void generic_test_semiring(const SR& a, const SR& b)
   if(SR::IsCommutative()) {
     MY_VERB_ASSERT(a * b == b * a);
   }
+
+  //TODO: Test distributive laws
+
 }

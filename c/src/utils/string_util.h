@@ -31,6 +31,12 @@ std::ostream& operator<<(std::ostream& os, const std::map<A,B>& values) {
   return os;
 }
 
+template <typename A>
+std::ostream& operator<<(std::ostream& os, const std::set<A>& values) {
+  os << "{" << ToStringSorted(values, ",") << "}";
+  return os;
+}
+
 /* Print contents of a container in a sorted order using the given separator.
  * The sorting is done at the level of strings. */
 template <typename Container>

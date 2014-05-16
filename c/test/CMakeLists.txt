@@ -11,5 +11,5 @@ if(NOT USE_GENEPI)
 	list(REMOVE_ITEM NEWTON_TEST_CPP ${SEMILIN_SET_NDD_CPP})
 endif(NOT USE_GENEPI)
 
-add_executable(newton_test ${NEWTON_TEST_H} ${NEWTON_TEST_CPP})
-target_link_libraries(newton_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES})
+add_executable(fpsolve_test ${NEWTON_TEST_H} ${NEWTON_TEST_CPP})
+target_link_libraries(fpsolve_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES})

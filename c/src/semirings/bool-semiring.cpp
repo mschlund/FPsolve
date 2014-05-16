@@ -1,5 +1,8 @@
 #include <cassert>
 #include <sstream>
+#include <algorithm>
+#include <string>
+
 #include "bool-semiring.h"
 #include "../utils/profiling-macros.h"
 
@@ -12,6 +15,16 @@ BoolSemiring::BoolSemiring()
 BoolSemiring::BoolSemiring(bool val)
 {
   this->val = val;
+}
+
+BoolSemiring::BoolSemiring(std::string str_val)
+{
+  std::transform(str_val.begin(), str_val.end(), str_val.begin(), ::tolower);
+  if(0 == str_val.compare("1") || 0 == str_val.compare("true")) {
+    this->val = true;
+  }
+  else
+    this->val = false;
 }
 
 BoolSemiring::~BoolSemiring()
@@ -64,7 +77,5 @@ std::string BoolSemiring::string() const
   return ss.str();
 }
 
-bool BoolSemiring::is_idempotent = true;
-bool BoolSemiring::is_commutative = true;
 std::shared_ptr<BoolSemiring> BoolSemiring::elem_null;
 std::shared_ptr<BoolSemiring> BoolSemiring::elem_one;

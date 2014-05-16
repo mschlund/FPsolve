@@ -486,6 +486,8 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
       VarDegreeMap result_variables = variables_;
       MonomialMap<SR2> result_monomials;
 
+      //FIXME: if fun(pair.second) == zero-element then do not add the monomial!!
+
       std::transform(
         monomials_.begin(), monomials_.end(),
         std::inserter(result_monomials, result_monomials.begin()),
@@ -496,7 +498,6 @@ class CommutativePolynomial : public Semiring<CommutativePolynomial<SR>,
                              std::move(result_variables)};
     }
 };
-
 
 
 template <typename SR>

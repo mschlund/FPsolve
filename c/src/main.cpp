@@ -19,6 +19,8 @@
 #include "semirings/float-semiring.h"
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
+#include "semirings/bool-semiring.h"
+#include "semirings/why-set.h"
 
 
 #ifdef USE_GENEPI
@@ -154,7 +156,7 @@ ValuationMap<SR> apply_solver(
       iterations = equations2[j].size() + 1;
     }
 
-    std::cout << "It: " << iterations << std::endl;
+    std::cout << "Iterations: " << iterations << std::endl;
 
     // do some real work here
     ValuationMap<SR> result = solver.solve_fixpoint(equations2[j], iterations);
@@ -205,6 +207,11 @@ ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Po
     std::cout << "Kleene solver"<< std::endl;
     return apply_solver<KleeneComm, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
+  else {
+    // default-case
+    std::cout << "Newton Concrete"<< std::endl;
+    return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+  }
 }
 
 int main(int argc, char* argv[]) {
@@ -221,6 +228,8 @@ int main(int argc, char* argv[]) {
     ( "test", "just for testing purposes ... explicit test defined in main()" )
     ( "file,f", po::value<std::string>(), "input file" )
     ( "float", "float semiring" )
+    ( "bool", "boolean semiring" )
+    ( "why", "why semiring" )
     ( "rexp", "commutative regular expression semiring" )
     ( "slset", "explicit semilinear sets semiring, no simplification " )
 #ifdef USE_GENEPI
@@ -292,6 +301,8 @@ int main(int argc, char* argv[]) {
       !vm.count("slsetndd") &&
 #endif
       !vm.count("free") &&
+      !vm.count("bool") &&
+      !vm.count("why") &&
       !vm.count("mlset") &&
       !vm.count("prefix") &&
       !vm.count("lossy")) {
@@ -477,7 +488,37 @@ int main(int argc, char* argv[]) {
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
+  } else if (vm.count("bool")) {
+    auto equations = p.free_parser(input_all);
+    auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> BoolSemiring {
+      auto srconv = SRConverter<BoolSemiring>();
+      return c.Eval(srconv);
+    });
+
+    if (equations2.empty()) return EXIT_FAILURE;
+
+    PrintEquations(equations);
+    PrintEquations(equations2);
+      std::cout << result_string(
+          call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+
   }
+  else if (vm.count("why")) {
+      auto equations = p.free_parser(input_all);
+      auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> WhySemiring {
+        auto srconv = SRConverter<WhySemiring>();
+        return c.Eval(srconv);
+      });
+
+      if (equations2.empty()) return EXIT_FAILURE;
+
+        std::cout << result_string(
+            call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+            ) << std::endl;
+
+    }
+
 
 
 
