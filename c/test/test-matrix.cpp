@@ -10,6 +10,13 @@ void MatrixTest::setUp()
   std::cout << "Matrix-Test :" << std::endl;
 	a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
 	c = new FreeSemiring(Var::GetVarId("c"));d = new FreeSemiring(Var::GetVarId("d"));
+  e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));
+
+	A = new Matrix<FreeSemiring>(2,{
+      *a,*b,
+      *c,*d});
+
+
 	e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));
 	g = new FreeSemiring(Var::GetVarId("g"));h = new FreeSemiring(Var::GetVarId("h"));
 	i = new FreeSemiring(Var::GetVarId("i"));j = new FreeSemiring(Var::GetVarId("j"));
@@ -33,6 +40,7 @@ void MatrixTest::setUp()
 			*a,*b,*a,
 			*b,*a,*b,
 			*a,*b,*a});
+
 }
 
 void MatrixTest::tearDown()
@@ -43,6 +51,7 @@ void MatrixTest::tearDown()
 	delete second;
 	delete third;
 	delete fourth;
+	delete A;
 	delete a;delete b;delete c;delete d;delete e;delete f;delete g;delete h;
 	delete j;delete k;delete l;delete m;delete n;delete o;delete p;delete q;delete r;
 }
@@ -82,8 +91,31 @@ void MatrixTest::testMultiplication()
 // test the star by solving an all-pairs-shortest path problem (over the tropical semiring)
 void MatrixTest::testStar()
 {
+
+  /*int n = 7;
+  std::vector<FreeSemiring> v;
+  for (int i=0; i< n*n; i++){
+    v.push_back(Var::GetVarId());
+  }
+  A = new Matrix<FreeSemiring>(n,v);
+
+  std::cout<< "Astar_start"<< std::endl;
+  A->star4();
+  std::cout<< "Astar_end"<< std::endl;
+  FreeSemiring::one().PrintStats(std::cout);
+  */
+
   // use a fix seed, so tests are deterministic
   std::vector<unsigned int> seeds{42,23,11805,24890};
+
+  auto A_star = A->star2();
+
+  std::ofstream dotfile;
+  dotfile.open("free-structure.dot");
+  FreeSemiring::one().PrintDot(dotfile);
+  dotfile.close();
+
+
 
 	for (auto &seed : seeds) {
 	  srand(seed);
@@ -96,7 +128,7 @@ void MatrixTest::testStar()
 	  for(unsigned int i = 0; i < size*size; i++)
 	  {
 		int r = rand() % mod;
-		if(r > 10 || r == 0)
+	  if(r > 10 || r == 0)
 		  elements.push_back(TS(INFTY));
 		else
 		  elements.push_back(TS(r));
@@ -110,6 +142,7 @@ void MatrixTest::testStar()
 	  auto rec_star2 = test_matrix.star();
 	  auto rec_star = test_matrix.star3();
 	  auto fw_star = test_matrix.star2();
+	  auto fw_star2 = test_matrix.star4();
 
 	  //std::cout << "recursive:" << std::endl << rec_star;
 	  //std::cout << "recursive2:" << std::endl << rec_star2;
@@ -117,7 +150,8 @@ void MatrixTest::testStar()
 
 	  CPPUNIT_ASSERT(rec_star2 == fw_star);
 	  CPPUNIT_ASSERT(rec_star2 == rec_star);
-	  CPPUNIT_ASSERT(rec_star == fw_star);
+	  CPPUNIT_ASSERT(rec_star2 == fw_star2);
+
 	}
 
 }

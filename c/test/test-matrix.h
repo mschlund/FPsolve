@@ -27,7 +27,7 @@ protected:
 
 private:
 	FreeSemiring *a, *b, *c, *d, *e, *f, *g, *h, *i, *j, *k, *l, *m, *n, *o, *p, *q, *r;
-	Matrix<FreeSemiring> *null, *one, *first, *second, *third, *fourth;
+	Matrix<FreeSemiring> *null, *one, *first, *second, *third, *fourth, *A;
 };
 
 #endif

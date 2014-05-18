@@ -166,10 +166,12 @@ ValuationMap<SR> apply_solver(
   }
 
   timer.Stop();
-  std::cout << "Solving time:\t" << timer.GetMicroseconds().count()
-    << " us" << std::endl
-    << "Solving time:\t" << timer.GetMilliseconds().count()
-    << " ms" << std::endl;
+  std::cout
+      << "Solving time:\t" << timer.GetMilliseconds().count()
+      << " ms" << " ("
+    << timer.GetMicroseconds().count()
+    << "us)" << std::endl;
+
 
 
   return solution;

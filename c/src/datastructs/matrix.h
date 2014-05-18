@@ -90,7 +90,8 @@ class Matrix {
       Matrix result{rows_, rhs.columns_, SR::null()};
       for (std::size_t r = 0; r < rows_; ++r) {
         for (std::size_t c = 0; c < rhs.columns_; ++c) {
-          for (std::size_t i = 0; i < columns_; ++i) {
+          result.At(r, c) = At(r, 0) * rhs.At(0, c);
+          for (std::size_t i = 1; i < columns_; ++i) {
             assert(GetIndex(r, i) < elements_.size());
             assert(rhs.GetIndex(i, c) < rhs.elements_.size());
             assert(result.GetIndex(r, c) < result.elements_.size());
@@ -129,6 +130,35 @@ class Matrix {
       return result;
     }
 
+    /*
+     * Alternative implementation from the Handbook of Weighted Automata
+     */
+    Matrix FloydWarshall2() const {
+      assert(columns_ == rows_);
+      Matrix result = *this;
+      for (std::size_t k = 0; k < rows_; ++k) {
+        result.At(k,k) = result.At(k, k).star();
+        for (std::size_t i = 0; i < rows_; ++i) {
+          if(i==k)
+            continue;
+          for (std::size_t j = 0; j < rows_; ++j) {
+            if(j==k)
+              continue;
+            result.At(i, j) +=
+                result.At(i, k) * result.At(k, k) * result.At(k, j);
+          }
+        }
+        for (std::size_t i=0; i<rows_; ++i) {
+          if(i==k)
+            continue;
+          result.At(k, i) = result.At(k, k).star() * result.At(k,i);
+          result.At(i, k) = result.At(i, k).star() * result.At(k,k);
+        }
+      }
+
+      return result;
+    }
+
     Matrix star() const {
       assert(columns_ == rows_);
       return recursive_star2(*this);
@@ -142,6 +172,11 @@ class Matrix {
     Matrix star3() const {
       assert(columns_ == rows_);
       return recursive_star(*this);
+    }
+
+    Matrix star4() const {
+      assert(columns_ == rows_);
+      return FloydWarshall2();
     }
 
     std::size_t getRows() const {
@@ -317,7 +352,6 @@ class Matrix {
       }
       return Matrix{nr, std::move(result)};
     }
-
 
 };
 

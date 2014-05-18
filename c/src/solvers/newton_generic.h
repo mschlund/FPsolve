@@ -148,10 +148,10 @@ class CommutativeSymbolicLinSolver {
               << jacobian_star_->getRows()
               << " x "
               << jacobian_star_->getColumns()
-              << std::endl;
+              << std::endl;*/
     FreeSemiring::one().PrintStats();
 
-
+    /*
     std::ofstream dotfile;
     dotfile.open("free-structure.dot");
     FreeSemiring::one().PrintDot(dotfile);

@@ -8,6 +8,8 @@
 #include "../datastructs/var.h"
 #include "../datastructs/free-structure.h"
 
+#include "../utils/profiling-macros.h"
+
 #include "semiring.h"
 
 template <typename SR>
@@ -34,23 +36,28 @@ class FreeSemiring : public StarableSemiring<FreeSemiring, Commutativity::NonCom
     }
 
     FreeSemiring star() const {
+      OPSTAR;
       return FreeSemiring{factory_.NewStar(node_)};
     }
 
     FreeSemiring operator+(const FreeSemiring &x) {
+      OPADD;
       return FreeSemiring{factory_.NewAddition(node_, x.node_)};
     }
 
     FreeSemiring& operator+=(const FreeSemiring &x) {
+      OPADD;
       node_ = factory_.NewAddition(node_, x.node_);
       return *this;
     }
 
     FreeSemiring operator*(const FreeSemiring &x) {
+      OPMULT;
       return FreeSemiring{factory_.NewMultiplication(node_, x.node_)};
     }
 
     FreeSemiring& operator*=(const FreeSemiring &x) {
+      OPMULT;
       node_ = factory_.NewMultiplication(node_, x.node_);
       return *this;
     }
