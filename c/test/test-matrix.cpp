@@ -4,11 +4,13 @@
 CPPUNIT_TEST_SUITE_REGISTRATION(MatrixTest);
 
 typedef TropicalSemiring TS;
+typedef FloatSemiring FS;
 
 void MatrixTest::setUp()
 {
   std::cout << "Matrix-Test :" << std::endl;
-	a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
+
+  a = new FreeSemiring(Var::GetVarId("a"));b = new FreeSemiring(Var::GetVarId("b"));
 	c = new FreeSemiring(Var::GetVarId("c"));d = new FreeSemiring(Var::GetVarId("d"));
   e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));
 
@@ -92,7 +94,7 @@ void MatrixTest::testMultiplication()
 void MatrixTest::testStar()
 {
 
-  /*int n = 7;
+  /*int n = 6;
   std::vector<FreeSemiring> v;
   for (int i=0; i< n*n; i++){
     v.push_back(Var::GetVarId());
@@ -103,19 +105,18 @@ void MatrixTest::testStar()
   A->star4();
   std::cout<< "Astar_end"<< std::endl;
   FreeSemiring::one().PrintStats(std::cout);
-  */
+*/
 
   // use a fix seed, so tests are deterministic
   std::vector<unsigned int> seeds{42,23,11805,24890};
 
-  auto A_star = A->star2();
+  /*auto A_star = A->star2();
 
   std::ofstream dotfile;
   dotfile.open("free-structure.dot");
   FreeSemiring::one().PrintDot(dotfile);
   dotfile.close();
-
-
+  */
 
 	for (auto &seed : seeds) {
 	  srand(seed);
@@ -125,6 +126,7 @@ void MatrixTest::testStar()
 	  float density = 0.6; // this is a percentage of how many elements are not INFTY
 	  int mod = 10 / density;
 	  std::vector<TS> elements;
+
 	  for(unsigned int i = 0; i < size*size; i++)
 	  {
 		int r = rand() % mod;
@@ -134,7 +136,6 @@ void MatrixTest::testStar()
 		  elements.push_back(TS(r));
 	  }
 	  Matrix<TS> test_matrix(size, elements);
-
 	  //std::cout << "testmat:" << std::endl << test_matrix;
 
 	  // calculate the star with the recursive versions and a floyd-warshall implementation
@@ -142,16 +143,17 @@ void MatrixTest::testStar()
 	  auto rec_star2 = test_matrix.star();
 	  auto rec_star = test_matrix.star3();
 	  auto fw_star = test_matrix.star2();
-	  auto fw_star2 = test_matrix.star4();
-
-	  //std::cout << "recursive:" << std::endl << rec_star;
-	  //std::cout << "recursive2:" << std::endl << rec_star2;
-	  //std::cout << "floyd-warshall:" << std::endl << fw_star;
-
+	  /*
+	  std::cout << "recursive:" << std::endl << rec_star;
+	  std::cout << "recursive2:" << std::endl << rec_star2;
+	  std::cout << "floyd-warshall:" << std::endl << fw_star;
+	   */
 	  CPPUNIT_ASSERT(rec_star2 == fw_star);
 	  CPPUNIT_ASSERT(rec_star2 == rec_star);
-	  CPPUNIT_ASSERT(rec_star2 == fw_star2);
-
 	}
+
+  Matrix<FS> test_matrix2(2, {FS(0.5), FS(0.5), FS(0), FS(0.5)});
+  CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star2());
+  CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star3());
 
 }

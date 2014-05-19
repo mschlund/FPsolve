@@ -108,32 +108,10 @@ class Matrix {
       return elements_ == rhs.elements_;
     }
 
-    Matrix FloydWarshall() const {
-      assert(columns_ == rows_);
-      Matrix result = *this;
-      for (std::size_t k = 0; k < rows_; ++k) {
-        for (std::size_t i = 0; i < rows_; ++i) {
-          for (std::size_t j = 0; j < rows_; ++j) {
-            result.At(i, j) +=
-                result.At(i, k) * result.At(k, k).star() * result.At(k, j);
-          }
-        }
-      }
-      /* Add element 1, i.e., Floyd-Warshall will give us A+ matrix, so
-       *   1 + A+ = A*
-       * Reusing one() and operator+ would be much slower (additional
-       * allocations and unnecessary traversals). */
-      for (std::size_t i = 0; i < rows_; ++i) {
-        result.At(i, i) += SR::one();
-      }
-
-      return result;
-    }
-
     /*
-     * Alternative implementation from the Handbook of Weighted Automata
+     * Floyd-Warshall implementation from the Handbook of Weighted Automata (optimized -- common subexpression optimization)
      */
-    Matrix FloydWarshall2() const {
+    Matrix FloydWarshall() const {
       assert(columns_ == rows_);
       Matrix result = *this;
       for (std::size_t k = 0; k < rows_; ++k) {
@@ -141,18 +119,19 @@ class Matrix {
         for (std::size_t i = 0; i < rows_; ++i) {
           if(i==k)
             continue;
+          result.At(i, k) = result.At(i, k) * result.At(k,k);
           for (std::size_t j = 0; j < rows_; ++j) {
             if(j==k)
               continue;
             result.At(i, j) +=
-                result.At(i, k) * result.At(k, k) * result.At(k, j);
+                result.At(i, k) * result.At(k, j);
           }
         }
         for (std::size_t i=0; i<rows_; ++i) {
           if(i==k)
             continue;
-          result.At(k, i) = result.At(k, k).star() * result.At(k,i);
-          result.At(i, k) = result.At(i, k).star() * result.At(k,k);
+          result.At(k, i) = result.At(k, k) * result.At(k,i);
+          //result.At(i, k) = result.At(i, k) * result.At(k,k);
         }
       }
 
@@ -172,11 +151,6 @@ class Matrix {
     Matrix star3() const {
       assert(columns_ == rows_);
       return recursive_star(*this);
-    }
-
-    Matrix star4() const {
-      assert(columns_ == rows_);
-      return FloydWarshall2();
     }
 
     std::size_t getRows() const {

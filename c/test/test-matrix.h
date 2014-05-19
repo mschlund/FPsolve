@@ -5,6 +5,7 @@
 
 #include "../src/semirings/free-semiring.h"
 #include "../src/semirings/tropical-semiring.h"
+#include "../src/semirings/float-semiring.h"
 #include "../src/datastructs/matrix.h"
 
 
