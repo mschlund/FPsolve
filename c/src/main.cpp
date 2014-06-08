@@ -17,6 +17,7 @@
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
+#include "semirings/tropical-semiring.h"
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
 #include "semirings/bool-semiring.h"
@@ -232,6 +233,7 @@ int main(int argc, char* argv[]) {
     ( "float", "float semiring" )
     ( "bool", "boolean semiring" )
     ( "why", "why semiring" )
+    ( "tropical", "tropical semiring over the integers" )
     ( "rexp", "commutative regular expression semiring" )
     ( "slset", "explicit semilinear sets semiring, no simplification " )
 #ifdef USE_GENEPI
@@ -305,6 +307,7 @@ int main(int argc, char* argv[]) {
       !vm.count("free") &&
       !vm.count("bool") &&
       !vm.count("why") &&
+      !vm.count("tropical") &&
       !vm.count("mlset") &&
       !vm.count("prefix") &&
       !vm.count("lossy")) {
@@ -520,7 +523,20 @@ int main(int argc, char* argv[]) {
             ) << std::endl;
 
     }
+    else if (vm.count("tropical")) {
+      auto equations = p.free_parser(input_all);
+      auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> TropicalSemiring {
+        auto srconv = SRConverter<TropicalSemiring>();
+        return c.Eval(srconv);
+      });
 
+      if (equations2.empty()) return EXIT_FAILURE;
+
+        std::cout << result_string(
+            call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+            ) << std::endl;
+
+    }
 
 
 

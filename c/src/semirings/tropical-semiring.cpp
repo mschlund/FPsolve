@@ -15,17 +15,32 @@ TropicalSemiring::TropicalSemiring()
   this->val = 0;
 }
 
-TropicalSemiring::TropicalSemiring(const unsigned int val)
+TropicalSemiring::TropicalSemiring(const int val)
 {
   this->val = val;
 }
 
-TropicalSemiring::~TropicalSemiring()
-{
+TropicalSemiring::TropicalSemiring(std::string str_val) {
+  //std::cout << "Int-Const.: "<< str_val << std::endl;
+  if(str_val.compare("\u221E") == 0 || str_val.compare("inf") == 0) {
+    val = INFTY;
+  }
+  else if(str_val.compare("-\u221E") == 0 || str_val.compare("-inf") == 0) {
+    val = NEGINFTY;
+  }
+  else {
+    std::istringstream i(str_val);
+    if (!(i >> val))
+    {
+      std::cerr << "ERROR: Bad string value (" << str_val << ") for tropical-SR constructor! Defaulting to infty"<< std::endl;
+      val = INFTY;
+    }
+  }
 }
 
-TropicalSemiring TropicalSemiring::operator+=(const TropicalSemiring& elem)
-{
+TropicalSemiring::~TropicalSemiring(){}
+
+TropicalSemiring TropicalSemiring::operator+=(const TropicalSemiring& elem) {
   OPADD;
   if(isInf(elem)) {
     return *this;
@@ -39,11 +54,13 @@ TropicalSemiring TropicalSemiring::operator+=(const TropicalSemiring& elem)
   return *this;
 }
 
-TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem)
-{
+TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem) {
   OPMULT;
   if(TropicalSemiring::null() == elem || TropicalSemiring::null() == *this) {
     this->val = TropicalSemiring::null().val;
+  }
+  else if (isNegInf(elem) || isNegInf(*this)) {
+    this->val = NEGINFTY;
   }
   else
     this->val += elem.val;
@@ -51,36 +68,38 @@ TropicalSemiring TropicalSemiring::operator*=(const TropicalSemiring& elem)
   return *this;
 }
 
-bool TropicalSemiring::operator==(const TropicalSemiring& elem) const
-{
+bool TropicalSemiring::operator==(const TropicalSemiring& elem) const {
   return (this->val == elem.val);
 }
 
-TropicalSemiring TropicalSemiring::star() const
-{
+TropicalSemiring TropicalSemiring::star() const {
   OPSTAR;
-  return TropicalSemiring::one();
+  if(val < 0) {
+    return TropicalSemiring(NEGINFTY);
+  }
+  else
+    return TropicalSemiring::one();
 }
 
-TropicalSemiring TropicalSemiring::null()
-{
+TropicalSemiring TropicalSemiring::null() {
   if(!TropicalSemiring::elem_null)
     TropicalSemiring::elem_null = std::shared_ptr<TropicalSemiring>(new TropicalSemiring(INFTY));
   return *TropicalSemiring::elem_null;
 }
 
-TropicalSemiring TropicalSemiring::one()
-{
+TropicalSemiring TropicalSemiring::one() {
   if(!TropicalSemiring::elem_one)
     TropicalSemiring::elem_one = std::shared_ptr<TropicalSemiring>(new TropicalSemiring(0));
   return *TropicalSemiring::elem_one;
 }
 
-std::string TropicalSemiring::string() const
-{
+std::string TropicalSemiring::string() const {
   std::stringstream ss;
   if(isInf(*this)) {
     ss << "\u221E";
+  }
+  else if(isNegInf(*this)) {
+    ss << "-\u221E";
   }
   else
     ss << this->val;

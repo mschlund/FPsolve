@@ -13,19 +13,21 @@
 #include <string>
 #include <memory>
 
-#define INFTY (std::numeric_limits<unsigned int>::max())
+#define INFTY (std::numeric_limits<int>::max())
+#define NEGINFTY (std::numeric_limits<int>::min())
 
 class TropicalSemiring : public StarableSemiring<TropicalSemiring, Commutativity::Commutative, Idempotence::Idempotent>{
 private:
   /*
    * val == UINT_MAX is interpreted as infinity
    */
-  unsigned int val;
+  int val;
   static std::shared_ptr<TropicalSemiring> elem_null;
   static std::shared_ptr<TropicalSemiring> elem_one;
 public:
   TropicalSemiring();
-  TropicalSemiring(const unsigned int val);
+  TropicalSemiring(const int val);
+  TropicalSemiring(std::string str_val);
   virtual ~TropicalSemiring();
   TropicalSemiring operator += (const TropicalSemiring& elem); // minimum
   TropicalSemiring operator *= (const TropicalSemiring& elem); // plus
@@ -37,6 +39,13 @@ public:
 
   bool isInf(const TropicalSemiring& elem) const {
     if(INFTY == elem.val)
+      return true;
+    else
+      return false;
+  }
+
+  bool isNegInf(const TropicalSemiring& elem) const {
+    if(NEGINFTY == elem.val)
       return true;
     else
       return false;
