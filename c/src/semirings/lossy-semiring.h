@@ -6,6 +6,13 @@
 #include <unordered_map>
 #include <queue>
 #include <time.h>
+#include <stdint.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <unistd.h>
+#include <algorithm>
+
+
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/strong_components.hpp>
@@ -17,6 +24,7 @@
 #include "../datastructs/free-structure.h"
 #include "../polynomials/non_commutative_polynomial.h"
 #include "../polynomials/non_commutative_monomial.h"
+#include "../utils/timer.h"
 
 #include "semiring.h"
 
@@ -98,6 +106,8 @@ public:
             middle += elem_mapping.second;
         }
 
+        LSR::maxStates = std::max(LSR::maxStates,middle.size());
+
         // build the differential of the system
         std::map<VarId, NonCommutativePolynomial<LSR>> differential;
         for(auto &equation: qnf) {
@@ -132,11 +142,15 @@ public:
 
         // get the lefthand and righthand semiring element of the fixpoint
         LSR lefthandSum = differential_sum.getSumOfLeadingFactors();
+
+        LSR::maxStates = std::max(LSR::maxStates,lefthandSum.size());
 //                            std::cout << "LHS: " << lefthandSum.string() << std::endl;
         LSR righthandSum = differential_sum.getSumOfTrailingFactors();
+        LSR::maxStates = std::max(LSR::maxStates,righthandSum.size());
 //                            std::cout << "RHS: " << righthandSum.string() << std::endl;
         // fixpoint element
         LSR fixpoint = lefthandSum.star() * middle * righthandSum.star();
+        LSR::maxStates = std::max(LSR::maxStates,fixpoint.size());
 
         for(auto &variable_mapping: qnf) {
             solution.insert(std::make_pair(variable_mapping.first, fixpoint));
@@ -146,11 +160,148 @@ public:
     }
 
     /*
+     * Takes two grammars and refines them by intersecting them with the prefix languages of their shared downward closure.
+     */
+    static LSR refineCourcelle(const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations_1,
+            const VarId &S_1, const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations_2,
+            const VarId &S_2, int maxLengthOfPrefixes) {
+        int who = RUSAGE_SELF;
+        struct rusage usage;
+        int ret;
+        struct timeval startT, endT;
+        long mtime, seconds, useconds;
+        gettimeofday(&startT, NULL);
+        Timer timer;
+        timer.Start();
+        int largestRawGrammar = 0;
+        int largestCleanGrammar = 0;
+        int iterationsBeforeSuccess = 0;
+        int outputLength = 0;
+
+        LSR approx_1 = downwardClosureCourcelle(equations_1, S_1);
+        LSR approx_2 = downwardClosureCourcelle(equations_2, S_2);
+
+//        std::cout << "approx 1: " << approx_1.string() << std::endl;
+//        std::cout << "approx 2: " << approx_1.string() << std::endl;
+        bool A1_subset_A2 = approx_2.contains(approx_1);
+        bool A2_subset_A1 = approx_1.contains(approx_2);
+        ret = getrusage(who, &usage);
+        auto memoryUsage = usage.ru_maxrss;
+//        std::cout << memoryUsage << ",";
+
+        if(A1_subset_A2 && A2_subset_A1) {
+            LSR difference = LSR::null();
+
+            if(!(approx_1 == LSR::null()) && !(approx_1 == LSR::one())) {
+
+                // build the automaton Sigma*
+                std::string regexAlphabetStar = "[";
+                for (auto c: approx_1.alphabet()) {
+                    regexAlphabetStar.append(1, c);
+                }
+                regexAlphabetStar += "]*";
+
+                // build the map of (length, prefixes of that length)
+                std::map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes);
+
+                // iterate over the prefixes
+                bool noDifference = true;
+                std::queue<VarId> worklist;
+                for(int i = 1; (i <= maxLengthOfPrefixes) && noDifference; i++) {
+                    iterationsBeforeSuccess++;
+                    for(auto &prefix: prefixesPerLength[i]) {
+                        std::string prefixAlphaStar = std::string(prefix) + regexAlphabetStar;
+//                        std::cout << "prefixalphastar\t" << prefixAlphaStar << std::endl;
+                        LSR prefixAutomaton(prefixAlphaStar);
+//                        std::cout << "done prefixalphastar" << std::endl;
+//                        std::cout << "prefix automaton:\t" << prefixAutomaton.string() << std::endl;
+
+                        VarId S_1_partition, S_2_partition;
+
+                        // generate the subset of language 1
+                        auto equations_1_Partition = prefixAutomaton.intersectionWithCFG(S_1_partition, S_1, equations_1);
+                        largestRawGrammar = equations_1_Partition.size() > largestRawGrammar ? equations_1_Partition.size() : largestRawGrammar;
+                        while(!worklist.empty()) {
+                            worklist.pop();
+                        }
+                        worklist.push(S_1_partition);
+                        equations_1_Partition = cleanSystem(equations_1_Partition, worklist);
+                        largestCleanGrammar = equations_1_Partition.size() > largestCleanGrammar ? equations_1_Partition.size() : largestCleanGrammar;
+
+                        // output grammar 1
+//                        std::cout << "equ. 1 part:" << std::endl;
+//                        for(auto &equation: equations_1_Partition) {
+//                            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                        }
+
+                        // generate the subset of language 2
+                        auto equations_2_Partition = prefixAutomaton.intersectionWithCFG(S_2_partition, S_2, equations_2);
+                        largestRawGrammar = equations_2_Partition.size() > largestRawGrammar ? equations_2_Partition.size() : largestRawGrammar;
+                        while(!worklist.empty()) {
+                            worklist.pop();
+                        }
+                        worklist.push(S_2_partition);
+                        equations_2_Partition = cleanSystem(equations_2_Partition, worklist);
+                        largestCleanGrammar = equations_2_Partition.size() > largestCleanGrammar ? equations_2_Partition.size() : largestCleanGrammar;
+
+                        // output grammar 2
+//                        std::cout << "equ. 2 part:" << std::endl;
+//                        for(auto &equation: equations_2_Partition) {
+//                            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                        }
+
+                        // approximate the grammars
+                        LSR approx_1_part = downwardClosureCourcelle(equations_1_Partition, S_1_partition);
+                        LSR approx_2_part = downwardClosureCourcelle(equations_2_Partition, S_2_partition);
+
+                        LSR tempDiff = compareClosures(equations_1_Partition, S_1_partition, equations_2_Partition, S_2_partition, approx_1_part, approx_2_part, largestRawGrammar, largestCleanGrammar);
+
+                        if(!(tempDiff == LSR::null())) {
+                            difference = tempDiff;
+                            noDifference = false;
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+            timer.Stop();
+            ret = getrusage(who, &usage);
+            auto memoryUsage = usage.ru_maxrss;
+            if(difference != LSR::null()) {
+                outputLength = difference.string().size();
+            }
+            std::cout << timer.GetMilliseconds().count() << "," <<  memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << iterationsBeforeSuccess << "," << outputLength << ",";
+            return difference;
+        } else {
+            LSR difference = compareClosures(equations_1, S_1, equations_2, S_2, approx_1, approx_2, largestRawGrammar, largestCleanGrammar);
+            timer.Stop();
+            ret = getrusage(who, &usage);
+            auto memoryUsage = usage.ru_maxrss;
+            if(difference != LSR::null()) {
+                outputLength = difference.string().size();
+            }
+            std::cout << timer.GetMilliseconds().count() << "," << memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << iterationsBeforeSuccess << "," << outputLength << ",";
+            return difference;
+        }
+    }
+
+    /*
      * Approximates the language defined by the grammar starting at S given in the system of equations by calculating
      * its downward closure.
      */
     static LSR downwardClosureDerivationTrees(const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations,
             const VarId &S) {
+
+        int who = RUSAGE_SELF;
+        struct rusage usage;
+        int ret;
+        struct timeval startT, endT;
+        long mtime, seconds, useconds;
+        gettimeofday(&startT, NULL);
+        Timer timer;
+        timer.Start();
 
         std::queue<VarId> worklist;
         worklist.push(S);
@@ -165,6 +316,14 @@ public:
         // if the start symbol is unproductive, then it doesn't generate anything;
         // the downward closure of the empty set is the empty set
         if(!variableHasProduction(cleanEquations, S)) {
+
+            ret = getrusage(who, &usage);
+            gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
+            useconds = endT.tv_usec - startT.tv_usec;
+            mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+            auto memoryUsage = usage.ru_maxrss;
+            timer.Stop();
+//            std::cout << /*"\t time:\t" << */mtime << ","/*<< "\ttimer time: " << timer.GetMilliseconds().count()*/ /* << "\tmemory used: "*/ << usage.ru_maxrss <<","/*<< "KB\t" << "max number of states: " */<< LSR::maxStates<<","/* << "\tstates before lossification: " */<< "0" << std::endl;
             return LSR::null();
         }
 
@@ -194,9 +353,25 @@ public:
 
             for(auto &value: newValuations) {
                 knownValuations.insert(std::make_pair(value.first, value.second));
+                LSR::maxStates = std::max(LSR::maxStates,knownValuations[value.first].size());
             }
         }
 
+<<<<<<< HEAD
+<<<<<<< HEAD
+        ret = getrusage(who, &usage);
+        gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
+        useconds = endT.tv_usec - startT.tv_usec;
+        mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+        auto memoryUsage = usage.ru_maxrss;
+        timer.Stop();
+//        std::cout << /*"\t time:\t" << */mtime << ","/*<< "\ttimer time: " << timer.GetMilliseconds().count()*/ /* << "\tmemory used: "*/ << usage.ru_maxrss <<","/*<< "KB\t" << "max number of states: " */<< LSR::maxStates<<","/* << "\tstates before lossification: " */<< knownValuations[S].size() << std::endl;
+//        std::cout << "closure before lossification: " << knownValuations[S].string() << "\t";
+=======
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+>>>>>>> refs/remotes/origin/master
+//        std::cout << "size of closure automaton before lossification:\t" << knownValuations[S].size() << std::endl;
         return knownValuations[S].lossify();
     }
 
@@ -208,6 +383,13 @@ public:
      */
     static LSR downwardClosureCourcelle(const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations,
             const VarId &S) {
+
+        int who = RUSAGE_SELF;
+        struct rusage usage;
+        int ret;
+        struct timeval startT, endT;
+        long mtime, seconds, useconds;
+        gettimeofday(&startT, NULL);
 
         std::queue<VarId> worklist;
         worklist.push(S);
@@ -222,6 +404,12 @@ public:
         // if the start symbol is unproductive, then it doesn't generate anything;
         // the downward closure of the empty set is the empty set
         if(!variableHasProduction(cleanEquations, S)) {
+            ret = getrusage(who, &usage);
+            gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
+            useconds = endT.tv_usec - startT.tv_usec;
+            mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+            auto memoryUsage = usage.ru_maxrss;
+//            std::cout << /*"\t time:\t" << */mtime << ","/*<< "\ttimer time: " << timer.GetMilliseconds().count()*/ /* << "\tmemory used: "*/ << usage.ru_maxrss <<","/*<< "KB\t" << "max number of states: " */<< LSR::maxStates<<","/* << "\tstates before lossification: " */<< "0";
             return LSR::null();
         }
 
@@ -317,6 +505,13 @@ public:
 
 //        std::cout << "closures of nonsquarable components done" << std::endl;
 
+        ret = getrusage(who, &usage);
+        gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
+        useconds = endT.tv_usec - startT.tv_usec;
+        mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
+        auto memoryUsage = usage.ru_maxrss;
+//        std::cout  /*<< "\t time:\t" */<< mtime <<"," /*<< "\tmemory used: " */<< usage.ru_maxrss<<"," /*<< "KB\t" << "max number of states: " */<< LSR::maxStates <<","/*<< "\tstates of closure: " */<< componentToClosure[varToComponent[S]].size();
+
         return componentToClosure[varToComponent[S]];
     }
 
@@ -333,6 +528,7 @@ private:
         (const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations, std::queue<VarId> &startSymbols) {
 
         if(startSymbols.empty()) {
+            std::cout << "start symbols is empty" << std::endl;
             for(auto &equation: equations) {
                 startSymbols.push(equation.first);
             }
@@ -507,6 +703,7 @@ private:
             // evaluate each polynomial and map the appropriate variable to the result
             for(auto &equation: equations) {
                 tempValuation.insert(std::make_pair(equation.first, equation.second.eval(valuation)));
+                LSR::maxStates = std::max(LSR::maxStates,tempValuation[equation.first].size());
             }
 
             // prepare next iteration
@@ -654,6 +851,7 @@ private:
 
             ss << "]*";
             componentToClosure.insert(std::make_pair(i, LSR(ss.str())));
+            LSR::maxStates = std::max(LSR::maxStates,componentToClosure[i].size());
 //            std::cout << "reachable letters for component " << i << ": " << LSR(ss.str()).string() << std::endl;
         }
     }
@@ -726,6 +924,8 @@ private:
                     closure = closure + equation.second.sumOfConstantMonomials();
                 }
 
+
+                LSR::maxStates = std::max(LSR::maxStates,closuresOfConstantMonomials[i].size());
                 closuresOfConstantMonomials[i] = closure.lossify();
 //                std::cout << "closure of constant monomials component " << i << ": " << closure.string() << std::endl;
             }
@@ -761,6 +961,7 @@ private:
 //                std::cout << "found lower linear terms; total of " << lowerLinearTerms.size() << ". Calculating their closure" << std::endl;
                 LSR closureOfLowerLinearTerms = findClosureOfLowerLinearTerms(lowerLinearTerms, varToComponent, componentToClosure);
 
+                LSR::maxStates = std::max(LSR::maxStates,closureOfLowerLinearTerms.size());
 //                std::cout << "closure of lower linear terms done" << std::endl;
 
                 // quadratic terms with variables in lower components
@@ -769,8 +970,10 @@ private:
                     for(auto rhs: entry.second) {
 //                        std::cout << entry.first << " * " << rhs << " in quadratic stuff of component " << i << std::endl;
                         closureOfLowerQuadraticTerms += componentToClosure[entry.first] * componentToClosure[rhs];
+                        LSR::maxStates = std::max(LSR::maxStates,closureOfLowerQuadraticTerms.size());
                     }
                 }
+
 
 
 //                std::cout << "closure of lower quadratic terms done" << std::endl;
@@ -779,6 +982,7 @@ private:
                 // exclusively in lower components
                 LSR middle = closureOfLowerQuadraticTerms + closureOfLowerLinearTerms + closuresOfConstantMonomials[i];
 
+                LSR::maxStates = std::max(LSR::maxStates,middle.size());
 //                std::cout << "middle calculated" << std::endl;
 
                 /*
@@ -820,6 +1024,8 @@ private:
 
                     ssLHS << "]*";
                     lefthandAlphabetStar = LSR(ssLHS.str());
+
+                    LSR::maxStates = std::max(LSR::maxStates,lefthandAlphabetStar.size());
                 }
 
 //                std::cout << "lefthand automaton: " << lefthandAlphabetStar.string() << std::endl;
@@ -837,11 +1043,13 @@ private:
 
                     ssRHS << "]*";
                     righthandAlphabetStar = LSR(ssRHS.str());
+                    LSR::maxStates = std::max(LSR::maxStates,righthandAlphabetStar.size());
                 }
 
 //                std::cout << "righthand automaton: " << righthandAlphabetStar.string() << std::endl;
 
                 LSR closure = lefthandAlphabetStar * middle * righthandAlphabetStar;
+                LSR::maxStates = std::max(LSR::maxStates,closure.size());
 
 //                std::cout << "component closure: " << closure.string() << std::endl;
                 componentToClosure[i] = closure;
@@ -899,9 +1107,100 @@ private:
             auto rhsLSR = monomial.getTrailingSR().lossify();
 
             closure += lhsLSR * variableClosure * rhsLSR;
+
+            LSR::maxStates = std::max(LSR::maxStates,closure.size());
         }
 
         return closure;
+    }
+
+    static LSR compareClosures(const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations_1,
+            const VarId &S_1, const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations_2,
+            const VarId &S_2, const LSR approx_1, const LSR approx_2, int &largestRawGrammar, int &largestCleanGrammar) {
+        int who = RUSAGE_SELF;
+        struct rusage usage;
+        int ret;
+        struct timeval startT, endT;
+        long mtime, seconds, useconds;
+        gettimeofday(&startT, NULL);
+
+        bool A1_subset_A2 = approx_2.contains(approx_1);
+        bool A2_subset_A1 = approx_1.contains(approx_2);
+
+        ret = getrusage(who, &usage);
+        auto memoryUsage = usage.ru_maxrss;
+//        std::cout << memoryUsage << ",";
+
+        if(A1_subset_A2 && A2_subset_A1) {
+            return LSR::null();
+//            std::cout << memoryUsage << "," << "0,0,0,0" << std::endl;
+        } else {
+            Timer timer;
+            timer.Start();
+            int L21raw = 0, L12raw = 0, L21 = 0, L12 = 0;
+            LSR L1_intersect_A2c = LSR::null();
+            bool L1_intersect_A2c_changed = false;
+            LSR L2_intersect_A1c = LSR::null();
+            bool L2_intersect_A1c_changed = false;
+
+            if(!A1_subset_A2) {
+                VarId startSymbol_1_2;
+                auto A2c = approx_1.minus(approx_2);
+                auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations_1);
+                largestRawGrammar = intersectionGrammar.size() > largestRawGrammar ? intersectionGrammar.size() : largestRawGrammar;
+                L12raw = intersectionGrammar.size();
+                std::queue<VarId> worklist;
+                worklist.push(startSymbol_1_2);
+                intersectionGrammar = NonCommutativePolynomial<LSR>::cleanSystem(intersectionGrammar, worklist);
+                largestCleanGrammar = intersectionGrammar.size() > largestCleanGrammar ? intersectionGrammar.size() : largestCleanGrammar;
+                L12 = intersectionGrammar.size();
+
+                L1_intersect_A2c = NonCommutativePolynomial<LSR>::shortestWord
+                        (intersectionGrammar, startSymbol_1_2);
+                L1_intersect_A2c_changed = true;
+            }
+
+            if(!A2_subset_A1) {
+                VarId startSymbol_2_1;
+                auto A1c = approx_2.minus(approx_1);
+                auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+                largestRawGrammar = intersectionGrammar_2.size() > largestRawGrammar ? intersectionGrammar_2.size() : largestRawGrammar;
+                L21raw = intersectionGrammar_2.size();
+                std::queue<VarId> worklist;
+                worklist.push(startSymbol_2_1);
+                intersectionGrammar_2 = NonCommutativePolynomial<LSR>::cleanSystem(intersectionGrammar_2, worklist);
+                largestCleanGrammar = intersectionGrammar_2.size() > largestCleanGrammar ? intersectionGrammar_2.size() : largestCleanGrammar;
+                L21 = intersectionGrammar_2.size();
+
+                L2_intersect_A1c = NonCommutativePolynomial<LSR>::shortestWord
+                        (intersectionGrammar_2, startSymbol_2_1);
+                L2_intersect_A1c_changed = true;
+            }
+            timer.Stop();
+            ret = getrusage(who, &usage);
+            auto memoryUsage = usage.ru_maxrss;
+//            std::cout << memoryUsage << ",";
+            if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+                auto first = L1_intersect_A2c.string();
+                auto second = L2_intersect_A1c.string();
+
+                if(first.size() <= second.size()) {
+                    return L1_intersect_A2c;
+//                    std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << first.size() /*<< "\t" << first*/ << std::endl;
+                } else {
+                    return L2_intersect_A1c;
+//                    std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << second.size() /*<< "\t" << second */<< std::endl;
+                }
+            } else {
+                if(L1_intersect_A2c_changed) {
+                    return L1_intersect_A2c;
+//                    std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << L1_intersect_A2c.string().size() /*<< "\t" << L1_intersect_A2c.string() */<< std::endl;
+                } else {
+                    return L2_intersect_A1c;
+//                    std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << L2_intersect_A1c.string().size() /*<< "\t" << L2_intersect_A1c.string() */<< std::endl;
+                }
+            }
+        }
     }
 };
 

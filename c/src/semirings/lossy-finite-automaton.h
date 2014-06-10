@@ -6,6 +6,7 @@
 #include <queue>
 #include <string>
 #include <ctype.h>
+#include <algorithm>
 extern "C" {
     #include <fa.h>
 }
@@ -31,6 +32,9 @@ class Evaluator;
 class LossyFiniteAutomaton: public LossySemiring<LossyFiniteAutomaton>  {
 public:
 
+
+    static int maxStates;
+
     /* Default constructor creates one (multiplicative neutral) element. */
     LossyFiniteAutomaton() {
         language = EPSILON.language;
@@ -41,7 +45,7 @@ public:
      * the lossyfied language of that expression. Use | for choice, () for grouping, * for Kleene star;
      * don't use spaces, also concatenation does not require a symbol.
      */
-    LossyFiniteAutomaton(std::string regularExpression) {
+    LossyFiniteAutomaton(const std::string regularExpression) {
 
 
 //        FiniteAutomaton fa, temp;
@@ -85,7 +89,9 @@ public:
 ////            std::cout << "fa:\t" + fa.string() << std::endl;
 //        }
 //        std::cout << "LFA(var) begin" << std::endl;
-        language = FiniteAutomaton(Var::GetVar(var).string()).minimize();
+        FiniteAutomaton fa = FiniteAutomaton(Var::GetVar(var).string());
+        maxStates = std::max(maxStates,fa.size());
+        language = fa.minimize();
 //        std::cout << "LFA(var):\t" + language.string() << std::endl;
     }
 
@@ -153,11 +159,15 @@ public:
     }
 
     LossyFiniteAutomaton minimize() {
-        return LossyFiniteAutomaton{language.minimize()};
+        auto newLanguage = language.minimize();
+        maxStates = std::max(maxStates,newLanguage.size());
+        return LossyFiniteAutomaton{newLanguage};
     }
 
     LossyFiniteAutomaton star() const {
-        return LossyFiniteAutomaton(language.kleeneStar().minimize());
+        auto newLanguage = language.kleeneStar();
+        maxStates = std::max(maxStates,newLanguage.size());
+        return LossyFiniteAutomaton(newLanguage.minimize());
     }
 
     LossyFiniteAutomaton complement() const {
@@ -165,29 +175,39 @@ public:
     }
 
     LossyFiniteAutomaton minus(const LossyFiniteAutomaton &x) const {
-        return LossyFiniteAutomaton(language.minus(x.language)).minimize();
+        auto newLanguage = language.minus(x.language);
+        maxStates = std::max(maxStates,newLanguage.size());
+        return LossyFiniteAutomaton(newLanguage).minimize();
     }
 
-    bool contains(LossyFiniteAutomaton &other) const {
+    bool contains(const LossyFiniteAutomaton &other) const {
         return language.contains(other.language);
     }
 
 
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton {language.unionWith(x.language).minimize()};
+        auto newLanguage = language.unionWith(x.language);
+        maxStates = std::max(maxStates,newLanguage.size());
+        return LossyFiniteAutomaton {newLanguage.minimize()};
     }
 
     LossyFiniteAutomaton& operator+=(const LossyFiniteAutomaton &x) {
-        language = language.unionWith(x.language).minimize();
+        language = language.unionWith(x.language);
+        maxStates = std::max(maxStates,language.size());
+        language = language.minimize();
         return *this;
     }
 
     LossyFiniteAutomaton operator*(const LossyFiniteAutomaton &x) {
-        return LossyFiniteAutomaton { language.concatenate(x.language).minimize()};
+        auto newLanguage = language.concatenate(x.language);
+        maxStates = std::max(maxStates,newLanguage.size());
+        return LossyFiniteAutomaton {newLanguage.minimize()};
     }
 
     LossyFiniteAutomaton& operator*=(const LossyFiniteAutomaton &x) {
-        language = language.concatenate(x.language).minimize();
+        language = language.concatenate(x.language);
+        maxStates = std::max(maxStates,language.size());
+        language = language.minimize();
         return *this;
     }
 
@@ -259,7 +279,7 @@ public:
         return lossifiedRegex(string());
     }
 
-    int size() {
+    int size() const {
         return language.size();
     }
 
@@ -269,8 +289,19 @@ public:
      * its set of productions while its start symbol is stored in "newS".
      */
     std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> intersectionWithCFG
-        (VarId &newS, const VarId &oldS, std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations) {
+        (VarId &newS, const VarId &oldS, const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations) const {
         return language.intersectionWithCFG(newS, oldS, equations);
+    }
+
+    /*
+     * Gives you the alphabet used in this automaton.
+     */
+    std::set<unsigned char> alphabet() const {
+        return language.alphabet();
+    }
+
+    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength) const {
+        return language.prefixesToMaxLength(maxLength);
     }
 
     /*
@@ -292,7 +323,7 @@ public:
             std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
         }
 
-        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a([efg]*|bo)(l|k)c*|h*");
+        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a[ab]*");
         std::cout << "regular language:\t" << dummy.string() << std::endl;
         VarId newS;
         std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> intersection =
