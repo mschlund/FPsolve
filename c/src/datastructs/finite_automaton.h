@@ -30,9 +30,6 @@ public:
      */
     FiniteAutomaton(std::string regularExpression) {
         fa_compile(regularExpression.c_str(), regularExpression.size(), &automaton);
-//        if(automaton == NULL) {
-//            std::cout << "bad regex:\t" << regularExpression;
-//        }
         assert(automaton!=NULL);
     }
 
@@ -305,10 +302,6 @@ public:
         // for the new grammar
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
-        if(empty()) {
-            newS = Var::GetVarId(std::string("S"));
-            return resultGrammar;
-        }
         // we don't want to start out with useless stuff because the intersection grammar
         // will blow up anyway
         std::queue<VarId> worklist;

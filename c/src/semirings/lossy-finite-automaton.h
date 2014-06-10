@@ -323,7 +323,7 @@ public:
             std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
         }
 
-        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a[ab]*");
+        LossyFiniteAutomaton dummy = LossyFiniteAutomaton("a([efg]*|bo)(l|k)c*|h*");
         std::cout << "regular language:\t" << dummy.string() << std::endl;
         VarId newS;
         std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> intersection =
