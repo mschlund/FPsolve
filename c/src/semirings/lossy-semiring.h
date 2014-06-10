@@ -358,6 +358,7 @@ public:
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         ret = getrusage(who, &usage);
         gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
         useconds = endT.tv_usec - startT.tv_usec;
@@ -368,6 +369,8 @@ public:
 //        std::cout << "closure before lossification: " << knownValuations[S].string() << "\t";
 =======
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+>>>>>>> refs/remotes/origin/master
 //        std::cout << "size of closure automaton before lossification:\t" << knownValuations[S].size() << std::endl;
         return knownValuations[S].lossify();
     }

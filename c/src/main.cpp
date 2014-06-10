@@ -6,11 +6,14 @@
 #include <time.h>
 #include <stdint.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
 =======
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+>>>>>>> refs/remotes/origin/master
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/strong_components.hpp>
@@ -437,10 +440,14 @@ int main(int argc, char* argv[]) {
   } else if (vm.count("lossy")) {
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 //    struct timespec start, end;
 =======
     struct timespec start, end;
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+    struct timespec start, end;
+>>>>>>> refs/remotes/origin/master
     auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
@@ -513,12 +520,17 @@ int main(int argc, char* argv[]) {
         }
     } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 //        clock_gettime(CLOCK_MONOTONIC, &start);
 //        gettimeofday(&startT, NULL);
 =======
         clock_gettime(CLOCK_MONOTONIC, &start);
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+        clock_gettime(CLOCK_MONOTONIC, &start);
+>>>>>>> refs/remotes/origin/master
         auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+<<<<<<< HEAD
 <<<<<<< HEAD
 
 //        gettimeofday(&endT, NULL);
@@ -538,12 +550,17 @@ int main(int argc, char* argv[]) {
 //        unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
 //        std::cout  /*<< "\t time:\t" << mtime  << "\tmemory used: " << usage.ru_maxrss << "KB\t"*/ << vm["file"].as<std::string>() /*<< " closure:\t " << approx*/ << std::endl;
 =======
+=======
+>>>>>>> refs/remotes/origin/master
         clock_gettime(CLOCK_MONOTONIC, &end);
 
         uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
         std::string approx = approximation.string();
         std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
+<<<<<<< HEAD
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+>>>>>>> refs/remotes/origin/master
     }
 //                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
 //                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
@@ -755,14 +772,19 @@ int main(int argc, char* argv[]) {
 //          }
       } else {
 <<<<<<< HEAD
+<<<<<<< HEAD
 //          clock_gettime(CLOCK_MONOTONIC, &start);
 //          gettimeofday(&startT, NULL);
 =======
           clock_gettime(CLOCK_MONOTONIC, &start);
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+          clock_gettime(CLOCK_MONOTONIC, &start);
+>>>>>>> refs/remotes/origin/master
 
 //          clock_t startTime = clock();
           auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+<<<<<<< HEAD
 <<<<<<< HEAD
 //          gettimeofday(&endT, NULL);
 //          clock_t endTime = clock();
@@ -778,7 +800,15 @@ int main(int argc, char* argv[]) {
 
           uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+//          clock_t endTime = clock();
+          clock_gettime(CLOCK_MONOTONIC, &end);
+//          auto totalTime = (endTime - startTime)/* / (CLOCKS_PER_SEC / 1000)*/;
+
+          uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
+>>>>>>> refs/remotes/origin/master
           std::string approx = approximation.string();
+<<<<<<< HEAD
 <<<<<<< HEAD
 //          unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
 //          seconds  = endT.tv_sec  - startT.tv_sec;
@@ -789,6 +819,9 @@ int main(int argc, char* argv[]) {
 =======
           std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
 >>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
+=======
+          std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
+>>>>>>> refs/remotes/origin/master
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
