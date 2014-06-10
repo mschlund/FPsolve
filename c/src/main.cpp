@@ -5,9 +5,12 @@
 #include <string>
 #include <time.h>
 #include <stdint.h>
+<<<<<<< HEAD
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <unistd.h>
+=======
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/strong_components.hpp>
@@ -433,7 +436,11 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
+<<<<<<< HEAD
 //    struct timespec start, end;
+=======
+    struct timespec start, end;
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
     auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
@@ -505,9 +512,14 @@ int main(int argc, char* argv[]) {
             }
         }
     } else {
+<<<<<<< HEAD
 //        clock_gettime(CLOCK_MONOTONIC, &start);
 //        gettimeofday(&startT, NULL);
+=======
+        clock_gettime(CLOCK_MONOTONIC, &start);
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
         auto approximation = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
+<<<<<<< HEAD
 
 //        gettimeofday(&endT, NULL);
 //        clock_gettime(CLOCK_MONOTONIC, &end);
@@ -525,6 +537,13 @@ int main(int argc, char* argv[]) {
 //        mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
 //        unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
 //        std::cout  /*<< "\t time:\t" << mtime  << "\tmemory used: " << usage.ru_maxrss << "KB\t"*/ << vm["file"].as<std::string>() /*<< " closure:\t " << approx*/ << std::endl;
+=======
+        clock_gettime(CLOCK_MONOTONIC, &end);
+
+        uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
+        std::string approx = approximation.string();
+        std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
     }
 //                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
 //                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
@@ -541,10 +560,95 @@ int main(int argc, char* argv[]) {
       if (vm.count("file2")) {
           auto equations_2 = p.lossy_fa_parser(input_2_all);
           VarId S_2 = equations_2[0].first;
+<<<<<<< HEAD
           int iterations = 0;
           if(vm.count("refine")) {
 //              std::cout << vm["refine"].as<std::string>() << std::endl;
               iterations = std::stoi(vm["refine"].as<std::string>());
+=======
+
+          auto approx_1 = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+//          std::cout << "A1: " << approx_1.string() << "\t";
+          auto approx_2 = LossyFiniteAutomaton::downwardClosureCourcelle(equations_2, S_2);
+//          std::cout << "A2: " << approx_2.string() << std::endl;
+
+          bool A1_subset_A2 = approx_2.contains(approx_1);
+          bool A2_subset_A1 = approx_1.contains(approx_2);
+
+          if(A1_subset_A2 && A2_subset_A1) {
+              std::cout << "length of shortest word: -1" << std::endl;
+//              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
+          } else {
+              LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
+              bool L1_intersect_A2c_changed = false;
+              LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
+              bool L2_intersect_A1c_changed = false;
+
+              if(!A1_subset_A2) {
+                  VarId startSymbol_1_2;
+                  auto A2c = approx_1.minus(approx_2);
+//                  std::cout << "A2c size: " << A2c.size() << std::endl;
+//                  std::cout << "A2c: " << A2c.string() << std::endl;
+                  auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations);
+                  std::queue<VarId> worklist;
+                  worklist.push(startSymbol_1_2);
+                  intersectionGrammar = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar, worklist);
+//                  std::cout << "clean intersection grammar 1 x A2c:" << std::endl;
+//                  for(auto &equation: intersectionGrammar) {
+//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                  }
+
+                  L1_intersect_A2c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                          (intersectionGrammar, startSymbol_1_2);
+                  L1_intersect_A2c_changed = true;
+              }
+
+              if(!A2_subset_A1) {
+                  VarId startSymbol_2_1;
+                  auto A1c = approx_2.minus(approx_1);
+//                  std::cout << "A1c size: " << A1c.size() << std::endl;
+//                  std::cout << "A1c: " << A1c.string() << std::endl;
+                  auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+                  std::queue<VarId> worklist;
+                  worklist.push(startSymbol_2_1);
+                  intersectionGrammar_2 = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar_2, worklist);
+//                  std::cout << "clean intersection grammar 2 x A1c:" << std::endl;
+//                  for(auto &equation: intersectionGrammar_2) {
+//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//                  }
+
+                  L2_intersect_A1c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+                          (intersectionGrammar_2, startSymbol_2_1);
+                  L2_intersect_A1c_changed = true;
+              }
+
+              if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+                  auto first = L1_intersect_A2c.string();
+                  auto second = L2_intersect_A1c.string();
+
+                  if(first.size() <= second.size()) {
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
+                      std::cout << "length of shortest word: " << first.size() << std::endl;
+                  } else {
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
+                      std::cout << "length of shortest word: " << second.size() << std::endl;
+//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+//                      std::cout << "Shortest such word:\t" << second << std::endl;
+                  }
+              } else {
+                  if(L1_intersect_A2c_changed) {
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
+                      std::cout << "length of shortest word: " << L1_intersect_A2c.string().size() << std::endl;
+//                      std::cout << "There is a word in L1 that is not in L2." << std::endl;
+//                      std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
+                  } else {
+//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
+                      std::cout << "length of shortest word: " << L2_intersect_A1c.string().size() << std::endl;
+//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+//                      std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
+                  }
+              }
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
           }
 //          std::cout << "iterations:\t" << iterations << std::endl;
           auto difference = LossyFiniteAutomaton::refineCourcelle(equations, S_1, equations_2, S_2, iterations);
@@ -650,11 +754,16 @@ int main(int argc, char* argv[]) {
 //              }
 //          }
       } else {
+<<<<<<< HEAD
 //          clock_gettime(CLOCK_MONOTONIC, &start);
 //          gettimeofday(&startT, NULL);
+=======
+          clock_gettime(CLOCK_MONOTONIC, &start);
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
 
 //          clock_t startTime = clock();
           auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+<<<<<<< HEAD
 //          gettimeofday(&endT, NULL);
 //          clock_t endTime = clock();
 //          clock_gettime(CLOCK_MONOTONIC, &end);
@@ -662,13 +771,24 @@ int main(int argc, char* argv[]) {
 
 //          ret = getrusage(who, &usage);
 //          uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
+=======
+//          clock_t endTime = clock();
+          clock_gettime(CLOCK_MONOTONIC, &end);
+//          auto totalTime = (endTime - startTime)/* / (CLOCKS_PER_SEC / 1000)*/;
+
+          uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
           std::string approx = approximation.string();
+<<<<<<< HEAD
 //          unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
 //          seconds  = endT.tv_sec  - startT.tv_sec;
 //          useconds = endT.tv_usec - startT.tv_usec;
 //
 //          mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
           std::cout /* << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< "," << approx<< std::endl;
+=======
+          std::cout << /*vm["file"].as<std::string>() << " closure:\t " << approx << */"\t time:\t" << timeElapsed << std::endl;
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
