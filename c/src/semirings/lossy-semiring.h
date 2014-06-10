@@ -357,6 +357,7 @@ public:
             }
         }
 
+<<<<<<< HEAD
         ret = getrusage(who, &usage);
         gettimeofday(&endT, NULL);seconds  = endT.tv_sec  - startT.tv_sec;
         useconds = endT.tv_usec - startT.tv_usec;
@@ -365,6 +366,8 @@ public:
         timer.Stop();
 //        std::cout << /*"\t time:\t" << */mtime << ","/*<< "\ttimer time: " << timer.GetMilliseconds().count()*/ /* << "\tmemory used: "*/ << usage.ru_maxrss <<","/*<< "KB\t" << "max number of states: " */<< LSR::maxStates<<","/* << "\tstates before lossification: " */<< knownValuations[S].size() << std::endl;
 //        std::cout << "closure before lossification: " << knownValuations[S].string() << "\t";
+=======
+>>>>>>> branch 'master' of https://github.com/regularApproximation/newton.git
 //        std::cout << "size of closure automaton before lossification:\t" << knownValuations[S].size() << std::endl;
         return knownValuations[S].lossify();
     }
