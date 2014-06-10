@@ -30,6 +30,9 @@ public:
      */
     FiniteAutomaton(std::string regularExpression) {
         fa_compile(regularExpression.c_str(), regularExpression.size(), &automaton);
+//        if(automaton == NULL) {
+//            std::cout << "bad regex:\t" << regularExpression;
+//        }
         assert(automaton!=NULL);
     }
 
@@ -163,6 +166,120 @@ public:
         return states;
     }
 
+    std::set<unsigned char> alphabet() const{
+        std::set<unsigned char> alphabet;
+
+        struct trans *trans;
+
+        // iterate through all states
+        for (auto s = automaton->initial; s != NULL; s = s->next){
+
+            // trans is an array of transitions
+            trans = s->trans;
+
+            // iterate over all transitions
+            for(int i = 0; i < s->tused; i++) {
+
+                // iterate over all symbols of this transition
+                for(unsigned char c = (trans+i)->min; c <= (trans+i)->max; c++) {
+                    alphabet.insert(c);
+//                    std::cout << "letter in alphabet:\t" << c << std::endl;
+                }
+            }
+        }
+
+        return alphabet;
+    }
+
+    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength) const {
+        std::map<int, std::map<unsigned long, std::set<std::string>>> prefixesViaStates;
+        std::map<unsigned long, struct state*> hashToState;
+        std::map<int, std::set<std::string>> prefixes;
+
+//        std::cout << "automaton:\t" << string() << std::endl;
+//
+//        std::cout << "length:\t" << maxLength << std::endl;
+
+        if(maxLength <= 0) {
+            return prefixes;
+        }
+
+        /* find the prefixes of length 1; afterwards, to find prefixes of
+         * length i > 1, use the prefixes of length i-1 > 0
+         */
+
+        struct trans *trans;
+
+        auto s = automaton->initial;
+
+        // trans is an array of transitions
+        trans = s->trans;
+
+        // iterate over all transitions
+        for(int i = 0; i < s->tused; i++) {
+
+            // iterate over all symbols of this transition
+            for(unsigned char c = (trans+i)->min; c <= (trans+i)->max; c++) {
+                std::string prefix (1, c);
+                hashToState[(trans+i)->to->hash] = (trans+i)->to;
+                prefixesViaStates[1][(trans+i)->to->hash].insert(prefix);
+                prefixes[1].insert(prefix);
+//                std::cout << "new prefix length 1:\t" << prefix << std::endl;
+            }
+        }
+//
+//        std::cout << "prefixes of length 1:" << std::endl;
+//        for(auto &prefix: prefixes[1]) {
+//            std::cout << prefix << std::endl;
+//        }
+//        std::cout << "end prefixes of length 1" << std::endl;
+//        std::cout << "prefixesViaStates:" << std::endl;
+//
+//        for(auto &outerEntry: prefixesViaStates) {
+//            for(auto &innerEntry: outerEntry.second) {
+//                for(auto &prefix: innerEntry.second) {
+//                    std::cout << "prefixesViaStates[" << outerEntry.first << "][" << innerEntry.first << "]:\t" << prefix << std::endl;
+//                }
+//            }
+//        }
+//
+//       std::cout << "prefixesViaStates end." << std::endl;
+
+        // now use prefixes of length i-1 > 0 to build those of length i > 1
+        for(int length = 1; length < maxLength; length++) {
+
+            // mapping: state to prefixes that end there
+            for(auto &entry: prefixesViaStates[length]) {
+
+                auto sourceState = hashToState[entry.first];
+                trans = sourceState->trans;
+
+                // iterate over prefixes of length i-1
+                for(auto &prePrefix: entry.second) {
+
+                    // iterate over transitions
+                    for(int j = 0; j < sourceState->tused; j++) {
+
+
+                        // iterate over chars encoded in this transition
+                        for(unsigned char c = (trans+j)->min; c <= (trans+j)->max; c++) {
+
+                            // append the character to the prefix of length i-1 to make one of length i
+                            std::string prefix = std::string(prePrefix).append(1,c);
+
+                            // store the results
+                            hashToState[(trans+j)->to->hash] = (trans+j)->to;
+                            prefixesViaStates[length+1][(trans+j)->to->hash].insert(prefix);
+                            prefixes[length+1].insert(prefix);
+                        }
+                    }
+                }
+            }
+        }
+
+        return prefixes;
+    }
+
     /*
      * Calculates the intersection of the CFG "equations" with start symbol "oldS" and the
      * regular language represented by this finite automaton. The result is a CFG given by
@@ -183,21 +300,33 @@ public:
     template<typename SR>
     std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> intersectionWithCFG
         (VarId &newS, const VarId &oldS,
-                std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) {
+                const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) const {
 
         // for the new grammar
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
+        if(empty()) {
+            newS = Var::GetVarId(std::string("S"));
+            return resultGrammar;
+        }
         // we don't want to start out with useless stuff because the intersection grammar
         // will blow up anyway
         std::queue<VarId> worklist;
         worklist.push(oldS);
-        oldGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
+        auto workGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
+
+
+        // change the grammar to one where monomials have degree at most 2 and those monomials with degree 2
+        // have the form XY
+        std::map<VarId, SR> variablesToConstants;
+        workGrammar = NonCommutativePolynomial<SR>::eliminateTerminalsInNonterminalProductions
+                (workGrammar, variablesToConstants, false);
+        workGrammar = NonCommutativePolynomial<SR>::binarizeProductions(workGrammar, variablesToConstants);
 
         // if the grammar doesn't produce anything, there is no need to do anything else;
         // return an empty grammar
         // the same applies if the automaton represents the empty language
-        if(oldGrammar.size() == 0 || empty()) {
+        if(workGrammar.size() == 0 || empty()) {
             return resultGrammar;
         }
         /*
@@ -257,16 +386,16 @@ public:
             newVariables[i].resize(numberOfStates);
 
             for(unsigned long j = 0; j < numberOfStates; j++) {
-                newVariables[i][j].resize(oldGrammar.size());
+                newVariables[i][j].resize(workGrammar.size());
             }
         }
 
         // generate the variables of the new grammar
         for(unsigned long i = 0; i < numberOfStates; i++) {
             for(unsigned long j = 0; j < numberOfStates; j++) {
-                for(unsigned long k = 0; k < oldGrammar.size(); k++) {
+                for(unsigned long k = 0; k < workGrammar.size(); k++) {
                     std::stringstream ss;
-                    ss << "<" << i << "," << Var::GetVar(oldGrammar[k].first).string() << "," << j << ">";
+                    ss << "<" << i << "," << Var::GetVar(workGrammar[k].first).string() << "," << j << ">";
                     newVariables[i][j][k] = Var::GetVarId(ss.str());
 //                    newVariables[i][j][k] = Var::GetVarId();
 //                    std::cout << "new var introduced: " << Var::GetVar(newVariables[i][j][k]).string() << std::endl;
@@ -279,8 +408,8 @@ public:
         // build a map from variables to indices, where the index of a variable is the line in oldGrammar
         // that contains the productions of the variable
         std::map<VarId, unsigned long> oldVariablesToIndices;
-        for(unsigned long i = 0; i < oldGrammar.size(); i++) {
-            oldVariablesToIndices.insert(std::make_pair(oldGrammar[i].first, i));
+        for(unsigned long i = 0; i < workGrammar.size(); i++) {
+            oldVariablesToIndices.insert(std::make_pair(workGrammar[i].first, i));
         }
 
         // map states to indices; this is just to avoid having to look through the states vector in linear time
@@ -301,11 +430,11 @@ public:
         // and then generate all productions derived from that nonterminal; this mirrors the way
         // in which the algorithm is described in the paper referred to above
         NonCommutativePolynomial<SR> poly;
-        for(unsigned long k = 0; k < oldGrammar.size(); k++) {
+        for(unsigned long k = 0; k < workGrammar.size(); k++) {
             for(unsigned long i = 0; i < numberOfStates; i++) {
                 for(unsigned long j = 0; j < numberOfStates; j++) {
 //                    std::cout << "k, i, j: " << k << ", " << i << ", " << j << std::endl;
-                    poly = oldGrammar[k].second.intersectionPolynomial
+                    poly = workGrammar[k].second.intersectionPolynomial
                             (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
                     resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
                 }
@@ -352,7 +481,7 @@ private:
                 std::forward_list<unsigned long>>> &transitionTable,
             std::vector<unsigned long> &states,
             std::set<unsigned long> &finalStates,
-            unsigned long &initialState) {
+            unsigned long &initialState) const {
 
         initialState = automaton->initial->hash;
 //        std::cout << "the initial state is:\t" << initialState << std::endl;

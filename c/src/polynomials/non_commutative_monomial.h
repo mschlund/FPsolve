@@ -871,23 +871,18 @@ public:
 
 	        // if we found a shorter word than previously known for the nonterminal this production
 	        // belongs to, update
-	        if(shortestMonomialLength < ULONG_MAX
-	                && shortestMonomialLength < lengthOfShortestTerminal.at(lhsOfProduction)) {
+	        if(shortestMonomialLength < ULONG_MAX) {
 
-//	            // update the map remembering the best monomials we can use for derivation
-//	            // if you remove the "typename", you will get a compiler error
-//	            typename std::map<VarId, NonCommutativeMonomial<SR>>::iterator itBestProductions
-//	                = productionsForShortestWords.find(lhsOfProduction);
-//	            if (itBestProductions != productionsForShortestWords.end()) {
-//	                itBestProductions->second = *this;
-//	            } else {
-//	                productionsForShortestWords.insert(std::make_pair(lhsOfProduction, *this));
-//	            }
+	            for(auto terminal: srs_) {
+	                shortestMonomialLength += terminal.string().size();
+	            }
 
-	            // update the map with the lengths of shortest terminals
-	            productionsForShortestWords[lhsOfProduction] = *this;
-	            lengthOfShortestTerminal[lhsOfProduction] = shortestMonomialLength;
-	            return true;
+                if(shortestMonomialLength < lengthOfShortestTerminal.at(lhsOfProduction)) {
+                    // update the map with the lengths of shortest terminals
+                    productionsForShortestWords[lhsOfProduction] = *this;
+                    lengthOfShortestTerminal[lhsOfProduction] = shortestMonomialLength;
+                    return true;
+	            }
 	        }
 
 	        return false;
