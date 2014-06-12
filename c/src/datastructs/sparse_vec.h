@@ -170,7 +170,7 @@ class SparseVec {
            ++lhs_iter, ++rhs_iter) {
 
         assert(rhs_iter != rhs.vmap_->end());
-
+  
         if (/* If the domains are different. */
             lhs_iter->first != rhs_iter->first ||
             /* Or we have a multiple and it doesn't work here. */
@@ -187,6 +187,13 @@ class SparseVec {
       return true;
     }
 
+    std::vector<std::pair<VarId, Counter>> getVector() const {
+      std::vector<std::pair<VarId, Counter>> result;
+      for(auto elem : *vmap_) {
+        result.push_back({elem.first, elem.second});
+      }
+      return result;
+    }
 
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
       assert(svector.Sanity());

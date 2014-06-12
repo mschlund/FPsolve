@@ -22,11 +22,12 @@ public:
 private:
         Genepi set;
         // offset[x][0] counts the number of occurences of the first variable (for order see var_map)
+        // FIXME: offsets are not offsets anymore but the minimal base of offsets
         std::vector<std::vector<int>> offsets;
         SemilinSetNdd(Genepi set, std::vector<std::vector<int>> offsets);
         bool isGenerator(const std::vector<int>& offset, const std::vector<int>& candidate, int n) const;
         bool isGeneratorFor(const std::vector<int>& offset1, const std::vector<int>& candidate, const std::vector<int>& offset2) const;
-        std::vector<std::vector<int>> getUniqueOffsets(const std::vector<std::vector<int>>& offsets) const;
+        std::vector<std::vector<int>> getIndependentOffsets(const std::vector<std::vector<int>>& offsets) const;
 
 public:
 	static std::shared_ptr<SemilinSetNdd> elem_null;
