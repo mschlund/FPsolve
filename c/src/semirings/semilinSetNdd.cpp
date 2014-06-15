@@ -49,6 +49,7 @@ std::string serialize_offsets(const std::vector<std::vector<int>>& offsets) {
 }
 
 // return all linear independent offsets
+// FIXME: this kills also the [0,…,0] vector which is needed
 std::vector<std::vector<int>> SemilinSetNdd::getIndependentOffsets(const std::vector<std::vector<int>>& offsets) const {
 
   std::vector<SparseVec<VarId, Counter, DummyDivider>> offset_;
@@ -152,7 +153,8 @@ SemilinSetNdd SemilinSetNdd::operator+=(const SemilinSetNdd& term) {
   for(auto offset : term.offsets)
     insert_offset(this->offsets, offset);
 
-  this->offsets = this->getIndependentOffsets(this->offsets);
+  // TODO: reactivate this once the indepentent offsets are correct
+  // this->offsets = this->getIndependentOffsets(this->offsets);
   return *this;
 }
 
@@ -209,7 +211,8 @@ SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
   }
   this->set = result;
   this->offsets = multiply_offsets(this->offsets, term.offsets);
-  this->offsets = this->getIndependentOffsets(this->offsets);
+  // TODO: reactivate this once the indepentent offsets are correct
+  // this->offsets = this->getIndependentOffsets(this->offsets);
   return *this;
 
 }
@@ -222,11 +225,13 @@ bool SemilinSetNdd::operator == (const SemilinSetNdd& term) const {
 }
 SemilinSetNdd SemilinSetNdd::star () const {
   SemilinSetNdd offset_star = one();
+  // INFO: this is the point where we use the saved (minimal base) of offsets
+  // if our simplifier kills null-vectors we loose information (0^*=1...)
+  // and our loop will never reach the fixed point
   for(auto offset : this->offsets) {
     offset_star *= SemilinSetNdd(Genepi(this->solver, offset, true),{std::vector<int>(k,0)});
   }
 
-  std::cout << serialize_offsets(this->offsets) << std::endl;
   SemilinSetNdd result = one(); // result = 1
 
   SemilinSetNdd final_result = one();
@@ -258,12 +263,13 @@ SemilinSetNdd SemilinSetNdd::one() {
 
 std::string SemilinSetNdd::string() const {
   std::stringstream result;
-  auto calculated_offsets = this->offsets;
-  result << "calculated offsets:\t\t" << serialize_offsets(calculated_offsets) << std::endl;
-  auto cleaned_calculated_offsets = this->getIndependentOffsets(calculated_offsets);
-  result << "calculated offsets (clean):\t" << serialize_offsets(cleaned_calculated_offsets) << std::endl;
+  // auto calculated_offsets = this->offsets;
+  // result << "calculated offsets:\t\t" << serialize_offsets(calculated_offsets) << std::endl;
+  // auto cleaned_calculated_offsets = this->getIndependentOffsets(calculated_offsets);
+  // result << "calculated offsets (clean):\t" << serialize_offsets(cleaned_calculated_offsets) << std::endl;
+  result << std::endl;
   result << "size:\t" << this->set.getSize() << std::endl;
-  result << "automaton written:\t" << this->set.output("result", static_i++, "") << std::endl;
+  // result << "automaton written:\t" << this->set.output("result", static_i++, "") << std::endl;
   return result.str();
 }
 
