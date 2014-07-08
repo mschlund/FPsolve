@@ -80,7 +80,7 @@ public:
         std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> qnf;
 
         if(systemNeedsLossyQNF) {
-            qnf = quadraticNormalForm(equations);
+            qnf = quadraticNormalForm(equations, false);
             lossifyQNF(qnf);
         } else {
             qnf = equations;
@@ -325,7 +325,7 @@ public:
             return LSR::null();
         }
 
-        auto cleanQNF = quadraticNormalForm(cleanEquations);
+        auto cleanQNF = quadraticNormalForm(cleanEquations, false);
         lossifyQNF(cleanQNF);
         auto components = group_by_scc(cleanQNF);
 
@@ -405,7 +405,15 @@ public:
             return LSR::null();
         }
 
-        auto cleanQNF = quadraticNormalForm(cleanEquations);
+//        std::cout << "grammar before clean QNF courcelle:" << std::endl;
+//        for(auto &equation: cleanEquations) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
+        auto cleanQNF = quadraticNormalForm(cleanEquations, true);
+//        std::cout << "clean QNF courcelle:" << std::endl;
+//        for(auto &equation: cleanQNF) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
         auto components = group_by_scc(cleanQNF);
 
 //        for(int i = 0; i < components.size(); i++) {
@@ -423,8 +431,8 @@ public:
 
 //        std::cout << "mapped variables to their components" << std::endl;
 
-        // these components will have as their closure simply the star of the letters reachable
-        // from the variables of the component
+        // these components will have the star of the letters reachable from the variables
+        // of the respective component as their closure
         std::set<int> squarableComponents = findSquarableComponents(components, varToComponent);
 
 //        std::cout << "found squarable components" << std::endl;
@@ -440,7 +448,7 @@ public:
 
 //        std::cout << "closures of squarable components done" << std::endl;
 
-        // this map holds for each component all pairs AB where A and B are in a lower component;
+        // for each component, this map holds all pairs AB where A and B are in a lower component;
         // we use the downward closure for those pairs and concatenate accordingly to construct the
         // "middle" part of the downward closure the way Courcelle calculates it
         std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS = mapQuadraticLHStoRHS(components, varToComponent, squarableComponents);
@@ -473,10 +481,10 @@ public:
 
         // get the lefthand/righthand letters for each nonsquarable component, i.e. the letters occurring in terms xBy
         // where x, y are strings over the terminal alphabet and B is a variable from the same component as the current one
-        std::map<int, std::set<unsigned char>> lhsSameComponentLetters;
-        std::map<int, std::set<unsigned char>> rhsSameComponentLetters;
-        calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
-                components, varToComponent, squarableComponents);
+//        std::map<int, std::set<unsigned char>> lhsSameComponentLetters;
+//        std::map<int, std::set<unsigned char>> rhsSameComponentLetters;
+//        calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
+//                components, varToComponent, squarableComponents);
 
 //        std::cout << "got same component letters" << std::endl;
 
@@ -492,7 +500,7 @@ public:
         calculateClosuresOfNonsquarableComponents(componentToClosure, components,
                 squarableComponents, quadraticLHStoRHS,
                 lhsLowerComponentVariables, rhsLowerComponentVariables,
-                lhsSameComponentLetters, rhsSameComponentLetters,
+                /*lhsSameComponentLetters, rhsSameComponentLetters,*/
                 closuresOfConstantMonomials, varToComponent, componentToReachableLetters);
 
 //        std::cout << "closures of nonsquarable components done" << std::endl;
@@ -504,6 +512,8 @@ public:
         auto memoryUsage = usage.ru_maxrss;
 //        std::cout  /*<< "\t time:\t" */<< mtime <<"," /*<< "\tmemory used: " */<< usage.ru_maxrss<<"," /*<< "KB\t" << "max number of states: " */<< LSR::maxStates <<","/*<< "\tstates of closure: " */<< componentToClosure[varToComponent[S]].size();
 
+        // only lossify once in the end, that'll keep everything a bit faster
+//        std::cout << "trying to lossify final automaton" << std::endl;
         return componentToClosure[varToComponent[S]];
     }
 
@@ -545,7 +555,8 @@ private:
      * Brings a system into quadratic normal form.
      */
     static std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> quadraticNormalForm
-            (const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations) {
+            (const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations,
+                    bool eliminateTerminalsInLinearProductions) {
             std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> systemBeingProcessed;
 
             // for all nonterminal productions, introduce new variables for the terminal factors that
@@ -553,7 +564,7 @@ private:
             // QNF allows for linear terms
             std::map<VarId, LSR> variablesToConstants;
             systemBeingProcessed = NonCommutativePolynomial<LSR>::eliminateTerminalsInNonterminalProductions
-                    (equations, variablesToConstants, false);
+                    (equations, variablesToConstants, eliminateTerminalsInLinearProductions);
 
 //            std::cout << "system after constant elimination:" << std::endl;
 //            for(auto &equation: systemBeingProcessed) {
@@ -789,28 +800,30 @@ private:
     }
 
     /*
-     * Find the letters reachable from any variables that can be duplicated (in the paper
-     * by Courcelle: for all A such that A <_2 A). We need those sets to immediately generate the
-     * downward closures of those components.
+     * Find the letters reachable from each component
      *
-     * The function assumes that "components" is sorted in reverse topological order.
+     * The function assumes that "components" is sorted in reverse topological order, i.e. the component
+     * that depends on no other component comes first.
      */
     static std::map<int, std::set<unsigned char>> findReachableLetters(
             std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>>> &components,
             std::map<VarId, int> &varToComponent) {
 
         std::map<int, std::set<unsigned char>> componentToReachableLetters;
-        std::map<int, std::set<int>> reachability = findReachableComponents(components, varToComponent);
+        std::map<int, std::set<int>> reachableComponents = findReachableComponents(components, varToComponent);
 
         for (int i = 0; i < components.size(); i++) {
             std::set<unsigned char> reachableLetters;
 
-            for(auto reachableComp: reachability[i]) {
+            // iterate over all components reachable from component i
+            for(auto reachableComp: reachableComponents[i]) {
 
+                // for every lower component, we have already calculated the set of reachable letters;
+                // just add it to the letters reachable from i
                 if(reachableComp != i) {
                     auto letters = componentToReachableLetters[reachableComp];
                     reachableLetters.insert(letters.begin(), letters.end());
-                } else {
+                } else { // add the letters appearing in some production that stays within i itself
                     for(auto &equation: components[i]) {
                         auto letters = equation.second.get_terminals();
                         reachableLetters.insert(letters.begin(), letters.end());
@@ -818,6 +831,7 @@ private:
                 }
             }
 
+            // once we're done, remember the set of reachable letters
             componentToReachableLetters.insert(std::make_pair(i, reachableLetters));
         }
 
@@ -834,22 +848,31 @@ private:
         // been eliminated while cleaning the system
         for(auto i: squarableComponents) {
             std::set<unsigned char> reachableLetters = componentToReachableLetters[i];
-            std::stringstream ss;
-            ss << "[";
 
-            for(unsigned char letter: reachableLetters) {
-                ss << letter;
+            if(reachableLetters.empty()) {
+                componentToClosure.insert(std::make_pair(i, LSR::one()));
+                LSR::maxStates = std::max(LSR::maxStates,componentToClosure[i].size());
+            } else {
+                std::stringstream ss;
+                ss << "[";
+
+                for(unsigned char letter: reachableLetters) {
+                    ss << letter;
+                }
+
+                ss << "]*";
+                componentToClosure.insert(std::make_pair(i, LSR(ss.str())));
+                LSR::maxStates = std::max(LSR::maxStates,componentToClosure[i].size());
+    //            std::cout << "reachable letters for component " << i << ": " << LSR(ss.str()).string() << std::endl;
             }
-
-            ss << "]*";
-            componentToClosure.insert(std::make_pair(i, LSR(ss.str())));
-            LSR::maxStates = std::max(LSR::maxStates,componentToClosure[i].size());
-//            std::cout << "reachable letters for component " << i << ": " << LSR(ss.str()).string() << std::endl;
         }
     }
 
     /*
-     * Finds monomials of degree two where both variables are in a different scc than the axiom of the production.
+     * Finds monomials of degree two where both variables are in a different and therefore lower
+     * scc than the axiom of the production.
+     *
+     * Assumes that "components" is sorted in reverse topological order.
      */
     static std::map<int, std::map<int, std::set<int>>>  mapQuadraticLHStoRHS(
             std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>>> &components,
@@ -916,10 +939,10 @@ private:
                     closure = closure + equation.second.sumOfConstantMonomials();
                 }
 
-
-                LSR::maxStates = std::max(LSR::maxStates,closuresOfConstantMonomials[i].size());
-                closuresOfConstantMonomials[i] = closure.lossify();
-//                std::cout << "closure of constant monomials component " << i << ": " << closure.string() << std::endl;
+//                std::cout << "closure of constant monomials:\t" << closure.string() << std::endl;
+                LSR::maxStates = std::max(LSR::maxStates,closure.size());
+                closuresOfConstantMonomials[i] = closure.lossify().minimize();
+//                std::cout << "closure of constant monomials component " << i << ": " << closuresOfConstantMonomials[i].string() << std::endl;
             }
         }
     }
@@ -931,59 +954,21 @@ private:
             std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
             std::map<int, std::set<int>> &lhsLowerComponentVariables,
             std::map<int, std::set<int>> &rhsLowerComponentVariables,
-            std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
-            std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+            /*std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+            std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,*/
             std::map<int, LSR> &closuresOfConstantMonomials,
             std::map<VarId, int> &varToComponent,
             std::map<int, std::set<unsigned char>> &componentToReachableLetters) {
 
         for(int i = 0; i < components.size(); i++) {
+//            std::cout << "component " << i << " of " << components.size() << "..." << std::endl;
             if(squarableComponents.count(i) == 0){
 //                std::cout << "component " << i << " of " << components.size() << std::endl;
-                /*
-                 * closures of elements in the middle
-                 */
 
-                //linear terms with variables in lower components
-                std::set<NonCommutativeMonomial<LSR>> lowerLinearTerms;
-                for(auto &equation: components[i]) {
-                    equation.second.findLowerLinearTerms(lowerLinearTerms, varToComponent, i);
-                }
-
-//                std::cout << "found lower linear terms; total of " << lowerLinearTerms.size() << ". Calculating their closure" << std::endl;
-                LSR closureOfLowerLinearTerms = findClosureOfLowerLinearTerms(lowerLinearTerms, varToComponent, componentToClosure);
-
-                LSR::maxStates = std::max(LSR::maxStates,closureOfLowerLinearTerms.size());
-//                std::cout << "closure of lower linear terms done" << std::endl;
-
-                // quadratic terms with variables in lower components
-                LSR closureOfLowerQuadraticTerms = LSR::null();
-                for(auto &entry: quadraticLHStoRHS[i]) {
-                    for(auto rhs: entry.second) {
-//                        std::cout << entry.first << " * " << rhs << " in quadratic stuff of component " << i << std::endl;
-                        closureOfLowerQuadraticTerms += componentToClosure[entry.first] * componentToClosure[rhs];
-                        LSR::maxStates = std::max(LSR::maxStates,closureOfLowerQuadraticTerms.size());
-                    }
-                }
-
-
-
-//                std::cout << "closure of lower quadratic terms done" << std::endl;
-
-                // sum of the closures of: constant monomials in this component, linear and quadratic monomials with variables
-                // exclusively in lower components
-                LSR middle = closureOfLowerQuadraticTerms + closureOfLowerLinearTerms + closuresOfConstantMonomials[i];
-
-                LSR::maxStates = std::max(LSR::maxStates,middle.size());
-//                std::cout << "middle calculated" << std::endl;
-
-                /*
-                 * lefthand and righthand side reachable alphabets starred
-                 */
 
                 // find the reachable letters
                 std::set<unsigned char> lefthandReachableLetters;
-                lefthandReachableLetters.insert(lhsSameComponentLetters[i].begin(), lhsSameComponentLetters[i].end());
+//                lefthandReachableLetters.insert(lhsSameComponentLetters[i].begin(), lhsSameComponentLetters[i].end());
 
                 for(auto variable: lhsLowerComponentVariables[i]) {
                     lefthandReachableLetters.insert(componentToReachableLetters[variable].begin(),
@@ -993,7 +978,7 @@ private:
 //                std::cout << "lefthand reachable letters done" << std::endl;
 
                 std::set<unsigned char> righthandReachableLetters;
-                righthandReachableLetters.insert(rhsSameComponentLetters[i].begin(), rhsSameComponentLetters[i].end());
+//                righthandReachableLetters.insert(rhsSameComponentLetters[i].begin(), rhsSameComponentLetters[i].end());
 
                 for(auto variable: rhsLowerComponentVariables[i]) {
                     righthandReachableLetters.insert(componentToReachableLetters[variable].begin(),
@@ -1011,6 +996,7 @@ private:
                     for(auto letter: lefthandReachableLetters) {
                         if(isalnum(letter)) {
                             ssLHS << letter;
+//                            std::cout << "found lhletter:\t\"" << letter << "\"" << std::endl;
                         }
                     }
 
@@ -1019,8 +1005,8 @@ private:
 
                     LSR::maxStates = std::max(LSR::maxStates,lefthandAlphabetStar.size());
                 }
-
-//                std::cout << "lefthand automaton: " << lefthandAlphabetStar.string() << std::endl;
+//                std::cout << "left hand alphabet size:\t" << lefthandAlphabetStar.size() << std::endl;
+//                std::cout << "left hand alphabet language:\t" << lefthandAlphabetStar.string() << std::endl;
 
                 LSR righthandAlphabetStar = LSR::one();
                 if(righthandReachableLetters.size() != 0) {
@@ -1030,6 +1016,7 @@ private:
                     for(auto letter: righthandReachableLetters) {
                         if(isalnum(letter)) {
                             ssRHS << letter;
+//                            std::cout << "found rhletter:\t\"" << letter << "\"" << std::endl;
                         }
                     }
 
@@ -1037,14 +1024,75 @@ private:
                     righthandAlphabetStar = LSR(ssRHS.str());
                     LSR::maxStates = std::max(LSR::maxStates,righthandAlphabetStar.size());
                 }
+//                std::cout << "right hand alphabet size:\t" << righthandAlphabetStar.size() << std::endl;
+//                std::cout << "right hand alphabet language:\t" << righthandAlphabetStar.string() << std::endl;
+
+                /*
+                 * closures of elements in the middle
+                 */
+
+                // find which linear productions appear in this component that lead to a lower component
+                std::set<int> lowerLinearTerms;
+                for(auto &equation: components[i]) {
+                    equation.second.findLowerLinearTerms(lowerLinearTerms, varToComponent, i);
+                }
+
+//                //linear terms with variables in lower components
+//                std::set<NonCommutativeMonomial<LSR>> lowerLinearTerms;
+//                for(auto &equation: components[i]) {
+//                    equation.second.findLowerLinearTerms(lowerLinearTerms, varToComponent, i);
+//                }
+
+//                std::cout << "found lower linear terms; total of " << lowerLinearTerms.size() << ". Calculating their closure" << std::endl;
+//                LSR closureOfLowerLinearTerms = findClosureOfLowerLinearTerms(lowerLinearTerms, varToComponent, componentToClosure);
+
+//                LSR::maxStates = std::max(LSR::maxStates,closureOfLowerLinearTerms.size());
+//                std::cout << "closure of lower linear terms done" << std::endl;
+
+                // quadratic terms with variables in lower components
+//                LSR closureOfLowerQuadraticTerms = LSR::null();
+//                for(auto &entry: quadraticLHStoRHS[i]) {
+//                    for(auto rhs: entry.second) {
+////                        std::cout << entry.first << " * " << rhs << " in quadratic stuff of component " << i << std::endl;
+//                        closureOfLowerQuadraticTerms += componentToClosure[entry.first] * componentToClosure[rhs];
+//                        LSR::maxStates = std::max(LSR::maxStates,closureOfLowerQuadraticTerms.size());
+//                    }
+//                }
+
+
+
+//                std::cout << "closure of lower quadratic terms done" << std::endl;
+
+                // sum of the closures of: constant monomials in this component, linear and quadratic monomials with variables
+                // exclusively in lower components
+//                LSR middle = /*closureOfLowerQuadraticTerms + closureOfLowerLinearTerms +*/ closuresOfConstantMonomials[i];
+//
+//                LSR::maxStates = std::max(LSR::maxStates,middle.size());
+//                std::cout << "middle calculated" << std::endl;
+
+                /*
+                 * lefthand and righthand side reachable alphabets starred
+                 */
+
 
 //                std::cout << "righthand automaton: " << righthandAlphabetStar.string() << std::endl;
 
-                LSR closure = lefthandAlphabetStar * middle * righthandAlphabetStar;
+//                assert(quadraticLHStoRHS[i] != NULL);
+                LSR closure = LSR::courcelle_construct(lefthandAlphabetStar,righthandAlphabetStar,
+                        quadraticLHStoRHS[i], closuresOfConstantMonomials[i], lowerLinearTerms, componentToClosure, i).lossify().minimize();
                 LSR::maxStates = std::max(LSR::maxStates,closure.size());
 
 //                std::cout << "component closure: " << closure.string() << std::endl;
+//                std::cout << "closure of component:\t" << closure.string() << "\n\n\n" << std::endl;
                 componentToClosure[i] = closure;
+
+
+                FILE * file;
+                std::stringstream filess;
+                filess << "courcelle_" << i << ".dot";
+                file = fopen (filess.str().c_str(),"w");
+                closure.write_dot_file(file);
+                fclose (file);
             }
         }
     }

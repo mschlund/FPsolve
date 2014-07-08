@@ -455,14 +455,26 @@ public:
         return sum;
     }
 
-    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
-            std::map<VarId, int> &varToComponent,
-            int component) const {
-
+    /*
+     * Find out which linear monomials in this polynomial lead to a lower component and insert them into
+     * lowerLinearTerms.
+     *
+     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     */
+    void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
         for(auto &monomial: monomials_) {
-            monomial.first.findLowerLinearTerms(linearMonomialsOfLowerOrder, varToComponent, component);
+            monomial.first.findLowerLinearTerms(lowerLinearTerms, varToComponent, component);
         }
     }
+
+//    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
+//            std::map<VarId, int> &varToComponent,
+//            int component) const {
+//
+//        for(auto &monomial: monomials_) {
+//            monomial.first.findLowerLinearTerms(linearMonomialsOfLowerOrder, varToComponent, component);
+//        }
+//    }
 
     /*
      * Replaces all constants in the nonterminal monomials of the polynomial with their respective VarId mapping.
@@ -704,8 +716,8 @@ public:
      * are either semiring elements or only contain variables).
      *
      * Linear terms (i.e. such with exactly one variable in them) will have their terminals replaced by variables
-     * iff eliminateInLinearTerms is true. This way, we can produce a quadratic normal form with needlessly blowing
-     * up linear terms, for example.
+     * iff eliminateInLinearTerms is true. This way, we can produce a quadratic normal form without  blowing up
+     * linear terms, if desired.
      */
     static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> eliminateTerminalsInNonterminalProductions
                 (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
@@ -966,6 +978,11 @@ public:
         return squarable;
     }
 
+    /*
+     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     *
+     * Assumes that all productions have been binarized.
+     */
     void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
             std::map<VarId, int> &varToComponent, int component) const {
         for(auto &monomial: monomials_) {

@@ -681,16 +681,32 @@ public:
         return;
     }
 
-    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
-            std::map<VarId, int> &varToComponent,
-            int component) const {
+    /*
+     * Check if this monomial is a linear one that leads to a lower component.
+     *
+     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     */
+    void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
 
         if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
             return;
         }
 
-        linearMonomialsOfLowerOrder.insert(*this);
+        lowerLinearTerms.insert(varToComponent[variables_[0]]);
     }
+
+    /* OLD CODE used in the original implementation of the downward closure algorithm by Courcelle.
+//    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
+//            std::map<VarId, int> &varToComponent,
+//            int component) const {
+//
+//        if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
+//            return;
+//        }
+//
+//        linearMonomialsOfLowerOrder.insert(*this);
+//    }
+    */
 
     /*
      * Replaces all constants in the polynomial with their respective VarId mapping.
@@ -960,6 +976,11 @@ public:
         return false;
     }
 
+    /*
+     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     *
+     * Assumes that all productions have been binarized.
+     */
     void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
                 std::map<VarId, int> &varToComponent, int component) const {
         if(get_degree() != 2) {

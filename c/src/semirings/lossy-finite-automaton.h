@@ -96,21 +96,22 @@ public:
     }
 
     LossyFiniteAutomaton lossify() const {
-        if ((*this) == null()) {
+        if (language.empty()) {
             return *this;
         }
 
-        return LossyFiniteAutomaton(lossifiedRegex(string())).minimize();
+        return LossyFiniteAutomaton(language.epsilonClosure()).minimize();
+//        return LossyFiniteAutomaton(lossifiedRegex(string())).minimize();
     }
 
     static LossyFiniteAutomaton null() {
 //        std::cout << "empty:\t" + EMPTY.string() << std::endl;
-        return EMPTY;
+        return LossyFiniteAutomaton(FiniteAutomaton());
     }
 
     static LossyFiniteAutomaton one() {
 //        std::cout << "epsilon:\t" + EPSILON.string() << std::endl;
-        return EPSILON;
+        return LossyFiniteAutomaton(FiniteAutomaton::epsilon());
     }
 
     /*
@@ -156,6 +157,25 @@ public:
         auto lossyRegex = ss.str();
 //        std::cout << "regex after lossification:\t" + lossyRegex << std::endl;
         return lossyRegex;
+    }
+
+    static LossyFiniteAutomaton courcelle_construct(LossyFiniteAutomaton lefthandAlphabetStar,
+            LossyFiniteAutomaton righthandAlphabetStar,
+            std::map<int, std::set<int>> &LHStoRHS,
+            LossyFiniteAutomaton closureOfConstantMonomials,
+            std::set<int> &lowerLinearTerms,
+            std::map<int, LossyFiniteAutomaton> &componentToClosure,
+            int comp) {
+
+        // convert the map so FiniteAutomaton doesn't need to know about LossyFiniteAutomaton
+        std::map<int, FiniteAutomaton> componentToClosureAutomaton;
+        for(auto it = componentToClosure.begin(); it != componentToClosure.end(); it++) {
+            componentToClosureAutomaton[it->first] = (it->second).language;
+        }
+
+        return LossyFiniteAutomaton(FiniteAutomaton::courcelle_construct(lefthandAlphabetStar.language,
+                righthandAlphabetStar.language, LHStoRHS, closureOfConstantMonomials.language,
+                lowerLinearTerms, componentToClosureAutomaton, comp));
     }
 
     LossyFiniteAutomaton minimize() {
@@ -273,6 +293,10 @@ public:
 
     std::string string() const {
         return language.string();
+    }
+
+    void write_dot_file(FILE * file) const {
+        language.write_dot_file(file);
     }
 
     std::string lossyString() const {

@@ -226,6 +226,7 @@ int main(int argc, char* argv[]) {
     ( "lossy", "lossy semiring" )
     ( "lossyC", "downward closure via Courcelle")
     ( "lossyComp", "")
+    ( "lossyArbTest", "")
     ( "lossyIntersectTest", "lossy semiring intersection test" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
@@ -288,7 +289,8 @@ int main(int argc, char* argv[]) {
       !vm.count("lossy") &&
       !vm.count("lossyIntersectTest") &&
       !vm.count("lossyC") &&
-      !vm.count("lossyComp")) {
+      !vm.count("lossyComp") &&
+      !vm.count("lossyArbTest")) {
     std::cout << "Please supply a supported semiring :)" << std::endl;
     return 0;
   }
@@ -658,7 +660,11 @@ int main(int argc, char* argv[]) {
 //          useconds = endT.tv_usec - startT.tv_usec;
 //
 //          mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
-          std::cout /* << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< "," << approx<< std::endl;
+//          std::cout << "system:" << std::endl;
+//          for(auto &equation: equations) {
+//              std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//          }
+          std::cout  << "\t\t\t" /* << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< /*"\nclosure:\t" <<*/ approx << /*"\n\n\n"<<*/ std::endl;
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
@@ -671,13 +677,26 @@ int main(int argc, char* argv[]) {
       if (equations.empty()) return EXIT_FAILURE;
 
       VarId S_1 = equations[0].first;
-      auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1);
-      auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+      auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1).minimize();
+      auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1).minimize();
+
+      FILE * file1;
+      file1 = fopen ("courcelle.dot","w");
+      courcelleClosure.write_dot_file(file1);
+      fclose (file1);
+
+      FILE * file2;
+      file2 = fopen ("derivation_tree.dot","w");
+      derivationTreeClosure.write_dot_file(file2);
+      fclose (file2);
 
       if(!(derivationTreeClosure == courcelleClosure)) {
-          std::cout << "Closures not equal, grammar: " << vm["file"].as<std::string>() << "\t size: " << equations.size();
-          std::cout << "\t Derivation tree closure: " << derivationTreeClosure.string();
-          std::cout << "\t Courcelle closure: " << courcelleClosure.string() << std::endl;
+          std::cout << "Closures not equal" << std::endl; //, grammar:\t" << std::endl; // << vm["file"].as<std::string>() << "\t size: " << equations.size();
+//          for(auto &equation: equations) {
+//              std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//          }
+          std::cout << "Derivation tree closure: " << derivationTreeClosure.string() << std::endl;
+          std::cout << "Courcelle closure: " << courcelleClosure.string() << std::endl;
       } else {
           std::cout << vm["file"].as<std::string>() << "\t size: " << equations.size() << "\t same results" << std::endl;
 //          std::cout << "closure derivation trees: " << derivationTreeClosure.lossify().string() << std::endl;
@@ -687,6 +706,11 @@ int main(int argc, char* argv[]) {
 //              std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
 //          }
       }
+  } else if(vm.count("lossyArbTest")) {
+      LossyFiniteAutomaton der = LossyFiniteAutomaton("(b*a[ab]|b*[ab])(c|())|b*ac|b*c|b*a|b*");
+      LossyFiniteAutomaton cour = LossyFiniteAutomaton("(b*a[ab]|b*[ab])(c|())|b*a(c|())|b*c|b*");
+      std::cout << "same language:\t" << (cour == der) << std::endl;
+
   } else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])

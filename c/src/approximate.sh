@@ -36,14 +36,14 @@
 
 
 
-#echo "abc Courcelle..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do ./newton --lossyC --file ${filename} >> "abc-courcelle".log; done
-#echo -e "ab Courcelle..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-ab/*; do ./newton --lossyC --file ${filename} >> "ab-courcelle".log; done
-#echo -e "01 Courcelle..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do ./newton --lossyC --file ${filename} >> "01-courcelle".log; done
-#echo -e "a Courcelle..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-a/*; do ./newton --lossyC --file ${filename} >> "a-courcelle".log; done
+echo "abc Courcelle..."
+for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "abc-courcelle".log; done
+echo -e "ab Courcelle..."
+for filename in lossy_benchmarks/student-cfg/alphabet-ab/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "ab-courcelle".log; done
+echo -e "01 Courcelle..."
+for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "01-courcelle".log; done
+echo -e "a Courcelle..."
+for filename in lossy_benchmarks/student-cfg/alphabet-a/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "a-courcelle".log; done
 
 
 
@@ -80,22 +80,31 @@
 #for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do ./newton --lossyC --file ${filename} >> "01-courcelle".log; done
 
 #echo "comparing approximations 01..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do ./newton --lossyComp --file ${filename} --file2 ${filename}; done
+#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do 
+#    echo ${filename}
+#    ./newton --lossyComp --file ${filename} --file2 ${filename};
+#done
 
 #echo "comparing approximations abc..."
-#for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do ./newton --lossyComp --file ${filename} --file2 ${filename}; done
+#for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do ./newton --lossyComp --file ${filename}; done # --file2 ${filename}; done
+
+#echo "comparing approximations 01..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do ./newton --lossyComp --file ${filename}; done # --file2 ${filename}; done
+
+#echo "comparing approximations 01..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do ./newton --lossyComp --file ${filename} --file2 ${filename}; done
 
 #echo "comparing approximations ab..."
 #for filename in lossy_benchmarks/student-cfg/alphabet-ab/*; do ./newton --lossyComp --file ${filename} --file2 ${filename}; done
 
 #echo "comparing languages 01..."
 
-for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do 
-    for filename2 in lossy_benchmarks/student-cfg/alphabet-01/*; do 
-        echo "files: " ${filename} ${filename2} 
-        ./newton --lossyC --file ${filename} --file2 ${filename2} >> "01-courcelle-comparison.log";
-    done
-done
+#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do 
+#    for filename2 in lossy_benchmarks/student-cfg/alphabet-01/*; do 
+#        echo "files: " ${filename} ${filename2} 
+#        ./newton --lossyC --file ${filename} --file2 ${filename2} ; # >> "01-courcelle-comparison.log";
+#    done
+#done
 
 
 

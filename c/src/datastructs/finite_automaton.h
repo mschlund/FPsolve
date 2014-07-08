@@ -8,6 +8,7 @@
 extern "C" {
     #include <fa.h>
 }
+#include <assert.h>
 
 #include "regular_language.h"
 #include "../polynomials/non_commutative_polynomial.h"
@@ -21,6 +22,7 @@ public:
      */
     FiniteAutomaton() {
         automaton = fa_make_basic(fa_basic::FA_EMPTY);
+        epsilon_closed = 0;
     }
 
     /*
@@ -30,6 +32,7 @@ public:
      */
     FiniteAutomaton(std::string regularExpression) {
         fa_compile(regularExpression.c_str(), regularExpression.size(), &automaton);
+        epsilon_closed = 0;
         assert(automaton!=NULL);
     }
 
@@ -38,6 +41,265 @@ public:
      */
     static FiniteAutomaton epsilon() {
         return FiniteAutomaton(fa_make_basic(fa_basic::FA_EPSILON));
+    }
+
+
+    /*
+     * Used in the calculation of the downward closure according to Courcelle,
+     * see lossy-semiring.h#downwardClosureCourcelle.
+     *
+     * If you change the order in which the automata are wired up, the algorithm WILL break!
+     * The problem is that libfa doesn't model epsilon-transitions explicitly
+     */
+    static FiniteAutomaton courcelle_construct(FiniteAutomaton lefthandAlphabetStar,
+            FiniteAutomaton righthandAlphabetStar,
+            std::map<int, std::set<int>> &LHStoRHS,
+            FiniteAutomaton closureOfConstantMonomials,
+            std::set<int> &lowerLinearTerms,
+            std::map<int, FiniteAutomaton> &componentToClosureAutomaton,
+            int comp) {
+
+//        std::cout << "in FiniteAutomaton::courcelle_construct..." << std::endl;
+        /*
+         * build two sets that hold the components required for the bipartite construction
+         */
+        std::set<int> lhComponents;
+        std::set<int> rhComponents;
+
+        for(auto it = LHStoRHS.begin(); it != LHStoRHS.end(); it++) {
+            lhComponents.insert(it->first);
+
+            for(auto rhc: it->second) {
+                rhComponents.insert(rhc);
+//                std::cout << "lhs\t" << it->first << "\tmapped to rhs\t" << rhc << std::endl;
+            }
+        }
+
+//        std::cout << "finding lhComponents and rhComponents done..." << std::endl;
+        /*
+         * these maps will store the information regarding which states need to be linked with
+         * epsilon transitions before we calculate the epsilon closure
+         */
+        std::set<state*> lhComponentsInitialState;
+        std::map<int, state*> rhComponentInitialState;
+        std::map<int, std::set<state*>> lhComponentFinalStates;
+        std::set<state*> rhComponentsFinalStates;
+
+        /*
+         * once we're done, this will contain the automaton for the bipartite construction
+         */
+        struct fa* finalAutomaton = lefthandAlphabetStar.automaton;
+        struct state* source = finalAutomaton->initial;
+        assert (source->next == NULL); // otherwise, the construction doesn't work as intended
+
+        if(comp == 3) {
+            FILE * initialFile;
+            initialFile = fopen ("courcelle_3_initial.dot","w");
+            fa_dot(initialFile, finalAutomaton);
+            fclose (initialFile);
+        }
+
+//        std::cout << "remembered finalAutomaton and its initial state..." << std::endl;
+
+        // first, clone all the automata we need for the left hand side; remember the
+        // initial and final states of the clones
+        for(auto comp: lhComponents) {
+
+            // clone
+            struct fa* clone = fa_clone(componentToClosureAutomaton[comp].automaton);
+
+            // remember initial state of clone
+            lhComponentsInitialState.insert(clone->initial);
+
+            // remember final states of clone
+            for (auto s = clone->initial; s != NULL; s = s->next){
+                if(s->accept == 1) {
+                    lhComponentFinalStates[comp].insert(s);
+                }
+            }
+
+            fa_merge(finalAutomaton, &clone);
+
+            // erase the component from the set of linear terms that need taking care of; if a component
+            // appears in the bipartite construction, the epsilon closure will make it possible to
+            // also produce all terminals derivable from each linear component appearing on the left hand side
+            // or right hand side of the construction
+            lowerLinearTerms.erase(comp);
+        }
+
+        if(comp == 3) {
+            FILE * mergedLHS;
+            mergedLHS = fopen ("courcelle_3_merged_lhs.dot","w");
+            fa_dot(mergedLHS, finalAutomaton);
+            fclose (mergedLHS);
+        }
+
+//        std::cout << "merged left hand clones into construction..." << std::endl;
+
+        // now, clone all the automata we need for the right hand side; remember the
+        // initial and final states of the clones
+        for(auto comp: rhComponents) {
+
+            // clone
+            struct fa* clone = fa_clone(componentToClosureAutomaton[comp].automaton);
+
+            // remember initial state of clone
+            rhComponentInitialState[comp] = clone->initial;
+
+            // remember final states of clone
+            for (auto s = clone->initial; s != NULL; s = s->next){
+                if(s->accept == 1) {
+                    rhComponentsFinalStates.insert(s);
+                }
+            }
+
+            fa_merge(finalAutomaton, &clone);
+
+            // as above
+            lowerLinearTerms.erase(comp);
+        }
+
+
+        if(comp == 3) {
+            FILE * mergedRHS;
+            mergedRHS = fopen ("courcelle_3_merged_rhs.dot","w");
+            fa_dot(mergedRHS, finalAutomaton);
+            fclose (mergedRHS);
+        }
+
+//        std::cout << "merged right hand clones into construction..." << std::endl;
+
+        // merge the right hand alphabet automaton into the construction
+        struct state* target = righthandAlphabetStar.automaton->initial;
+        assert (target->next == NULL); // otherwise, the construction doesn't work as intended
+
+        fa_merge(finalAutomaton, &(righthandAlphabetStar.automaton));
+//        std::cout << "merged right hand alphabet clone into construction..." << std::endl;
+
+
+        if(comp == 3) {
+            FILE * mergedRAlph;
+            mergedRAlph = fopen ("courcelle_3_merged_ralph.dot","w");
+            fa_dot(mergedRAlph, finalAutomaton);
+            fclose (mergedRAlph);
+        }
+
+        // add the epsilon transitions from the final states of the right hand automata to the
+        // state of the right hand alphabet automaton
+        for(auto rhFinal: rhComponentsFinalStates) {
+            add_epsilon_trans(rhFinal, target);
+        }
+
+        if(comp == 3) {
+            FILE * transrhs;
+            transrhs = fopen ("courcelle_3_trans_rhs.dot","w");
+            fa_dot(transrhs, finalAutomaton);
+            fclose (transrhs);
+        }
+
+//        std::cout << "added epsilon trans rhFinal->target..." << std::endl;
+
+        /*
+         *  add the meat of the construction: the actual bipartite construction
+         */
+
+        // iterate over all left hand automata
+        for(auto lhIt = lhComponentFinalStates.begin(); lhIt != lhComponentFinalStates.end(); lhIt++) {
+
+            // for every left hand automaton, find all right hand automata it is connected with
+            for(auto rhc: LHStoRHS[lhIt->first]){
+
+                // for every final state of the left hand automaton, add and epsilon transition to the initial state
+                // of the right hand automataon
+                for(auto lhFinalState: lhComponentFinalStates[lhIt->first]) {
+                    add_epsilon_trans(lhFinalState, rhComponentInitialState[rhc]);
+                }
+            }
+        }
+
+        if(comp == 3) {
+            FILE * transbip;
+            transbip = fopen ("courcelle_3_trans_bip.dot","w");
+            fa_dot(transbip, finalAutomaton);
+            fclose (transbip);
+        }
+
+        // add the transitions from left hand alphabet automaton to the initial states of the left
+        // hand automata of the bipartite construction
+        for(auto lhInitial: lhComponentsInitialState) {
+            add_epsilon_trans(source, lhInitial);
+        }
+//        std::cout << "added epsilon trans source->lhInitial..." << std::endl;
+
+        if(comp == 3) {
+            FILE * translhs;
+            translhs = fopen ("courcelle_3_trans_lhs.dot","w");
+            fa_dot(translhs, finalAutomaton);
+            fclose (translhs);
+        }
+
+        // add the missing linear terms
+        for(int linearComp: lowerLinearTerms) {
+            struct fa* clone = fa_clone(componentToClosureAutomaton[linearComp].automaton);
+            struct state* linearInitial = clone->initial;
+
+            std::set<state*> finalStates;
+
+            // remember final states of clone
+            for (auto s = clone->initial; s != NULL; s = s->next){
+                if(s->accept == 1) {
+                    finalStates.insert(s);
+                }
+            }
+
+            // add the linear term automaton to our construction
+            fa_merge(finalAutomaton, &clone);
+
+
+            // wire it up with the required transitions
+            for(auto linearFinal: finalStates) {
+                add_epsilon_trans(linearFinal, target);
+            }
+            add_epsilon_trans(source, linearInitial);
+        }
+
+        if(comp == 3) {
+            FILE * linTerms;
+            linTerms = fopen ("courcelle_3_lin_terms.dot","w");
+            fa_dot(linTerms, finalAutomaton);
+            fclose (linTerms);
+        }
+
+        // add the constant terms
+        if(!closureOfConstantMonomials.empty()) {
+            struct state* constantInitial = closureOfConstantMonomials.automaton->initial;
+            std::set<state*> finalsOfConstant;
+            for(auto s = closureOfConstantMonomials.automaton->initial; s != NULL; s = s->next) {
+                if(s->accept == 1) {
+                    finalsOfConstant.insert(s);
+                }
+            }
+
+            fa_merge(finalAutomaton, &(closureOfConstantMonomials.automaton));
+
+            for(auto s: finalsOfConstant) {
+                add_epsilon_trans(s, target);
+            }
+            add_epsilon_trans(source, constantInitial);
+
+            if(comp == 3) {
+                FILE * constants;
+                constants = fopen ("courcelle_3_constants.dot","w");
+                fa_dot(constants, finalAutomaton);
+                fclose (constants);
+            }
+        }
+
+        finalAutomaton->minimal = 0;
+        finalAutomaton->deterministic = 0;
+//        std::cout << "leaving FiniteAutomaton::courcelle_construct..." << std::endl;
+
+        return FiniteAutomaton(finalAutomaton);
     }
 
     /*
@@ -71,14 +333,26 @@ public:
      * Automaton for the intersection between the languages of two automata.
      */
     FiniteAutomaton intersectionWith(FiniteAutomaton other) const {
-            return FiniteAutomaton(fa_intersect(automaton, other.automaton));
+        FiniteAutomaton intersection = FiniteAutomaton(fa_intersect(automaton, other.automaton));
+
+        if((other.epsilon_closed == 1) && (epsilon_closed ==1)) {
+            intersection.epsilon_closed = 1;
+        }
+
+        return intersection;
     }
 
     /*
      * Automaton for the union of the languages of two automata.
      */
     FiniteAutomaton unionWith(FiniteAutomaton other) const {
-            return FiniteAutomaton(fa_union(automaton, other.automaton));
+        FiniteAutomaton unionAutomaton = FiniteAutomaton(fa_union(automaton, other.automaton));
+
+        if((other.epsilon_closed == 1) && (epsilon_closed ==1)) {
+            unionAutomaton.epsilon_closed = 1;
+        }
+
+        return unionAutomaton;
     }
 
     /*
@@ -87,14 +361,116 @@ public:
      * The concatenation order is this.append(other).
      */
     FiniteAutomaton concatenate(FiniteAutomaton other) const {
-        return FiniteAutomaton(fa_concat(automaton, other.automaton));
+        FiniteAutomaton concatenation = FiniteAutomaton(fa_concat(automaton, other.automaton));
+
+        if((other.epsilon_closed == 1) && (epsilon_closed ==1)) {
+            concatenation.epsilon_closed = 1;
+        }
+
+        return concatenation;
     }
 
     /*
      * Automaton for the Kleene iteration of this automaton.
      */
     FiniteAutomaton kleeneStar() const {
-        return FiniteAutomaton(fa_iter(automaton, 0, -1));
+        FiniteAutomaton star = FiniteAutomaton(fa_iter(automaton, 0, -1));
+
+        if(epsilon_closed ==1) {
+            star.epsilon_closed = 1;
+        }
+
+        return star;
+    }
+
+    /*
+     * Calculates the epsilon closure of this automaton, i.e. for every state s
+     * and every state t that is reachable from s, adds the transition d(s,epsilon) = t.
+     */
+    FiniteAutomaton epsilonClosure() const {
+//        std::cout << "doing epsilon closure of language" << std::endl;
+//        std::cout << "language:\t" << string() << std::endl;
+//        std::cout << "size of automaton:\t" << size() << std::endl;
+        if(empty() || epsilon_closed == 1) {
+            return *this;
+        }
+//        std::cout << "failed here if no more text\n\n\n" << std::endl;
+
+        std::set<unsigned long> foundStates;
+        std::vector<state*> bfsQueue;
+
+        struct trans *trans;
+        struct state *next;
+        for (auto s = automaton->initial; s != NULL; s = s->next){
+            foundStates.clear();
+            bfsQueue.clear();
+
+            foundStates.insert(s->hash);
+            bfsQueue.push_back(s);
+            std::set<state*> targets;
+
+            while(!bfsQueue.empty()) {
+//                std::cout << "getting last element of queue" << std::endl;
+                next = bfsQueue.back();
+//                std::cout << "\"next\" state hash:"<< std::endl;
+//                std::cout <<  next->hash << std::endl;
+//                std::cout << "popping queue" << std::endl;
+                bfsQueue.pop_back();
+//                std::cout << "getting transition array of \"next\" state" << std::endl;
+                trans = next->trans;
+//                std::cout << "number of transitions of \"next\":\t" << next->tused << std::endl;
+
+                // remove this line to earn yourself hours of debugging:
+                int iterations = next->tused;
+                std::cout << "next->tused = iterations = " << iterations << std::endl;
+
+
+                // iterate over all transitions
+                for(int i = 0; i < iterations; i++) {
+//                    std::cout << "iteration:\t" << i << "\thash of \"next\":\t" << next->hash << std::endl;
+
+                    if(foundStates.count((trans+i)->to->hash) == 0) {
+                        foundStates.insert((trans+i)->to->hash);
+//                        std::cout << "inserted into found states:" << std::endl;
+                        bfsQueue.push_back((trans+i)->to);
+//                        std::cout << "pushed into queue" << std::endl;
+
+//                        std::cout << "hash target state:" << std::endl;
+//                        std::cout << (trans+i)->to->hash << std::endl;
+
+
+                        // debugging for the thousandth time
+                        FILE * file;
+                        file = fopen ("analyze.dot","w");
+                        fa_dot(file, automaton);
+                        fclose (file);
+                        printf("%p to %p\n", next, (trans+i)->to);
+
+                        //remember the new target state
+                        targets.insert((trans+i)->to);
+                    }
+//                    std::cout << " " << std::endl;
+                }
+
+//                std::cout << "\n\n\n\n" << std::endl;
+            }
+
+            // epsilon-close
+            for(auto target: targets) {
+                add_epsilon_trans(s, target);
+            }
+        }
+//        std::cout << "nope, wasnt that, new language:\t" << string() << "\n\n\n" << std::endl;
+
+        FiniteAutomaton closure = FiniteAutomaton(automaton);
+        closure.epsilon_closed = 1;
+
+        // libfa doesn't set the following flags since it doesn't expect the user to
+        // use any of the low level FA fiddling, so we need to do this here
+        closure.automaton->deterministic = 0;
+        closure.automaton->minimal = 0;
+
+        return closure;
     }
 
     /*
@@ -151,6 +527,10 @@ public:
         size_t size;
         fa_as_regexp(automaton, &regularExpression, &size);
         return std::string(regularExpression);
+    }
+
+    void write_dot_file(FILE * file) const {
+        fa_dot(file, automaton);
     }
 
     int size() const {
@@ -286,7 +666,7 @@ public:
      * grammars.", 1961; a neat description of it can be found in Nederhof & Satta, "Probabilistic Parsing", 2008
      * which is openly accessible on Nederhof's website as of the writing of this code (spring 2014).
      *
-     * libfa doesn't model epsilon transitions (see add_epsilon_trans(struct fa, struct fa) in fa.c of the
+     * libfa doesn't model epsilon transitions (see add_epsilon_trans(state *from, state *to) in fa.c of the
      * source code of libfa for details), instead replacing them by transitions on nonempty symbols and
      * adjusting the set of final states; thus the simplifying assumption of "Probabilistc Parsing" that
      * there are no epsilon transitions in the FA holds, and we only have to deal with the fact that the FA
@@ -462,6 +842,7 @@ public:
 private:
     FiniteAutomaton(struct fa *FA) {
         automaton = FA;
+        epsilon_closed = 0;
     }
 
     /*
@@ -520,4 +901,7 @@ private:
     }
 
     struct fa* automaton;
+
+    // this flag won't just save you running time, it will also save you hours of debugging time
+    int epsilon_closed;
 };
