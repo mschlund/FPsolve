@@ -57,15 +57,15 @@ WhySemiring WhySemiring::operator*=(const WhySemiring& elem)
     *this = null();
   }
   else {
-    WhySemiring res;
+    WhySet res;
     for (auto vs : this->val) {
       for (auto es : elem.val) {
         auto tmp = vs;
         tmp.insert(es.begin(),es.end());
-        res.val.insert(tmp);
+        res.insert(tmp);
         }
     }
-    this->val = res.val;
+    this->val = res;
   }
   return *this;
 }

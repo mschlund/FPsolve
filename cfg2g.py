@@ -1,10 +1,10 @@
 #usage: python convert_cfg.py input.cfg > output.cfg
 
-tokens = ('COLON','SEMICOLON','TERMINAL','NONTERMINAL')
+tokens = ('DEFINEDAS','PIPE','SEMICOLON','TERMINAL','NONTERMINAL')
 
-t_COLON = r'\:'
+t_DEFINEDAS = r'\:\:\='
+t_PIPE = r'\|'
 t_SEMICOLON = r'\;'
-
 t_NONTERMINAL = r'<[a-zA-Z_][a-zA-Z0-9_]*>'
 
 def t_TERMINAL(t):
@@ -38,31 +38,31 @@ def p_cfg_end(p) :
   'cfg : vardecl'
   p[0] = p[1]
 
-def p_empty(p):
-    'empty :'
-    pass
+#def p_empty(p):
+#    'empty :'
+#    pass
 
 def p_vardecl(p) :
-  'vardecl : NONTERMINAL rules'
+  'vardecl : NONTERMINAL DEFINEDAS rules SEMICOLON'
   #p[0] = "<"+p[1]+">" + "::=" + p[2]
-  p[0] = p[1] + "::=" + p[2]
+  p[0] = p[1] + p[3]
 
 def p_rules_rec(p) :
-  'rules : rule rules'
-  p[0] = p[1] + " | " + p[2]
+  'rules : rule PIPE rules'
+  p[0] = " : " + p[1] + ";\n" + p[3]
 
 def p_rules_end(p) :
   'rules : rule'
-  p[0] = p[1] + ";"
+  p[0] = " : " + p[1] + ";\n"
 
 def p_rule_empty(p) :
-  'rule : COLON SEMICOLON'
+  'rule : '
 #  p[0] = "\"<>\""
-  p[0] = "\"()\""
+  p[0] = " "
 
 def p_rule(p) :
-  'rule : COLON symbollist SEMICOLON'
-  p[0] = p[2]
+  'rule : symbollist'
+  p[0] = p[1]
 
 def p_symbollist_rec(p) :
   'symbollist : symbol symbollist'
@@ -82,7 +82,7 @@ def p_symbol_Terminal(p) :
 #  p[0] = "\"<"+p[1]+":1>\""
   p[0] = "\""+p[1]+"\""
 def p_error(p):
-    print "Syntax error in input!"
+    print "Syntax error in input: " + str(p)
 
 yacc.yacc()
 

@@ -18,8 +18,6 @@ void MatrixTest::setUp()
       *a,*b,
       *c,*d});
 
-
-	e = new FreeSemiring(Var::GetVarId("e"));f = new FreeSemiring(Var::GetVarId("f"));
 	g = new FreeSemiring(Var::GetVarId("g"));h = new FreeSemiring(Var::GetVarId("h"));
 	i = new FreeSemiring(Var::GetVarId("i"));j = new FreeSemiring(Var::GetVarId("j"));
 	k = new FreeSemiring(Var::GetVarId("k"));l = new FreeSemiring(Var::GetVarId("l"));
@@ -105,18 +103,25 @@ void MatrixTest::testStar()
   A->star4();
   std::cout<< "Astar_end"<< std::endl;
   FreeSemiring::one().PrintStats(std::cout);
-*/
 
-  // use a fix seed, so tests are deterministic
-  std::vector<unsigned int> seeds{42,23,11805,24890};
+  auto A_star = A->star();
+  std::cout << A_star << std::endl;
 
-  /*auto A_star = A->star2();
+  auto b = new Matrix<FreeSemiring>(2,{
+        *e,
+        *f});
+
+  auto x = (A_star) * (*b) ;
+  std::cout << x << std::endl;
 
   std::ofstream dotfile;
   dotfile.open("free-structure.dot");
   FreeSemiring::one().PrintDot(dotfile);
   dotfile.close();
-  */
+*/
+
+  // use a fix seed, so tests are deterministic
+  std::vector<unsigned int> seeds{42,23,11805,24890};
 
 	for (auto &seed : seeds) {
 	  srand(seed);
@@ -143,17 +148,13 @@ void MatrixTest::testStar()
 	  auto rec_star2 = test_matrix.star();
 	  auto rec_star = test_matrix.star3();
 	  auto fw_star = test_matrix.star2();
-	  /*
-	  std::cout << "recursive:" << std::endl << rec_star;
-	  std::cout << "recursive2:" << std::endl << rec_star2;
-	  std::cout << "floyd-warshall:" << std::endl << fw_star;
-	   */
+
 	  CPPUNIT_ASSERT(rec_star2 == fw_star);
 	  CPPUNIT_ASSERT(rec_star2 == rec_star);
+
 	}
 
   Matrix<FS> test_matrix2(2, {FS(0.5), FS(0.5), FS(0), FS(0.5)});
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star2());
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star3());
-
 }

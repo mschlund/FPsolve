@@ -48,6 +48,9 @@ UniqueVMapBuilder<Var, Value> GlobalVMapBuilder<Var, Value>::builder_;
  * Moreover we never modify a vector, so copy constructor, assignment operator,
  * etc. are really only copying a pointer (which is again very efficient).
  */
+
+// FIXME: Fix Constructor -- do not add variable with multiplicity 0!
+
 template <typename Var = VarId,
           typename Value = Counter,
           DIVIDER_TEMPLATE_TYPE Divider = DummyDivider>

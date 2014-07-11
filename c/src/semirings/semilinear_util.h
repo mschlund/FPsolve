@@ -6,7 +6,6 @@
 template <typename Simpl, typename Elem>
 void SimplifySet(VecSet<Elem> &to_simpl) {
 
-
   if (!Simpl::IsActive() || to_simpl.size() <= 1) {
     return;
   }
