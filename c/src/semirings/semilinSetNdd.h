@@ -59,4 +59,4 @@ public:
 	static const bool is_commutative;
 };
 
-#endif /* COMMUTATIVEREXP_H_ */
+#endif /* SEMILINSETNDD_H_ */

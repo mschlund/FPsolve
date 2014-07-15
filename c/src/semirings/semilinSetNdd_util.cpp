@@ -2,7 +2,6 @@
 #include <iostream>
 #include <sstream>
 #include "semilinSetNdd_util.h"
-#include "semilinSetNdd_getoffsets.h"
 
 Genepi::Genepi() : solver(0), set(0) {
   // invalid state ...
@@ -88,6 +87,8 @@ bool Genepi::operator==(const Genepi& g) const {
 int Genepi::getSize() const {
   return genepi_set_get_data_structure_size(this->solver, this->set);
 }
+
+// FIXME: rewrite this. A lot of assumptions on path structure and available tools...
 std::string Genepi::output(std::string prefix, int i, std::string postfix) const {
   std::stringstream ret;
   std::stringstream ss_filename;
@@ -104,34 +105,6 @@ std::string Genepi::output(std::string prefix, int i, std::string postfix) const
   ignore = system(ss.str().c_str());
   ret << "Automaton written to file : " << ss_filename.str();
   return ret.str();
-}
-
-std::vector<std::vector<int>> Genepi::getOffsets() const {
-  // TODO: make this more beautiful...
-  if(genepi_set_is_empty(this->solver, this->set)) // this is the empty set
-    return {}; // nothing to return...
-
-  std::string filename = "read_offsets_from_automaton.dot";
-  FILE* file = fopen(filename.c_str(), "w");
-  genepi_set_display_data_structure(solver, set, file);
-  fclose(file);
-  int dummy = system("bash convert.sh read_offsets_from_automaton.dot > read_offsets_from_automaton.parseable");
-  int k = genepi_set_get_width(this->solver, this->set);
-  Parsed information = parse_automaton(k, "read_offsets_from_automaton.parseable");
-
-  std::vector<std::vector<int>> offsets;
-  for(auto f : information.finals) {
-    std::vector<int> visited;
-    std::vector<bool> visited_bool(information.node_count+1);
-    visited.push_back(information.init);
-    visited_bool.at(information.init) = true;
-    auto result = DepthFirst(&(information.graph), visited, visited_bool, f, k);
-    offsets.insert(offsets.end(), result.begin(), result.end());
-  }
-
-  unlink("read_offsets_from_automaton.parseable");
-  unlink(filename.c_str());
-  return offsets;
 }
 
 genepi_set* Genepi::createVector(genepi_solver* solver, std::vector<int> x) {
