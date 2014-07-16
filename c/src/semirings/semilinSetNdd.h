@@ -4,7 +4,7 @@
  *  Created on: 22.01.2013
  *      Author: Michael Kerscher
  */
-
+#ifdef USE_GENEPI
 #ifndef SEMILINSETNDD_H_
 #define SEMILINSETNDD_H_
 #include <set>
@@ -60,3 +60,4 @@ public:
 };
 
 #endif /* SEMILINSETNDD_H_ */
+#endif /* USE_GENEPI */

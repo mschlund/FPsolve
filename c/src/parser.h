@@ -21,7 +21,9 @@ private:
 public:
   Parser();
   std::vector<std::pair<VarId, CommutativePolynomial<CommutativeRExp>>> rexp_parser(std::string input);
+#ifdef USE_GENEPI
   std::vector<std::pair<VarId, CommutativePolynomial<SemilinSetNdd>>> slsetndd_parser(std::string input);
+#endif
   std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> free_parser(std::string input);
   std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> lossy_parser(std::string input);
   std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> prefix_parser(std::string input, unsigned int length);
