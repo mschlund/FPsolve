@@ -3,6 +3,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <stdio.h>
 #include <time.h>
 #include <stdint.h>
 #include <sys/time.h>
@@ -201,6 +202,18 @@ void PrintEquations(const Container &equations) {
   }
 }
 
+std::string currentDateTime() {
+    time_t     now = time(0);
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *localtime(&now);
+    // Visit http://en.cppreference.com/w/cpp/chrono/c/strftime
+    // for more information about date/time format
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+
 int main(int argc, char* argv[]) {
 
   namespace po = boost::program_options;
@@ -223,11 +236,12 @@ int main(int argc, char* argv[]) {
     ( "vec-simpl", "vector simplification only (only semilinear and multilinear sets)" )
     ( "lin-simpl", "linear set simplification (only semilinear sets)" )
     ( "free", "free semiring" )
-    ( "lossy", "lossy semiring" )
-    ( "lossyC", "downward closure via Courcelle")
-    ( "lossyComp", "")
-    ( "lossyArbTest", "")
-    ( "lossyIntersectTest", "lossy semiring intersection test" )
+    //( "lossy", "lossy semiring" )
+    ( "lossyC", "if used with --file: downward closure via Courcelle\nif used with --file and --file2: compare two input grammars for inequality via downward closure\nuse --refine n to fix refinement depth")
+    ( "refine", po::value<int>(), "refinement depth for inequality check via downward closure; only available for --lossyC --file --file2")
+   // ( "lossyComp", "")
+//    ( "lossyArbTest", "")
+//    ( "lossyIntersectTest", "lossy semiring intersection test" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
     ;
@@ -286,13 +300,14 @@ int main(int argc, char* argv[]) {
       !vm.count("free") &&
       !vm.count("mlset") &&
       !vm.count("prefix") &&
-      !vm.count("lossy") &&
-      !vm.count("lossyIntersectTest") &&
-      !vm.count("lossyC") &&
-      !vm.count("lossyComp") &&
-      !vm.count("lossyArbTest")) {
-    std::cout << "Please supply a supported semiring :)" << std::endl;
-    return 0;
+//      !vm.count("lossy") &&
+//      !vm.count("lossyIntersectTest") &&
+      !vm.count("lossyC") //&&
+//      !vm.count("lossyComp") &&
+//      !vm.count("lossyArbTest")) {
+     ) {
+      std::cout << "Please supply a supported semiring :)" << std::endl;
+      return 0;
   }
 
   std::vector<std::string> input;
@@ -432,7 +447,7 @@ int main(int argc, char* argv[]) {
     //                                         vm.count("graphviz"));
     //std::cout << result_string(result) << std::endl;
 
-  } else if (vm.count("lossy")) {
+  } /*else if (vm.count("lossy")) {
 
 //    struct timespec start, end;
     auto equations = p.lossy_fa_parser(input_all);
@@ -525,11 +540,11 @@ int main(int argc, char* argv[]) {
 //
 //        mtime = ((seconds) * 1000 + useconds/1000.0) + 0.5;
 //        unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
-//        std::cout  /*<< "\t time:\t" << mtime  << "\tmemory used: " << usage.ru_maxrss << "KB\t"*/ << vm["file"].as<std::string>() /*<< " closure:\t " << approx*/ << std::endl;
+//        std::cout  /*<< "\t time:\t" << mtime  << "\tmemory used: " << usage.ru_maxrss << "KB\t" << vm["file"].as<std::string>() /*<< " closure:\t " << approx << std::endl;
     }
 //                  std::cout << "Delossified regex (via string manipulation):\t" << LossyFiniteAutomaton::lossifiedRegex(approx) << std::endl;
 //                  std::cout << "Delossified regex (via automaton):\t" << approximation.lossify().string() << std::endl;
-  } else if(vm.count("lossyC")) {
+  } */ else if(vm.count("lossyC")) {
 
       struct timespec start, end;
       auto equations = p.lossy_fa_parser(input_all);
@@ -543,104 +558,125 @@ int main(int argc, char* argv[]) {
           auto equations_2 = p.lossy_fa_parser(input_2_all);
           VarId S_2 = equations_2[0].first;
 
-          auto approx_1 = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
-//          std::cout << "A1: " << approx_1.string() << "\t";
-          auto approx_2 = LossyFiniteAutomaton::downwardClosureCourcelle(equations_2, S_2);
-//          std::cout << "A2: " << approx_2.string() << std::endl;
-
-          bool A1_subset_A2 = approx_2.contains(approx_1);
-          bool A2_subset_A1 = approx_1.contains(approx_2);
-          ret = getrusage(who, &usage);
-          auto memoryUsage = usage.ru_maxrss;
-          std::cout << memoryUsage << ",";
-          if(A1_subset_A2 && A2_subset_A1) {
-              std::cout << "0,0,0,0,0" << std::endl;
-//              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
-          } else {
-              Timer timer;
-              timer.Start();
-              int L21raw = 0, L12raw = 0, L21 = 0, L12 = 0;
-              LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
-              bool L1_intersect_A2c_changed = false;
-              LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
-              bool L2_intersect_A1c_changed = false;
-
-              if(!A1_subset_A2) {
-                  VarId startSymbol_1_2;
-                  auto A2c = approx_1.minus(approx_2);
-//                  std::cout << "A2c size: " << A2c.size() << std::endl;
-//                  std::cout << "A2c: " << A2c.string() << std::endl;
-                  auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations);
-                  L12raw = intersectionGrammar.size();
-                  std::queue<VarId> worklist;
-                  worklist.push(startSymbol_1_2);
-                  intersectionGrammar = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar, worklist);
-                  L12 = intersectionGrammar.size();
-//                  std::cout << "clean intersection grammar 1 x A2c:" << std::endl;
-//                  for(auto &equation: intersectionGrammar) {
-//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-//                  }
-
-                  L1_intersect_A2c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-                          (intersectionGrammar, startSymbol_1_2);
-                  L1_intersect_A2c_changed = true;
-              }
-
-              if(!A2_subset_A1) {
-                  VarId startSymbol_2_1;
-                  auto A1c = approx_2.minus(approx_1);
-//                  std::cout << "A1c size: " << A1c.size() << std::endl;
-//                  std::cout << "A1c: " << A1c.string() << std::endl;
-                  auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
-                  L21raw = intersectionGrammar_2.size();
-                  std::queue<VarId> worklist;
-                  worklist.push(startSymbol_2_1);
-                  intersectionGrammar_2 = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar_2, worklist);
-                  L21 = intersectionGrammar_2.size();
-//                  std::cout << "clean intersection grammar 2 x A1c:" << std::endl;
-//                  for(auto &equation: intersectionGrammar_2) {
-//                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-//                  }
-
-                  L2_intersect_A1c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
-                          (intersectionGrammar_2, startSymbol_2_1);
-                  L2_intersect_A1c_changed = true;
-              }
-              timer.Stop();
-              ret = getrusage(who, &usage);
-              auto memoryUsage = usage.ru_maxrss;
-              std::cout << memoryUsage << ",";
-              if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
-                  auto first = L1_intersect_A2c.string();
-                  auto second = L2_intersect_A1c.string();
-
-                  if(first.size() <= second.size()) {
-                      std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << first.size() << std::endl;
-//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
-//                      std::cout << "length of shortest word: " << first.size() << std::endl;
-                  } else {
-//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
-//                      std::cout << "length of shortest word: " << second.size() << std::endl;
-                      std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << second.size() << std::endl;
-//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
-//                      std::cout << "Shortest such word:\t" << second << std::endl;
-                  }
-              } else {
-                  if(L1_intersect_A2c_changed) {
-//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
-//                      std::cout << "length of shortest word: " << L1_intersect_A2c.string().size() << std::endl;
-                      std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << L1_intersect_A2c.string().size() << std::endl;
-//                      std::cout << "There is a word in L1 that is not in L2." << std::endl;
-//                      std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
-                  } else {
-//                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
-                      std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << L2_intersect_A1c.string().size() << std::endl;
-//                      std::cout << "length of shortest word: " << L2_intersect_A1c.string().size() << std::endl;
-//                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
-//                      std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
-                  }
-              }
+          int refinementDepth = 0;
+          if(vm.count("refine")) {
+              refinementDepth = vm["refine"].as<int>();
           }
+
+
+          auto witness = LossyFiniteAutomaton::refineCourcelle(equations, S_1, equations_2, S_2, refinementDepth);
+
+          if(witness != LossyFiniteAutomaton::null()) {
+              std::cout << "Found witness: " << witness.string() << std::endl;
+          }
+//          std::cout << currentDateTime() << "\tstarting..." << std::endl;
+//          auto approx_1 = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+////          std::cout << currentDateTime() << "\tapprox 1 states:" << approx_1.size() << std::endl;
+////          std::cout << "A1: " << approx_1.string() << "\t";
+//          auto approx_2 = LossyFiniteAutomaton::downwardClosureCourcelle(equations_2, S_2);
+////          std::cout << currentDateTime() << "\tapprox 2 states:" << approx_2.size() << std::endl;
+////          std::cout << "A2: " << approx_2.string() << std::endl;
+//
+//          bool A1_subset_A2 = approx_2.contains(approx_1);
+//          bool A2_subset_A1 = approx_1.contains(approx_2);
+//          ret = getrusage(who, &usage);
+//          auto memoryUsage = usage.ru_maxrss;
+////          std::cout << memoryUsage << ",";
+//          if(A1_subset_A2 && A2_subset_A1) {
+//              std::cout << "equal"<< std::endl;
+////              std::cout << "0,0,0,0,0" << std::endl;
+////              std::cout << "Same closure: " << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << std::endl;
+//          } else {
+//              Timer timer;
+//              timer.Start();
+//              int L21raw = 0, L12raw = 0, L21 = 0, L12 = 0;
+//              LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
+//              bool L1_intersect_A2c_changed = false;
+//              LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
+//              bool L2_intersect_A1c_changed = false;
+//
+//              if(!A1_subset_A2) {
+//                  VarId startSymbol_1_2;
+//                  auto A2c = approx_1.minus(approx_2);
+////                  std::cout << "A2c size: " << A2c.size() << std::endl;
+////                  std::cout << "A2c: " << A2c.string() << std::endl;
+//                  auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations);
+//                  L12raw = intersectionGrammar.size();
+//                  std::queue<VarId> worklist;
+//                  worklist.push(startSymbol_1_2);
+//                  intersectionGrammar = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar, worklist);
+//                  L12 = intersectionGrammar.size();
+////                  std::cout << "clean intersection grammar 1 x A2c:" << std::endl;
+////                  for(auto &equation: intersectionGrammar) {
+////                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+////                  }
+//
+//                  L1_intersect_A2c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+//                          (intersectionGrammar, startSymbol_1_2);
+//                  L1_intersect_A2c_changed = true;
+//              }
+//
+//              if(!A2_subset_A1) {
+//                  VarId startSymbol_2_1;
+//                  auto A1c = approx_2.minus(approx_1);
+////                  std::cout << "A1c size: " << A1c.size() << std::endl;
+////                  std::cout << "A1c: " << A1c.string() << std::endl;
+//                  auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+//                  L21raw = intersectionGrammar_2.size();
+//                  std::queue<VarId> worklist;
+//                  worklist.push(startSymbol_2_1);
+//                  intersectionGrammar_2 = NonCommutativePolynomial<LossyFiniteAutomaton>::cleanSystem(intersectionGrammar_2, worklist);
+//                  L21 = intersectionGrammar_2.size();
+////                  std::cout << "clean intersection grammar 2 x A1c:" << std::endl;
+////                  for(auto &equation: intersectionGrammar_2) {
+////                      std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+////                  }
+//
+//                  L2_intersect_A1c = NonCommutativePolynomial<LossyFiniteAutomaton>::shortestWord
+//                          (intersectionGrammar_2, startSymbol_2_1);
+//                  L2_intersect_A1c_changed = true;
+//              }
+//              timer.Stop();
+//              ret = getrusage(who, &usage);
+//              auto memoryUsage = usage.ru_maxrss;
+////              std::cout << memoryUsage << ",";
+//
+//              std::cout << "different" << std::endl;
+//              if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+//                  auto first = L1_intersect_A2c.string();
+//                  auto second = L2_intersect_A1c.string();
+//
+//
+//                  if(first.size() <= second.size()) {
+////                      std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << first.size() << std::endl;
+////                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << first << std::endl;
+////                      std::cout << "length of shortest word: " << first.size() << std::endl;
+//                  } else {
+////                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L2 \\ L1: " << second << std::endl;
+////                      std::cout << "length of shortest word: " << second.size() << std::endl;
+////                      std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << second.size() << std::endl;
+////                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+////                      std::cout << "Shortest such word:\t" << second << std::endl;
+//                  }
+//              } else {
+////                  std::cout << currentDateTime() << "\tfound witness for difference" << std::endl;
+//                  if(L1_intersect_A2c_changed) {
+////                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L1_intersect_A2c.string() << std::endl;
+////                      std::cout << "length of shortest word: " << L1_intersect_A2c.string().size() << std::endl;
+////                      std::cout << "witness:\t" << L1_intersect_A2c.string() << std::endl;
+////                      std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << L1_intersect_A2c.string().size() << std::endl;
+////                      std::cout << "There is a word in L1 that is not in L2." << std::endl;
+////                      std::cout << "Shortest such word:\t" << L1_intersect_A2c.string() << std::endl;
+//                  } else {
+////                      std::cout << vm["file"].as<std::string>() << vm["file2"].as<std::string>() << " Shortest word in L1 \\ L2: " << L2_intersect_A1c.string() << std::endl;
+////                      std::cout << "witness:\t" << L2_intersect_A1c.string() << std::endl;
+////                      std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << L2_intersect_A1c.string().size() << std::endl;
+////                      std::cout << "length of shortest word: " << L2_intersect_A1c.string().size() << std::endl;
+////                      std::cout << "There is a word in L2 that is not in L1." << std::endl;
+////                      std::cout << "Shortest such word:\t" << L2_intersect_A1c.string() << std::endl;
+//                  }
+//              }
+//          }
       } else {
 //          clock_gettime(CLOCK_MONOTONIC, &start);
 //          gettimeofday(&startT, NULL);
@@ -664,13 +700,13 @@ int main(int argc, char* argv[]) {
 //          for(auto &equation: equations) {
 //              std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
 //          }
-          std::cout  << "\t\t\t" /* << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< /*"\nclosure:\t" <<*/ approx << /*"\n\n\n"<<*/ std::endl;
+          std::cout /* << "\t\t\t" << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< /*"\nclosure:\t" <<*/ approx << /*"\n\n\n"<<*/ std::endl;
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
       LossyFiniteAutomaton::intersectionTest(equations);
-  } else if(vm.count("lossyComp")) {
+  } /*else if(vm.count("lossyComp")) {
 
       struct timespec start, end;
       auto equations = p.lossy_fa_parser(input_all);
@@ -680,15 +716,15 @@ int main(int argc, char* argv[]) {
       auto derivationTreeClosure = LossyFiniteAutomaton::downwardClosureDerivationTrees(equations, S_1).minimize();
       auto courcelleClosure = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1).minimize();
 
-      FILE * file1;
-      file1 = fopen ("courcelle.dot","w");
-      courcelleClosure.write_dot_file(file1);
-      fclose (file1);
-
-      FILE * file2;
-      file2 = fopen ("derivation_tree.dot","w");
-      derivationTreeClosure.write_dot_file(file2);
-      fclose (file2);
+//      FILE * file1;
+//      file1 = fopen ("courcelle.dot","w");
+//      courcelleClosure.write_dot_file(file1);
+//      fclose (file1);
+//
+//      FILE * file2;
+//      file2 = fopen ("derivation_tree.dot","w");
+//      derivationTreeClosure.write_dot_file(file2);
+//      fclose (file2);
 
       if(!(derivationTreeClosure == courcelleClosure)) {
           std::cout << "Closures not equal" << std::endl; //, grammar:\t" << std::endl; // << vm["file"].as<std::string>() << "\t size: " << equations.size();
@@ -706,12 +742,12 @@ int main(int argc, char* argv[]) {
 //              std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
 //          }
       }
-  } else if(vm.count("lossyArbTest")) {
+  }  else if(vm.count("lossyArbTest")) {
       LossyFiniteAutomaton der = LossyFiniteAutomaton("(b*a[ab]|b*[ab])(c|())|b*ac|b*c|b*a|b*");
       LossyFiniteAutomaton cour = LossyFiniteAutomaton("(b*a[ab]|b*[ab])(c|())|b*a(c|())|b*c|b*");
       std::cout << "same language:\t" << (cour == der) << std::endl;
 
-  } else if (vm.count("prefix")) {
+  }*/ else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])
     auto equations = p.prefix_parser(input_all, vm["prefix"].as<int>());

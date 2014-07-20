@@ -36,14 +36,17 @@
 
 
 
-echo "abc Courcelle..."
-for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "abc-courcelle".log; done
-echo -e "ab Courcelle..."
-for filename in lossy_benchmarks/student-cfg/alphabet-ab/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "ab-courcelle".log; done
-echo -e "01 Courcelle..."
-for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "01-courcelle".log; done
-echo -e "a Courcelle..."
-for filename in lossy_benchmarks/student-cfg/alphabet-a/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "a-courcelle".log; done
+#echo "abc Courcelle..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-abc/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "abc-courcelle".log; done
+#echo -e "ab Courcelle..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-ab/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "ab-courcelle".log; done
+#echo -e "01 Courcelle..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-01/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "01-courcelle".log; done
+#echo -e "a Courcelle..."
+#for filename in lossy_benchmarks/student-cfg/alphabet-a/*; do echo -n ${filename}; ./newton --lossyC --file ${filename} >> "logafter.log"; done #>> "a-courcelle".log; done
+
+
+for filename in lossy_benchmarks/student-cfg/alphabet-a/*; do echo -n ${filename}; ./newton --lossyC --file ${filename}; done
 
 
 

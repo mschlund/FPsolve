@@ -208,6 +208,8 @@ public:
                 bool noDifference = true;
                 std::queue<VarId> worklist;
                 for(int i = 1; (i <= maxLengthOfPrefixes) && noDifference; i++) {
+                    std::cout << "refining " << i << "..." << std::endl;
+
                     iterationsBeforeSuccess++;
                     for(auto &prefix: prefixesPerLength[i]) {
                         std::string prefixAlphaStar = std::string(prefix) + regexAlphabetStar;
@@ -257,12 +259,19 @@ public:
                         if(!(tempDiff == LSR::null())) {
                             difference = tempDiff;
                             noDifference = false;
+                            std::cout << "different " << i << std::endl;
                             break;
                         }
                     }
                 }
+            } else { // both languages empty
+                std::cout << "maybe_equal 0" << std::endl;
+                return difference;
             }
 
+            if(difference == LSR::null()) {
+                std::cout << "maybe_equal " << maxLengthOfPrefixes << std::endl;
+            }
 
             timer.Stop();
             ret = getrusage(who, &usage);
@@ -270,17 +279,23 @@ public:
             if(difference != LSR::null()) {
                 outputLength = difference.string().size();
             }
-            std::cout << timer.GetMilliseconds().count() << "," <<  memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << iterationsBeforeSuccess << "," << outputLength << ",";
+//            std::cout << timer.GetMilliseconds().count() << "," <<  memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << iterationsBeforeSuccess << "," << outputLength << ",";
             return difference;
         } else {
+//            std::cout << "immediately different" << std::endl;
+//            std::cout << "closure 1: " << approx_1.string() << std::endl;
+//            std::cout << "closure 2: " << approx_2.string() << std::endl;
             LSR difference = compareClosures(equations_1, S_1, equations_2, S_2, approx_1, approx_2, largestRawGrammar, largestCleanGrammar);
+//            std::cout << "difference: " << difference.string() << std::endl;
             timer.Stop();
             ret = getrusage(who, &usage);
             auto memoryUsage = usage.ru_maxrss;
             if(difference != LSR::null()) {
                 outputLength = difference.string().size();
             }
-            std::cout << timer.GetMilliseconds().count() << "," << memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << "," << iterationsBeforeSuccess << "," << outputLength << ",";
+
+            std::cout << "different 0" << std::endl;
+//            std::cout << timer.GetMilliseconds().count() << "," << memoryUsage << "," << largestRawGrammar << "," << largestCleanGrammar << "," << "," << iterationsBeforeSuccess << "," << outputLength << ",";
             return difference;
         }
     }
@@ -371,7 +386,9 @@ public:
      * Calculates the downward closure of the grammar defined by "equations" starting at "S"; the algorithm
      * derives from the "On Constructing Obstruction Sets of Words", B. Courcelle, Bulletin of EATCS 1991.
      *
-     * WARNING: This function will break if you use an LSR that does not have a constructor that takes POSIX regex string.
+     * WARNING: This function will break if you use an LSR that does not have a constructor that takes POSIX
+     * regex string or if there are any terminals in the grammar that contain non-alphanumeric letters,
+     * see non_commutative_monomial.get_terminals().
      */
     static LSR downwardClosureCourcelle(const std::vector<std::pair<VarId, NonCommutativePolynomial<LSR>>> &equations,
             const VarId &S) {
@@ -1087,12 +1104,12 @@ private:
                 componentToClosure[i] = closure;
 
 
-                FILE * file;
-                std::stringstream filess;
-                filess << "courcelle_" << i << ".dot";
-                file = fopen (filess.str().c_str(),"w");
-                closure.write_dot_file(file);
-                fclose (file);
+//                FILE * file;
+//                std::stringstream filess;
+//                filess << "courcelle_" << i << ".dot";
+//                file = fopen (filess.str().c_str(),"w");
+//                closure.write_dot_file(file);
+//                fclose (file);
             }
         }
     }
@@ -1171,7 +1188,13 @@ private:
         auto memoryUsage = usage.ru_maxrss;
 //        std::cout << memoryUsage << ",";
 
+//        std::cout << "A1: " << approx_1.string() << std::endl;
+//        std::cout << "A2: " << approx_2.string() << std::endl;
+//        std::cout << "a1 subset a2: " << A1_subset_A2 << std::endl;
+//        std::cout << "a2 subset a1: " << A2_subset_A1 << std::endl;
+
         if(A1_subset_A2 && A2_subset_A1) {
+//            std::cout << "compareclosure: equal" << std::endl;
             return LSR::null();
 //            std::cout << memoryUsage << "," << "0,0,0,0" << std::endl;
         } else {
@@ -1186,7 +1209,14 @@ private:
             if(!A1_subset_A2) {
                 VarId startSymbol_1_2;
                 auto A2c = approx_1.minus(approx_2);
+//                std::cout << "a2c: " << A2c.string() << std::endl;
                 auto intersectionGrammar = A2c.intersectionWithCFG(startSymbol_1_2, S_1, equations_1);
+
+//                std::cout << "startsymbol_1_2:\t" << Var::GetVar(startSymbol_1_2).string() << std::endl;
+//                std::cout << "system: for l1 less a2" << std::endl;
+//                for(auto &equation: intersectionGrammar) {
+//                    std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
+//                }
                 largestRawGrammar = intersectionGrammar.size() > largestRawGrammar ? intersectionGrammar.size() : largestRawGrammar;
                 L12raw = intersectionGrammar.size();
                 std::queue<VarId> worklist;
@@ -1194,16 +1224,19 @@ private:
                 intersectionGrammar = NonCommutativePolynomial<LSR>::cleanSystem(intersectionGrammar, worklist);
                 largestCleanGrammar = intersectionGrammar.size() > largestCleanGrammar ? intersectionGrammar.size() : largestCleanGrammar;
                 L12 = intersectionGrammar.size();
-
+//                std::cout << "intersection grammar size: " << L12 << std::endl;
                 L1_intersect_A2c = NonCommutativePolynomial<LSR>::shortestWord
                         (intersectionGrammar, startSymbol_1_2);
+//                std::cout << "l1 intersect not_down_l2 " << L1_intersect_A2c .string() << std::endl;
                 L1_intersect_A2c_changed = true;
             }
 
             if(!A2_subset_A1) {
                 VarId startSymbol_2_1;
                 auto A1c = approx_2.minus(approx_1);
+//                std::cout << "a1c: " << A1c.string() << std::endl;
                 auto intersectionGrammar_2 = A1c.intersectionWithCFG(startSymbol_2_1, S_2, equations_2);
+//                std::cout << "startsymbol_2_1:\t" << Var::GetVar(startSymbol_2_1).string() << std::endl;
                 largestRawGrammar = intersectionGrammar_2.size() > largestRawGrammar ? intersectionGrammar_2.size() : largestRawGrammar;
                 L21raw = intersectionGrammar_2.size();
                 std::queue<VarId> worklist;
@@ -1214,6 +1247,7 @@ private:
 
                 L2_intersect_A1c = NonCommutativePolynomial<LSR>::shortestWord
                         (intersectionGrammar_2, startSymbol_2_1);
+//                std::cout << "l2 intersect not_down_l1 " << L2_intersect_A1c .string() << std::endl;
                 L2_intersect_A1c_changed = true;
             }
             timer.Stop();
@@ -1221,21 +1255,23 @@ private:
             auto memoryUsage = usage.ru_maxrss;
 //            std::cout << memoryUsage << ",";
             if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
-                auto first = L1_intersect_A2c.string();
-                auto second = L2_intersect_A1c.string();
 
-                if(first.size() <= second.size()) {
+                if(L1_intersect_A2c.size() <= L2_intersect_A1c.size() && L1_intersect_A2c != LSR::null()) {
+//                    std::cout << "returning " << L1_intersect_A2c.string() << " other one was " << L2_intersect_A1c.string() << std::endl;
                     return L1_intersect_A2c;
 //                    std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << first.size() /*<< "\t" << first*/ << std::endl;
                 } else {
+//                    std::cout << "returning " << L2_intersect_A1c.string() << " other one was " << L1_intersect_A2c.string() << std::endl;
                     return L2_intersect_A1c;
 //                    std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << second.size() /*<< "\t" << second */<< std::endl;
                 }
             } else {
                 if(L1_intersect_A2c_changed) {
+//                    std::cout << "returning " << L1_intersect_A2c.string() << " other one was " << L2_intersect_A1c.string() << std::endl;
                     return L1_intersect_A2c;
 //                    std::cout << timer.GetMilliseconds().count() << "," << L12raw << "," << L12 << "," << L1_intersect_A2c.string().size() /*<< "\t" << L1_intersect_A2c.string() */<< std::endl;
                 } else {
+//                    std::cout << "returning " << L2_intersect_A1c.string() << " other one was " << L1_intersect_A2c.string() << std::endl;
                     return L2_intersect_A1c;
 //                    std::cout << timer.GetMilliseconds().count() << "," << L21raw << "," << L21 << "," << L2_intersect_A1c.string().size() /*<< "\t" << L2_intersect_A1c.string() */<< std::endl;
                 }

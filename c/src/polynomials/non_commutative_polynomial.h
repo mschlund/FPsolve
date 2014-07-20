@@ -1070,6 +1070,7 @@ public:
     static SR shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, VarId &startSymbol) {
 
         if(productions.size() == 0) {
+//            std::cout << "intersection no productions" << std::endl;
             return SR::null();
         }
 
@@ -1082,6 +1083,7 @@ public:
         }
 
         if(!startSymbolIsProductive) {
+//            std::cout << "start symbol not productive" << std::endl;
             return SR::null();
         }
 

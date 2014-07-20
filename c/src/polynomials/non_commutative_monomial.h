@@ -1037,9 +1037,7 @@ public:
             std::string rhsString = getTrailingSR().string();
 
             for(int i = 0; i < lhsString.size(); i++) {
-                if(isalnum(lhsString[i])) {
-                    lhsSameComponentLetters[component].insert(lhsString[i]);
-                } else if (lhsString[i] == '[') {
+                if (lhsString[i] == '[') {
                     unsigned char letter, startOfRange, endOfRange;
                     i++;
                     while(lhsString[i] != ']') {
@@ -1056,6 +1054,8 @@ public:
                             i++;
                         }
                     }
+                } else {
+                        lhsSameComponentLetters[component].insert(lhsString[i]);
                 }
             }
 

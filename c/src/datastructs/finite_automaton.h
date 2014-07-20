@@ -92,12 +92,12 @@ public:
         struct state* source = finalAutomaton->initial;
         assert (source->next == NULL); // otherwise, the construction doesn't work as intended
 
-        if(comp == 3) {
-            FILE * initialFile;
-            initialFile = fopen ("courcelle_3_initial.dot","w");
-            fa_dot(initialFile, finalAutomaton);
-            fclose (initialFile);
-        }
+//        if(comp == 3) {
+//            FILE * initialFile;
+//            initialFile = fopen ("courcelle_3_initial.dot","w");
+//            fa_dot(initialFile, finalAutomaton);
+//            fclose (initialFile);
+//        }
 
 //        std::cout << "remembered finalAutomaton and its initial state..." << std::endl;
 
@@ -127,12 +127,12 @@ public:
             lowerLinearTerms.erase(comp);
         }
 
-        if(comp == 3) {
-            FILE * mergedLHS;
-            mergedLHS = fopen ("courcelle_3_merged_lhs.dot","w");
-            fa_dot(mergedLHS, finalAutomaton);
-            fclose (mergedLHS);
-        }
+//        if(comp == 3) {
+//            FILE * mergedLHS;
+//            mergedLHS = fopen ("courcelle_3_merged_lhs.dot","w");
+//            fa_dot(mergedLHS, finalAutomaton);
+//            fclose (mergedLHS);
+//        }
 
 //        std::cout << "merged left hand clones into construction..." << std::endl;
 
@@ -160,12 +160,12 @@ public:
         }
 
 
-        if(comp == 3) {
-            FILE * mergedRHS;
-            mergedRHS = fopen ("courcelle_3_merged_rhs.dot","w");
-            fa_dot(mergedRHS, finalAutomaton);
-            fclose (mergedRHS);
-        }
+//        if(comp == 3) {
+//            FILE * mergedRHS;
+//            mergedRHS = fopen ("courcelle_3_merged_rhs.dot","w");
+//            fa_dot(mergedRHS, finalAutomaton);
+//            fclose (mergedRHS);
+//        }
 
 //        std::cout << "merged right hand clones into construction..." << std::endl;
 
@@ -177,12 +177,12 @@ public:
 //        std::cout << "merged right hand alphabet clone into construction..." << std::endl;
 
 
-        if(comp == 3) {
-            FILE * mergedRAlph;
-            mergedRAlph = fopen ("courcelle_3_merged_ralph.dot","w");
-            fa_dot(mergedRAlph, finalAutomaton);
-            fclose (mergedRAlph);
-        }
+//        if(comp == 3) {
+//            FILE * mergedRAlph;
+//            mergedRAlph = fopen ("courcelle_3_merged_ralph.dot","w");
+//            fa_dot(mergedRAlph, finalAutomaton);
+//            fclose (mergedRAlph);
+//        }
 
         // add the epsilon transitions from the final states of the right hand automata to the
         // state of the right hand alphabet automaton
@@ -190,12 +190,12 @@ public:
             add_epsilon_trans(rhFinal, target);
         }
 
-        if(comp == 3) {
-            FILE * transrhs;
-            transrhs = fopen ("courcelle_3_trans_rhs.dot","w");
-            fa_dot(transrhs, finalAutomaton);
-            fclose (transrhs);
-        }
+//        if(comp == 3) {
+//            FILE * transrhs;
+//            transrhs = fopen ("courcelle_3_trans_rhs.dot","w");
+//            fa_dot(transrhs, finalAutomaton);
+//            fclose (transrhs);
+//        }
 
 //        std::cout << "added epsilon trans rhFinal->target..." << std::endl;
 
@@ -217,12 +217,12 @@ public:
             }
         }
 
-        if(comp == 3) {
-            FILE * transbip;
-            transbip = fopen ("courcelle_3_trans_bip.dot","w");
-            fa_dot(transbip, finalAutomaton);
-            fclose (transbip);
-        }
+//        if(comp == 3) {
+//            FILE * transbip;
+//            transbip = fopen ("courcelle_3_trans_bip.dot","w");
+//            fa_dot(transbip, finalAutomaton);
+//            fclose (transbip);
+//        }
 
         // add the transitions from left hand alphabet automaton to the initial states of the left
         // hand automata of the bipartite construction
@@ -231,12 +231,12 @@ public:
         }
 //        std::cout << "added epsilon trans source->lhInitial..." << std::endl;
 
-        if(comp == 3) {
-            FILE * translhs;
-            translhs = fopen ("courcelle_3_trans_lhs.dot","w");
-            fa_dot(translhs, finalAutomaton);
-            fclose (translhs);
-        }
+//        if(comp == 3) {
+//            FILE * translhs;
+//            translhs = fopen ("courcelle_3_trans_lhs.dot","w");
+//            fa_dot(translhs, finalAutomaton);
+//            fclose (translhs);
+//        }
 
         // add the missing linear terms
         for(int linearComp: lowerLinearTerms) {
@@ -263,12 +263,12 @@ public:
             add_epsilon_trans(source, linearInitial);
         }
 
-        if(comp == 3) {
-            FILE * linTerms;
-            linTerms = fopen ("courcelle_3_lin_terms.dot","w");
-            fa_dot(linTerms, finalAutomaton);
-            fclose (linTerms);
-        }
+//        if(comp == 3) {
+//            FILE * linTerms;
+//            linTerms = fopen ("courcelle_3_lin_terms.dot","w");
+//            fa_dot(linTerms, finalAutomaton);
+//            fclose (linTerms);
+//        }
 
         // add the constant terms
         if(!closureOfConstantMonomials.empty()) {
@@ -287,12 +287,12 @@ public:
             }
             add_epsilon_trans(source, constantInitial);
 
-            if(comp == 3) {
-                FILE * constants;
-                constants = fopen ("courcelle_3_constants.dot","w");
-                fa_dot(constants, finalAutomaton);
-                fclose (constants);
-            }
+//            if(comp == 3) {
+//                FILE * constants;
+//                constants = fopen ("courcelle_3_constants.dot","w");
+//                fa_dot(constants, finalAutomaton);
+//                fclose (constants);
+//            }
         }
 
         finalAutomaton->minimal = 0;
@@ -422,7 +422,7 @@ public:
 
                 // remove this line to earn yourself hours of debugging:
                 int iterations = next->tused;
-                std::cout << "next->tused = iterations = " << iterations << std::endl;
+//                std::cout << "next->tused = iterations = " << iterations << std::endl;
 
 
                 // iterate over all transitions
@@ -440,11 +440,11 @@ public:
 
 
                         // debugging for the thousandth time
-                        FILE * file;
-                        file = fopen ("analyze.dot","w");
-                        fa_dot(file, automaton);
-                        fclose (file);
-                        printf("%p to %p\n", next, (trans+i)->to);
+//                        FILE * file;
+//                        file = fopen ("analyze.dot","w");
+//                        fa_dot(file, automaton);
+//                        fclose (file);
+//                        printf("%p to %p\n", next, (trans+i)->to);
 
                         //remember the new target state
                         targets.insert((trans+i)->to);
@@ -679,6 +679,13 @@ public:
         (VarId &newS, const VarId &oldS,
                 const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) const {
 
+//        FILE * file;
+//        std::stringstream filess;
+//        filess << "a2c" << ".dot";
+//        file = fopen (filess.str().c_str(),"w");
+//        write_dot_file(file);
+//        fclose (file);
+
         // for the new grammar
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
@@ -687,7 +694,7 @@ public:
         std::queue<VarId> worklist;
         worklist.push(oldS);
         auto workGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
-
+//        std::cout << "work grammar size: " << workGrammar.size() << std::endl;
 
         // change the grammar to one where monomials have degree at most 2 and those monomials with degree 2
         // have the form XY
@@ -825,12 +832,14 @@ public:
 //        std::cout << "start polynomial initially: " << startPolynomial.string() << std::endl;
 //        std::cout << "initial state: " << initialState << std::endl;
         for(auto target: finalStates) {
+//            std::cout << "adding to start polynomial" << std::endl;
 //            std::cout << "current final state: " << target << std::endl;
 //            std::cout << "index mapping: " << statesToIndices[target] << std::endl;
             startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
 //            std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         }
-        newS = Var::GetVarId(std::string("S"));
+        newS = Var::GetVarId();
+//        std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         resultGrammar.push_back(std::make_pair(newS, startPolynomial));
 
         auto startProduction = resultGrammar[resultGrammar.size() - 1];
