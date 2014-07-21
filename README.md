@@ -54,6 +54,8 @@ the program will be):
 ./newton --lossyC --refine 2 --file ../example\ grammar\ for\ CFG\ inequality\ check/minijava1.cfg 
      --file2 ../example\ grammar\ for\ CFG\ inequality\ check/minijava2.cfg 
 
+The output will be "different [refinement depth at which difference was found]" if the languages are found to be different, else "maybe_equal [used refinement depth]".
+
 I would advise against refinement depths of greater than 2 for large terminal alphabets since the number of prefixes
 becomes too large to be useful very quickly. If n is the number of terminal symbols and b is the refinement depth, then
 there are n^b possible prefixes and thus grammars to calculate.
