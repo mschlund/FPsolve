@@ -20,4 +20,4 @@ I would advise against refinement depths of greater than 2 for large terminal al
 becomes too large to be useful very quickly. If n is the number of terminal symbols and b is the refinement depth, then
 there are n^b possible prefixes and thus grammars to calculate.
  
-With regard to any issues, contact Georg Bachmeier at <bachmeie@in.tum.de>
+With regard to any issues, contact Georg Bachmeier at <bachmeie at in dot tum dot de>

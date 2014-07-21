@@ -22,7 +22,7 @@
  * 21-07-2014: the header was slightly altered (and the library recompiled)
  * for the purposes of generating downward closures of languages; the
  * License remains the same. With regard to any questions about the changes,
- * contact Georg Bachmeier at <bachmeie@in.tum.de>.
+ * contact Georg Bachmeier at <bachmeie at in dot tum dot de>.
 
  */
 
