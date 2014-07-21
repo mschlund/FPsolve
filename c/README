@@ -4,13 +4,13 @@ To install:
 2) Run cmake . in newton/c
 3) Run make in newton/c
 
-For the specification of grammars, so the example grammars in newton/c/example grammar for CFG inequality check.
+For the specification of grammars, see the example grammars in "newton/c/example grammar for CFG inequality check".
 Nonterminals are denoted <NONTERMINAL_IDENTIFIER>, terminals are denoted "terminal_string";
 you can put multiple letters into a single pair of "". However, this prototype only supports ASCII alphanumeric
-characters, which means it's limited to 62 different terminal symbols (capital letters, small lowercase letters,
+characters, which means it's limited to 62 different terminal symbols (capital letters, lowercase letters,
 numerical digits).
 
-Once the program is compiled, an example call to compare two grammars would be (fom the folder newton/c/src where
+Once the program is compiled, an example call to compare two grammars would be (from the folder newton/c/src where
 the program will be):
 
 ./newton --lossyC --refine 2 --file ../example\ grammar\ for\ CFG\ inequality\ check/minijava1.cfg 
