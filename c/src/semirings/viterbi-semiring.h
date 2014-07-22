@@ -8,12 +8,13 @@
 
 #include "semiring.h"
 #include <string>
+#include <cassert>
+#include <cmath>
+#include <limits>
 
 class ViterbiSemiring : public StarableSemiring<ViterbiSemiring, Commutativity::Commutative, Idempotence::Idempotent>{
 private:
   float value_;
-  static std::shared_ptr<ViterbiSemiring> elem_null;
-  static std::shared_ptr<ViterbiSemiring> elem_one;
 public:
   ViterbiSemiring(): value_(0) {}
   ViterbiSemiring(const float v) : value_(v) { assert(value_ >= 0.0f && value_ <= 1.0f); }
@@ -50,7 +51,7 @@ public:
   bool operator == (const ViterbiSemiring& elem) const{
     // comparing floating point has to be done like this. (see Knuth TAoCP Vol.2 p. 233)
     return std::fabs(value_ - elem.value_) <=
-           std::numeric_limits<double>::epsilon() *
+           std::numeric_limits<float>::epsilon() *
              std::min(std::fabs(value_), std::fabs(elem.value_));
   }
 

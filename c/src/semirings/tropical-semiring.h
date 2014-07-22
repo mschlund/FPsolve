@@ -22,8 +22,6 @@ private:
    * val == UINT_MAX is interpreted as infinity
    */
   int val;
-  static std::shared_ptr<TropicalSemiring> elem_null;
-  static std::shared_ptr<TropicalSemiring> elem_one;
 public:
   TropicalSemiring();
   TropicalSemiring(const int val);

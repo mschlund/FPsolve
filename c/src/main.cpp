@@ -23,6 +23,7 @@
 #include "semirings/bool-semiring.h"
 #include "semirings/why-set.h"
 #include "semirings/viterbi-semiring.h"
+#include "semirings/maxmin-semiring.h"
 
 
 #ifdef USE_GENEPI
@@ -234,6 +235,7 @@ int main(int argc, char* argv[]) {
     ( "float", "float semiring" )
     ( "bool", "boolean semiring" )
     ( "why", "why semiring" )
+    ( "maxmin", "MaxMin semiring" )
     ( "viterbi", "Viterbi semiring" )
     ( "tropical", "tropical semiring over the integers" )
     ( "rexp", "commutative regular expression semiring" )
@@ -249,7 +251,7 @@ int main(int argc, char* argv[]) {
     ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph" )
-    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newton\", \"newtonCL\" or \"kleene\")" )
+    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\" or \"kleene\")" )
     ;
 
   po::variables_map vm;
@@ -313,6 +315,7 @@ int main(int argc, char* argv[]) {
       !vm.count("mlset") &&
       !vm.count("prefix") &&
       !vm.count("lossy") &&
+      !vm.count("maxmin") &&
       !vm.count("viterbi"))
     {
     std::cout << "Please supply a supported semiring :)" << std::endl;
@@ -553,8 +556,21 @@ int main(int argc, char* argv[]) {
             std::cout << result_string(
                 call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
                 ) << std::endl;
+    }
+    else if (vm.count("maxmin")) {
+          auto equations = p.free_parser(input_all);
+          auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> MaxMinSemiring {
+            auto srconv = SRConverter<MaxMinSemiring>();
+            return c.Eval(srconv);
+          });
 
-        }
+          if (equations2.empty()) return EXIT_FAILURE;
+
+            std::cout << result_string(
+                call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+                ) << std::endl;
+
+    }
 
 
 

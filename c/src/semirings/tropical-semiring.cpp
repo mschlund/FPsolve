@@ -82,15 +82,11 @@ TropicalSemiring TropicalSemiring::star() const {
 }
 
 TropicalSemiring TropicalSemiring::null() {
-  if(!TropicalSemiring::elem_null)
-    TropicalSemiring::elem_null = std::shared_ptr<TropicalSemiring>(new TropicalSemiring(INFTY));
-  return *TropicalSemiring::elem_null;
+  return TropicalSemiring(INFTY);
 }
 
 TropicalSemiring TropicalSemiring::one() {
-  if(!TropicalSemiring::elem_one)
-    TropicalSemiring::elem_one = std::shared_ptr<TropicalSemiring>(new TropicalSemiring(0));
-  return *TropicalSemiring::elem_one;
+  return TropicalSemiring(0);
 }
 
 std::string TropicalSemiring::string() const {
@@ -105,6 +101,3 @@ std::string TropicalSemiring::string() const {
     ss << this->val;
   return ss.str();
 }
-
-std::shared_ptr<TropicalSemiring> TropicalSemiring::elem_null;
-std::shared_ptr<TropicalSemiring> TropicalSemiring::elem_one;
