@@ -185,7 +185,7 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
         free_elem_parser() : free_elem_parser::base_type(elem)
         {
           //quotes are optional, but if they are present they must surround the constant
-          elem = (qi::as_string[lexeme[+(ascii::char_ - '"' - '|' - '<' - ';')]] [_val = free_var(_1)])
+          elem = (qi::as_string[lexeme[+(ascii::char_ - '"' - '|' - '<' - ';' - ' ')]] [_val = free_var(_1)])
                | ('"' >> qi::as_string[lexeme[+(ascii::char_ - '"')]] [_val = free_var(_1)] >> '"');
 
         }

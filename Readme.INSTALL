@@ -2,7 +2,7 @@ To compile you need the following tools and libraries (Tested under Ubuntu Linux
 
 - cmake (tested with version >= 2.8, probably also works with older versions)
 - g++ (version >= 4.8)
-- boost (tested with version >=1.53, libs: program-options, filesystem, system)
+- boost (tested with version >=1.48, libs: program-options, filesystem, system)
 - optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
 - cppunit: for unit-tests
 
@@ -15,4 +15,9 @@ $ cd FPsolve/c
 $ cmake .
 $ make 
 
+Troubleshooting:
+----------------
+
+1) Compilation needs a lot of memory (due to boost and template-stuff) -- at least 3GB are recommended.
+2) compilation error ".. is missing emplace()" -- you need at least gcc 4.8 (gcc 4.7 does not yet support many c++11-features)
 

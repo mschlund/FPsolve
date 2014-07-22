@@ -22,6 +22,7 @@
 #include "semirings/semilinear_set.h"
 #include "semirings/bool-semiring.h"
 #include "semirings/why-set.h"
+#include "semirings/viterbi-semiring.h"
 
 
 #ifdef USE_GENEPI
@@ -233,6 +234,7 @@ int main(int argc, char* argv[]) {
     ( "float", "float semiring" )
     ( "bool", "boolean semiring" )
     ( "why", "why semiring" )
+    ( "viterbi", "Viterbi semiring" )
     ( "tropical", "tropical semiring over the integers" )
     ( "rexp", "commutative regular expression semiring" )
     ( "slset", "explicit semilinear sets semiring, no simplification " )
@@ -310,7 +312,9 @@ int main(int argc, char* argv[]) {
       !vm.count("tropical") &&
       !vm.count("mlset") &&
       !vm.count("prefix") &&
-      !vm.count("lossy")) {
+      !vm.count("lossy") &&
+      !vm.count("viterbi"))
+    {
     std::cout << "Please supply a supported semiring :)" << std::endl;
     return 0;
   }
@@ -537,6 +541,20 @@ int main(int argc, char* argv[]) {
             ) << std::endl;
 
     }
+    else if (vm.count("viterbi")) {
+          auto equations = p.free_parser(input_all);
+          auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> ViterbiSemiring {
+            auto srconv = SRConverter<ViterbiSemiring>();
+            return c.Eval(srconv);
+          });
+
+          if (equations2.empty()) return EXIT_FAILURE;
+
+            std::cout << result_string(
+                call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+                ) << std::endl;
+
+        }
 
 
 
