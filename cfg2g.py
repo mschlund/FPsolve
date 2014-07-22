@@ -1,4 +1,4 @@
-#usage: python convert_cfg.py input.cfg > output.cfg
+#usage: python cfg2g.py input.cfg > output.g # where .g is the cfg-analyzer format
 
 tokens = ('DEFINEDAS','PIPE','SEMICOLON','TERMINAL','NONTERMINAL')
 

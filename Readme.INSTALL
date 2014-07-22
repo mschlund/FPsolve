@@ -1,0 +1,18 @@
+To compile you need the following tools and libraries (Tested under Ubuntu Linux version 13.10):
+
+- cmake (tested with version >= 2.8, probably also works with older versions)
+- g++ (version >= 4.8)
+- boost (tested with version >=1.53, libs: program-options, filesystem, system)
+- optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
+- cppunit: for unit-tests
+
+Then simply clone the repository:
+$ git clone https://github.com/mschlund/FPsolve.git
+
+Then the following commands should do the job. Note that cmake will complain if some library wasn't found -- pay attention to these errors!
+
+$ cd FPsolve/c
+$ cmake .
+$ make 
+
+
