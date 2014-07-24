@@ -11,7 +11,7 @@ std::string ToString(const A &a) {
 
 template <typename A, typename B>
 std::ostream& operator<<(std::ostream &out, const std::pair<A, B> &pair) {
-  return out << "(" << pair.first << ", " << pair.second << ")";
+  return out << "(" << pair.first << ":" << pair.second << ")";
 }
 
 

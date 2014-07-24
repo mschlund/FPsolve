@@ -82,7 +82,7 @@ class UniqueVMap {
     friend std::ostream& operator<<(std::ostream &out, const UniqueVMap &vec_map) {
       out << "[";
       for (const auto &key_value : vec_map) {
-        out << "(" << key_value.first << ", " << key_value.second << ")";
+        out << key_value.first << ":" << key_value.second;
       }
       out << "]";
       return out;

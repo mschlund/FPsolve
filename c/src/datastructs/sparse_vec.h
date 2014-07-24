@@ -198,7 +198,7 @@ class SparseVec {
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {
       assert(svector.Sanity());
       out << "[";
-      out << ToStringSorted(*svector.vmap_);
+      out << ToStringSorted(*svector.vmap_,",");
       out << "]";
       return out;
     }

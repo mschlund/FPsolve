@@ -126,9 +126,9 @@ class LinearSet {
     }
 
     friend std::ostream& operator<<(std::ostream &out, const LinearSet lset) {
-      out << "<" << lset.offset_
+      out << lset.offset_
           << " : "
-          << ToStringSorted(lset.GetGenerators()) << ">";
+          << ToStringSorted(lset.GetGenerators());
       return out;
     }
 

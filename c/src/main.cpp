@@ -250,7 +250,7 @@ int main(int argc, char* argv[]) {
     ( "free", "free semiring" )
     ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
-    ( "graphviz", "create the file graph.dot with the equation graph" )
+    ( "graphviz", "create the file graph.dot with the equation graph (NOTE: currently only with option --scc) " )
     ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\" or \"kleene\")" )
     ;
 
@@ -352,7 +352,7 @@ int main(int argc, char* argv[]) {
     solver_name = vm["solver"].as<std::string>();
   }
   else {
-    solver_name = "newtonCL"; //seems to be the fastest
+    solver_name = "newtonConc"; //seems to be the fastest
   }
 
 
@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
     });
 
     if (equations.empty()) return EXIT_FAILURE;
-    PrintEquations(equations);
+    //PrintEquations(equations);
     if (!vm.count("vec-simpl") && !vm.count("lin-simpl")) {
       DMSG("A");
       std::cout << result_string(
