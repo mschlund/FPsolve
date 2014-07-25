@@ -1,22 +1,32 @@
 import itertools
 
-persons = ['A','B','C','D','E']
+persons = ['A','B','C']
 products = ['p','q','r']
 
 #trust and recommend relations with weights
 
+#trust = {(0,1) : 0.3,
+#         (0,2) : 0.7,
+#         (1,0) : 0.2,
+#         (1,2) : 0.6,
+#         (1,3) : 0.2,
+#         (4,2) : 0.2,
+#         (3,4) : 0.5}
+
+#rec = {(3,2) : 0.7,
+#       (3,0) : 0.8,
+#       (2,1) : 0.3,
+#       (2,2) : 0.7}
+
 trust = {(0,1) : 0.3,
          (0,2) : 0.7,
          (1,0) : 0.2,
-         (1,2) : 0.6,
-         (1,3) : 0.2,
-         (4,2) : 0.2,
-         (3,4) : 0.5}
+         (1,2) : 0.8}
 
-rec = {(3,2) : 0.7,
-       (3,0) : 0.8,
-       (2,1) : 0.3,
-       (2,2) : 0.7}
+rec = {(0,1) : 0.7,
+       (1,1) : 0.8,
+       (2,2) : 0.3}
+
 
 
 def gen_system_free() :
@@ -55,12 +65,15 @@ def gen_system_free() :
 def gen_system_weighted(rec_discount = 1.0, trust_discount = 1.0) :
   #generate equation for all pairs of persons e.g. <Trust_A_B> ::= "AB" | <Trust_A_C> <Trust_C_B> | ...
   for i,j in itertools.product(range(len(persons)),repeat=2) :
-    joinpairs = [(('"' + str(trust_discount) + '" ') if trust_discount != 1.0 else "") + "<Trust_" + persons[i] + "_" + persons[x] + ">" + " <Trust_" + persons[x] + "_" + persons[j] + "> " for x in range(len(persons)) if trust.has_key((i,x)) and trust.has_key((x,j))]
+    joinpairs = [(('"' + str(trust_discount) + '" ') if trust_discount != 1.0 else "") + "<Trust_" + persons[i] + "_" + persons[x] + ">" + " <Trust_" + persons[x] + "_" + persons[j] + "> " for x in range(len(persons))]
 #    print str(i) + str(j) + " : " + str(joinpairs)
     body = ""
     if len(joinpairs) > 0 :
-      body = reduce(lambda x,y: x + " | " + y, joinpairs if trust.has_key((i,j)) else joinpairs[1:], ('"' + str(trust[i,j]) + '"') if trust.has_key((i,j)) else joinpairs[0])
-#      print body
+      if trust.has_key((i,j)) :
+        body = reduce(lambda x,y: x + " | " + '"' + str(1.0 - trust[i,j]) + '" ' + y, joinpairs, '"' + str(trust[i,j]) + '"')
+      else :
+        body = reduce(lambda x,y: x + " | " + y, joinpairs[1:], joinpairs[0])
+      #print body
     else :
       body = ('"' + str(trust[i,j]) + '"') if trust.has_key((i,j)) else ""
     eq = "<Trust_" + persons[i] + "_" + persons[j] + "> ::= " + body + ";"
@@ -69,7 +82,7 @@ def gen_system_weighted(rec_discount = 1.0, trust_discount = 1.0) :
       print eq
 
   for i,j in itertools.product(range(len(persons)),range(len(products))) :
-    joinpairs = [(('"' + str(rec_discount) + '" ') if rec_discount != 1.0 else "") + "<Trust_" + persons[i] + "_" + persons[x] + ">" + " <Rec_" + persons[x] + "_" + products[j] + "> " for x in range(len(persons)) if trust.has_key((i,x)) and rec.has_key((x,j))]
+    joinpairs = [(('"' + str(rec_discount) + '" ') if rec_discount != 1.0 else "") + "<Trust_" + persons[i] + "_" + persons[x] + ">" + " <Rec_" + persons[x] + "_" + products[j] + "> " for x in range(len(persons))]
     body = ""
     if len(joinpairs) > 0 :
       if rec.has_key((i,j)) :
