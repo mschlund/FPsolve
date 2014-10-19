@@ -177,7 +177,16 @@ public:
         int largestCleanGrammar = 0;
         int iterationsBeforeSuccess = 0;
         int outputLength = 0;
-
+//        std::cout << "grammar 1:" << std::endl;
+//        for(auto &equation: equations_1) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
+//        std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\ngrammar 2:" << std::endl;
+//        for(auto &equation: equations_2) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
+//
+//        std::cout << "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n" << std::endl;
         LSR approx_1 = downwardClosureCourcelle(equations_1, S_1);
         LSR approx_2 = downwardClosureCourcelle(equations_2, S_2);
 
@@ -202,8 +211,37 @@ public:
                 regexAlphabetStar += "]*";
 
                 // build the map of (length, prefixes of that length)
-                std::map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes);
+                std::set<char> derivableFirstLetters = NonCommutativePolynomial<LSR>::getDerivableFirstLettes(equations_1, S_1);
+                std::set<char> derivableFirstLetters2 = NonCommutativePolynomial<LSR>::getDerivableFirstLettes(equations_2, S_2);
 
+
+
+
+
+//                std::cout << "prefix letters 1:" << std::endl;
+//                for(char letter: derivableFirstLetters) {
+//                    std::cout << letter<< std::endl;
+//                }
+//                std::cout << "prefix letters 2:" << std::endl;
+//                for(char letter: derivableFirstLetters2) {
+//                    std::cout << letter<< std::endl;
+//                }
+
+
+
+
+
+                for(char letter: derivableFirstLetters2) {
+                    derivableFirstLetters.insert(letter);
+                }
+
+                std::map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes, derivableFirstLetters);
+//                std::cout << "prefixes to check:" << std::endl;
+//                for(int i = 1; i <= maxLengthOfPrefixes; i++) {
+//                    for(std::string prefix: prefixesPerLength[i]) {
+//                        std::cout << prefix << std::endl;
+//                    }
+//                }
                 // iterate over the prefixes
                 bool noDifference = true;
                 std::queue<VarId> worklist;
@@ -253,7 +291,8 @@ public:
                         // approximate the grammars
                         LSR approx_1_part = downwardClosureCourcelle(equations_1_Partition, S_1_partition);
                         LSR approx_2_part = downwardClosureCourcelle(equations_2_Partition, S_2_partition);
-
+//                        std::cout << "dwc 1 part:\t" << approx_1_part.string() << std::endl;
+//                        std::cout << "dwc 2 part:\t" << approx_2_part.string() << std::endl;
                         LSR tempDiff = compareClosures(equations_1_Partition, S_1_partition, equations_2_Partition, S_2_partition, approx_1_part, approx_2_part, largestRawGrammar, largestCleanGrammar);
 
                         if(!(tempDiff == LSR::null())) {
@@ -265,7 +304,7 @@ public:
                     }
                 }
             } else { // both languages empty
-                std::cout << "maybe_equal 0" << std::endl;
+                std::cout << "equal 0" << std::endl;
                 return difference;
             }
 
@@ -402,6 +441,7 @@ public:
 
         std::queue<VarId> worklist;
         worklist.push(S);
+//        std::cout << "sum of lengths of right sides in original grammar:\t" << NonCommutativePolynomial<LSR>::sumRightSidesLengths(equations) << std::endl;
 
 //        std::cout << "system:" << std::endl;
 //        for(auto &equation: equations) {
@@ -427,6 +467,8 @@ public:
 //            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
 //        }
         auto cleanQNF = quadraticNormalForm(cleanEquations, true);
+//        std::cout << "nonterminals in QNF:\t" << NonCommutativePolynomial<LSR>::numberOfNonterminalsInGrammar(cleanQNF) << std::endl;
+
 //        std::cout << "clean QNF courcelle:" << std::endl;
 //        for(auto &equation: cleanQNF) {
 //            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;

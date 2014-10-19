@@ -310,8 +310,9 @@ public:
     }
 
     /*
-     * Minimizes the automaton of this FA. The returned automaton is the one on which the method was invoked;
-     * there is no copy involved. This is due to restrictions of the library we are using.
+     * Minimizes the automaton of this FA; involves determinization. The returned FiniteAutomaton
+     * is the one on which the method was invoked; it's just the internal representation of the
+     * automaton that is being modified. This is due to restrictions of the library we are using.
      */
     FiniteAutomaton minimize() const {
         fa_minimize(automaton);
@@ -319,12 +320,15 @@ public:
     }
 
     /*
-     * Complements the language of this automaton.
+     * Complements the language of this automaton; involves determinization.
      */
     FiniteAutomaton complement() const {
         return FiniteAutomaton(fa_complement(automaton));
     }
 
+    /*
+     * Constructs an automaton for L(this)\L(other); involves determinization.
+     */
     FiniteAutomaton minus(FiniteAutomaton other) const {
         return FiniteAutomaton(fa_minus(automaton, other.automaton));
     }
@@ -399,6 +403,8 @@ public:
         std::set<unsigned long> foundStates;
         std::vector<state*> bfsQueue;
 
+        struct fa* automaton = fa_clone(this->automaton); // we dont want to alter the original automaton,
+                                                    // we want a new one that is lossy
         struct trans *trans;
         struct state *next;
         for (auto s = automaton->initial; s != NULL; s = s->next){
@@ -568,7 +574,7 @@ public:
         return alphabet;
     }
 
-    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength) const {
+    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength, std::set<char> &derivableFirstLetters) const {
         std::map<int, std::map<unsigned long, std::set<std::string>>> prefixesViaStates;
         std::map<unsigned long, struct state*> hashToState;
         std::map<int, std::set<std::string>> prefixes;
@@ -599,8 +605,10 @@ public:
             for(unsigned char c = (trans+i)->min; c <= (trans+i)->max; c++) {
                 std::string prefix (1, c);
                 hashToState[(trans+i)->to->hash] = (trans+i)->to;
-                prefixesViaStates[1][(trans+i)->to->hash].insert(prefix);
-                prefixes[1].insert(prefix);
+                if(derivableFirstLetters.find(prefix.at(0)) != derivableFirstLetters.end()) {
+                    prefixesViaStates[1][(trans+i)->to->hash].insert(prefix);
+                    prefixes[1].insert(prefix);
+                }
 //                std::cout << "new prefix length 1:\t" << prefix << std::endl;
             }
         }
@@ -679,6 +687,9 @@ public:
         (VarId &newS, const VarId &oldS,
                 const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) const {
 
+        // do it with a DFA, something went wrong with NFAs
+        minimize();
+
 //        FILE * file;
 //        std::stringstream filess;
 //        filess << "a2c" << ".dot";
@@ -703,12 +714,12 @@ public:
                 (workGrammar, variablesToConstants, false);
         workGrammar = NonCommutativePolynomial<SR>::binarizeProductions(workGrammar, variablesToConstants);
 
-        // if the grammar doesn't produce anything, there is no need to do anything else;
-        // return an empty grammar
+        // if the grammar doesn't produce anything, there is no need to do anything else; return an empty grammar
         // the same applies if the automaton represents the empty language
         if(workGrammar.size() == 0 || empty()) {
             return resultGrammar;
         }
+
         /*
          * assuming anyone at all will have to change something here in the future, I expect they
          * won't want to go through the hassle of sifting through the undocumented implementation
@@ -727,7 +738,6 @@ public:
 
         // hashes of all final states of the FA
         std::set<unsigned long> finalStates;
-
 
         // initial state of the FA
         unsigned long initialState = 0;
@@ -770,7 +780,8 @@ public:
             }
         }
 
-        // generate the variables of the new grammar
+        // generate the variables of the new grammar, name them <q,X,r> where q and r are states of the DFA and X is
+        // a nonterminal of the grammar
         for(unsigned long i = 0; i < numberOfStates; i++) {
             for(unsigned long j = 0; j < numberOfStates; j++) {
                 for(unsigned long k = 0; k < workGrammar.size(); k++) {
@@ -810,9 +821,9 @@ public:
         // and then generate all productions derived from that nonterminal; this mirrors the way
         // in which the algorithm is described in the paper referred to above
         NonCommutativePolynomial<SR> poly;
-        for(unsigned long k = 0; k < workGrammar.size(); k++) {
-            for(unsigned long i = 0; i < numberOfStates; i++) {
-                for(unsigned long j = 0; j < numberOfStates; j++) {
+        for(unsigned long i = 0; i < numberOfStates; i++) {
+            for(unsigned long j = 0; j < numberOfStates; j++) {
+                for(unsigned long k = 0; k < workGrammar.size(); k++) {
 //                    std::cout << "k, i, j: " << k << ", " << i << ", " << j << std::endl;
                     poly = workGrammar[k].second.intersectionPolynomial
                             (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
@@ -871,7 +882,7 @@ private:
 
         // iterate through all states, build the transition table state for state
         struct trans *trans;
-        for (auto s = automaton->initial; s != NULL; s = s->next){
+        for (auto s = automaton->initial; s != NULL; s = s->next) {
 
             // remember each state by its hash, also count them
             states.push_back(s->hash);

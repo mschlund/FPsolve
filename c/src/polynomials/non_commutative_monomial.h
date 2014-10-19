@@ -85,7 +85,7 @@ private:
      * we are currently generating all nonterminals <s_i, A, s_{i+1}> of the new grammar, then
      * currentState would refer us to s_i.
      *
-     * See Nederhof & Satta, "Probabilistic Parsing", 2008 for details on the generated nonterminals.
+     * See e.g. Nederhof & Satta, "Probabilistic Parsing" (section 3), 2008 for details on the generated nonterminals.
      */
     NonCommutativePolynomial<SR> generateIntersectionMonomials(std::vector<unsigned long> &states,
             std::map<unsigned long,
@@ -903,6 +903,111 @@ public:
 
             return false;
         }
+    }
+
+    /*
+     * returns true if some information changed
+     */
+    bool getDerivableFirstLettes(std::map<VarId, std::set<char>> &varToDerivableFirstLetters, std::set<VarId> &varsWithEpsilon,
+            const VarId &lhsOfProduction) const {
+//        std::cout << "monomial:\t" << string() << std::endl;
+
+        // do not touch null-monomials
+        for(int i = 0; i < srs_.size(); i++) {
+            if(srs_[i] == SR::null()) {
+                return false;
+            }
+        }
+
+        // first, check whether this monomial can derive epsilon
+        bool foundNew = false;
+
+        if(varsWithEpsilon.find(lhsOfProduction) ==  varsWithEpsilon.end()) {
+            bool canProduceEpsilon = true;
+            for(int i = 0; i < srs_.size(); i++) {
+                if(srs_[i] != SR::one()) {
+                    canProduceEpsilon = false;
+                    break;
+                }
+            }
+            if(canProduceEpsilon) {
+                for(int i = 0; i < variables_.size(); i++) {
+                    if(varsWithEpsilon.find(variables_[i]) == varsWithEpsilon.end()) {
+                        canProduceEpsilon = false;
+                        break;
+                    }
+                }
+            }
+
+            if(canProduceEpsilon) {
+                varsWithEpsilon.insert(lhsOfProduction);
+                foundNew = true;
+            }
+        }
+
+        // now figure out which prefixes we can derive from this monomial given the currently available information
+        auto leading_sr = getLeadingSR();
+        if(get_degree() == 0) {
+            if(leading_sr != SR::null() && leading_sr != SR::one()) {
+                foundNew |= varToDerivableFirstLetters[lhsOfProduction].insert(leading_sr.string().at(0)).second;
+            }
+        } else {
+
+            for(int i = 0; i < idx_.size(); i++) {
+                if(idx_[i].first == SemiringType && srs_[idx_[i].second] != SR::one()) {
+                    foundNew |= varToDerivableFirstLetters[lhsOfProduction].insert(srs_[idx_[i].second].string().at(0)).second;
+                    break;
+                }
+
+                if(idx_[i].first == Variable) {
+                    for(char letter: varToDerivableFirstLetters[variables_[idx_[i].second]]) {
+                        foundNew |= varToDerivableFirstLetters[lhsOfProduction].insert(letter).second;
+                    }
+
+                    if(varsWithEpsilon.find(variables_[idx_[i].second]) == varsWithEpsilon.end()) {
+                        break;
+                    }
+                }
+            }
+
+//                //find the index of the first variable
+//                int index = 0;
+//                while(idx_[index].first == SemiringType) {
+//                    index++;
+//                }
+//
+//                int varIndex = 0;
+//                while(index < idx_.size() && idx_[index].first == Variable) {
+//                    for(char letter: varToDerivableFirstLetters[variables_[varIndex]]) {
+//                        foundNew |= varToDerivableFirstLetters[lhsOfProduction].insert(letter).second;
+//                    }
+//
+//                    if(varsWithEpsilon.find(variables_[varIndex]) == varsWithEpsilon.end()) {
+//                        break;
+//                    }
+//
+//                    index++;
+//                    varIndex++;
+//                }
+        }
+//        std::cout << "yup" << std::endl;
+        return foundNew;
+    }
+
+    int getLength() const {
+        int length = 0;
+
+        for(VarId var: variables_) {
+            length++;
+        }
+
+        for(SR sr: srs_) {
+            if(sr != SR::null() && sr != SR::one()) {
+                length += sr.string().length();
+            }
+        }
+
+        return length;
     }
 
     /*

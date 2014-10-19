@@ -96,6 +96,7 @@ public:
     }
 
     LossyFiniteAutomaton lossify() const {
+//        std::cout << "someone said \"lossify!\"\t" << string() << std::endl;
         if (language.empty()) {
             return *this;
         }
@@ -237,6 +238,7 @@ public:
     bool operator==(const LossyFiniteAutomaton &x) const {
 //        std::cout << "LFA==" << std::endl;
 
+//        std::cout << "==" << std::endl;
         // we only do this because there is no special symbol for the empty language, and we don't want to
         // lossify the string representation of the empty language: "__EMPTYLANGUAGE__"
         if(x.language.empty() && language.empty()) {
@@ -324,8 +326,8 @@ public:
         return language.alphabet();
     }
 
-    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength) const {
-        return language.prefixesToMaxLength(maxLength);
+    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength, std::set<char> &derivableFirstLetters) const {
+        return language.prefixesToMaxLength(maxLength, derivableFirstLetters);
     }
 
     /*

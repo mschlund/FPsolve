@@ -683,6 +683,9 @@ int main(int argc, char* argv[]) {
 
 //          clock_t startTime = clock();
           auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+          std::cout << "dwc:\t" << approximation.string() << std::endl;
+          std::cout << "size NFA for DWC:\t" << approximation.size() << std::endl;
+          std::cout << "size minimal DFA for DWC:\t" << approximation.minimize().size() << std::endl;
 //          gettimeofday(&endT, NULL);
 //          clock_t endTime = clock();
 //          clock_gettime(CLOCK_MONOTONIC, &end);
@@ -690,7 +693,7 @@ int main(int argc, char* argv[]) {
 
 //          ret = getrusage(who, &usage);
 //          uint64_t timeElapsed = timespecDiff(&end, &start) / 1000000;
-          std::string approx = approximation.string();
+//          std::string approx = approximation.string();
 //          unsigned long actualTime = (usage.ru_stime.tv_sec * 1000) + (usage.ru_stime.tv_usec /1000);
 //          seconds  = endT.tv_sec  - startT.tv_sec;
 //          useconds = endT.tv_usec - startT.tv_usec;
@@ -700,7 +703,7 @@ int main(int argc, char* argv[]) {
 //          for(auto &equation: equations) {
 //              std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
 //          }
-          std::cout /* << "\t\t\t" << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< /*"\nclosure:\t" <<*/ approx << /*"\n\n\n"<<*/ std::endl;
+//          std::cout /* << "\t\t\t" << "\t time:\t" << mtime << "\tmemory used: " << usage.ru_maxrss << "KB\t" *//*<< vm["file"].as<std::string>() */<< /*"\nclosure:\t" <<*/ approx << /*"\n\n\n"<<*/ std::endl;
       }
   } else if(vm.count("lossyIntersectTest")) {
       auto equations = p.lossy_fa_parser(input_all);

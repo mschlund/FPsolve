@@ -1030,6 +1030,7 @@ public:
      * The problem we run into there is that we have to process all productions of the form
      * A -> X_1 X_2 X_3 ... X_m where the (X_i)s are all elements of either the terminal or the
      * nonterminal alphabet, so having any symbols in the grammar that don't belong to either
+     * will give you trouble
      */
     NonCommutativePolynomial<SR> intersectionPolynomial(std::vector<unsigned long> &states,
             std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
@@ -1052,6 +1053,7 @@ public:
                     epsilonAdded = true;
                 }
             } else { // if this is a non-epsilon production, we calculate the new productions that derive from it
+//                std::cout << "monomial being processed:\t" << monomial.first.string() << std::endl;
                 result += monomial.first.intersectionPolynomial
                         (states, transitionTable, startState, targetState,
                                 statesToIndices, oldVariablesToIndices, newVariables);
@@ -1109,6 +1111,56 @@ public:
 
         assert(productionsForShortestWords.find(startSymbol) != productionsForShortestWords.end());
         return productionsForShortestWords[startSymbol].shortestDerivableTerminal(productionsForShortestWords);
+    }
+
+    /*
+     * Finds all terminal symbols that can be the first letter of some word in the language of the grammar.
+     */
+    static std::set<char> getDerivableFirstLettes(const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, const VarId &startSymbol){
+//        for(auto &equation: productions) {
+//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
+//        }
+        std::map<VarId, std::set<char>> varToDerivableFirstLetters;
+        std::set<VarId> varsWithEpsilon;
+        if(productions.size() != 0) {
+
+            // while we find new derivable first letters, continue updating
+            bool update;
+            do {
+                update = false;
+
+                for(auto &equation: productions) {
+                    for(auto &monomial: equation.second.monomials_) {
+                        update |= monomial.first.getDerivableFirstLettes(varToDerivableFirstLetters, varsWithEpsilon, equation.first);
+                    }
+                }
+            } while(update);
+        }
+
+        return varToDerivableFirstLetters[startSymbol];
+    }
+
+    static int sumRightSidesLengths(const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions) {
+        int sum = 0;
+
+        for(auto &equation: productions) {
+            for(auto &monomial: equation.second.monomials_) {
+                sum += monomial.first.getLength();
+            }
+        }
+
+        return sum;
+    }
+
+    static int numberOfNonterminalsInGrammar (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions) {
+        std::set<VarId> vars;
+        for(auto &equation: productions) {
+            vars.insert(equation.first);
+            for(auto &varInPoly: equation.second.get_variables()) {
+                vars.insert(varInPoly);
+            }
+        }
+        return vars.size();
     }
 
     /*
