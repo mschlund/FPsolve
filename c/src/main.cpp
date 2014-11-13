@@ -297,6 +297,10 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
+#ifdef USE_GENEPI
+  SemilinSetNdd::genepi_init();
+#endif
+
   int iterations=0;
   if (vm.count("iterations"))
           iterations = vm["iterations"].as<int>();
@@ -394,13 +398,13 @@ int main(int argc, char* argv[]) {
     }
 #ifdef USE_GENEPI
   } else if (vm.count("slsetndd")) {
-      SemilinSetNdd::genepi_init(vm["slsetndd"].as<std::string>(), vm["n"].as<int>());
+      SemilinSetNdd::solver_init(vm["n"].as<int>());
       auto equations = p.slsetndd_parser(input_all);
       if (equations.empty()) return EXIT_FAILURE;
       std::cout << result_string(
           call_solver(solver_name, equations, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
-      SemilinSetNdd::genepi_dealloc();
+      SemilinSetNdd::solver_dealloc();
 #endif
   } else if (vm.count("mlset")) {
 
@@ -444,13 +448,13 @@ int main(int argc, char* argv[]) {
 
     // parse the input into a list of (Var → Polynomial[SR])
 	auto equations = p.free_parser(input_all);
-    if (equations.empty()) return EXIT_FAILURE;
+  auto equations2 = MakeCommEquations(equations);
 
-    PrintEquations(equations);
+  if (equations2.empty()) return EXIT_FAILURE;
 
-    //std::cout << result_string(
-    //    apply_solver<KleeneNonComm>(...)
-    //    ) << std::endl;
+//    std::cout << result_string(
+//        call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+//        ) << std::endl;
 
   } else if (vm.count("lossy")) {
 
@@ -496,9 +500,18 @@ int main(int argc, char* argv[]) {
 
     //PrintEquations(equations);
     //PrintEquations(equations2);
+
+    if(vm.count("solver")){
       std::cout << result_string(
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
+    }
+    else {
+      //default: "Fast" numeric Newton
+      std::cout << result_string(
+          apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+    }
 
   } else if (vm.count("bool")) {
     auto equations = p.free_parser(input_all);
@@ -572,7 +585,9 @@ int main(int argc, char* argv[]) {
 
     }
 
-
+#ifdef USE_GENEPI
+  SemilinSetNdd::genepi_dealloc();
+#endif
 
   return EXIT_SUCCESS;
 }

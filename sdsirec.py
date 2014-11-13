@@ -19,10 +19,10 @@ products = ['p','q','r']
 #       (2,2) : 0.7}
 
 # peer-to-peer trust values (<= 1)
-trust = {(0,1) : 0.5,
-         (0,2) : 0.2,
-         (1,0) : 0.7,
-         (2,0) : 0.6}
+trust = {(0,1) : 0.3,
+         (0,2) : 0.201,
+         (1,0) : 0.51,
+         (2,1) : 0.51}
 
 # sdsi-rep example:
 #trust = {(0,1) : 0.7,
@@ -120,6 +120,6 @@ def gen_system_weighted() :
 if __name__ == "__main__":
   #import sys
   #foo(sys.argv[1])
-  #gen_system_free()
-  gen_system_weighted()
+  gen_system_free()
+  #gen_system_weighted()
 

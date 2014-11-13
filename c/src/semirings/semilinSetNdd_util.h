@@ -4,11 +4,13 @@
 #include <genepi/genepi.h>
 #include <vector>
 
+#include "../utils/string_util.h"
+
 class Genepi {
   // TODO: less flags and more enums
 private:
-  genepi_set *set;
-  genepi_solver* solver; // TODO: maybe this does not have to be in here...
+  genepi_set *set = nullptr;
+  genepi_solver* solver = nullptr; // TODO: maybe this does not have to be in here...
 public:
   Genepi(); // should not be called
   Genepi(genepi_solver* solver, genepi_set* set);
@@ -33,10 +35,10 @@ public:
   bool operator==(const Genepi& g) const;
   int getSize() const;
   std::string output(std::string prefix, int i, std::string postfix) const;
-private:
-  static genepi_set* createVector(genepi_solver* solver, std::vector<int> x);
-  static genepi_set* createGenerator(genepi_solver* solver, std::vector<int> x);
-  static genepi_set* createGenerators(genepi_solver* solver, std::vector<std::vector<int>> sets);
+
+  static genepi_set* createVector(genepi_solver* solver, const std::vector<int>& x);
+  static genepi_set* createGenerator(genepi_solver* solver, const std::vector<int>& x);
+  static genepi_set* createLinSet(genepi_solver* solver, const std::vector<int>& offset, const std::vector<std::vector<int>>& generators);
 };
 
 #endif

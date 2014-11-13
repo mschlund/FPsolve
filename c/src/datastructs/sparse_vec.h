@@ -18,6 +18,7 @@
 #define VEC_SIMPL_TEMPLATE_TYPE \
   template <typename, typename, template <typename, typename> class> class
 
+
 typedef std::uint_fast32_t Counter;
 
 
@@ -187,12 +188,20 @@ class SparseVec {
       return true;
     }
 
-    std::vector<std::pair<VarId, Counter>> getVector() const {
-      std::vector<std::pair<VarId, Counter>> result;
+    std::vector<std::pair<Var, Counter>> getVector() const {
+      std::vector<std::pair<Var, Counter>> result;
       for(auto elem : *vmap_) {
         result.push_back({elem.first, elem.second});
       }
       return result;
+    }
+
+    std::set<Var> getVariables() const {
+      std::set<Var> res;
+      for(auto elem : *vmap_) {
+        res.insert(elem.first);
+      }
+      return res;
     }
 
     friend std::ostream& operator<<(std::ostream &out, const SparseVec &svector) {

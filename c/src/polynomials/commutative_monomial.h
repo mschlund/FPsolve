@@ -136,7 +136,7 @@ class CommutativeMonomial {
         /* All variables should be in the values map. */
         assert(value_iter != values.end());
         // exponentiation is more efficient than iterated multiplication (binary exp.)
-        result *= (value_iter->second ^ var_degree.second);
+        result *= pow(value_iter->second, var_degree.second);
 
         /*for (Degree i = 0; i < var_degree.second; ++i) {
           result *= value_iter->second;
@@ -233,7 +233,7 @@ class CommutativeMonomial {
           result_monomial.variables_.Insert(var_degree.first, var_degree.second);
         } else {
           /* Variable found, use it for evaluation. */
-          result_value *= (value_iter->second ^ var_degree.second);
+          result_value *= pow(value_iter->second, var_degree.second);
         }
       }
 

@@ -1,10 +1,6 @@
 #include <iostream>
 #include "semilinSetNdd.h"
-#include "../datastructs/sparse_vec.h"
 #include "semilinear_util.h"
-
-
-int static_i = 0;
 
 // insert an offset if it is unique in offsets
 std::vector<std::vector<int>>& insert_offset(std::vector<std::vector<int>>& offsets, const std::vector<int>& offset) {
@@ -89,22 +85,35 @@ std::vector<std::vector<int>> SemilinSetNdd::getIndependentOffsets(const std::ve
   return returned_result;
 }
 
-bool SemilinSetNdd::genepi_init(std::string pluginname, int number_of_variables)
-{
+// init/dealloc to main, here: just init/dealloc solver!
+bool SemilinSetNdd::genepi_init() {
   genepi_loader_init();
   genepi_loader_load_default_plugins();
-  plugin = genepi_loader_get_plugin(pluginname.c_str());
-  std::cout << "Plugin: " << genepi_plugin_get_name(plugin) << std::endl;
-  // TODO: use of cache???
-  solver = genepi_solver_create(plugin, 0, 0, 0);
-  k = number_of_variables;
-  return true; // TODO: return correct value!
+  plugin = genepi_loader_get_plugin("mona");
+  //std::cout << "Plugin: " << genepi_plugin_get_name(plugin) << std::endl;
+  return true;
 }
 
 bool SemilinSetNdd::genepi_dealloc() {
-  genepi_solver_delete(solver);
   genepi_plugin_del_reference(plugin);
   genepi_loader_terminate();
+  return true;
+}
+
+bool SemilinSetNdd::solver_init(int number_of_variables)
+{
+  // TODO: use of cache???
+  solver = genepi_solver_create(plugin, 0, 0, 0);
+  k = number_of_variables;
+  var_map = std::unordered_map<VarId, int>();
+  //SemilinSetNdd::elem_null = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd());
+  //SemilinSetNdd::elem_one = std::shared_ptr<SemilinSetNdd>(new SemilinSetNdd(Genepi(solver, std::vector<int>(k,0), false), {std::vector<int>(k,0)}));
+  return true; // TODO: return correct value!
+}
+
+bool SemilinSetNdd::solver_dealloc() {
+  genepi_solver_delete(solver);
+  solver=nullptr;
   return true;
 }
 
@@ -133,11 +142,13 @@ SemilinSetNdd::SemilinSetNdd(VarId var, int cnt) {
   this->set = Genepi(solver, alpha, false);
   this->offsets.push_back(alpha);
 }
+
 SemilinSetNdd::SemilinSetNdd(Genepi set, std::vector<std::vector<int>> offsets) : set(set), offsets(offsets) {
 }
 
 SemilinSetNdd::SemilinSetNdd(const SemilinSetNdd& expr) : set(expr.set), offsets(expr.offsets) {
 }
+
 
 SemilinSetNdd::~SemilinSetNdd() {
 }
@@ -220,6 +231,7 @@ SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
 bool SemilinSetNdd::operator < (const SemilinSetNdd& term) const {
   return this->set < term.set;
 }
+
 bool SemilinSetNdd::operator == (const SemilinSetNdd& term) const {
   return this->set == term.set;
 }
@@ -238,13 +250,30 @@ SemilinSetNdd SemilinSetNdd::star () const {
   SemilinSetNdd final_result_old;
 
   SemilinSetNdd S_i = one();
+
+
+//  do {
+//    final_result_old = final_result;
+//
+//    S_i *= *this;  // = S^i
+//    result += S_i; // result = sum_{i=0}^n S^i
+//    final_result = one() + (result * offset_star); // 1 + (sum_{i=0}^n S^i) * offset_star
+//  } while (final_result != final_result_old);
+
+  //Alternative implementation based on repeated squaring (which is sound since we have idempotent addition!)
+
+  //std::cout << "size (offset-star): " << offset_star.set.getSize() << std::endl;
+  S_i = one() + *this;
+  final_result = one() + *this*offset_star;
   do {
     final_result_old = final_result;
-
-    S_i *= *this;  // = S^i
-    result += S_i; // result = sum_{i=0}^n S^i
-    final_result = one() + (result * offset_star); // 1 + (sum_{i=0}^n S^i) * offset_star
+    //std::cout << "size (intermediate automaton -- star-loop-begin): " << final_result.set.getSize() << std::endl;
+    //std::cout << "size (S_i -- star-loop-begin): " << S_i.set.getSize() << std::endl;
+    S_i *= S_i;
+    final_result = S_i * offset_star;
+    //std::cout << "size (intermediate automaton -- star-loop-end): " << final_result.set.getSize() << std::endl;
   } while (final_result != final_result_old);
+
   return final_result;
 }
 
@@ -272,6 +301,7 @@ std::string SemilinSetNdd::string() const {
   // result << "automaton written:\t" << this->set.output("result", static_i++, "") << std::endl;
   return result.str();
 }
+
 
 const bool SemilinSetNdd::is_idempotent = true;
 const bool SemilinSetNdd::is_commutative = true;

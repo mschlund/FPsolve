@@ -21,6 +21,18 @@
 
 #include "../semirings/semiring.h"
 
+
+
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
+#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
+#include <boost/numeric/bindings/lapack/gesv.hpp>
+#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
+
+
+namespace ub = boost::numeric::ublas;
+namespace lapack = boost::numeric::bindings::lapack;
+
 // Lin_Eq_Solver is parametrized by a semiring
 #define LIN_EQ_SOLVER_TYPE template <typename> class
 
@@ -76,6 +88,8 @@ class GenericNewton {
    * if(!idempotent):
    *  delta = DeltaGenerator.delta_at(newton_update, previous_newton_values) (generates the "rhs" of linear system) //compute delta for the next iteration
    *
+   *
+   * iterate for at most max_iter iterations or until n-th iterate + abstol >= (n+1)-st iterate
   */
   Matrix<SR> solve_fixpoint(
       const std::vector< Poly<SR> > &polynomials,
@@ -193,7 +207,7 @@ private:
   }
 };
 
-
+//TODO: implement other possibility: derivative_at, resp. jacobian_at
 template <typename SR>
 class CommutativeConcreteLinSolver {
   public:
@@ -230,91 +244,6 @@ class CommutativeConcreteLinSolver {
      * do not change... */
     ValuationMap<SR> valuation_;
 };
-
-
-template <typename SR>
-class CommutativeDeltaGeneratorOld {
-public:
-  CommutativeDeltaGeneratorOld(
-      const std::vector< CommutativePolynomial<SR> > &ps, const std::vector<VarId> &pvs)
-      : polynomials(ps), poly_vars(pvs) {
-    index_map_.reserve(poly_vars.size());
-    for (std::size_t i = 0; i < poly_vars.size(); ++i) {
-      index_map_.emplace(poly_vars[i], i);
-      // GCC 4.7 doesn't have emplace for std::map
-      zero_valuation_.insert(std::make_pair(poly_vars[i], SR::null()));
-    }
-  }
-
-  Matrix<SR> delta_at(const Matrix<SR> &newton_update,
-                      const Matrix<SR> &previous_newton_values) {
-
-    assert(previous_newton_values.getColumns() == 1 && newton_update.getColumns() == 1);
-
-    auto num_variables = poly_vars.size();
-    assert(num_variables == previous_newton_values.getRows() &&
-           num_variables == newton_update.getRows());
-
-    std::vector<SR> delta_vector;
-
-    std::unordered_map<VarId, Degree> current_max_degree;
-
-    ValuationMap<SR> newton_update_map;
-
-    for (std::size_t i = 0; i < num_variables; ++i) {
-      current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
-      newton_update_map.insert(
-        std::make_pair(poly_vars[i], newton_update.At(i, 0)));
-    }
-
-    for (const auto &polynomial : polynomials) {
-      SR delta = SR::null();
-      Degree polynomial_max_degree = polynomial.get_degree();
-
-      current_max_degree.clear();
-      current_max_degree.insert(polynomial.GetVarDegreeMap().begin(),
-                                polynomial.GetVarDegreeMap().end());
-
-      if (polynomial_max_degree <= 1) {
-        delta = SR::null();
-      } else {
-        /* We want to calculate all possible derivatives of at least second
-         * order, but lower or equal to the degree of polynomial. */
-        Generator generator{current_max_degree, 2, polynomial_max_degree};
-
-        while (generator.NextCombination()) {
-
-          SR prod = SR::one();
-
-          for (const auto &var_val : generator.GetMap()) {
-            assert(poly_vars[index_map_[var_val.first]] == var_val.first);
-            for (int j = 0; j < var_val.second; ++j) {
-              prod *= newton_update.At(index_map_[var_val.first], 0);
-            }
-          }
-
-          SR polynomial_value =
-            polynomial.DerivativeBinomAt(generator.GetMap(), current_valuation_);
-
-          delta += polynomial_value * prod;
-        }
-      }
-      delta_vector.emplace_back(std::move(delta));
-    }
-    return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
-  }
-
-private:
-  const std::vector< CommutativePolynomial<SR> > &polynomials;
-  const std::vector<VarId> &poly_vars;
-  std::unordered_map<VarId, std::size_t> index_map_;
-  /* We cache the std::map so that we can avoid reallocating it every time.  And
-   * we also make sure that we always overwrite everything before using it... */
-  ValuationMap<SR> current_valuation_;
-  ValuationMap<SR> zero_valuation_;
-};
-
-
 
 
 template <typename SR>
@@ -381,6 +310,115 @@ private:
   ValuationMap<SR> current_valuation_;
   ValuationMap<SR> zero_valuation_;
 };
+
+
+/* Numeric linear solver -- does not invert the Jacobian (numerically instable!)
+ * but solves a linear system every iteration. This should be the method of choice for
+ * the float-SR
+  */
+template <typename SR>
+class LinSolver_Numeric {
+  public:
+  LinSolver_Numeric(
+      const std::vector< CommutativePolynomial<SR> >& F,
+      const std::vector<VarId>& variables)
+    : jacobian_(CommutativePolynomial<SR>::jacobian(F, variables)) {}
+
+  Matrix<FloatSemiring> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+                          const std::vector<VarId>& variables) {
+    assert(values.getColumns() == 1);
+
+    assert(variables.size() == values.getRows());
+    if (valuation_.size() > 0) {
+      assert(valuation_.size() == variables.size());
+    }
+
+    for (std::size_t i = 0; i < variables.size(); ++i) {
+      valuation_[variables[i]] = values.At(i, 0);
+    }
+
+    std::vector<FloatSemiring> result_vec;
+    for (auto &poly : jacobian_.getElements()) {
+      result_vec.emplace_back(poly.eval(valuation_));
+    }
+
+    for (auto &poly : jacobian_.getElements()) {
+      result_vec.emplace_back(poly.eval(valuation_));
+    }
+
+    unsigned int rows = jacobian_.getRows();
+    unsigned int cols = jacobian_.getColumns();
+
+    ub::matrix<double> A = ub::identity_matrix<double>(rows,cols);
+
+    auto b = ub::vector<double>(rows);
+    auto X = ub::vector<double>(rows);
+
+    // A = Identity_Matrix - Jacobian_evaluated_at_last_newton_value
+    for(int i = 0; i < rows; ++i) {
+      for(int j = 0; j < cols; ++j) {
+        A(i,j) -= result_vec[i*cols+j].getValue();
+      }
+    }
+
+    for(int i=0; i<rows; ++i){
+      b(i) = rhs.At(i,0).getValue();
+    }
+
+    //solve linear system using LAPACK (TODO: sparse systems with umfpack!)
+    lapack::gesv(A,b);
+
+    auto res = std::vector<SR>(rows);
+    for(int i = 0; i < rows; ++i) {
+        res[i] = SR(b(i));
+    }
+
+    return Matrix<SR>(rows,std::move(res));
+    //std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+  }
+
+  private:
+    Matrix< CommutativePolynomial<SR> > jacobian_;
+    /* We don't want to allocate the map every time, especially since the keys
+     * do not change... */
+    ValuationMap<SR> valuation_;
+};
+
+template <typename SR>
+class DeltaGenerator_Numeric {
+public:
+  DeltaGenerator_Numeric(
+      const std::vector< CommutativePolynomial<SR> > &ps, const std::vector<VarId> &pvs)
+      : polynomials(ps), poly_vars(pvs) {
+
+  }
+
+  //the "delta" is simply F(newton_val) - newton_val
+  Matrix<SR> delta_at(const Matrix<SR> &newton_update,
+                      const Matrix<SR> &previous_newton_values) {
+
+    for (std::size_t i = 0; i < poly_vars.size(); ++i) {
+      current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
+    }
+
+    std::vector<SR> result_vec;
+    for (int i =0; i<polynomials.size(); ++i) {
+      if(SR::isInf(previous_newton_values.At(i,0)))
+        result_vec.emplace_back(previous_newton_values.At(i,0));
+      else
+        result_vec.emplace_back(polynomials[i].eval(current_valuation_) - previous_newton_values.At(i,0));
+    }
+
+    return Matrix<SR>(poly_vars.size(),std::move(result_vec));
+  }
+private:
+  const std::vector< CommutativePolynomial<SR> > &polynomials;
+  const std::vector<VarId> &poly_vars;
+  /* We cache the std::map so that we can avoid reallocating it every time.  And
+   * we also make sure that we always overwrite everything before using it... */
+  ValuationMap<SR> current_valuation_;
+};
+
 
 /*
  * TODO: other signature for "solving" linsys ?? (with number of iterations?)
@@ -499,6 +537,11 @@ using Newton =
 template <typename SR>
 using NewtonCL =
   GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
+
+template <typename SR>
+using NewtonNumeric = GenericNewton<SR, LinSolver_Numeric, DeltaGenerator_Numeric, CommutativePolynomial>;
+
+
 
 // default NonCommutative Newton implementation using naive Kleene iteration
 // TODO: does not work yet ! :)

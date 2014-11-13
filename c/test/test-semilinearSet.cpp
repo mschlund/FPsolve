@@ -72,6 +72,15 @@ void SemilinSetTest::testAddition()
 
 void SemilinSetTest::testMultiplication()
 {
+
+  // a.a != a.a.a
+  CPPUNIT_ASSERT( (*a) * (*a) !=  pow((*a),3));
+  // a.a.a != a.a.a.a
+  CPPUNIT_ASSERT( (*a) * (*a) * (*a) !=   (*a) * (*a) * (*a) * (*a));
+
+  // a.a != a.a.a
+  CPPUNIT_ASSERT( (*a) * (*a) !=  pow((*a),3));
+
   // a . 1 = a
   CPPUNIT_ASSERT( (*a) * SLSet::one() == (*a) );
   // 1 . a = a
@@ -95,6 +104,9 @@ void SemilinSetTest::testStar()
 
   //1* = 1
   CPPUNIT_ASSERT( SLSet::one().star() == SLSet::one() );
+
+  // a.b^* != a.(a+b)^*
+  CPPUNIT_ASSERT( (*a) * (*b).star() !=  (*a) * ((*a) + (*b)).star());
 
 
 }

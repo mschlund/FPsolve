@@ -80,7 +80,7 @@ WhySemiring WhySemiring::star() const
   OPSTAR;
   WhySemiring tmp = *this;
   std::uint_fast16_t N = this->getVars().size();
-  return (one() + (tmp)^N);
+  return (one() + pow(tmp,N));
 }
 
 WhySemiring WhySemiring::null()

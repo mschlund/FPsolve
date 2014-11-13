@@ -3,11 +3,16 @@
 #include <initializer_list>
 #include <set>
 
+//#define USE_GENEPI
+
 #include "linear_set.h"
 #include "semiring.h"
 #include "../datastructs/sparse_vec.h"
 #include "../utils/string_util.h"
 #include "../utils/profiling-macros.h"
+#ifdef USE_GENEPI
+#include "semilinSetNdd.h"
+#endif
 
 #include <boost/algorithm/string.hpp>
 
@@ -38,6 +43,7 @@ typedef SemilinearSet<VarId, Counter, DummyDivider,
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * is an over-approximation, the result might no longer be precise. */
 typedef SemilinearSet< VarId, Counter, GcdDivider> DivSemilinearSet;
+
 
 template <typename VarType,
           typename Value,
@@ -123,9 +129,38 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
 
     ~SemilinearSet() = default;
 
+// if we use genepi then we can check equivalence using NDDs (sound+complete)
+#ifdef USE_GENEPI
+    bool operator==(const SemilinearSet &rhs) const {
+      if (this->IsZero() && rhs.IsZero() || this->IsOne() && rhs.IsOne())
+        return true;
+
+      if (this->IsZero() && rhs.IsOne() || this->IsOne() && rhs.IsZero())
+        return false;
+
+      auto V1 = this->getVariables();
+      auto V2 = rhs.getVariables();
+      if (V1 != V2)
+        return false;
+
+      int k = V1.size();
+
+      //std::cout << "numvars: " << k << std::endl;
+
+      SemilinSetNdd::solver_init(k);
+      //std::cout << *this << " ?== " << rhs << std::endl;
+      //std::cout << "testing for eq in slsetNDD" << std::endl;
+      bool eq = (SemilinSetNdd(this->set_) == SemilinSetNdd(rhs.set_));
+      //std::cout << "eq solved: " << *this << " ?==" << rhs << ": " << eq << std::endl;
+      SemilinSetNdd::solver_dealloc();
+      return eq;
+    }
+#else
+    //TODO: implement a complete equivalence-check
     bool operator==(const SemilinearSet &rhs) const {
       return set_ == rhs.set_;
     }
+#endif
 
     static SemilinearSet null() {
       return SemilinearSet{};
@@ -243,13 +278,27 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
       return std::move(sout.str());
     }
 
+    // note that this is potentially expensive ..
+    std::set<VarType> getVariables() const {
+      std::set<VarType> res;
+      for (const auto &linset : set_) {
+        auto ovars = linset.GetOffset().getVariables();
+        res.insert(ovars.begin(), ovars.end());
+        for (const auto &g : linset.GetGenerators()) {
+          auto gvars = g.getVariables();
+          res.insert(gvars.begin(),gvars.end());
+        }
+      }
+      return res;
+    }
+
     typedef typename VecSet<LinearSetType>::const_iterator const_iterator;
 
     const_iterator begin() const { return set_.begin(); }
     const_iterator end() const { return set_.end(); }
 
+
   private:
     SemilinearSet(VecSet<LinearSetType> &&s) : set_(s) {}
-
     VecSet<LinearSetType> set_;
 };

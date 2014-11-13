@@ -2,8 +2,12 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 
+#include "test-semilinSetNdd.h"
+
 int main(int argc, char* argv[])
 {
+  SemilinSetNdd::genepi_init();
+
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();
 
@@ -17,6 +21,7 @@ int main(int argc, char* argv[])
   // Run the tests.
   bool wasSucessful = runner.run();
 
+  //SemilinSetNdd::genepi_dealloc();
   // Return error code 1 if the one of test failed.
   return wasSucessful ? 0 : 1;
 }

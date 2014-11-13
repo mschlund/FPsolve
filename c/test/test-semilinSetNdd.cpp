@@ -13,7 +13,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(SemilinSetNddTest);
 void SemilinSetNddTest::setUp()
 {
 	std::cout << "SL-NDD-Test :" << std::endl;
-        SemilinSetNdd::genepi_init("mona", 3);
+  SemilinSetNdd::solver_init(3);
 	a = new SemilinSetNdd(Var::GetVarId("a"));
 	b = new SemilinSetNdd(Var::GetVarId("b"));
 	c = new SemilinSetNdd(Var::GetVarId("c"));
@@ -28,7 +28,7 @@ void SemilinSetNddTest::tearDown()
         // when setUp is called for the second time, null(), etc. should
         // be recreated to respect the change of the solver object
         // (at least that's what i think causes the bug)
-        // SemilinSetNdd::genepi_dealloc();
+	//SemilinSetNdd::solver_dealloc();
 }
 
 void SemilinSetNddTest::testSemiring()
@@ -72,6 +72,13 @@ void SemilinSetNddTest::testAddition()
 
 void SemilinSetNddTest::testMultiplication()
 {
+
+  // a.a != a.a.a
+  CPPUNIT_ASSERT( (*a) * (*a) !=  pow((*a),3));
+  // a.a.a != a.a.a.a
+  CPPUNIT_ASSERT( (*a) * (*a) * (*a) !=   (*a) * (*a) * (*a) * (*a));
+
+
 	// a . 1 = a
 	CPPUNIT_ASSERT( (*a) * SemilinSetNdd::one() == (*a) );
 	// 1 . a = a
@@ -95,6 +102,10 @@ void SemilinSetNddTest::testStar()
 
 	//1* = 1
 	CPPUNIT_ASSERT( SemilinSetNdd::one().star() == SemilinSetNdd::one() );
+
+  // a.b^* != a.(a+b)^*
+  CPPUNIT_ASSERT( (*a) * (*b).star() !=  (*a) * ((*a) + (*b)).star());
+
 
 
 }

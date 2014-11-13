@@ -3,6 +3,7 @@ To compile you need the following tools and libraries (Tested under Ubuntu Linux
 - cmake (tested with version >= 2.8, probably also works with older versions)
 - g++ (version >= 4.8)
 - boost (tested with version >=1.48, libs: program-options, filesystem, system)
+- BLAS+LAPACK together with boost-numeric-bindings (for fast solving of linear equations over the float-semiring)
 - optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
 - cppunit: for unit-tests
 

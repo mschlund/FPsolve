@@ -107,7 +107,7 @@ std::string Genepi::output(std::string prefix, int i, std::string postfix) const
   return ret.str();
 }
 
-genepi_set* Genepi::createVector(genepi_solver* solver, std::vector<int> x) {
+genepi_set* Genepi::createVector(genepi_solver* solver, const std::vector<int>& x) {
   genepi_set *aux1;
   genepi_set *aux2;
   genepi_set *result = genepi_set_top_N (solver, x.size());
@@ -126,8 +126,13 @@ genepi_set* Genepi::createVector(genepi_solver* solver, std::vector<int> x) {
 
   return result;
 }
-// TODO: describe how alpha is structured (last component ist µ)
-genepi_set* Genepi::createGenerator(genepi_solver* solver, std::vector<int> x) {
+/*
+ * For the input x = (x_1,...,x_n) we first compute
+ * the set of all (y_1,...,y_n,µ) such that
+ * y_i = µ * x_i (for all i) (equivalently (-1)*y_i + µ * x_i = 0)
+ * then we project away the last component (µ)
+ */
+genepi_set* Genepi::createGenerator(genepi_solver* solver, const std::vector<int>& x) {
   genepi_set *aux1;
   genepi_set *aux2;
   std::vector<int> alpha(x.size()+1);
@@ -135,7 +140,7 @@ genepi_set* Genepi::createGenerator(genepi_solver* solver, std::vector<int> x) {
 
   for (unsigned int i = 0; i < x.size(); i++)
   {
-    alpha.at(i) = -1;
+    alpha.at(i) = -1; // coefficient of y_i
     alpha.at(x.size()) = x.at(i);
     aux1 = genepi_set_linear_equality (solver, alpha.data(), alpha.size(), 0);
     aux2 = genepi_set_intersection (solver, aux1, result);
@@ -154,17 +159,50 @@ genepi_set* Genepi::createGenerator(genepi_solver* solver, std::vector<int> x) {
 
   return result;
 }
-genepi_set* Genepi::createGenerators(genepi_solver* solver, std::vector<std::vector<int>> sets) {
-  genepi_set *result = genepi_set_top_N(solver, sets.at(0).size());
+
+/*
+ * For the input offset = (x_1,...,x_n) and generators = (g_1,...,g_k)
+ * we first compute
+ * the set of all (y_1,...,y_n,µ_1,...,µ_k) such that
+ *  y_i = x_i + µ_1 * g_1,i + ... + µ_k * g_k,i
+ * <=> (-1)*x_i = (-1)*y_i + µ_1 * g_1,i + ... + µ_k * g_k,i  (for all i)
+ * then we project away the last k components (µ_1,...,µ_k)
+ */
+genepi_set* Genepi::createLinSet(genepi_solver* solver, const std::vector<int>& offset, const std::vector<std::vector<int>>& generators) {
+
+  int n = offset.size();
+  int k = generators.size();
+
+  genepi_set *result = genepi_set_top_N(solver, n+k);
   genepi_set *aux1;
   genepi_set *aux2;
-  for(auto set : sets) {
-    aux1 = createGenerator(solver, set);
-    aux2 = genepi_set_intersection(solver, result, aux1);
-    genepi_set_del_reference(solver, aux1);
-    genepi_set_del_reference(solver, result);
+
+  for (unsigned int i = 0; i < n; i++)
+  {
+    std::vector<int> alpha(n + k, 0);
+    alpha.at(i) = -1; // coefficient of y_i
+    for (int j=0; j<k; j++) {
+      alpha.at(n+j) = generators.at(j).at(i); // coefficient of g_j,i
+    }
+    aux1 = genepi_set_linear_equality (solver, alpha.data(), alpha.size(), -offset.at(i));
+    aux2 = genepi_set_intersection (solver, aux1, result);
+    genepi_set_del_reference (solver, result);
+    genepi_set_del_reference (solver, aux1);
     result = aux2;
   }
+
+  //project away all the µ's
+  std::vector<int> selection(n+k,0); // an entry of "1" means we throw it AWAY in the projection ... yes it is counterintuitive
+  for (int j=n; j<n+k; j++) {
+    selection.at(j) = 1; // throw away µ_j
+  }
+
+  aux1 = genepi_set_project(solver, result, selection.data(), selection.size());
+  genepi_set_del_reference (solver, result);
+  result = aux1;
+
   return result;
 }
+
+
 

@@ -53,3 +53,18 @@ auto MakeCommEquationsAndMap(const NCEquations<A> &equations, F fun)
   return new_equations;
 }
 
+
+template <typename A>
+auto MakeCommEquations(const NCEquations<A> &equations)
+    -> Equations<A> {
+
+  Equations<A> new_equations;
+
+  for (auto &var_poly : equations) {
+    //std::cout << "COMM-POLY: " << var_poly.second.make_commutative().string() << std::endl;
+    new_equations.emplace_back(var_poly.first,
+      var_poly.second.make_commutative());
+  }
+
+  return new_equations;
+}

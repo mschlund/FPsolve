@@ -55,6 +55,21 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
       return *this;
     }
 
+    FloatSemiring& operator-=(const FloatSemiring &elem) {
+      OPADD;
+      assert(!isInf(elem));
+
+      if(!isInf(*this))
+        value_ -= elem.value_;
+      return *this;
+    }
+
+    friend FloatSemiring operator-(const FloatSemiring& lhs, const FloatSemiring& rhs) {
+      FloatSemiring result = lhs;
+      result -= rhs;
+      return result;
+    }
+
     bool operator==(const FloatSemiring &elem) const {
       // comparing floating point has to be done like this. (see Knuth TAoCP Vol.2 p. 233)
       return std::fabs(value_ - elem.value_) <=
@@ -80,6 +95,10 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
       return FloatSemiring{1.0};
     }
 
+    double getValue() const {
+      return value_;
+    }
+
     std::string string() const {
       std::stringstream ss;
       if(isInf(*this))
@@ -89,7 +108,7 @@ class FloatSemiring : public StarableSemiring<FloatSemiring,
       return ss.str();
     }
 
-    bool isInf(const FloatSemiring& elem) const {
+    static bool isInf(const FloatSemiring& elem) {
       if(INFTY_FLOAT == elem.value_)
         return true;
       else

@@ -46,7 +46,7 @@ void WhySetSemiringTest::testMultiplication()
   std::cout << "a*b=" << *a* *b << std::endl;
   std::cout << "(a+b)*(a+b)=" << ((*a + *b)*(*a + *b)) << std::endl;
   std::cout << "1+(a+b)=" << (WhySemiring::one()+(*a + *b)) << std::endl;
-  std::cout << "(a+b)^2=" << ((*a + *b)^2) << std::endl;
+  std::cout << "(a+b)^2=" << pow((*a + *b),2) << std::endl;
 }
 
 void WhySetSemiringTest::testStar()

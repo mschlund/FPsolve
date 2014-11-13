@@ -16,7 +16,7 @@ public:
 	void tearDown();
 
 protected:
-        void testSemiring();
+  void testSemiring();
 	void testStar();
 };
 

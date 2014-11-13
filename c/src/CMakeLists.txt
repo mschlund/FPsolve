@@ -18,4 +18,4 @@ set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)
-target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} )
+target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES})

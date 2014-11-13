@@ -74,4 +74,8 @@ void CommutativeRExpTest::testStar()
 	CPPUNIT_ASSERT( CommutativeRExp::null().star() == CommutativeRExp::one() );
 
 	CPPUNIT_ASSERT( a->star() == CommutativeRExp(CommutativeRExp::Star, std::shared_ptr<CommutativeRExp>(new CommutativeRExp(*a))));
+
+  // a.b^* != a.(a+b)^*
+  CPPUNIT_ASSERT( (*a) * (*b).star() !=  (*a) * ((*a) + (*b)).star());
+
 }

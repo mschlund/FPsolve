@@ -1,6 +1,17 @@
 #pragma once
 
 #include <sstream>
+#include <iostream>
+
+#include <algorithm>
+#include <string>
+
+#include <unordered_map>
+#include <map>
+#include <set>
+
+
+
 
 template <typename A>
 std::string ToString(const A &a) {
@@ -11,7 +22,8 @@ std::string ToString(const A &a) {
 
 template <typename A, typename B>
 std::ostream& operator<<(std::ostream &out, const std::pair<A, B> &pair) {
-  return out << "(" << pair.first << "," << pair.second << ")";
+  //return out << "(" << pair.first << "," << pair.second << ")";
+  return out  << pair.first << ":" << pair.second;
 }
 
 

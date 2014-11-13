@@ -91,6 +91,7 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
              offsets_.begin()->IsZero();
     }
 
+
     bool operator==(const PseudoLinearSet &rhs) const {
       return offsets_ == rhs.offsets_ && generators_ == rhs.generators_;
     }

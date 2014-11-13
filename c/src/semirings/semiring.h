@@ -65,7 +65,8 @@ class Semiring {
     }
 
     // compute power by binary exponentiation
-    friend SR operator^(const SR& lhs, const std::uint_fast16_t& exp) {
+    // NOTE: Overloading "^" is a VERY BAD IDEA since "==" binds stronger than "^"
+    friend SR pow(const SR& lhs, const std::uint_fast16_t& exp) {
       if(0 == exp || lhs == SR::one()) {
         return SR::one(); //we set 0^0=1
       }
@@ -90,6 +91,7 @@ class Semiring {
       }
 
       //std::cout << "lhs " << lhs << "^" << exp << "=" << result << std::endl;
+
       return result;
     }
 
