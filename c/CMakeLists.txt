@@ -11,17 +11,25 @@ if(DEFINED ENV{BOOST_ROOT})
 endif(DEFINED ENV{BOOST_ROOT})
 
 find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
-
 include_directories(${Boost_INCLUDE_DIRS})
 
-find_package(LAPACK)
-include_directories(${LAPACK_INCLUDE_DIRS})
-link_directories(${LAPACK_LIBRARY_DIRS})
-
-include_directories("/usr/local/include/boost-numeric-bindings/")
 
 option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
+option (USE_NUMERICNEWTON "use BLAS/LAPACK for computing Newton's method over the float-Semiring" ON)
+
+#default for now -- remove these definitions if you do not want the options ..
 add_definitions(-DUSE_GENEPI)
+add_definitions(-DUSE_NUMERICNEWTON)
+
+
+if(USE_NUMERICNEWTON)
+  find_package(LAPACK)
+  include_directories(${LAPACK_INCLUDE_DIRS})
+  link_directories(${LAPACK_LIBRARY_DIRS})
+
+  include_directories("/usr/local/include/boost-numeric-bindings/")
+endif(USE_NUMERICNEWTON)
+
 
 if(USE_GENEPI)
 	find_package(PkgConfig)

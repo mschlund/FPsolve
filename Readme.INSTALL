@@ -2,10 +2,11 @@ To compile you need the following tools and libraries (Tested under Ubuntu Linux
 
 - cmake (tested with version >= 2.8, probably also works with older versions)
 - g++ (version >= 4.8)
-- boost (tested with version >=1.48, libs: program-options, filesystem, system)
-- BLAS+LAPACK together with boost-numeric-bindings (for fast solving of linear equations over the float-semiring)
-- optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
+- boost (version >=1.48, libs: program-options, filesystem, system)
 - cppunit: for unit-tests
+- optional: BLAS+LAPACK together with boost-numeric-bindings for fast solving of linear equations over the float-semiring (see http://mathema.tician.de/software/boost-numeric-bindings/)
+- optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
+
 
 
 Then simply clone the repository:
@@ -20,6 +21,6 @@ $ make
 Troubleshooting:
 ----------------
 
-1) Compilation needs a lot of memory (due to boost and template-stuff) -- at least 3GB are recommended.
+1) Compilation needs _lots_ of memory (due to boost and template-stuff) -- at least 3GB are recommended.
 2) compilation error ".. is missing emplace()" -- you need at least gcc 4.8 (gcc 4.7 does not yet support many c++11-features)
 

@@ -21,14 +21,14 @@
 
 #include "../semirings/semiring.h"
 
-
-
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>
+
+#ifdef USE_NUMERICNEWTON
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 #include <boost/numeric/bindings/lapack/gesv.hpp>
 #include <boost/numeric/bindings/traits/ublas_vector2.hpp>
-
+#endif
 
 namespace ub = boost::numeric::ublas;
 namespace lapack = boost::numeric::bindings::lapack;
@@ -311,6 +311,7 @@ private:
   ValuationMap<SR> zero_valuation_;
 };
 
+#ifdef USE_NUMERICNEWTON
 
 /* Numeric linear solver -- does not invert the Jacobian (numerically instable!)
  * but solves a linear system every iteration. This should be the method of choice for
@@ -418,7 +419,7 @@ private:
    * we also make sure that we always overwrite everything before using it... */
   ValuationMap<SR> current_valuation_;
 };
-
+#endif
 
 /*
  * TODO: other signature for "solving" linsys ?? (with number of iterations?)
@@ -538,8 +539,10 @@ template <typename SR>
 using NewtonCL =
   GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
 
+#ifdef USE_NUMERICNEWTON
 template <typename SR>
 using NewtonNumeric = GenericNewton<SR, LinSolver_Numeric, DeltaGenerator_Numeric, CommutativePolynomial>;
+#endif
 
 
 

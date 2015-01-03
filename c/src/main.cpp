@@ -22,6 +22,7 @@
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
 
+#define USE_NUMERICNEWTON
 
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
@@ -358,16 +359,27 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations2);
 
     if(vm.count("solver")){
+      std::cout << "Solver: " << solver_name << std::endl;
       std::cout << result_string(
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
     else {
-      //default: "Fast" numeric Newton
+      std::cout << "No solver given" << std::endl;
+#ifdef USE_NUMERICNEWTON
+      //default if enabled: "Fast" numeric Newton
+      std::cout << "Newton Numeric"<< std::endl;
       std::cout << result_string(
           apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
+#else
+      //use default
+      std::cout << result_string(
+            call_solver("", equations2, scc_flag, iter_flag, iterations, graph_flag)
+            ) << std::endl;
+#endif
     }
+
 
   } else if (vm.count("bool")) {
     auto equations = p.free_parser(input_all);
