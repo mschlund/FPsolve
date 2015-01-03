@@ -25,7 +25,7 @@ public:
    * values = F(0)
    * update = F(0)
    *
-   * precompute compute polynomials.HeightUnfolding()
+   * precompute polynomials.HeightUnfolding()
    *
    * Each iteration consists of :
    *

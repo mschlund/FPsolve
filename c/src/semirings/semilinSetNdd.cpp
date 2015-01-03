@@ -54,7 +54,8 @@ std::vector<std::vector<int>> SemilinSetNdd::getIndependentOffsets(const std::ve
     for(auto var_pos : var_map) {
       VarId varid = var_pos.first;
       Counter value = offset.at(var_pos.second);
-      if(value != 0) tmp.push_back({varid, value});
+      if(value != 0)
+        tmp.push_back({varid, value});
     }
     if(tmp.size() != 0) {
       SparseVec<VarId, Counter, DummyDivider> tmp_(std::move(tmp));

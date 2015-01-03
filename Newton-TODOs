@@ -13,14 +13,14 @@
 #---------------
 [DONE] Product-Semiring-Construction (simple: (iterated) pair)
 - "Exotic" Semirings (tropical, arctic)
-- Viterbi-Semiring
+[DONE] Viterbi-Semiring
 - ... (see: "Semirings for Breakfast"-presentation ---only the starable ones! additional element "infty" needed sometimes :)) use GMP for arbitrary precision ints/floats/...
 - Arbitrary-precision Real-Semiring (in fact: this is Q, elements are p/q with p,q integers)
 
 - Finite Semirings (e.g. finite Lattices) <--> specification (see UI)
 
 - Counting-Semiring (representation of Semiliniear-Sets)
-  [IN PROGRESS] As Presburger-Formulae --> Automata (Mona)
+  [DONE] As Presburger-Formulae --> Automata (Mona)
   [DONE] As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
   - As (short!) rational Generating Functions (same as second one???)
 

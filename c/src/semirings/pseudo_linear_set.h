@@ -28,12 +28,12 @@ namespace {
 
 static const std::uint_fast16_t simpl_freq = 0;
 
-template <typename A>
-using SetType = VecSet<A>;
 
 }  /* Anonymous namespace */
 
 
+template <typename A>
+using SetType = VecSet<A>;
 
 
 /*
@@ -62,6 +62,8 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
 
     PseudoLinearSet(const PseudoLinearSet &s) = default;
     PseudoLinearSet(PseudoLinearSet &&s) = default;
+    PseudoLinearSet(const Var &v) : PseudoLinearSet(v, 1) {}
+
 
     /* Allow construction from a LinearSet with a different divider and
      * simplifier. */
@@ -92,9 +94,38 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
     }
 
 
+
+#ifdef USE_GENEPI
+    bool operator==(const PseudoLinearSet &rhs) const {
+      if (this->IsZero() && rhs.IsZero() || this->IsOne() && rhs.IsOne())
+        return true;
+
+      if (this->IsZero() && rhs.IsOne() || this->IsOne() && rhs.IsZero())
+        return false;
+
+      auto V1 = this->getVariables();
+      auto V2 = rhs.getVariables();
+      if (V1 != V2)
+        return false;
+
+      int k = V1.size();
+
+      //std::cout << "numvars: " << k << std::endl;
+
+      SemilinSetNdd::solver_init(k);
+      //std::cout << *this << " ?== " << rhs << std::endl;
+      //std::cout << "testing for eq of pseudolin in slsetNDD" << std::endl;
+      bool eq = (SemilinSetNdd(this->offsets_, this->generators_) == SemilinSetNdd(rhs.offsets_, rhs.generators_));
+      //std::cout << "eq solved: " << *this << " ?==" << rhs << ": " << eq << std::endl;
+      SemilinSetNdd::solver_dealloc();
+      return eq;
+    }
+#else
+
     bool operator==(const PseudoLinearSet &rhs) const {
       return offsets_ == rhs.offsets_ && generators_ == rhs.generators_;
     }
+#endif
 
     PseudoLinearSet& operator+=(const PseudoLinearSet &rhs) {
       OPADD;
@@ -268,7 +299,19 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
       }
       DMSG("}");
 #endif
+    }
 
+    std::set<Var> getVariables() const {
+      std::set<Var> res;
+      for (const auto &offset : offsets_) {
+        auto ovars = offset.getVariables();
+        res.insert(ovars.begin(), ovars.end());
+      }
+      for (const auto &g : generators_) {
+        auto gvars = g.getVariables();
+        res.insert(gvars.begin(),gvars.end());
+      }
+      return res;
     }
 
     SetType<OffsetType> offsets_;

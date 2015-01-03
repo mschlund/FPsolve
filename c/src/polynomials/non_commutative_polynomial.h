@@ -379,7 +379,7 @@ private:
     }
 
     /*
-     * Returns the sum of the leading constant factors of all monomials in this polynomial.
+     * Returns the sum of the trailing constant factors of all monomials in this polynomial.
      */
     SR getSumOfTrailingFactors() {
     	SR sum = SR::null();

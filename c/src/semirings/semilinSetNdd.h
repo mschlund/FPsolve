@@ -26,13 +26,13 @@
 class SemilinSetNdd : public StarableSemiring<SemilinSetNdd, Commutativity::Commutative, Idempotence::Idempotent>
 {
 public:
-	static std::shared_ptr<SemilinSetNdd> elem_null;
-	static std::shared_ptr<SemilinSetNdd> elem_one;
+  static std::shared_ptr<SemilinSetNdd> elem_null;
+  static std::shared_ptr<SemilinSetNdd> elem_one;
 
-	static bool genepi_init();
-	static bool genepi_dealloc();
+  static bool genepi_init();
+  static bool genepi_dealloc();
 
-	static bool solver_init(int number_of_variables);
+  static bool solver_init(int number_of_variables);
   static bool solver_dealloc();
 
 
@@ -41,35 +41,35 @@ public:
   static int k;
   static std::unordered_map<VarId, int> var_map;
 
-	SemilinSetNdd();
-	SemilinSetNdd(int zero);
+  SemilinSetNdd();
+  SemilinSetNdd(int zero);
   SemilinSetNdd(VarId var);
-	SemilinSetNdd(VarId var, int cnt);
-	SemilinSetNdd(const SemilinSetNdd& expr);
-	virtual ~SemilinSetNdd();
+  SemilinSetNdd(VarId var, int cnt);
+  SemilinSetNdd(const SemilinSetNdd& expr);
+  virtual ~SemilinSetNdd();
   SemilinSetNdd operator =  (const SemilinSetNdd& term);
-	SemilinSetNdd operator += (const SemilinSetNdd& term);
-	SemilinSetNdd operator *= (const SemilinSetNdd& term);
-	bool operator < (const SemilinSetNdd& term) const;
-	bool operator == (const SemilinSetNdd& term) const;
-	SemilinSetNdd star () const;
-	static SemilinSetNdd null();
-	static SemilinSetNdd one();
-	std::string string() const;
-	static const bool is_idempotent;
-	static const bool is_commutative;
+  SemilinSetNdd operator += (const SemilinSetNdd& term);
+  SemilinSetNdd operator *= (const SemilinSetNdd& term);
+  bool operator < (const SemilinSetNdd& term) const;
+  bool operator == (const SemilinSetNdd& term) const;
+  SemilinSetNdd star () const;
+  static SemilinSetNdd null();
+  static SemilinSetNdd one();
+  std::string string() const;
+  static const bool is_idempotent;
+  static const bool is_commutative;
 
-	//Generate an NDD from a semilinear set described explicitly as set of linear sets
-		template <DIVIDER_TEMPLATE_TYPE Divider, VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
-	SemilinSetNdd(const VecSet<LinearSet<VarId, Counter, Divider, VecSimpl> >& linsets) {
-		set = Genepi(solver, k, false);
+  //Generate an NDD from a semilinear set described explicitly as set of linear sets
+  template <DIVIDER_TEMPLATE_TYPE Divider, VEC_SIMPL_TEMPLATE_TYPE VecSimpl>
+  SemilinSetNdd(const VecSet<LinearSet<VarId, Counter, Divider, VecSimpl> >& linsets) {
+    set = Genepi(solver, k, false);
 
-		//std::cout << "building " << k <<"-NDD for: " << ToStringSorted(linsets, "\n ") << std::endl;
+    //std::cout << "building " << k <<"-NDD for: " << ToStringSorted(linsets, "\n ") << std::endl;
 
-	  // for each linear set we create an NDD (resp. genepi-set) and compute the union over them
-	  for(auto ls : linsets) {
-	    SparseVec<VarId, Counter, Divider> offset = ls.GetOffset();
-	    VecSet<SparseVec<VarId, Counter, Divider> > generators = ls.GetGenerators();
+    // for each linear set we create an NDD (resp. genepi-set) and compute the union over them
+    for(const auto ls : linsets) {
+      SparseVec<VarId, Counter, Divider> offset = ls.GetOffset();
+      VecSet<SparseVec<VarId, Counter, Divider> > generators = ls.GetGenerators();
 
       std::vector<std::vector<int> > generator_set;
       for (const auto &g : generators) {
@@ -80,9 +80,34 @@ public:
 
       this->set = this->set.union_op(Genepi(solver, Genepi::createLinSet(solver, off, generator_set)));
       this->offsets.push_back(off);
-	  }
+    }
     //std::cout << "... done"  << std::endl;
-	}
+  }
+
+
+  //Generate an NDD from a pseudolinear set
+  template <DIVIDER_TEMPLATE_TYPE Divider>
+  SemilinSetNdd(const VecSet<SparseVec<VarId, Counter, DummyDivider> >& offsets,
+                const VecSet<SparseVec<VarId, Counter, Divider> >& generators) {
+    set = Genepi(solver, k, false);
+
+    //std::cout << "building " << k <<"-NDD for: " << ToStringSorted(linsets, "\n ") << std::endl;
+
+    for(const SparseVec<VarId, Counter, DummyDivider> offset : offsets) {
+
+      std::vector<std::vector<int> > generator_set;
+      for (const SparseVec<VarId, Counter, Divider>  &g : generators) {
+        generator_set.push_back(toIntVec(g));
+      }
+
+      std::vector<int> off = toIntVec(offset);
+
+      this->set = this->set.union_op(Genepi(solver, Genepi::createLinSet(solver, off, generator_set)));
+      this->offsets.push_back(off);
+    }
+    //std::cout << "... done"  << std::endl;
+  }
+
 
 
 private:
@@ -98,22 +123,22 @@ private:
 
   template <DIVIDER_TEMPLATE_TYPE Divider>
   std::vector<int> toIntVec(const SparseVec<VarId, Counter, Divider>& sv) {
-      std::vector<std::pair<VarId, Counter>> var_val_vec = sv.getVector();
-      std::vector<int> tmpvec = std::vector<int>(k,0);
+    std::vector<std::pair<VarId, Counter>> var_val_vec = sv.getVector();
+    std::vector<int> tmpvec = std::vector<int>(k,0);
 
-      for(const std::pair<VarId, Counter> vv : var_val_vec) {
-        auto v = var_map.find(vv.first);
-        if(v == var_map.end())
-        {
-          var_map.insert(std::make_pair(vv.first, var_map.size()));
-          v = var_map.find(vv.first);
-        }
-
-        int position = v->second;
-        tmpvec.at(position) = vv.second;
+    for(const std::pair<VarId, Counter> vv : var_val_vec) {
+      auto v = var_map.find(vv.first);
+      if(v == var_map.end())
+      {
+        var_map.insert(std::make_pair(vv.first, var_map.size()));
+        v = var_map.find(vv.first);
       }
 
-      return tmpvec;
+      int position = v->second;
+      tmpvec.at(position) = vv.second;
+    }
+
+    return tmpvec;
   }
 
 };
