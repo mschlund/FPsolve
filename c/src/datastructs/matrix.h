@@ -239,7 +239,7 @@ class Matrix {
       Matrix A_11 = recursive_star(a_11 + b * a_21);
 
       Matrix A_22 = recursive_star(a_22 + a * a_12);
-	  Matrix A_12 = A_11 * b;
+	    Matrix A_12 = A_11 * b;
       Matrix A_21 = A_22 * a;
 
 

@@ -22,8 +22,6 @@
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
 
-#define USE_NUMERICNEWTON
-
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
 #endif
@@ -58,20 +56,20 @@ template <typename SR, template <typename> class Poly>
 ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Poly, SR> &equations,
    bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output){
   if(0 == solver_name.compare("newtonSymb")) {
-    std::cout << "Newton Symbolic" << std::endl;
+    std::cout << "Solver: Newton Symbolic" << std::endl;
     return apply_solver<Newton, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
   else if(0 == solver_name.compare("newtonConc")) {
-    std::cout << "Newton Concrete"<< std::endl;
+    std::cout << "Solver: Newton Concrete"<< std::endl;
     return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
   else if(0 == solver_name.compare("kleene")) {
-    std::cout << "Kleene solver"<< std::endl;
+    std::cout << "Solver: Kleene solver"<< std::endl;
     return apply_solver<KleeneComm, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
   else {
     // default-case
-    std::cout << "Newton Concrete"<< std::endl;
+    std::cout << "Solver: Newton Concrete"<< std::endl;
     return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
   }
 }
@@ -359,16 +357,15 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations2);
 
     if(vm.count("solver")){
-      std::cout << "Solver: " << solver_name << std::endl;
+      //std::cout << "Solver: " << solver_name << std::endl;
       std::cout << result_string(
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
     else {
-      std::cout << "No solver given" << std::endl;
 #ifdef USE_NUMERICNEWTON
       //default if enabled: "Fast" numeric Newton
-      std::cout << "Newton Numeric"<< std::endl;
+      std::cout << "Solver: Newton Numeric"<< std::endl;
       std::cout << result_string(
           apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;

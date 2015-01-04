@@ -163,7 +163,7 @@ class CommutativeSymbolicLinSolver {
               << " x "
               << jacobian_star_->getColumns()
               << std::endl;*/
-    FreeSemiring::one().PrintStats();
+    //FreeSemiring::one().PrintStats();
 
     /*
     std::ofstream dotfile;
@@ -338,11 +338,9 @@ class LinSolver_Numeric {
       valuation_[variables[i]] = values.At(i, 0);
     }
 
-    std::vector<FloatSemiring> result_vec;
-    for (auto &poly : jacobian_.getElements()) {
-      result_vec.emplace_back(poly.eval(valuation_));
-    }
+    //std::cout << "jacobian: " << jacobian_ << std::endl;
 
+    std::vector<FloatSemiring> result_vec;
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
@@ -366,6 +364,9 @@ class LinSolver_Numeric {
       b(i) = rhs.At(i,0).getValue();
     }
 
+    //std::cout << "A: " << A << std::endl;
+    //std::cout << "b: " << b << std::endl;
+
     //solve linear system using LAPACK (TODO: sparse systems with umfpack!)
     lapack::gesv(A,b);
 
@@ -374,8 +375,10 @@ class LinSolver_Numeric {
         res[i] = SR(b(i));
     }
 
-    return Matrix<SR>(rows,std::move(res));
     //std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+
+    return Matrix<SR>(rows,std::move(res));
+
   }
 
   private:
@@ -398,16 +401,18 @@ public:
   Matrix<SR> delta_at(const Matrix<SR> &newton_update,
                       const Matrix<SR> &previous_newton_values) {
 
+    Matrix<SR> current_newton_values = previous_newton_values + newton_update;
+
     for (std::size_t i = 0; i < poly_vars.size(); ++i) {
-      current_valuation_[poly_vars[i]] = previous_newton_values.At(i, 0);
+      current_valuation_[poly_vars[i]] = current_newton_values.At(i, 0);
     }
 
     std::vector<SR> result_vec;
     for (int i =0; i<polynomials.size(); ++i) {
-      if(SR::isInf(previous_newton_values.At(i,0)))
-        result_vec.emplace_back(previous_newton_values.At(i,0));
+      if(SR::isInf(current_newton_values.At(i,0)))
+        result_vec.emplace_back(current_newton_values.At(i,0));
       else
-        result_vec.emplace_back(polynomials[i].eval(current_valuation_) - previous_newton_values.At(i,0));
+        result_vec.emplace_back(polynomials[i].eval(current_valuation_) - current_newton_values.At(i,0));
     }
 
     return Matrix<SR>(poly_vars.size(),std::move(result_vec));
