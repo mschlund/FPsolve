@@ -140,7 +140,7 @@ ValuationMap<SR> apply_solver(
       iterations = equations2[j].size() + 1;
     }
 
-    std::cout << "Iterations: " << iterations << std::endl;
+    //std::cout << "Iterations: " << iterations << std::endl;
 
     // do some real work here
     ValuationMap<SR> result = solver.solve_fixpoint(equations2[j], iterations);

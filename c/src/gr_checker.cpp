@@ -42,6 +42,7 @@ int main(int argc, char* argv[]) {
   po::options_description generic("Generic options");
   generic.add_options()
     ( "help,h", "print this help message" )
+    ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
     ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
     ;
 
@@ -62,6 +63,16 @@ int main(int argc, char* argv[]) {
   std::vector<std::string> input_files = vm["input"].as< std::vector<std::string> >();
   int num_grammars = input_files.size();
   std::vector<std::string> inputs;
+
+  std::string startsymbol = "";
+
+  if(vm.count("startsymbol")) {
+    std::cout << "Comparing startsymbols (" << startsymbol << ")" << std::endl;
+    startsymbol = vm["startsymbol"].as<std::string>();
+  }
+  else {
+    std::cout << "Comparing *all* nonterminals." << std::endl;
+  }
 
   if (vm.count("input") && num_grammars > 1) {
     // we are reading the input from the given files
@@ -104,12 +115,24 @@ int main(int argc, char* argv[]) {
     });
 
     ValuationMap<SemilinearSetL> sol = apply_solver<NewtonCL, CommutativePolynomial>(equations, true, false, 0, false);
-    if(sol != sol_fst) {
-      std::cout << "Difference found" << std::endl << "0:" << result_string(sol_fst)
-                                   << std::endl << i << ":" << result_string(sol) << std::endl;
-      all_equal = false;
-      break;
+
+    if(startsymbol.compare("") == 0) {
+      if(sol != sol_fst) {
+        std::cout << "Difference found" << std::endl << "0:" << result_string(sol_fst)
+                                     << std::endl << i << ":" << result_string(sol) << std::endl;
+        all_equal = false;
+        break;
+      }
     }
+    else {
+      if(sol[Var::GetVarId(startsymbol)] != sol_fst[Var::GetVarId(startsymbol)]) {
+              std::cout << "Difference found for startsymbol (" << startsymbol << ")" << std::endl << "0:" << result_string(sol_fst)
+                                           << std::endl << i << ":" << result_string(sol) << std::endl;
+              all_equal = false;
+              break;
+            }
+    }
+
   }
 
   if(all_equal) {
