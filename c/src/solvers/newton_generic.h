@@ -20,6 +20,7 @@
 #include "../polynomials/commutative_polynomial.h"
 
 #include "../semirings/semiring.h"
+#include "../semirings/float-semiring.h"
 
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/io.hpp>

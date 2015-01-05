@@ -34,43 +34,28 @@
 #include "solvers/kleene_seminaive.h"
 #include "solvers/solver_utils.h"
 
+#include "utils/string_util.h"
 
-template <typename SR>
-std::string result_string(const ValuationMap<SR> &result) {
-  std::stringstream ss;
-  for (auto &x : result) {
-    ss << x.first << " == " << x.second << std::endl;
-  }
-  return ss.str();
-}
-
-template <typename Container>
-void PrintEquations(const Container &equations) {
-  std::cout << "Equations:" << std::endl;
-  for (auto &eq : equations) {
-    std::cout << "* " << eq.first << " → " << eq.second << std::endl;
-  }
-}
 
 template <typename SR, template <typename> class Poly>
 ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Poly, SR> &equations,
    bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output){
   if(0 == solver_name.compare("newtonSymb")) {
     std::cout << "Solver: Newton Symbolic" << std::endl;
-    return apply_solver<Newton, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+    return apply_solver<Newton, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
   else if(0 == solver_name.compare("newtonConc")) {
     std::cout << "Solver: Newton Concrete"<< std::endl;
-    return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+    return apply_solver<NewtonCL, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
   else if(0 == solver_name.compare("kleene")) {
     std::cout << "Solver: Kleene solver"<< std::endl;
-    return apply_solver<KleeneComm, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+    return apply_solver<KleeneComm, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
   else {
     // default-case
     std::cout << "Solver: Newton Concrete"<< std::endl;
-    return apply_solver<NewtonCL, Poly>(equations, scc,iteration_flag, iterations, graphviz_output);
+    return apply_solver<NewtonCL, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
 }
 

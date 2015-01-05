@@ -11,7 +11,7 @@
 #include <set>
 
 
-
+#include "../datastructs/var.h"
 
 template <typename A>
 std::string ToString(const A &a) {
@@ -68,3 +68,23 @@ std::string ToStringSorted(const Container &container,
   }
   return ss.str();
 }
+
+template <typename SR>
+std::string result_string(const ValuationMap<SR> &result) {
+  std::stringstream ss;
+  for (auto &x : result) {
+    ss << x.first << " == " << x.second << std::endl;
+  }
+  return ss.str();
+}
+
+
+template <typename Container>
+void PrintEquations(const Container &equations) {
+  std::cout << "Equations:" << std::endl;
+  for (auto &eq : equations) {
+    std::cout << "* " << eq.first << " → " << eq.second << std::endl;
+  }
+}
+
+

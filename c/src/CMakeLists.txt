@@ -2,7 +2,9 @@ file(GLOB_RECURSE NEWTON_H "*.h")
 file(GLOB_RECURSE NEWTON_CPP "*.cpp")
 
 file(GLOB_RECURSE MAIN_CPP "main.cpp")
+file(GLOB_RECURSE GR_CHECK_CPP "gr_checker.cpp")
 list(REMOVE_ITEM NEWTON_CPP ${MAIN_CPP})
+list(REMOVE_ITEM NEWTON_CPP ${GR_CHECK_CPP})
 
 if(NOT USE_GENEPI)
 	file(GLOB_RECURSE SEMILIN_SET_NDD_H "semilinSetNdd*.h")
@@ -19,3 +21,6 @@ set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)
 target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES})
+
+add_executable(gr_check gr_checker.cpp)
+target_link_libraries(gr_check NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES})
