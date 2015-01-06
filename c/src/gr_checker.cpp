@@ -30,6 +30,76 @@
 #include "solvers/solver_utils.h"
 
 #include "utils/string_util.h"
+#include "utils/timer.h"
+
+
+
+// check whether a set of grammars generates the same language up to commuativity
+// (and modulo additional overapproximations given by the semiring)
+template <typename SR>
+void check_all_equal_commutative(const std::string& startsymbol, const std::vector<std::string>& inputs) {
+
+  Parser p;
+  int num_grammars = inputs.size();
+
+  // Use appropriate semiring (has to be commutative!)
+  auto equations_fst = MakeCommEquationsAndMap(p.free_parser(inputs[0]), [](const FreeSemiring &c) -> SR {
+    auto srconv = SRConverter<SR>();
+    return c.Eval(srconv);
+  });
+
+  Timer timer;
+  timer.Start();
+
+  ValuationMap<SR> sol_fst = apply_solver<NewtonCL, CommutativePolynomial>(equations_fst, true, false, 0, false);
+
+  bool all_equal = true;
+  for(int i=1; i<num_grammars; i++) {
+    auto equations = MakeCommEquationsAndMap(p.free_parser(inputs[i]), [](const FreeSemiring &c) -> SR {
+      auto srconv = SRConverter<SR>();
+      return c.Eval(srconv);
+    });
+
+    ValuationMap<SR> sol = apply_solver<NewtonCL, CommutativePolynomial>(equations, true, false, 0, false);
+
+
+    if(startsymbol.compare("") == 0) {
+      if(sol != sol_fst) {
+        std::cout << "[DIFF_A] Difference found" << std::endl << "0:" << result_string(sol_fst)
+                                     << std::endl << i << ":" << result_string(sol) << std::endl;
+        all_equal = false;
+        break;
+      }
+    }
+    else {
+
+      if(sol.find(Var::GetVarId(startsymbol)) == sol.end() || sol_fst.find(Var::GetVarId(startsymbol)) == sol_fst.end()) {
+        std::cout << "[ERROR] startsymbol (" << startsymbol << ") does not occur!"<< std::endl;
+        return;
+      }
+      else if(sol[Var::GetVarId(startsymbol)] != sol_fst[Var::GetVarId(startsymbol)]) {
+              std::cout << "[DIFF] Difference found for startsymbol (" << startsymbol << ")" << std::endl << "0:" << result_string(sol_fst)
+                                           << std::endl << i << ":" << result_string(sol) << std::endl;
+              all_equal = false;
+              break;
+            }
+    }
+
+  }
+
+  if(all_equal) {
+    std::cout << "[EQIV] All grammars equivalent modulo commutativity" << std::endl;
+  }
+
+  timer.Stop();
+  std::cout
+      << "Total checking time:\t" << timer.GetMilliseconds().count()
+      << " ms" << " ("
+    << timer.GetMicroseconds().count()
+    << "us)" << std::endl;
+
+}
+
 
 /*
  * Tests whether two grammars generate the same language modulo commutativity.
@@ -44,6 +114,8 @@ int main(int argc, char* argv[]) {
     ( "help,h", "print this help message" )
     ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
     ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
+    ( "mlset,m", "use the multilinear set overapproximation" )
+    ( "div,d", "use the gcd-divider overapproximation" )
     ;
 
   po::positional_options_description pos;
@@ -67,8 +139,8 @@ int main(int argc, char* argv[]) {
   std::string startsymbol = "";
 
   if(vm.count("startsymbol")) {
-    std::cout << "Comparing startsymbols (" << startsymbol << ")" << std::endl;
     startsymbol = vm["startsymbol"].as<std::string>();
+    std::cout << "Comparing startsymbols (" << startsymbol << ")" << std::endl;
   }
   else {
     std::cout << "Comparing *all* nonterminals." << std::endl;
@@ -97,50 +169,20 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
   
-  Parser p;
-
-  // Use SL-sets with simplification
-  auto equations_fst = MakeCommEquationsAndMap(p.free_parser(inputs[0]), [](const FreeSemiring &c) -> SemilinearSetL {
-    auto srconv = SRConverter<SemilinearSetL>();
-    return c.Eval(srconv);
-  });
-
-  ValuationMap<SemilinearSetL> sol_fst = apply_solver<NewtonCL, CommutativePolynomial>(equations_fst, true, false, 0, false);
-
-  bool all_equal = true;
-  for(int i=1; i<num_grammars; i++) {
-    auto equations = MakeCommEquationsAndMap(p.free_parser(inputs[i]), [](const FreeSemiring &c) -> SemilinearSetL {
-      auto srconv = SRConverter<SemilinearSetL>();
-      return c.Eval(srconv);
-    });
-
-    ValuationMap<SemilinearSetL> sol = apply_solver<NewtonCL, CommutativePolynomial>(equations, true, false, 0, false);
-
-    if(startsymbol.compare("") == 0) {
-      if(sol != sol_fst) {
-        std::cout << "Difference found" << std::endl << "0:" << result_string(sol_fst)
-                                     << std::endl << i << ":" << result_string(sol) << std::endl;
-        all_equal = false;
-        break;
-      }
-    }
-    else {
-      if(sol[Var::GetVarId(startsymbol)] != sol_fst[Var::GetVarId(startsymbol)]) {
-              std::cout << "Difference found for startsymbol (" << startsymbol << ")" << std::endl << "0:" << result_string(sol_fst)
-                                           << std::endl << i << ":" << result_string(sol) << std::endl;
-              all_equal = false;
-              break;
-            }
-    }
-
+  // all possible overapproximations (4 different configuarations possible)
+  if(vm.count("mlset") && vm.count("div")) {
+    //check_all_equal_commutative<DivPseudoLinearSet>(startsymbol, inputs);
   }
-
-  if(all_equal) {
-    std::cout << "All grammars equivalent modulo commutativity" << std::endl;
+  else if (vm.count("mlset") && !vm.count("div")) {
+    //check_all_equal_commutative<PseudoLinearSet>(startsymbol, inputs);
   }
-
-  //TODO: cmdline-switch for overapproximation
-
+  else if(!vm.count("mlset") && vm.count("div")) {
+    check_all_equal_commutative<DivSemilinearSet>(startsymbol, inputs);
+  }
+  else if(!vm.count("mlset") && !vm.count("div")){
+    // no overapproximation -- just plain semilinear sets with simplification
+    check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
+  }
 
   SemilinSetNdd::genepi_dealloc();
 

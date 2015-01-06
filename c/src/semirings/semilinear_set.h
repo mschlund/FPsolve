@@ -42,7 +42,7 @@ typedef SemilinearSet<VarId, Counter, DummyDivider,
 
 /* DivSemilinearSet additionally divides the SparseVec by its gcd.  NOTE: this
  * is an over-approximation, the result might no longer be precise. */
-typedef SemilinearSet< VarId, Counter, GcdDivider> DivSemilinearSet;
+typedef SemilinearSet< VarId, Counter, GcdDivider, SparseVecSimplifier, LinearSetSimplifier> DivSemilinearSet;
 
 
 template <typename VarType,
@@ -87,7 +87,6 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
 
     // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
     SemilinearSet(const std::string str_val) {
-      //SemilinSetExp(Var::GetVarId(s), cnt);
       assert(str_val.length() > 0);
 
       if(str_val.compare("<>") == 0 || str_val.compare("()") == 0) {
@@ -234,7 +233,7 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
         VecSetUnionWith(
             lset.GetGenerators(),
             VecSet<GeneratorType>{ GeneratorType{lset.GetOffset()} },
-            [](const OffsetType &o) { return !o.IsZero(); });
+            [](const GeneratorType &o) { return !o.IsZero(); });
 
       /* We need to add one(), but to avoid additional simplification step, we
        * just "inline" it... */

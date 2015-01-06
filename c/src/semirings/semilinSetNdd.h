@@ -68,7 +68,7 @@ public:
 
     // for each linear set we create an NDD (resp. genepi-set) and compute the union over them
     for(const auto ls : linsets) {
-      SparseVec<VarId, Counter, Divider> offset = ls.GetOffset();
+      SparseVec<VarId, Counter, DummyDivider> offset = ls.GetOffset();
       VecSet<SparseVec<VarId, Counter, Divider> > generators = ls.GetGenerators();
 
       std::vector<std::vector<int> > generator_set;

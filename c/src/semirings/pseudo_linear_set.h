@@ -19,7 +19,7 @@ class VarId;
 template <typename Var = VarId,
           typename Value = Counter,
           DIVIDER_TEMPLATE_TYPE VecDivider = DummyDivider,
-          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = DummyVecSimplifier>
+          VEC_SIMPL_TEMPLATE_TYPE VecSimpl = SparseVecSimplifier>
 class PseudoLinearSet;
 
 typedef PseudoLinearSet<VarId, Counter, GcdDivider> DivPseudoLinearSet;
@@ -77,6 +77,11 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
       }
       generators_ = VecSet<GeneratorType>{std::move(gens)};
       Simplify();
+    }
+
+    // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
+    PseudoLinearSet(const std::string str_val) {
+      //TODO
     }
 
     PseudoLinearSet& operator=(const PseudoLinearSet &s) = default;
