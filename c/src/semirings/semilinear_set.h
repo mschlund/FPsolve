@@ -86,7 +86,7 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
     }
 
     // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
-    SemilinearSet(const std::string str_val) {
+    SemilinearSet(const std::string &str_val) {
       assert(str_val.length() > 0);
 
       if(str_val.compare("<>") == 0 || str_val.compare("()") == 0) {

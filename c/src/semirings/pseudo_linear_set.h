@@ -79,10 +79,22 @@ class PseudoLinearSet : public StarableSemiring< PseudoLinearSet<Var, Value, Vec
       Simplify();
     }
 
-    // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
-    PseudoLinearSet(const std::string str_val) {
-      //TODO
+
+    PseudoLinearSet(const SemilinearSet<Var, Value, VecDivider, VecSimpl>& slset) {
+      std::vector<GeneratorType> gens;
+      for(const auto &ls : slset) {
+        offsets_.emplace_back(OffsetType{ls.GetOffset()});
+        for (const auto &g : ls.GetGenerators()) {
+          gens.emplace_back(GeneratorType{g});
+        }
+      }
+      generators_ = VecSet<GeneratorType>{std::move(gens)};
+      Simplify();
     }
+
+    // parse a description of the form e.g. "<a:3,b:2>" or of the form "a"
+    PseudoLinearSet(const std::string &str_val) : PseudoLinearSet(SemilinearSet<Var, Value, VecDivider, VecSimpl>(str_val)) { };
+
 
     PseudoLinearSet& operator=(const PseudoLinearSet &s) = default;
     PseudoLinearSet& operator=(PseudoLinearSet &&s) = default;

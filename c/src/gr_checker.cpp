@@ -48,6 +48,7 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
     return c.Eval(srconv);
   });
 
+
   Timer timer;
   timer.Start();
 
@@ -64,9 +65,9 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
 
 
     if(startsymbol.compare("") == 0) {
-      if(sol != sol_fst) {
-        std::cout << "[DIFF_A] Difference found" << std::endl << "0:" << result_string(sol_fst)
-                                     << std::endl << i << ":" << result_string(sol) << std::endl;
+      if(sol[equations[0].first] != sol_fst[equations_fst[0].first]) {
+        std::cout << "[DIFF] Difference found for startsymbols (" << equations_fst[0].first << "," << equations[0].first << ")" << std::endl;
+        std::cout << "0:" << result_string(sol_fst) << std::endl << i << ":" << result_string(sol) << std::endl;
         all_equal = false;
         break;
       }
@@ -78,25 +79,25 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
         return;
       }
       else if(sol[Var::GetVarId(startsymbol)] != sol_fst[Var::GetVarId(startsymbol)]) {
-              std::cout << "[DIFF] Difference found for startsymbol (" << startsymbol << ")" << std::endl << "0:" << result_string(sol_fst)
-                                           << std::endl << i << ":" << result_string(sol) << std::endl;
-              all_equal = false;
-              break;
-            }
+        std::cout << "[DIFF] Difference found for startsymbol (" << startsymbol << ")" << std::endl << "0:" << result_string(sol_fst)
+                                               << std::endl << i << ":" << result_string(sol) << std::endl;
+        all_equal = false;
+        break;
+      }
     }
 
   }
 
   if(all_equal) {
-    std::cout << "[EQIV] All grammars equivalent modulo commutativity" << std::endl;
+    std::cout << "[EQUIV] All grammars equivalent modulo commutativity" << std::endl;
   }
 
   timer.Stop();
   std::cout
-      << "Total checking time:\t" << timer.GetMilliseconds().count()
-      << " ms" << " ("
-    << timer.GetMicroseconds().count()
-    << "us)" << std::endl;
+  << "Total checking time:\t" << timer.GetMilliseconds().count()
+  << " ms" << " ("
+  << timer.GetMicroseconds().count()
+  << "us)" << std::endl;
 
 }
 
@@ -111,12 +112,10 @@ int main(int argc, char* argv[]) {
 
   po::options_description generic("Generic options");
   generic.add_options()
-    ( "help,h", "print this help message" )
-    ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
-    ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
-    ( "mlset,m", "use the multilinear set overapproximation" )
-    ( "div,d", "use the gcd-divider overapproximation" )
-    ;
+        ( "help,h", "print this help message" )
+        ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
+        ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
+        ;
 
   po::positional_options_description pos;
   pos.add("input", -1);
@@ -149,7 +148,7 @@ int main(int argc, char* argv[]) {
   if (vm.count("input") && num_grammars > 1) {
     // we are reading the input from the given files
     std::ifstream file;
-    
+
     for(auto& filename : input_files) {
       file.open(filename, std::ifstream::in);
       if (file.fail()) {
@@ -168,21 +167,13 @@ int main(int argc, char* argv[]) {
     std::cout << "Please provide at least two input files!" << std::endl;
     return EXIT_FAILURE;
   }
-  
-  // all possible overapproximations (4 different configuarations possible)
-  if(vm.count("mlset") && vm.count("div")) {
-    //check_all_equal_commutative<DivPseudoLinearSet>(startsymbol, inputs);
-  }
-  else if (vm.count("mlset") && !vm.count("div")) {
-    //check_all_equal_commutative<PseudoLinearSet>(startsymbol, inputs);
-  }
-  else if(!vm.count("mlset") && vm.count("div")) {
-    check_all_equal_commutative<DivSemilinearSet>(startsymbol, inputs);
-  }
-  else if(!vm.count("mlset") && !vm.count("div")){
-    // no overapproximation -- just plain semilinear sets with simplification
-    check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
-  }
+
+
+   std::cout << "Plain Semilinear Sets" << std::endl;
+  // no overapproximation -- just plain semilinear sets with simplification
+  // (the approximations are not sound for inequivalence-testing!)
+  check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
+
 
   SemilinSetNdd::genepi_dealloc();
 
