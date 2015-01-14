@@ -122,7 +122,7 @@ class WordsPrinter : public NodeVisitor {
     }
 
     void Visit(const Epsilon &e) {
-      words_.emplace_back("1");
+      words_.emplace_back("1_eps");
     }
 
     void Visit(const Empty &e) {}

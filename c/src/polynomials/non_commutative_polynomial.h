@@ -408,8 +408,10 @@ private:
     	if(monomial != monomials_.begin())
           ss << " + ";
 //    	ss << "[degree: " << monomial->first.get_degree() << "]";
-        ss << monomial->second << " * ";
-        ss << monomial->first;
+      ss << "[";
+    	ss << monomial->second << " * ";
+      ss << monomial->first;
+      ss << "]";
       }
       return ss.str();
     }

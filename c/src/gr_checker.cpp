@@ -42,12 +42,19 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
   Parser p;
   int num_grammars = inputs.size();
 
+  auto nc_equations = p.free_parser(inputs[0]);
+
+  std::cout << "Eq (non-comm) : " << std::endl;
+  PrintEquations(nc_equations);
+
   // Use appropriate semiring (has to be commutative!)
-  auto equations_fst = MakeCommEquationsAndMap(p.free_parser(inputs[0]), [](const FreeSemiring &c) -> SR {
+  auto equations_fst = MakeCommEquationsAndMap(nc_equations, [](const FreeSemiring &c) -> SR {
     auto srconv = SRConverter<SR>();
     return c.Eval(srconv);
   });
 
+  std::cout << "Eq (comm) : "  << std::endl;
+  PrintEquations(equations_fst);
 
   Timer timer;
   timer.Start();

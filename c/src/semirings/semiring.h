@@ -97,6 +97,7 @@ class Semiring {
 
     virtual bool operator==(const SR& elem) const = 0;
 
+    //FIXME: dangerous (maps use this for checking ==) !
     virtual bool operator<(const SR& elem) const {
     	return string() < elem.string();
     }

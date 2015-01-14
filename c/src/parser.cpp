@@ -253,7 +253,7 @@ struct equation_parser : qi::grammar<iterator_type, std::vector<std::pair<VarId,
 };
 
 // non commutative function for using the parser with one int and the prefix semiring
-std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> non_commutative_parser(std::string input, unsigned int length)
+std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> non_commutative_prefix_parser(std::string input, unsigned int length)
 {
         typedef equation_parser<prefix_elem_parser, NonCommutativePolynomial<PrefixSemiring>> equation_parser;
         equation_parser equation;
@@ -331,5 +331,5 @@ std::vector<std::pair<VarId, NonCommutativePolynomial<LossySemiring>>> Parser::l
 // wrapper function for prefix semiring equations
 std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> Parser::prefix_parser(std::string input, unsigned int length)
 {
-	return non_commutative_parser(input, length);
+	return non_commutative_prefix_parser(input, length);
 }
