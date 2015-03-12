@@ -515,9 +515,6 @@ SR CommutativePolynomial<SR>::AllNewtonDerivatives(
       continue;
     }
 
-    SR monomial_value = monomial_coeff.second;
-    assert(!(monomial_value == SR::null()));
-
     current_max_degree.clear();
     Degree monomial_degree = 0;
     for (auto &var_degree : monomial_coeff.first.variables_) {
@@ -534,13 +531,17 @@ SR CommutativePolynomial<SR>::AllNewtonDerivatives(
     Generator generator{current_max_degree, 2, monomial_degree};
 
     while (generator.NextCombination()) {
+      SR monomial_value = monomial_coeff.second;
+      assert(!(monomial_value == SR::null()));
+
       const auto &deriv_variables = generator.GetMap();
+
 
       /*for(auto &kv : deriv_variables) {
     	  std::cout << "[" << kv.first << ":" <<kv.second<<"]";
       }
-      std::cout << std::endl;
-       */
+      std::cout << std::endl;*/
+
 
       /* First consider the variables that are in deriv_variables. */
       for (const auto &deriv_variable_degree : deriv_variables) {
@@ -560,12 +561,15 @@ SR CommutativePolynomial<SR>::AllNewtonDerivatives(
 
         auto binomial_coeff_d =
           boost::math::binomial_coefficient<double>(degree, deriv_degree);
+
         /* Check if we don't overflow. */
         assert(static_cast<std::uint_fast64_t>(binomial_coeff_d) <=
                static_cast<std::uint_fast64_t>(
                     std::numeric_limits<Degree>::max()));
         monomial_value *= static_cast<Degree>(binomial_coeff_d);
 
+
+        // if there are variables "having survived" the derivative they get assigned the previous newton values
         if (degree > deriv_degree) {
           auto value_lookup = previous_newton.find(variable);
           assert(value_lookup != previous_newton.end());
@@ -602,9 +606,12 @@ SR CommutativePolynomial<SR>::AllNewtonDerivatives(
       SR prod = SR::one();
 
       for (const auto &var_val : generator.GetMap()) {
+        if(var_val.second == 0) {
+          continue;
+        }
+        auto lookup = newton_update.find(var_val.first);
+        assert(lookup != newton_update.end());
         for (unsigned int j = 0; j < var_val.second; ++j) {
-          auto lookup = newton_update.find(var_val.first);
-          assert(lookup != newton_update.end());
           prod *= lookup->second;
         }
       }

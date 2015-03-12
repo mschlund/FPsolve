@@ -120,6 +120,7 @@ class GenericNewton {
       /* No need to recompute delta if this is the last iteration... */
       if (!SR::IsIdempotent() && i + 1 < max_iter) {
         delta = DeltaGen.delta_at(newton_update, newton_values);
+        //std::cout << "delta:" << std::endl << delta << std::endl;
       }
 
       if (!SR::IsIdempotent()) {
@@ -127,7 +128,6 @@ class GenericNewton {
       } else {
         newton_values = newton_update;
       }
-
     }
 
     return newton_values;
@@ -156,6 +156,9 @@ class CommutativeSymbolicLinSolver {
     std::unordered_map<SR, VarId, SR> valuation_tmp;
 
     Matrix<FreeSemiring> jacobian_free = CommutativePolynomial<SR>::make_free(jacobian, &valuation_tmp);
+
+    //std::cout << "J: " << jacobian_free << std::endl;
+
     jacobian_star_ = new Matrix<FreeSemiring>(jacobian_free.star());
 
     // For benchmarking only ->
@@ -234,7 +237,10 @@ class CommutativeConcreteLinSolver {
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
-    //std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+    /*
+    std::cout << "J:" << jacobian_ << std::endl;
+    std::cout << "concrete mat:"<< std::endl << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+    */
     return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.star()
            * rhs;
   }
@@ -299,6 +305,7 @@ public:
 
       delta_vector.emplace_back(std::move(delta));
     }
+
     return Matrix<SR>(delta_vector.size(), std::move(delta_vector));
   }
 

@@ -9,6 +9,7 @@
 
 #define BETTER_FILE boost::filesystem::path(__FILE__).filename().c_str()
 
+
 #ifdef DEBUG_OUTPUT
 #define DEBUG_LOCATION "(" << BETTER_FILE << ":" << __LINE__ << ")"
 #define DMSG(msg) std::cerr << DEBUG_LOCATION << "  " << msg << std::endl;

@@ -118,7 +118,9 @@ class WordsPrinter : public NodeVisitor {
     }
 
     void Visit(const Element &e) {
-      words_.emplace_back(Var::GetVar(e.GetVar()).string());
+      std::stringstream ss;
+      ss << "\"" << Var::GetVar(e.GetVar()).string() << "\"";
+      words_.emplace_back(ss.str());
     }
 
     void Visit(const Epsilon &e) {
