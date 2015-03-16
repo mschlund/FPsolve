@@ -741,7 +741,6 @@ public:
             variablefiedEquations.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
             constantsToVariables.insert(std::make_pair(constant, var));
             variablesToConstants.insert(std::make_pair(var,constant));
-//            std::cout << "new production during constant elimination:\t" << Var::GetVar(var).string() << " -> " << constant.string() << std::endl;
         }
 
         // replace the constants in each nonterminal production with the new constant variables
@@ -750,8 +749,6 @@ public:
             allVariablesPoly = equation.second.replaceConstants(constantsToVariables, eliminateInLinearTerms);
             variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
         }
-
-//        std::cout << "constant elimination done" << std::endl;
 
         return variablefiedEquations;
     }
@@ -1072,7 +1069,6 @@ public:
     static SR shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, VarId &startSymbol) {
 
         if(productions.size() == 0) {
-//            std::cout << "intersection no productions" << std::endl;
             return SR::null();
         }
 
@@ -1085,7 +1081,6 @@ public:
         }
 
         if(!startSymbolIsProductive) {
-//            std::cout << "start symbol not productive" << std::endl;
             return SR::null();
         }
 
@@ -1116,10 +1111,7 @@ public:
     /*
      * Finds all terminal symbols that can be the first letter of some word in the language of the grammar.
      */
-    static std::set<char> getDerivableFirstLettes(const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, const VarId &startSymbol){
-//        for(auto &equation: productions) {
-//            std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
-//        }
+    static std::set<char> getDerivableFirstLettes(const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions, const VarId &startSymbol) {
         std::map<VarId, std::set<char>> varToDerivableFirstLetters;
         std::set<VarId> varsWithEpsilon;
         if(productions.size() != 0) {
@@ -1154,12 +1146,15 @@ public:
 
     static int numberOfNonterminalsInGrammar (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions) {
         std::set<VarId> vars;
+
         for(auto &equation: productions) {
             vars.insert(equation.first);
+
             for(auto &varInPoly: equation.second.get_variables()) {
                 vars.insert(varInPoly);
             }
         }
+
         return vars.size();
     }
 

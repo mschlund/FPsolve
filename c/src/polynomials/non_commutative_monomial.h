@@ -910,7 +910,6 @@ public:
      */
     bool getDerivableFirstLettes(std::map<VarId, std::set<char>> &varToDerivableFirstLetters, std::set<VarId> &varsWithEpsilon,
             const VarId &lhsOfProduction) const {
-//        std::cout << "monomial:\t" << string() << std::endl;
 
         // do not touch null-monomials
         for(int i = 0; i < srs_.size(); i++) {
@@ -919,17 +918,19 @@ public:
             }
         }
 
-        // first, check whether this monomial can derive epsilon
         bool foundNew = false;
 
+        // first, check whether this monomial can derive epsilon
         if(varsWithEpsilon.find(lhsOfProduction) ==  varsWithEpsilon.end()) {
             bool canProduceEpsilon = true;
+
             for(int i = 0; i < srs_.size(); i++) {
                 if(srs_[i] != SR::one()) {
                     canProduceEpsilon = false;
                     break;
                 }
             }
+
             if(canProduceEpsilon) {
                 for(int i = 0; i < variables_.size(); i++) {
                     if(varsWithEpsilon.find(variables_[i]) == varsWithEpsilon.end()) {
@@ -969,28 +970,8 @@ public:
                     }
                 }
             }
-
-//                //find the index of the first variable
-//                int index = 0;
-//                while(idx_[index].first == SemiringType) {
-//                    index++;
-//                }
-//
-//                int varIndex = 0;
-//                while(index < idx_.size() && idx_[index].first == Variable) {
-//                    for(char letter: varToDerivableFirstLetters[variables_[varIndex]]) {
-//                        foundNew |= varToDerivableFirstLetters[lhsOfProduction].insert(letter).second;
-//                    }
-//
-//                    if(varsWithEpsilon.find(variables_[varIndex]) == varsWithEpsilon.end()) {
-//                        break;
-//                    }
-//
-//                    index++;
-//                    varIndex++;
-//                }
         }
-//        std::cout << "yup" << std::endl;
+
         return foundNew;
     }
 

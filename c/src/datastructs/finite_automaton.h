@@ -59,7 +59,6 @@ public:
             std::map<int, FiniteAutomaton> &componentToClosureAutomaton,
             int comp) {
 
-//        std::cout << "in FiniteAutomaton::courcelle_construct..." << std::endl;
         /*
          * build two sets that hold the components required for the bipartite construction
          */
@@ -71,11 +70,9 @@ public:
 
             for(auto rhc: it->second) {
                 rhComponents.insert(rhc);
-//                std::cout << "lhs\t" << it->first << "\tmapped to rhs\t" << rhc << std::endl;
             }
         }
 
-//        std::cout << "finding lhComponents and rhComponents done..." << std::endl;
         /*
          * these maps will store the information regarding which states need to be linked with
          * epsilon transitions before we calculate the epsilon closure
@@ -91,15 +88,6 @@ public:
         struct fa* finalAutomaton = lefthandAlphabetStar.automaton;
         struct state* source = finalAutomaton->initial;
         assert (source->next == NULL); // otherwise, the construction doesn't work as intended
-
-//        if(comp == 3) {
-//            FILE * initialFile;
-//            initialFile = fopen ("courcelle_3_initial.dot","w");
-//            fa_dot(initialFile, finalAutomaton);
-//            fclose (initialFile);
-//        }
-
-//        std::cout << "remembered finalAutomaton and its initial state..." << std::endl;
 
         // first, clone all the automata we need for the left hand side; remember the
         // initial and final states of the clones
@@ -127,15 +115,6 @@ public:
             lowerLinearTerms.erase(comp);
         }
 
-//        if(comp == 3) {
-//            FILE * mergedLHS;
-//            mergedLHS = fopen ("courcelle_3_merged_lhs.dot","w");
-//            fa_dot(mergedLHS, finalAutomaton);
-//            fclose (mergedLHS);
-//        }
-
-//        std::cout << "merged left hand clones into construction..." << std::endl;
-
         // now, clone all the automata we need for the right hand side; remember the
         // initial and final states of the clones
         for(auto comp: rhComponents) {
@@ -159,45 +138,17 @@ public:
             lowerLinearTerms.erase(comp);
         }
 
-
-//        if(comp == 3) {
-//            FILE * mergedRHS;
-//            mergedRHS = fopen ("courcelle_3_merged_rhs.dot","w");
-//            fa_dot(mergedRHS, finalAutomaton);
-//            fclose (mergedRHS);
-//        }
-
-//        std::cout << "merged right hand clones into construction..." << std::endl;
-
         // merge the right hand alphabet automaton into the construction
         struct state* target = righthandAlphabetStar.automaton->initial;
         assert (target->next == NULL); // otherwise, the construction doesn't work as intended
 
         fa_merge(finalAutomaton, &(righthandAlphabetStar.automaton));
-//        std::cout << "merged right hand alphabet clone into construction..." << std::endl;
-
-
-//        if(comp == 3) {
-//            FILE * mergedRAlph;
-//            mergedRAlph = fopen ("courcelle_3_merged_ralph.dot","w");
-//            fa_dot(mergedRAlph, finalAutomaton);
-//            fclose (mergedRAlph);
-//        }
 
         // add the epsilon transitions from the final states of the right hand automata to the
         // state of the right hand alphabet automaton
         for(auto rhFinal: rhComponentsFinalStates) {
             add_epsilon_trans(rhFinal, target);
         }
-
-//        if(comp == 3) {
-//            FILE * transrhs;
-//            transrhs = fopen ("courcelle_3_trans_rhs.dot","w");
-//            fa_dot(transrhs, finalAutomaton);
-//            fclose (transrhs);
-//        }
-
-//        std::cout << "added epsilon trans rhFinal->target..." << std::endl;
 
         /*
          *  add the meat of the construction: the actual bipartite construction
@@ -217,26 +168,11 @@ public:
             }
         }
 
-//        if(comp == 3) {
-//            FILE * transbip;
-//            transbip = fopen ("courcelle_3_trans_bip.dot","w");
-//            fa_dot(transbip, finalAutomaton);
-//            fclose (transbip);
-//        }
-
         // add the transitions from left hand alphabet automaton to the initial states of the left
         // hand automata of the bipartite construction
         for(auto lhInitial: lhComponentsInitialState) {
             add_epsilon_trans(source, lhInitial);
         }
-//        std::cout << "added epsilon trans source->lhInitial..." << std::endl;
-
-//        if(comp == 3) {
-//            FILE * translhs;
-//            translhs = fopen ("courcelle_3_trans_lhs.dot","w");
-//            fa_dot(translhs, finalAutomaton);
-//            fclose (translhs);
-//        }
 
         // add the missing linear terms
         for(int linearComp: lowerLinearTerms) {
@@ -263,13 +199,6 @@ public:
             add_epsilon_trans(source, linearInitial);
         }
 
-//        if(comp == 3) {
-//            FILE * linTerms;
-//            linTerms = fopen ("courcelle_3_lin_terms.dot","w");
-//            fa_dot(linTerms, finalAutomaton);
-//            fclose (linTerms);
-//        }
-
         // add the constant terms
         if(!closureOfConstantMonomials.empty()) {
             struct state* constantInitial = closureOfConstantMonomials.automaton->initial;
@@ -286,18 +215,10 @@ public:
                 add_epsilon_trans(s, target);
             }
             add_epsilon_trans(source, constantInitial);
-
-//            if(comp == 3) {
-//                FILE * constants;
-//                constants = fopen ("courcelle_3_constants.dot","w");
-//                fa_dot(constants, finalAutomaton);
-//                fclose (constants);
-//            }
         }
 
         finalAutomaton->minimal = 0;
         finalAutomaton->deterministic = 0;
-//        std::cout << "leaving FiniteAutomaton::courcelle_construct..." << std::endl;
 
         return FiniteAutomaton(finalAutomaton);
     }
@@ -392,13 +313,10 @@ public:
      * and every state t that is reachable from s, adds the transition d(s,epsilon) = t.
      */
     FiniteAutomaton epsilonClosure() const {
-//        std::cout << "doing epsilon closure of language" << std::endl;
-//        std::cout << "language:\t" << string() << std::endl;
-//        std::cout << "size of automaton:\t" << size() << std::endl;
+
         if(empty() || epsilon_closed == 1) {
             return *this;
         }
-//        std::cout << "failed here if no more text\n\n\n" << std::endl;
 
         std::set<unsigned long> foundStates;
         std::vector<state*> bfsQueue;
@@ -416,49 +334,24 @@ public:
             std::set<state*> targets;
 
             while(!bfsQueue.empty()) {
-//                std::cout << "getting last element of queue" << std::endl;
                 next = bfsQueue.back();
-//                std::cout << "\"next\" state hash:"<< std::endl;
-//                std::cout <<  next->hash << std::endl;
-//                std::cout << "popping queue" << std::endl;
                 bfsQueue.pop_back();
-//                std::cout << "getting transition array of \"next\" state" << std::endl;
                 trans = next->trans;
-//                std::cout << "number of transitions of \"next\":\t" << next->tused << std::endl;
 
                 // remove this line to earn yourself hours of debugging:
                 int iterations = next->tused;
-//                std::cout << "next->tused = iterations = " << iterations << std::endl;
-
 
                 // iterate over all transitions
                 for(int i = 0; i < iterations; i++) {
-//                    std::cout << "iteration:\t" << i << "\thash of \"next\":\t" << next->hash << std::endl;
 
                     if(foundStates.count((trans+i)->to->hash) == 0) {
                         foundStates.insert((trans+i)->to->hash);
-//                        std::cout << "inserted into found states:" << std::endl;
                         bfsQueue.push_back((trans+i)->to);
-//                        std::cout << "pushed into queue" << std::endl;
-
-//                        std::cout << "hash target state:" << std::endl;
-//                        std::cout << (trans+i)->to->hash << std::endl;
-
-
-                        // debugging for the thousandth time
-//                        FILE * file;
-//                        file = fopen ("analyze.dot","w");
-//                        fa_dot(file, automaton);
-//                        fclose (file);
-//                        printf("%p to %p\n", next, (trans+i)->to);
 
                         //remember the new target state
                         targets.insert((trans+i)->to);
                     }
-//                    std::cout << " " << std::endl;
                 }
-
-//                std::cout << "\n\n\n\n" << std::endl;
             }
 
             // epsilon-close
@@ -466,7 +359,6 @@ public:
                 add_epsilon_trans(s, target);
             }
         }
-//        std::cout << "nope, wasnt that, new language:\t" << string() << "\n\n\n" << std::endl;
 
         FiniteAutomaton closure = FiniteAutomaton(automaton);
         closure.epsilon_closed = 1;
@@ -566,7 +458,6 @@ public:
                 // iterate over all symbols of this transition
                 for(unsigned char c = (trans+i)->min; c <= (trans+i)->max; c++) {
                     alphabet.insert(c);
-//                    std::cout << "letter in alphabet:\t" << c << std::endl;
                 }
             }
         }
@@ -578,10 +469,6 @@ public:
         std::map<int, std::map<unsigned long, std::set<std::string>>> prefixesViaStates;
         std::map<unsigned long, struct state*> hashToState;
         std::map<int, std::set<std::string>> prefixes;
-
-//        std::cout << "automaton:\t" << string() << std::endl;
-//
-//        std::cout << "length:\t" << maxLength << std::endl;
 
         if(maxLength <= 0) {
             return prefixes;
@@ -609,26 +496,8 @@ public:
                     prefixesViaStates[1][(trans+i)->to->hash].insert(prefix);
                     prefixes[1].insert(prefix);
                 }
-//                std::cout << "new prefix length 1:\t" << prefix << std::endl;
             }
         }
-//
-//        std::cout << "prefixes of length 1:" << std::endl;
-//        for(auto &prefix: prefixes[1]) {
-//            std::cout << prefix << std::endl;
-//        }
-//        std::cout << "end prefixes of length 1" << std::endl;
-//        std::cout << "prefixesViaStates:" << std::endl;
-//
-//        for(auto &outerEntry: prefixesViaStates) {
-//            for(auto &innerEntry: outerEntry.second) {
-//                for(auto &prefix: innerEntry.second) {
-//                    std::cout << "prefixesViaStates[" << outerEntry.first << "][" << innerEntry.first << "]:\t" << prefix << std::endl;
-//                }
-//            }
-//        }
-//
-//       std::cout << "prefixesViaStates end." << std::endl;
 
         // now use prefixes of length i-1 > 0 to build those of length i > 1
         for(int length = 1; length < maxLength; length++) {
@@ -690,13 +559,6 @@ public:
         // do it with a DFA, something went wrong with NFAs
         minimize();
 
-//        FILE * file;
-//        std::stringstream filess;
-//        filess << "a2c" << ".dot";
-//        file = fopen (filess.str().c_str(),"w");
-//        write_dot_file(file);
-//        fclose (file);
-
         // for the new grammar
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
 
@@ -705,7 +567,6 @@ public:
         std::queue<VarId> worklist;
         worklist.push(oldS);
         auto workGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
-//        std::cout << "work grammar size: " << workGrammar.size() << std::endl;
 
         // change the grammar to one where monomials have degree at most 2 and those monomials with degree 2
         // have the form XY
@@ -742,27 +603,7 @@ public:
         // initial state of the FA
         unsigned long initialState = 0;
 
-//        std::cout << "lets see if we can get that FA info" << std::endl;
         extractTransitionTable(transitionTable, states, finalStates, initialState);
-
-//        std::cout << "number of final states: " << finalStates.size() << std::endl;
-//        std::cout << "number of states: " << states.size() << std::endl;
-//        for(auto &transitions: transitionTable){
-//            std::cout << "transitions for state:\t" << transitions.first << std::endl;
-//
-//            for(auto &trans: transitions.second) {
-//                for(auto &target: trans.second) {
-//                    std::cout << "delta(" << transitions.first << "," << trans.first << ") = " << target << std::endl;
-//                }
-//
-//            }
-//        }
-
-//        if(transitionTable.size() == 0) {
-//            std::cout << "something is fishy; transition table is empty" << std::endl;
-//        }
-//
-//        std::cout << "extraction of FA info does not cause segfault" << std::endl;
 
         // we will need a three-dimensional lookup table for the new variables so we don't mess up
         // the assignment of polynomials to nonterminals while constructing the grammar
@@ -788,13 +629,9 @@ public:
                     std::stringstream ss;
                     ss << "<" << i << "," << Var::GetVar(workGrammar[k].first).string() << "," << j << ">";
                     newVariables[i][j][k] = Var::GetVarId(ss.str());
-//                    newVariables[i][j][k] = Var::GetVarId();
-//                    std::cout << "new var introduced: " << Var::GetVar(newVariables[i][j][k]).string() << std::endl;
                 }
             }
         }
-
-//        std::cout << "neither does generating new variables" << std::endl;
 
         // build a map from variables to indices, where the index of a variable is the line in oldGrammar
         // that contains the productions of the variable
@@ -814,9 +651,6 @@ public:
          * now we generate the productions of the new grammar
          */
 
-
-//        std::cout << "the problem must lie in the actual intersection algorithm" << std::endl;
-
         // the indices k, i, j are intended this way; we first choose some nonterminal of the grammar
         // and then generate all productions derived from that nonterminal; this mirrors the way
         // in which the algorithm is described in the paper referred to above
@@ -824,7 +658,6 @@ public:
         for(unsigned long i = 0; i < numberOfStates; i++) {
             for(unsigned long j = 0; j < numberOfStates; j++) {
                 for(unsigned long k = 0; k < workGrammar.size(); k++) {
-//                    std::cout << "k, i, j: " << k << ", " << i << ", " << j << std::endl;
                     poly = workGrammar[k].second.intersectionPolynomial
                             (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
                     resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
@@ -832,25 +665,15 @@ public:
             }
         }
 
-//        for(auto state: states) {
-//            std::cout << "state: " << state << std::endl;
-//            std::cout << "statesToIndices[state]: " << statesToIndices[state] << std::endl;
-//        }
-
         // finally, use a new variable as initial variable and generate the productions; they are of the form
         // newS -> <q_0, oldS, q_f> where q_0 is the initial state of the FA and q_f is some final state of the FA
         NonCommutativePolynomial<SR> startPolynomial = NonCommutativePolynomial<SR>::null();
-//        std::cout << "start polynomial initially: " << startPolynomial.string() << std::endl;
-//        std::cout << "initial state: " << initialState << std::endl;
+
         for(auto target: finalStates) {
-//            std::cout << "adding to start polynomial" << std::endl;
-//            std::cout << "current final state: " << target << std::endl;
-//            std::cout << "index mapping: " << statesToIndices[target] << std::endl;
             startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
-//            std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         }
+
         newS = Var::GetVarId();
-//        std::cout << "start polynomial: " << startPolynomial.string() << std::endl;
         resultGrammar.push_back(std::make_pair(newS, startPolynomial));
 
         auto startProduction = resultGrammar[resultGrammar.size() - 1];
@@ -865,6 +688,11 @@ private:
         epsilon_closed = 0;
     }
 
+    struct fa* automaton; // the actual language
+
+    // this flag won't just save you running time, it will also save you hours of debugging time
+    int epsilon_closed;
+
     /*
      * Builds the transition table of this FA. The table will map the hash of a state to a map that maps transition
      * symbols to hashes of target states. Since we are having general FAs, the transition relation need not be a
@@ -878,7 +706,6 @@ private:
             unsigned long &initialState) const {
 
         initialState = automaton->initial->hash;
-//        std::cout << "the initial state is:\t" << initialState << std::endl;
 
         // iterate through all states, build the transition table state for state
         struct trans *trans;
@@ -886,12 +713,10 @@ private:
 
             // remember each state by its hash, also count them
             states.push_back(s->hash);
-//            std::cout << "some state:\t" << s->hash << std::endl;
 
             // remember the state as being final if it is
             if(s->accept) {
                 finalStates.insert(s->hash);
-//                std::cout << "found a final state:\t" << s->hash << std::endl;
             }
 
             // we build a transition table for each state, i.e. what would be a line in the
@@ -909,19 +734,10 @@ private:
 
                     // the map[] operator will create a new empty list of target states if none yet exists
                     stateTable[c].push_front((trans+i)->to->hash);
-//                    std::cout << "a transition:\tdelta(" << s->hash << "," << c << ") = " << (trans+i)->to->hash << std::endl;
                 }
             }
 
             transitionTable.insert(std::make_pair(s->hash, stateTable));
-//            std::cout << "extracting for this state is done" << std::endl;
         }
-
-//        std::cout << "done extracting" << std::endl;
     }
-
-    struct fa* automaton;
-
-    // this flag won't just save you running time, it will also save you hours of debugging time
-    int epsilon_closed;
 };

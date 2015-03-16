@@ -6,8 +6,6 @@
 #include "semirings/float-semiring.h"
 #include "semirings/commutativeRExp.h"
 #include "semirings/prefix-semiring.h"
-#include "semirings/lossy-semiring.h"
-#include "semirings/lossy-regular-expression.h"
 #include "semirings/lossy-finite-automaton.h"
 #include "polynomials/polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
@@ -34,7 +32,6 @@ public:
   std::vector<std::pair<VarId, Polynomial<CommutativeRExp>>> rexp_parser(std::string input);
   std::vector<std::pair<VarId, Polynomial<SemilinSetExp>>> slset_parser(std::string input);
   std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> free_parser(std::string input);
-  std::vector<std::pair<VarId, NonCommutativePolynomial<LossyRegularExpression>>> lossy_regexp_parser(std::string input);
   std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> lossy_fa_parser(std::string input);
   std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> prefix_parser(std::string input, unsigned int length);
 };
