@@ -86,6 +86,8 @@ private:
      * currentState would refer us to s_i.
      *
      * See e.g. Nederhof & Satta, "Probabilistic Parsing" (section 3), 2008 for details on the generated nonterminals.
+     *
+     * WARNING: will break if used with anything but NonCommutativeMonomial<SR>
      */
     NonCommutativePolynomial<SR> generateIntersectionMonomials(std::vector<unsigned long> &states,
             std::map<unsigned long,
@@ -106,7 +108,6 @@ private:
 
             // check if we hit the last factor of the monomial; we stop the recursion here
             if(monomialFactorIndex == idx_.size() - 1) {
-//                std::cout << "last index SR" << std::endl;
 
                 // if the last element in the monomial is epsilon, then the only way the generated monomial is valid
                 // is if the target state is equal to the one we are currently at
@@ -128,16 +129,12 @@ private:
                     // -----------------------------------------------------
                     std::string transitionsToDo = srs_[idx_[monomialFactorIndex].second].string();
 
-                    // for later debug purposes
-//                    std::cout << "transitionsToDo during intersection:\t" + transitionsToDo << std::endl;
-
                     std::set<unsigned long> reachable, temp;
                     reachable.insert(currentState);
 
                     for(int i = 0; i < transitionsToDo.size(); i++) {
+
                         for(auto &intermediateState: reachable) {
-//                            std::cout << "intermediate state:\t" << intermediateState << std::endl;
-//                            std::cout << "transitionsToDo[i]:\t" << transitionsToDo[i] << std::endl;
                             for(unsigned long &nextIntermediateState: transitionTable[intermediateState][transitionsToDo[i]]) {
                                 temp.insert(nextIntermediateState);
                             }
@@ -153,7 +150,6 @@ private:
                     }
                 }
             } else { // if this is not the last factor of the monomial, continue the recursion
-//                std::cout << "not last index SR" << std::endl;
 
                 // if the semiring element is 1, then the FA cannot make a move since it doesn't have epsilon transitions,
                 // so we advance in the monomial but leave the currentState untouched
@@ -164,17 +160,12 @@ private:
                          // and see where that string takes us in the FAstateTransitions
 
                     std::string transitionsToDo = srs_[idx_[monomialFactorIndex].second].string();
-
-                    // for later debug purposes
-//                    std::cout << "transitionsToDo during intersection:\t" + transitionsToDo << std::endl;
-
                     std::set<unsigned long> reachable, temp;
                     reachable.insert(currentState);
 
                     for(int i = 0; i < transitionsToDo.size(); i++) {
+
                         for(auto &intermediateState: reachable) {
-//                            std::cout << "intermediate state:\t" << intermediateState << std::endl;
-//                            std::cout << "transitionsToDo[i]:\t" << transitionsToDo[i] << std::endl;
                             for(unsigned long &nextIntermediateState: transitionTable[intermediateState][transitionsToDo[i]]) {
                                 temp.insert(nextIntermediateState);
                             }
@@ -198,18 +189,14 @@ private:
 
             // check if we hit the last factor of the monomial; we stop the recursion here
             if(monomialFactorIndex == idx_.size() - 1) {
-//                std::cout << "last index variable" << std::endl;
-//                std::cout << "statesToIndices[currentState]: " << statesToIndices[currentState] << std::endl;
                 result = NonCommutativePolynomial<SR>(newVariables[statesToIndices[currentState]][statesToIndices[targetState]]
                             [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]);
             } else { // if this is not the last factor of the monomial, continue the recursion
-//                std::cout << "not last index variable" << std::endl;
                 for(auto &nextState: states) {
 
                     // we want to replace some nonterminal X by <currentState, X, nextState> for all nextState;
                     // after that we need to append all possible monomials generated from the suffix of this monomial
                     // that starts one symbol after X and uses nextState
-//                    std::cout << "statesToIndices[currentState]: " << statesToIndices[currentState] << std::endl;
                     result += NonCommutativePolynomial<SR>(newVariables[statesToIndices[currentState]][statesToIndices[nextState]]
                                   [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]) *
                               generateIntersectionMonomials(states, transitionTable, nextState, targetState,
@@ -427,7 +414,6 @@ public:
             else if (p.first == SemiringType)
             result *= srs_.at(p.second);
         }
-//      std::cout << "monomial eval result:\t\t" << result.string() << std::endl;
 
         return result;
     }
@@ -695,19 +681,6 @@ public:
         lowerLinearTerms.insert(varToComponent[variables_[0]]);
     }
 
-    /* OLD CODE used in the original implementation of the downward closure algorithm by Courcelle.
-//    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
-//            std::map<VarId, int> &varToComponent,
-//            int component) const {
-//
-//        if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
-//            return;
-//        }
-//
-//        linearMonomialsOfLowerOrder.insert(*this);
-//    }
-    */
-
     /*
      * Replaces all constants in the polynomial with their respective VarId mapping.
      *
@@ -756,7 +729,6 @@ public:
             }
         }
 
-//      std::cout << "poly in CNF:\t"+ temp.string() << std::endl;
         return temp;
     }
 
@@ -769,6 +741,8 @@ public:
      * WARNING: if you use an SR where the string representations of elements are NOT strings over
      * the English alphabet (e.g. they may contain 1s to represent epsilons, or they may use a
      * different character set), then this function will most likely not do what you want it to do.
+     *
+     * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
      */
     NonCommutativePolynomial<SR> intersectionPolynomial(std::vector<unsigned long> &states,
                 std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
@@ -1063,7 +1037,7 @@ public:
     }
 
     /*
-     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
      *
      * Assumes that all productions have been binarized.
      */
@@ -1078,9 +1052,6 @@ public:
 
         if((lhsComponent != component) && (rhsComponent != component)) {
             quadraticLHStoRHS[component][lhsComponent].insert(rhsComponent);
-//            for(auto entry: quadraticLHStoRHS[component][lhsComponent]) {
-//                std::cout << "entry in quadraticLHStoRHS[" << component << "][" << lhsComponent << "]: " << rhsComponent << std::endl;
-//            }
         }
     }
 
@@ -1105,6 +1076,9 @@ public:
         }
     }
 
+    /*
+     * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
+     */
     void calculateSameComponentLetters(
             std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
             std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
@@ -1181,7 +1155,7 @@ public:
     std::string string() const {
 
         std::stringstream ss;
-        //for(auto &p : idx_) {
+
         for(auto p = idx_.begin(); p != idx_.end(); p++) {
             if(p != idx_.begin())
             ss << " * ";
@@ -1191,6 +1165,7 @@ public:
             else
             ss << srs_.at(p->second);
         }
+
         return std::move(ss.str());
     }
 

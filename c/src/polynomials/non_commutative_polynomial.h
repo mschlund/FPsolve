@@ -28,7 +28,6 @@ private:
     static void InsertMonomial(
             std::map<NonCommutativeMonomial<SR>, std::uint_fast16_t> &monomials,
             NonCommutativeMonomial<SR> monomial, std::uint_fast16_t coeff) {
-        //std::cout << "NPC<SR>::IM2" << std::endl;
         auto iter = monomials.find(monomial);
         if (iter == monomials.end()) {
             monomials.insert( { monomial, 1 });
@@ -43,7 +42,6 @@ private:
             std::map<NonCommutativeMonomial<SR>, std::uint_fast16_t> &monomials,
             std::vector<std::pair<elemType, int>> &idx,
             std::vector<VarId> &variables, std::vector<SR> &srs) {
-      //  std::cout << "NPC<SR>::IM1" << std::endl;
         auto tmp_monomial = NonCommutativeMonomial<SR>(idx, variables, srs);
         InsertMonomial(monomials, tmp_monomial, 1);
     }
@@ -87,8 +85,6 @@ public:
 
     /* Create a 'constant' polynomial. */
     NonCommutativePolynomial(const SR &elem) {
-//        std::cout << "NCP(cSR)" << std::endl;
-//        std::cout << "elem:\t" + elem.string() << std::endl;
         std::vector<std::pair<elemType, int>> idx = { {SemiringType, 0}};
         std::vector<VarId> variables = {};
         std::vector<SR> srs = {elem};
@@ -99,7 +95,6 @@ public:
     }
 
     NonCommutativePolynomial(SR &elem) {
-        //std::cout << "NCP(SR)" << std::endl;
         std::vector<std::pair<elemType, int>> idx = { {SemiringType, 0}};
         std::vector<VarId> variables = {};
         std::vector<SR> srs = {elem};
@@ -275,8 +270,6 @@ public:
             result = result + (monomial.first.eval(values) * monomial.second);
         }
 
-
-//        std::cout << "poly result of eval:\t\t" + result.string() << std::endl;
         return result;
     }
 
@@ -373,7 +366,7 @@ public:
      * As with get_variables(), make sure you cache this if you use it.
      *
      * Only considers monomials with exactly two variables; used in generating the lossy quadratic normal form
-     * of a system, see LossySemiring::downwardClosureDerivationTrees(..).
+     * of a system, see LossyFiniteAutomaton::downwardClosureDerivationTrees(..).
      */
     std::set<VarId> get_variables_quadratic_monomials() const {
         std::set<VarId> vars;
@@ -459,22 +452,14 @@ public:
      * Find out which linear monomials in this polynomial lead to a lower component and insert them into
      * lowerLinearTerms.
      *
-     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     * Used in the algorithm by Courcelle, see lossy-finite-automaton.h#downwardClosureCourcelle.
+     * This is only here because we need access to monomials_.
      */
     void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
         for(auto &monomial: monomials_) {
             monomial.first.findLowerLinearTerms(lowerLinearTerms, varToComponent, component);
         }
     }
-
-//    void findLowerLinearTerms(std::set<NonCommutativeMonomial<SR>> &linearMonomialsOfLowerOrder,
-//            std::map<VarId, int> &varToComponent,
-//            int component) const {
-//
-//        for(auto &monomial: monomials_) {
-//            monomial.first.findLowerLinearTerms(linearMonomialsOfLowerOrder, varToComponent, component);
-//        }
-//    }
 
     /*
      * Replaces all constants in the nonterminal monomials of the polynomial with their respective VarId mapping.
@@ -538,11 +523,6 @@ public:
     static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanSystem
         (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations,
                 std::queue<VarId> &worklist) {
-
-//        std::cout << "system before cleaning:" << std::endl;
-//        for(auto &equation: equations) {
-//            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-//        }
 
         std::queue<VarId> temp; // to store the variables that still need checking
         std::map<VarId, int> encounteredVariables; // to remember whether a variable was encountered and check for
@@ -637,7 +617,6 @@ public:
 
         // build the clean system: only use variables that are both productive and reachable;
         // remove unproductive monomials
-//        std::cout << "clean system:" << std::endl;
         std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanEquations;
         for(auto &equation: equations) {
             if(productiveVariables[equation.first]) {
@@ -647,7 +626,6 @@ public:
                 // found to be productive
                 cleanEquations.push_back(std::make_pair(equation.first,
                         equation.second.removeUnproductiveMonomials(productiveVariables)));
-//                std::cout << Var::GetVar(equation.first).string() << " -> " << equation.second.string() << std::endl;
             }
         }
 
@@ -789,150 +767,6 @@ public:
     }
 
     /*
-     * Brings a polynomial system into CNF. The resulting system uses a superset of the nonterminals
-     * used before the normalization, i.e.: if the system was a CFG beforehand with a designated start
-     * symbol, then that start symbol can still be used.
-     *
-     * WARNING: the result will have a higher number of appearances of some monomials in the productions
-     * (e.g. you might get 3*(SabcXVad) instead of 2*(SabcXVad) that). If you want to fix this,
-     * have a look at eliminateChainProductions(..) and remove the memoization of "clean" productions.
-     */
-//    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalForm
-//                (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations) {
-//
-//        // only the completely done stuff goes in here
-//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyNormalFormEquations;
-//
-//        std::map<SR, VarId> constantsToVariables;
-//        std::map<VarId, SR> variablesToConstants;
-//        std::set<SR> constants;
-//
-//        // map for quick access to productions
-//        std::map<VarId, NonCommutativePolynomial<SR>> polyMap;
-//        for(auto &equation: equations) {
-//            polyMap.insert(std::make_pair(equation.first, equation.second));
-//        }
-//
-//        // first point of order: chain productions
-//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> noChains;
-//        eliminateChainProductions(equations, noChains, polyMap);
-//
-////        std::cout << "chains eliminated:" << std::endl;
-////        for(auto &equation: noChains) {
-////            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-////        }
-//
-//        // find all constants in nonterminal productions in the system
-//        for(auto &equation: noChains) {
-//            equation.second.findConstantsInNonterminalMonomials(constants);
-//        }
-//
-//        // introduce a new variable for each constant found, add the respective equation to the system
-//        VarId var;
-//        for(auto &constant: constants) {
-//            var = Var::GetVarId();
-//            noChains.push_back(std::make_pair(var, NonCommutativePolynomial<SR>(constant)));
-//            constantsToVariables.insert(std::make_pair(constant, var));
-//            variablesToConstants.insert(std::make_pair(var,constant));
-//        }
-//
-//        // replace the constants in each nonterminal production with the new constant variables
-//        NonCommutativePolynomial<SR> allVariablesPoly;
-//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> variablefiedEquations;
-//        for(auto &equation: noChains) {
-//            allVariablesPoly = equation.second.replaceConstants(constantsToVariables);
-//            variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
-//        }
-//
-////        std::cout << "done replacing constants, system so far:" << std::endl;
-////        for(auto &equation: variablefiedEquations) {
-////            std::cout << Var::GetVar(equation.first).string() + " -> " + equation.second.string() << std::endl;
-////        }
-//
-//        // stores mappings between suffixes of monomials and the variables
-//        // that are introduced to produce those suffixes in the process of generating
-//        // the Chomsky Normal Form
-//        std::map<std::string, VarId> chomskyVariables;
-//
-//        // stores the productions (i.e. equations) that are introduced while producing the
-//        // Chomsky Normal Form
-//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> chomskyVariableEquations;
-//
-//        // determine the necessary new variables to give all non-terminal productions
-//        // (i.e. monomials of degree > 2) the form "X = YZ"
-//        NonCommutativePolynomial<SR> chomskyPoly;
-//        for(auto &equation: variablefiedEquations) {
-//            chomskyPoly =
-//                    equation.second.binarize(chomskyVariables, chomskyVariableEquations, variablesToConstants);
-//            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, chomskyPoly));
-//        }
-//
-//        // finally, add the productions to the system that were introduced during the last step
-//        for(auto &equation: chomskyVariableEquations) {
-//            chomskyNormalFormEquations.push_back(std::make_pair(equation.first, equation.second));
-//        }
-//
-//        // we are done
-//        return chomskyNormalFormEquations;
-//    }
-
-
-
-//    /*
-//     * Cleans the polynomial system, i.e. removes variables that are unproductive.
-//     */
-//    static std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanSystem
-//        (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &equations) {
-//
-//        std::queue<VarId> worklist, temp; // to store the variables that still need checking
-//        std::map<VarId, bool> productiveVariables;
-//        std::map<VarId, NonCommutativePolynomial<SR>> polyMap;
-//
-//        // build the data structures that will store the info about which variables still
-//        // need checking and which variables are known to be productive
-//        for(auto equation: equations) {
-//            worklist.push(equation.first);
-//            productiveVariables.insert(std::make_pair(equation.first, false));
-//            polyMap.insert(std::make_pair(equation.first, equation.second));
-//        }
-//
-//        // keep checking the variables that are not yet known to be productive
-//        // until no further variable becomes known to be productive
-//        bool update = true;
-//        VarId var;
-//        while(update) {
-//            update = false;
-//
-//            while(!worklist.empty()) {
-//                var = worklist.front();
-//                worklist.pop();
-//
-//                // if the variable was found to be productive, remember the update
-//                // and change the flag for the variable
-//                if(polyMap[var].isProductive(productiveVariables)) {
-//                    productiveVariables[var] = true;
-//                    update = true;
-//                } else { // if the variable isn't productive, put it in the queue for the next iteration
-//                     temp.push(var);
-//                }
-//            }
-//
-//            worklist.swap(temp);
-//        }
-//
-//        // build the clean system: only use productive variables and remove unproductive monomials
-//        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> cleanEquations;
-//        for(auto equation: equations) {
-//            if(productiveVariables[equation.first]) {
-//                cleanEquations.push_back(std::make_pair(equation.first,
-//                        equation.second.removeUnproductiveMonomials(productiveVariables)));
-//            }
-//        }
-//
-//        return cleanEquations;
-//    }
-
-    /*
      * Checks whether this polynomial is productive, depending on the set of variables
      * that are already known to be productive.
      */
@@ -976,7 +810,7 @@ public:
     }
 
     /*
-     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
      *
      * Assumes that all productions have been binarized.
      */
@@ -987,6 +821,9 @@ public:
         }
     }
 
+    /*
+     * Assumes that all productions have been binarized.
+     */
     void calculateLowerComponentVariables(
                 std::map<int, std::set<int>> &lhsLowerComponentVariables,
                 std::map<int, std::set<int>> &rhsLowerComponentVariables,
@@ -1000,6 +837,11 @@ public:
         }
     }
 
+    /*
+     * Assumes grammar is in quadratic normal form.
+     *
+     * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
+     */
     void calculateSameComponentLetters(
             std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
             std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
@@ -1028,6 +870,8 @@ public:
      * A -> X_1 X_2 X_3 ... X_m where the (X_i)s are all elements of either the terminal or the
      * nonterminal alphabet, so having any symbols in the grammar that don't belong to either
      * will give you trouble
+     *
+     * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
      */
     NonCommutativePolynomial<SR> intersectionPolynomial(std::vector<unsigned long> &states,
             std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
@@ -1039,6 +883,7 @@ public:
 
         NonCommutativePolynomial<SR> result = NonCommutativePolynomial<SR>::null();
         bool epsilonAdded = false;
+
         // delegate to the monomials
         for(auto &monomial: monomials_) {
 
@@ -1050,7 +895,6 @@ public:
                     epsilonAdded = true;
                 }
             } else { // if this is a non-epsilon production, we calculate the new productions that derive from it
-//                std::cout << "monomial being processed:\t" << monomial.first.string() << std::endl;
                 result += monomial.first.intersectionPolynomial
                         (states, transitionTable, startState, targetState,
                                 statesToIndices, oldVariablesToIndices, newVariables);
@@ -1159,8 +1003,8 @@ public:
     }
 
     /*
-     * Returns a cleaned version of this polynomial, i.e. a version that
-     * had all monomials with unproductive variables eliminated.
+     * Returns a cleaned version of this polynomial, i.e. a version that had all monomials with unproductive
+     * variables eliminated.
      */
     NonCommutativePolynomial<SR> removeUnproductiveMonomials(const std::map<VarId, bool> &productiveVariables) const {
         NonCommutativePolynomial<SR> cleanPoly = null();
@@ -1180,7 +1024,6 @@ public:
     }
 
     static NonCommutativePolynomial<SR> one() {
-        //std::cout << "NCP<SR>::one()" << std::endl;
         return NonCommutativePolynomial<SR> {SR::one()};
     }
 
@@ -1193,8 +1036,6 @@ public:
         for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
             if(monomial != monomials_.begin())
             ss << " + ";
-//      ss << "[degree: " << monomial->first.get_degree() << "]";
-            /*ss << monomial->second << " * ";*/
             ss << monomial->first;
         }
         return ss.str();
@@ -1229,14 +1070,6 @@ public:
 
 template<typename SR> bool NonCommutativePolynomial<SR>::is_commutative = false;
 template<typename SR> bool NonCommutativePolynomial<SR>::is_idempotent = false;
-
-/*template <typename SR>
- std::ostream& operator<<(std::ostream& os, const std::map<VarId, SR>& values) {
- for (auto value = values.begin(); value != values.end(); ++value) {
- os << value->first << "→" << value->second << ";";
- }
- return os;
- }*/
 
 template<typename SR>
 std::ostream& operator<<(std::ostream& os,

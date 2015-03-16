@@ -45,6 +45,7 @@ public:
     /* Default constructor creates one (multiplicative neutral) element. */
     LossyFiniteAutomaton() {
         language = EPSILON.language;
+        lossyLanguage = EPSILON.language;
     }
 
     /*
@@ -54,14 +55,15 @@ public:
      */
     LossyFiniteAutomaton(const std::string regularExpression) {
         language = FiniteAutomaton(regularExpression).minimize();
+        lossyLanguage = language.epsilonClosure();
     }
 
     /*
      * Same as LossyFiniteAutomaton(string), really.
      */
     LossyFiniteAutomaton(const VarId var) {
-        FiniteAutomaton fa = FiniteAutomaton(Var::GetVar(var).string());
-        language = fa.minimize();
+        language = FiniteAutomaton(Var::GetVar(var).string()).minimize();
+        lossyLanguage = language.epsilonClosure();
     }
 
     LossyFiniteAutomaton lossify() const {
@@ -144,12 +146,11 @@ public:
 
     LossyFiniteAutomaton minimize() {
         auto newLanguage = language.minimize();
-        return LossyFiniteAutomaton{newLanguage};
+        return LossyFiniteAutomaton(newLanguage);
     }
 
     LossyFiniteAutomaton star() const {
-        auto newLanguage = language.kleeneStar();
-        return LossyFiniteAutomaton(newLanguage.minimize());
+        return LossyFiniteAutomaton(language.kleeneStar().minimize());
     }
 
     LossyFiniteAutomaton complement() const {
@@ -157,8 +158,7 @@ public:
     }
 
     LossyFiniteAutomaton minus(const LossyFiniteAutomaton &x) const {
-        auto newLanguage = language.minus(x.language);
-        return LossyFiniteAutomaton(newLanguage).minimize();
+        return LossyFiniteAutomaton(language.minus(x.language).minimize());
     }
 
     bool contains(const LossyFiniteAutomaton &other) const {
@@ -166,24 +166,22 @@ public:
     }
 
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {
-        auto newLanguage = language.unionWith(x.language);
-        return LossyFiniteAutomaton {newLanguage.minimize()};
+        return LossyFiniteAutomaton (language.unionWith(x.language).minimize());
     }
 
     LossyFiniteAutomaton& operator+=(const LossyFiniteAutomaton &x) {
-        language = language.unionWith(x.language);
-        language = language.minimize();
+        language = language.unionWith(x.language).minimize();
+        lossyLanguage = language.epsilonClosure();
         return *this;
     }
 
     LossyFiniteAutomaton operator*(const LossyFiniteAutomaton &x) {
-        auto newLanguage = language.concatenate(x.language);
-        return LossyFiniteAutomaton {newLanguage.minimize()};
+        return LossyFiniteAutomaton (language.concatenate(x.language).minimize());
     }
 
     LossyFiniteAutomaton& operator*=(const LossyFiniteAutomaton &x) {
-        language = language.concatenate(x.language);
-        language = language.minimize();
+        language = language.concatenate(x.language).minimize();
+        lossyLanguage = language.epsilonClosure();
         return *this;
     }
 
