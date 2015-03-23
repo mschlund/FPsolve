@@ -1,8 +1,6 @@
 #pragma once
 
 #include <string>
-#include "finite_automaton.h"
-
 
 template<typename RL>
 class RegularLanguage {

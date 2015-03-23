@@ -452,7 +452,7 @@ public:
      * Find out which linear monomials in this polynomial lead to a lower component and insert them into
      * lowerLinearTerms.
      *
-     * Used in the algorithm by Courcelle, see lossy-finite-automaton.h#downwardClosureCourcelle.
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
      * This is only here because we need access to monomials_.
      */
     void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
@@ -789,6 +789,8 @@ public:
      * duplicate themselves via this polynomial. In order to decide that, the map "varToComponent"
      * needs to hold the information in which component each variable lies, while "component" is
      * the component we are interested in.
+     *
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
      */
     bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
         bool squarable = false;
@@ -822,6 +824,8 @@ public:
     }
 
     /*
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
+     *
      * Assumes that all productions have been binarized.
      */
     void calculateLowerComponentVariables(
@@ -838,6 +842,8 @@ public:
     }
 
     /*
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
+     *
      * Assumes grammar is in quadratic normal form.
      *
      * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
@@ -871,7 +877,7 @@ public:
      * nonterminal alphabet, so having any symbols in the grammar that don't belong to either
      * will give you trouble
      *
-     * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
+     * WARNING: will currently break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
      */
     NonCommutativePolynomial<SR> intersectionPolynomial(std::vector<unsigned long> &states,
             std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
@@ -976,32 +982,6 @@ public:
         return varToDerivableFirstLetters[startSymbol];
     }
 
-    static int sumRightSidesLengths(const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions) {
-        int sum = 0;
-
-        for(auto &equation: productions) {
-            for(auto &monomial: equation.second.monomials_) {
-                sum += monomial.first.getLength();
-            }
-        }
-
-        return sum;
-    }
-
-    static int numberOfNonterminalsInGrammar (const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &productions) {
-        std::set<VarId> vars;
-
-        for(auto &equation: productions) {
-            vars.insert(equation.first);
-
-            for(auto &varInPoly: equation.second.get_variables()) {
-                vars.insert(varInPoly);
-            }
-        }
-
-        return vars.size();
-    }
-
     /*
      * Returns a cleaned version of this polynomial, i.e. a version that had all monomials with unproductive
      * variables eliminated.
@@ -1031,7 +1011,6 @@ public:
     static bool is_commutative;
 
     std::string string() const {
-        // TODO: implement this
         std::stringstream ss;
         for(auto monomial = monomials_.begin(); monomial != monomials_.end(); monomial++) {
             if(monomial != monomials_.begin())

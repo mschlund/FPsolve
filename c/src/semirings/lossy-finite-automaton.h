@@ -42,10 +42,10 @@ struct Vertex {
 class LossyFiniteAutomaton: public StarableSemiring<LossyFiniteAutomaton, Commutativity::NonCommutative, Idempotence::Idempotent> {
 public:
 
+
     /* Default constructor creates one (multiplicative neutral) element. */
     LossyFiniteAutomaton() {
         language = EPSILON.language;
-        lossyLanguage = EPSILON.language;
     }
 
     /*
@@ -55,7 +55,6 @@ public:
      */
     LossyFiniteAutomaton(const std::string regularExpression) {
         language = FiniteAutomaton(regularExpression).minimize();
-        lossyLanguage = language.epsilonClosure();
     }
 
     /*
@@ -63,7 +62,6 @@ public:
      */
     LossyFiniteAutomaton(const VarId var) {
         language = FiniteAutomaton(Var::GetVar(var).string()).minimize();
-        lossyLanguage = language.epsilonClosure();
     }
 
     LossyFiniteAutomaton lossify() const {
@@ -71,7 +69,7 @@ public:
             return *this;
         }
 
-        return LossyFiniteAutomaton(lossyLanguage);
+        return LossyFiniteAutomaton(language.epsilonClosure()).minimize();
     }
 
     static LossyFiniteAutomaton null() {
@@ -145,8 +143,7 @@ public:
     }
 
     LossyFiniteAutomaton minimize() {
-        auto newLanguage = language.minimize();
-        return LossyFiniteAutomaton(newLanguage);
+        return LossyFiniteAutomaton(language.minimize());
     }
 
     LossyFiniteAutomaton star() const {
@@ -165,13 +162,13 @@ public:
         return language.contains(other.language);
     }
 
+
     LossyFiniteAutomaton operator+(const LossyFiniteAutomaton &x) {
         return LossyFiniteAutomaton (language.unionWith(x.language).minimize());
     }
 
     LossyFiniteAutomaton& operator+=(const LossyFiniteAutomaton &x) {
         language = language.unionWith(x.language).minimize();
-        lossyLanguage = language.epsilonClosure();
         return *this;
     }
 
@@ -181,7 +178,6 @@ public:
 
     LossyFiniteAutomaton& operator*=(const LossyFiniteAutomaton &x) {
         language = language.concatenate(x.language).minimize();
-        lossyLanguage = language.epsilonClosure();
         return *this;
     }
 
@@ -198,13 +194,14 @@ public:
             return false;
         }
 
+        // this is to avoid unnecessary lossification of the languages
         if(x.language.equals(FiniteAutomaton::epsilon()) && language.equals(FiniteAutomaton::epsilon())) {
             return true;
         } else if(x.language.equals(FiniteAutomaton::epsilon()) || language.equals(FiniteAutomaton::epsilon())) {
             return false;
         }
 
-        return lossyLanguage.equals(x.lossyLanguage);
+        return lossify().language.equals(x.lossify().language);
     }
 
     std::string string() const {
@@ -538,14 +535,13 @@ public:
 
 private:
     FiniteAutomaton language;
-    FiniteAutomaton lossyLanguage;
+
+    LossyFiniteAutomaton(FiniteAutomaton fa) : language(fa){}
 
     static LossyFiniteAutomaton EMPTY;
     static LossyFiniteAutomaton EPSILON;
 
     friend struct std::hash<LossyFiniteAutomaton>;
-
-    LossyFiniteAutomaton(FiniteAutomaton fa) : language(fa), lossyLanguage(fa.epsilonClosure().minimize()){}
 
     /*
      * Cleans the polynomial system, i.e. removes variables that are unproductive for all the grammars we get

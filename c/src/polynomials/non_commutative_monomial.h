@@ -670,7 +670,7 @@ public:
     /*
      * Check if this monomial is a linear one that leads to a lower component.
      *
-     * Used in the algorithm by Courcelle, see lossy-semiring.h#downwardClosureCourcelle.
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
      */
     void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
 
@@ -682,7 +682,7 @@ public:
     }
 
     /*
-     * Replaces all constants in the polynomial with their respective VarId mapping.
+     * Replaces all constants in the monomial with their respective VarId mapping.
      *
      * WARNING: This function will fail if there is an SR element in this monomial that does
      * not have a mapped VarId. Will not change the monomial consisting exclusively of epsilon.
@@ -1055,6 +1055,11 @@ public:
         }
     }
 
+    /*
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
+     *
+     * Assumes that all productions have been binarized.
+     */
     void calculateLowerComponentVariables(
                 std::map<int, std::set<int>> &lhsLowerComponentVariables,
                 std::map<int, std::set<int>> &rhsLowerComponentVariables,
@@ -1077,6 +1082,10 @@ public:
     }
 
     /*
+     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
+     *
+     * Assumes that all productions have been binarized.
+     *
      * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
      */
     void calculateSameComponentLetters(
