@@ -558,7 +558,6 @@ using NewtonNumeric = GenericNewton<SR, LinSolver_Numeric, DeltaGenerator_Numeri
 #endif
 
 
-
 // default NonCommutative Newton implementation using naive Kleene iteration
 // TODO: does not work yet ! :)
 /*template <typename SR>
