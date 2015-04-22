@@ -182,6 +182,27 @@ int main(int argc, char* argv[]) {
   check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
 
 
+  /* TODO: incorporate lossy-check
+   *
+   *      auto equations_2 = p.lossy_fa_parser(input_2_all);
+          VarId S_2 = equations_2[0].first;
+
+          int refinementDepth = 0;
+          if(vm.count("refine")) {
+              refinementDepth = vm["refine"].as<int>();
+          }
+
+          auto witness = LossyFiniteAutomaton::refineCourcelle(equations, S_1, equations_2, S_2, refinementDepth);
+
+          if(witness != LossyFiniteAutomaton::null()) {
+              std::cout << "Found witness: " << witness.string() << std::endl;
+          }
+   *
+   *
+   *
+   */
+
+
   SemilinSetNdd::genepi_dealloc();
 
   return EXIT_SUCCESS;

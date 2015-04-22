@@ -21,6 +21,9 @@
 #include "semirings/why-set.h"
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
+#include "semirings/lossy-finite-automaton.h"
+
+
 
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
@@ -298,15 +301,15 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
-    // parse to lossy semiring polynomial; an element a of the semiring
-    // will be parsed to "1+a" while variables do not get the "1+" bit
-    auto equations = p.lossy_parser(input_all);
+    auto equations = static_cast<std::vector<std::pair<VarId, LossyNonCommutativePolynomial>>>(p.lossy_fa_parser(input_all));
     if (equations.empty()) return EXIT_FAILURE;
 
-    ValuationMap<LossySemiring> valuation = LossySemiring::solvePolynomialSystem(equations);
-    std::cout << result_string(valuation) << std::endl;
+    VarId S_1 = equations[0].first;
 
-    PrintEquations(equations);
+    auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+    std::cout << "dwc:\t" << approximation.string() << std::endl;
+    std::cout << "size NFA for DWC:\t" << approximation.size() << std::endl;
+    std::cout << "size minimal DFA for DWC:\t" << approximation.minimize().size() << std::endl;
 
   } else if (vm.count("prefix")) {
 

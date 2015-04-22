@@ -154,6 +154,112 @@ class WordsPrinter : public NodeVisitor {
     std::vector<std::string> words_;
 };
 
+class PosixWordsPrinter : public NodeVisitor {
+  public:
+    PosixWordsPrinter() = default;
+    ~PosixWordsPrinter() = default;
+
+    void Visit(const Addition &a) {
+      a.GetLhs()->Accept(*this);
+      auto tmp = std::move(words_);
+      words_ = {};
+      a.GetRhs()->Accept(*this);
+      std::move(tmp.begin(), tmp.end(), std::back_inserter(words_));
+    }
+
+    void Visit(const Multiplication &m) {
+      m.GetLhs()->Accept(*this);
+      auto tmp = std::move(words_);
+      words_ = {};
+      m.GetRhs()->Accept(*this);
+      std::vector<std::string> result;
+      std::string lhsString = "";
+      std::string rhsString = "";
+      bool firstWord = true;
+
+      for (auto &lhs_word : tmp) {
+          if(firstWord) {
+              lhsString = lhs_word;
+              firstWord = false;
+          } else {
+              lhsString = lhsString + "|" + lhs_word;
+          }
+      }
+
+      if(tmp.size() > 1) {
+          lhsString = "(" + lhsString + ")";
+      }
+
+      firstWord = true;
+      for (auto &rhs_word : words_) {
+          if(firstWord) {
+              rhsString = rhs_word;
+              firstWord = false;
+          } else {
+              rhsString = rhsString + "|" + rhs_word;
+          }
+      }
+
+      if(words_.size() > 1) {
+          rhsString = "(" + rhsString + ")";
+      }
+
+      words_ = {lhsString + rhsString};
+    }
+
+    void Visit(const Star &s) {
+      s.GetNode()->Accept(*this);
+      std::sort(words_.begin(), words_.end());
+      std::stringstream ss;
+      ss << "(";
+      bool first = true;
+      for (const auto &word : words_) {
+        if (!first) {
+          ss << "|";
+        } else {
+          first = false;
+        }
+
+        ss << word;
+      }
+
+      ss << ")*";
+      words_ = { ss.str() };
+    }
+
+    void Visit(const Element &e) {
+      words_.emplace_back(Var::GetVar(e.GetVar()).string());
+    }
+
+    void Visit(const Epsilon &e) {}
+
+    void Visit(const Empty &e) {}
+
+    const std::vector<std::string>& GetWords() const {
+      return words_;
+    }
+
+    std::string GetString() {
+      std::sort(words_.begin(), words_.end());
+      std::stringstream ss;
+      bool first = true;
+      ss << "(";
+      for (const auto &word : words_) {
+        if (!first) {
+          ss << "|";
+        } else {
+          first = false;
+        }
+        ss << word;
+      }
+      ss << ")";
+      return ss.str();
+    }
+
+private:
+  std::vector<std::string> words_;
+};
+
 std::string NodeToString(const Node &node) {
   WordsPrinter printer;
   node.Accept(printer);
@@ -165,6 +271,12 @@ std::string NodeToRawString(const Node &node) {
   StringPrinter printer{ss};
   node.Accept(printer);
   return ss.str();
+}
+
+std::string NodeToPosixString(const Node &node) {
+    PosixWordsPrinter printer;
+    node.Accept(printer);
+    return printer.GetString();
 }
 
 

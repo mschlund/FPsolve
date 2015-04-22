@@ -469,6 +469,13 @@ class NonCommutativeMonomial {
     	return trailingSR;
     }
 
+    /*
+     * Quick check to see whether this monomial is just an epsilon.
+     */
+    bool isEpsilonMonomial() const {
+        return (get_degree() == 0) && (getLeadingSR() == SR::one());
+    }
+
     std::string string() const {
       std::stringstream ss;
       //for(auto &p : idx_) {
