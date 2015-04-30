@@ -6,7 +6,11 @@
 #include "semirings/commutativeRExp.h"
 #include "semirings/prefix-semiring.h"
 #include "semirings/lossy-finite-automaton.h"
+
+#ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
+#endif
+
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 

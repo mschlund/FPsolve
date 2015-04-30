@@ -2,11 +2,15 @@
 #include <cppunit/extensions/TestFactoryRegistry.h>
 #include <cppunit/ui/text/TestRunner.h>
 
+#ifdef USE_GENEPI
 #include "test-semilinSetNdd.h"
+#endif
 
 int main(int argc, char* argv[])
 {
+#ifdef USE_GENEPI
   SemilinSetNdd::genepi_init();
+#endif
 
   // Get the top level suite from the registry
   CppUnit::Test *suite = CppUnit::TestFactoryRegistry::getRegistry().makeTest();

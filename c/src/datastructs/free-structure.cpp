@@ -1,6 +1,5 @@
 #include <algorithm>
 
-#include "hash.h"
 
 #include "free-structure.h"
 

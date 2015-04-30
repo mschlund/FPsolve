@@ -3,8 +3,6 @@
 #include <initializer_list>
 #include <set>
 
-//#define USE_GENEPI
-
 #include "linear_set.h"
 #include "semiring.h"
 #include "../datastructs/sparse_vec.h"

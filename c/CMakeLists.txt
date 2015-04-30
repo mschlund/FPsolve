@@ -14,15 +14,27 @@ find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
 
 
+#default for now -- remove these definitions if you do not want the options ..
 option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
+option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" ON)
 option (USE_NUMERICNEWTON "use BLAS/LAPACK for computing Newton's method over the float-Semiring" ON)
 
-#default for now -- remove these definitions if you do not want the options ..
-add_definitions(-DUSE_GENEPI)
-add_definitions(-DUSE_NUMERICNEWTON)
+if(USE_GENEPI)
+  add_definitions(-DUSE_GENEPI)
+	find_package(PkgConfig)
+	pkg_check_modules(GENEPI genepi)
+endif(USE_GENEPI)
+
+
+if(USE_LIBFA)
+  add_definitions(-DUSE_LIBFA)
+	find_package(PkgConfig)
+	pkg_check_modules(LIBFA libfa)
+endif(USE_LIBFA)
 
 
 if(USE_NUMERICNEWTON)
+  add_definitions(-DUSE_NUMERICNEWTON)
   find_package(LAPACK)
   include_directories(${LAPACK_INCLUDE_DIRS})
   link_directories(${LAPACK_LIBRARY_DIRS})
@@ -31,10 +43,7 @@ if(USE_NUMERICNEWTON)
 endif(USE_NUMERICNEWTON)
 
 
-if(USE_GENEPI)
-	find_package(PkgConfig)
-	pkg_check_modules(GENEPI genepi)
-endif(USE_GENEPI)
+
 
 # Cppunit; cmake configuration taken from:
 # http://www.cmake.org/pipermail/cmake/2006-December/012349.html
@@ -61,7 +70,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pipe")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wfatal-errors")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
 
 #set(CMAKE_CXX_FLAGS_DEBUG "-DDEBUG_OUTPUT -Wall -pedantic-errors -O0")

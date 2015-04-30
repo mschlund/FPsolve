@@ -5,14 +5,19 @@
 #include <vector>
 #include <map>
 #include <forward_list>
+#include <queue>
+
 extern "C" {
     #include <fa.h>
 }
-#include <assert.h>
+#include <cassert>
+
+#include "var.h"
+#include "hash.h"
 
 #include "regular_language.h"
 #include "../polynomials/non_commutative_polynomial.h"
-#include "../datastructs/var.h"
+
 
 class FiniteAutomaton : public RegularLanguage<FiniteAutomaton> {
 public:
@@ -535,165 +540,6 @@ public:
     }
 
     /*
-     * Calculates the intersection of the CFG "equations" with start symbol "oldS" and the
-     * regular language represented by this finite automaton. The result is a CFG given by
-     * its set of productions (return value of this method) and its start symbol "S".
-     *
-     * The algorithm is that of Bar-Hillel et al., "On formal properties of simple phrase structure
-     * grammars.", 1961; a neat description of it can be found in Nederhof & Satta, "Probabilistic Parsing", 2008
-     * which is openly accessible on Nederhof's website as of the writing of this code (spring 2014).
-     *
-     * libfa doesn't model epsilon transitions (see add_epsilon_trans(state *from, state *to) in fa.c of the
-     * source code of libfa for details), instead replacing them by transitions on nonempty symbols and
-     * adjusting the set of final states; thus the simplifying assumption of "Probabilistc Parsing" that
-     * there are no epsilon transitions in the FA holds, and we only have to deal with the fact that the FA
-     * may have multiple final states.
-     *
-     * WARNING: do not allow productions of the form "X -> empty set" in your oldGrammar, or this may break.
-     */
-    template<typename SR>
-    std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> intersectionWithCFG
-        (VarId &newS, const VarId &oldS,
-                const std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> &oldGrammar) const {
-
-        // do it with a DFA, something went wrong with NFAs
-        minimize();
-
-        // for the new grammar
-        std::vector<std::pair<VarId, NonCommutativePolynomial<SR>>> resultGrammar;
-
-        // we don't want to start out with useless stuff because the intersection grammar
-        // will blow up anyway
-        std::queue<VarId> worklist;
-        worklist.push(oldS);
-        auto workGrammar = NonCommutativePolynomial<SR>::cleanSystem(oldGrammar, worklist);
-
-        // change the grammar to one where monomials have degree at most 2 and those monomials with degree 2
-        // have the form XY
-        std::map<VarId, SR> variablesToConstants;
-        workGrammar = NonCommutativePolynomial<SR>::eliminateTerminalsInNonterminalProductions
-                (workGrammar, variablesToConstants, false);
-        workGrammar = NonCommutativePolynomial<SR>::binarizeProductions(workGrammar, variablesToConstants);
-
-        // if the grammar doesn't produce anything, there is no need to do anything else; return an empty grammar
-        // the same applies if the automaton represents the empty language
-        if(workGrammar.size() == 0 || empty()) {
-            return resultGrammar;
-        }
-
-        /*
-         * assuming anyone at all will have to change something here in the future, I expect they
-         * won't want to go through the hassle of sifting through the undocumented implementation
-         * of libfa, so I'm gonna go ahead and build the transition table of the FA and hope it won't
-         * completely destroy our memory limitations; all of this will be represented using number
-         * types only, so there's no funny business or trickery to watch out for once the table is built
-         */
-
-        // to map the hash of a state "q" to a map that maps each transition symbol "c" occurring at "q"
-        // to the set of hashes of target states "t", i.e. t is element of Delta(q,c);
-        std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> transitionTable;
-
-        // will hold the hashes of all states in the FA; we don't want to deal with with the internals of libfa
-        // so all this stuff is represented by simple numbers - hooray for numbers
-        std::vector<unsigned long> states;
-
-        // hashes of all final states of the FA
-        std::set<unsigned long> finalStates;
-
-        // initial state of the FA
-        unsigned long initialState = 0;
-
-        extractTransitionTable(transitionTable, states, finalStates, initialState);
-
-        // we will need a three-dimensional lookup table for the new variables so we don't mess up
-        // the assignment of polynomials to nonterminals while constructing the grammar
-        std::vector<std::vector<std::vector<VarId>>> newVariables;
-
-        // the lookup table will represent states_FA x states_FA x nonterminals_grammar;
-        // initialize its dimensions accordingly
-        auto numberOfStates = states.size();
-        newVariables.resize(numberOfStates);
-        for(unsigned long i = 0 ; i < numberOfStates ; ++i) {
-            newVariables[i].resize(numberOfStates);
-
-            for(unsigned long j = 0; j < numberOfStates; j++) {
-                newVariables[i][j].resize(workGrammar.size());
-            }
-        }
-
-        // generate the variables of the new grammar, name them <q,X,r> where q and r are states of the DFA and X is
-        // a nonterminal of the grammar
-        for(unsigned long i = 0; i < numberOfStates; i++) {
-            for(unsigned long j = 0; j < numberOfStates; j++) {
-                for(unsigned long k = 0; k < workGrammar.size(); k++) {
-                    std::stringstream ss;
-                    ss << "<" << i << "," << Var::GetVar(workGrammar[k].first).string() << "," << j << ">";
-                    newVariables[i][j][k] = Var::GetVarId(ss.str());
-                }
-            }
-        }
-
-        // build a map from variables to indices, where the index of a variable is the line in oldGrammar
-        // that contains the productions of the variable
-        std::map<VarId, unsigned long> oldVariablesToIndices;
-        for(unsigned long i = 0; i < workGrammar.size(); i++) {
-            oldVariablesToIndices.insert(std::make_pair(workGrammar[i].first, i));
-        }
-
-        // map states to indices; this is just to avoid having to look through the states vector in linear time
-        // to find out at which index it lies
-        std::map<unsigned long, unsigned long> statesToIndices;
-        for(unsigned long i = 0; i < states.size(); i++) {
-            statesToIndices.insert(std::make_pair(states[i], i));
-        }
-
-        /*
-         * now we generate the productions of the new grammar
-         */
-
-        // the indices k, i, j are intended this way; we first choose some nonterminal of the grammar
-        // and then generate all productions derived from that nonterminal; this mirrors the way
-        // in which the algorithm is described in the paper referred to above
-        NonCommutativePolynomial<SR> poly;
-        for(unsigned long i = 0; i < numberOfStates; i++) {
-            for(unsigned long j = 0; j < numberOfStates; j++) {
-                for(unsigned long k = 0; k < workGrammar.size(); k++) {
-                    poly = workGrammar[k].second.intersectionPolynomial
-                            (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
-                    resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
-                }
-            }
-        }
-
-        // finally, use a new variable as initial variable and generate the productions; they are of the form
-        // newS -> <q_0, oldS, q_f> where q_0 is the initial state of the FA and q_f is some final state of the FA
-        NonCommutativePolynomial<SR> startPolynomial = NonCommutativePolynomial<SR>::null();
-
-        for(auto target: finalStates) {
-            startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
-        }
-
-        newS = Var::GetVarId();
-        resultGrammar.push_back(std::make_pair(newS, startPolynomial));
-
-        auto startProduction = resultGrammar[resultGrammar.size() - 1];
-        resultGrammar[resultGrammar.size() - 1] = resultGrammar[0];
-        resultGrammar[0] = startProduction;
-        return resultGrammar;
-    }
-
-private:
-    FiniteAutomaton(struct fa *FA) {
-        automaton = FA;
-        epsilon_closed = 0;
-    }
-
-    struct fa* automaton; // the actual language
-
-    // this flag won't just save you running time, it will also save you hours of debugging time
-    int epsilon_closed;
-
-    /*
      * Builds the transition table of this FA. The table will map the hash of a state to a map that maps transition
      * symbols to hashes of target states. Since we are having general FAs, the transition relation need not be a
      * function, and so for each pair (state, symbol), we may have more than one target state; for that reason we're
@@ -740,4 +586,19 @@ private:
             transitionTable.insert(std::make_pair(s->hash, stateTable));
         }
     }
+
+
+
+
+private:
+    FiniteAutomaton(struct fa *FA) {
+        automaton = FA;
+        epsilon_closed = 0;
+    }
+
+    struct fa* automaton; // the actual language
+
+    // this flag won't just save you running time, it will also save you hours of debugging time
+    int epsilon_closed;
+
 };

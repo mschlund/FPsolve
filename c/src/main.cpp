@@ -11,6 +11,7 @@
 
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
+#include "polynomials/lossy_non_commutative_polynomial.h"
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
@@ -24,11 +25,9 @@
 #include "semirings/lossy-finite-automaton.h"
 
 
-
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"
 #endif
-
 
 #include "parser.h"
 
@@ -301,7 +300,7 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
-    auto equations = static_cast<std::vector<std::pair<VarId, LossyNonCommutativePolynomial>>>(p.lossy_fa_parser(input_all));
+    auto equations = p.lossy_fa_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
     VarId S_1 = equations[0].first;

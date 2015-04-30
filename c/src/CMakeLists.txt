@@ -20,7 +20,9 @@ set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)
-target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES})
+target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES} ${LIBFA_LIBRARIES})
 
-add_executable(gr_check gr_checker.cpp)
-target_link_libraries(gr_check NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES})
+if(USE_GENEPI)
+  add_executable(gr_check gr_checker.cpp)
+  target_link_libraries(gr_check NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES})
+endif(USE_GENEPI)

@@ -202,7 +202,6 @@ int main(int argc, char* argv[]) {
    *
    */
 
-
   SemilinSetNdd::genepi_dealloc();
 
   return EXIT_SUCCESS;

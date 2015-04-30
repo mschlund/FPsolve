@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "var.h"
+#include "hash.h"
 
 
 class Node;

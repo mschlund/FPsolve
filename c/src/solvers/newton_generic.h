@@ -29,10 +29,11 @@
 #include <boost/numeric/bindings/traits/ublas_matrix.hpp>
 #include <boost/numeric/bindings/lapack/gesv.hpp>
 #include <boost/numeric/bindings/traits/ublas_vector2.hpp>
-#endif
 
 namespace ub = boost::numeric::ublas;
 namespace lapack = boost::numeric::bindings::lapack;
+#endif
+
 
 // Lin_Eq_Solver is parametrized by a semiring
 #define LIN_EQ_SOLVER_TYPE template <typename> class
