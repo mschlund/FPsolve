@@ -2,68 +2,39 @@
  * lossy_non_commutative_monomial.h
  *
  *  Created on: 22.04.2015
- *      Author: maxi
+ *      Author: schlund
  */
 
 #ifndef LOSSY_NON_COMMUTATIVE_MONOMIAL_H_
 #define LOSSY_NON_COMMUTATIVE_MONOMIAL_H_
 
-#include <iosfwd>
 #include <map>
 #include <set>
 #include <climits>
-#include <ctype.h>
 #include <forward_list>
 
-#include "../semirings/lossy-finite-automaton.h"
 
+#include "../datastructs/equations.h"
 #include "non_commutative_polynomial.h"
+#include "../semirings/lossy-finite-automaton.h"
 
 
 template <>
-class NonCommutativeMonomialBase<LossyFiniteAutomaton> {
-
-protected:
-  /* a monomial is represented by three vectors
-   * idx_ holds pairs of (type, index), type is either variable or sr
-   *   the index gives absolute position inside the chosen type vector
-   * variables_ holds all variables
-   * srs_ holds all semiring elements */
-  std::vector<std::pair<elemType,int>> idx_;
-  std::vector<VarId> variables_;
-  std::vector<LossyFiniteAutomaton> srs_;
-
-
-  /* Private constructor to not leak the internal data structure. */
-  //NonCommutativeMonomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
-  NonCommutativeMonomialBase(std::vector<std::pair<elemType,int>> &idx,
-      std::vector<VarId> &variables,
-      std::vector<LossyFiniteAutomaton> &srs) :
-        idx_(idx), variables_(variables), srs_(srs) {}
+class NonCommutativeMonomial<LossyFiniteAutomaton> : public NonCommutativeMonomialBase<LossyFiniteAutomaton>{
 
 
 public:
+  using NonCommutativeMonomialBase<LossyFiniteAutomaton>::NonCommutativeMonomialBase;
 
-  /* Since we don't manage any resources, we can simply use the default
-   * constructors and assignment operators. */
-  NonCommutativeMonomialBase() = default;
-  NonCommutativeMonomialBase(const NonCommutativeMonomialBase &m) = default;
-  NonCommutativeMonomialBase(NonCommutativeMonomialBase &&m) = default;
+  NonCommutativeMonomial() = default;
 
-  NonCommutativeMonomialBase(std::initializer_list<std::pair<elemType,int>> idx,
-      std::initializer_list<VarId> variables,
-      std::initializer_list<LossyFiniteAutomaton> srs) :
-        idx_(idx), variables_(variables), srs_(srs_) {}
 
-  /* std::vector seems to be a neutral data type and does not leak internal
-   * data structure. */
-  /*    NonCommutativeMonomial(std::vector< std::pair<elemType, int> > vs) {
-      for (auto var_degree : vs) {
-        variables_.Insert(var_degree.first, var_degree.second);
-      }
-    }
-   */
-
+  // constructor for implicit conversions
+  NonCommutativeMonomial(const NonCommutativeMonomialBase<LossyFiniteAutomaton>& p) {
+    this->idx_ = p.idx_;
+    this->srs_ = p.srs_;
+    this->variables_ = p.variables_;
+  }
 
   /*
    * Extracts the terminal letters used in this monomial. Currently only recognizes alphanumeric characters.
@@ -118,8 +89,8 @@ public:
    * WARNING: This function will fail if there is an SR element in this monomial that does
    * not have a mapped VarId. Will not change the monomial consisting exclusively of epsilon.
    */
-  NonCommutativePolynomial<LossyFiniteAutomaton> replaceConstants(std::map<LossyFiniteAutomaton, VarId> &constantsToVariables) const {
-    NonCommutativePolynomial<LossyFiniteAutomaton> temp;
+  NonCommutativePolynomialBase<LossyFiniteAutomaton> replaceConstants(std::map<LossyFiniteAutomaton, VarId> &constantsToVariables) const {
+    NonCommutativePolynomialBase<LossyFiniteAutomaton> temp;
 
     bool firstFactorIsSR = (idx_.at(0).first == SemiringType);
     bool firstFactorIsEpsilon = false;
@@ -129,7 +100,7 @@ public:
     }
 
     if((idx_.size() == 1) && firstFactorIsSR && firstFactorIsEpsilon) {
-      return NonCommutativePolynomial<LossyFiniteAutomaton>::one();
+      return NonCommutativePolynomialBase<LossyFiniteAutomaton>::one();
     }
 
     int startIndex = 1;
@@ -137,13 +108,13 @@ public:
 
       // we don't want unnecessary epsilon-factors
       if(firstFactorIsEpsilon) {
-        temp = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(idx_.at(1).second));
+        temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(idx_.at(1).second));
         startIndex = 2;
       } else {
-        temp = NonCommutativePolynomial<LossyFiniteAutomaton>(constantsToVariables[srs_.at(idx_.at(0).second)]);
+        temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(constantsToVariables[srs_.at(idx_.at(0).second)]);
       }
     } else {
-      temp = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(idx_.at(0).second));
+      temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(idx_.at(0).second));
     }
 
     for(int i = startIndex; i < idx_.size(); i++) {
@@ -153,7 +124,7 @@ public:
 
         // ignore all epsilon factors
         if(!(srs_.at(idx_.at(i).second) == LossyFiniteAutomaton::one())) {
-          temp *= NonCommutativePolynomial<LossyFiniteAutomaton>(constantsToVariables[srs_.at(idx_.at(i).second)]);
+          temp *= NonCommutativePolynomialBase<LossyFiniteAutomaton>(constantsToVariables[srs_.at(idx_.at(i).second)]);
         }
       } else {
         temp *= variables_.at(idx_.at(i).second);
@@ -168,10 +139,10 @@ public:
    * This produces the polynomial (that derives from this monomial) that is generated while
    * building the intersection grammar of a CFG and an FA.
    *
-   * See NonCommutativePolynomial<LossyFiniteAutomaton>::intersectionPolynomial(..) for further documentation.
+   * See NonCommutativePolynomialBase<LossyFiniteAutomaton>::intersectionPolynomial(..) for further documentation.
    *
    */
-  NonCommutativePolynomial<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
+  NonCommutativePolynomialBase<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
       std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
       unsigned long startState,
       unsigned long targetState,
@@ -179,7 +150,7 @@ public:
       std::map<VarId, unsigned long> &oldVariablesToIndices,
       std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
-    return (NonCommutativePolynomial<LossyFiniteAutomaton>::one() *
+    return (NonCommutativePolynomialBase<LossyFiniteAutomaton>::one() *
         generateIntersectionMonomials(states, transitionTable, startState,
             targetState, statesToIndices, oldVariablesToIndices, newVariables, 0));
   }
@@ -187,24 +158,23 @@ public:
   /*
    * Binarizes this monomial, as one would when calculating a CNF of a grammar. Only works on monomials
    * that have no terminals (i.e. semiring elements) as factors; for all other monomials (i.e. those with
-   * terminals as factors), this will return NonCommutativePolynomial<LossyFiniteAutomaton>::null().
+   * terminals as factors), this will return NonCommutativePolynomialBase<LossyFiniteAutomaton>::null().
    *
    * If the monomial consists of exactly one or exactly two variables, the resulting polynomial will not differ from it.
    *
    * The variables and productions that are introduced during that process will be stored in binarizationVariables
    * and binarizationVariablesEquations, respectively.
    */
-  NonCommutativePolynomial<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
-      std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &binarizationVariablesEquations,
-      std::map<VarId, LossyFiniteAutomaton> &variablesToConstants) const {
+  NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
+      NCEquationsBase<LossyFiniteAutomaton> &binarizationVariablesEquations) const {
 
     // make sure there are no terminal factors in the monomial
     if(idx_.size() != variables_.size()) {
-      return NonCommutativePolynomial<LossyFiniteAutomaton>::null();
+      return NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
     }
 
-    NonCommutativePolynomial<LossyFiniteAutomaton> temp = NonCommutativePolynomial<LossyFiniteAutomaton>::one();
-    NonCommutativePolynomial<LossyFiniteAutomaton> suffix;
+    NonCommutativePolynomialBase<LossyFiniteAutomaton> temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>::one();
+    NonCommutativePolynomialBase<LossyFiniteAutomaton> suffix;
 
     // we have at least two variables; we need to shorten that to exactly two by
     // introducing new variables where needed
@@ -219,8 +189,8 @@ public:
       if(variablesProcessed == 0) {
         index = variables_.size() - 1;
 
-        temp = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(index));
-        suffix = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(index));
+        temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(index));
+        suffix = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(index));
       } else { /* if this is not the first iteration, that means we already remembered a variable
        * to produce the current suffix of the monomial; multiply the next variable from left,
        * check if some variable already maps to the current suffix, if none does introduce
@@ -229,18 +199,18 @@ public:
        * the suffix so far so we can check whether maybe we already have a variable that
        * produces that suffix in the next iteration
        */
-        temp = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(index)) * temp; // multiplication from left is relevant -> noncommutative!
-        suffix = NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(index)) * suffix;
+        temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(index)) * temp; // multiplication from left is relevant -> noncommutative!
+        suffix = NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(index)) * suffix;
 
         // check if we already have a variable for the current suffix; if we do, proceed from there;
         // else, introduce a new one
         if(binarizationVariables.find(suffix.string()) != binarizationVariables.end()) {
-          temp = NonCommutativePolynomial<LossyFiniteAutomaton>(binarizationVariables[suffix.string()]);
+          temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(binarizationVariables[suffix.string()]);
         } else {
           var = Var::GetVarId();
           binarizationVariablesEquations.push_back(std::make_pair(var, temp));
           binarizationVariables.insert(std::make_pair(suffix.string(), var));
-          temp = NonCommutativePolynomial<LossyFiniteAutomaton>(var);
+          temp = NonCommutativePolynomialBase<LossyFiniteAutomaton>(var);
         }
       }
 
@@ -249,8 +219,21 @@ public:
     }
 
 
-    return NonCommutativePolynomial<LossyFiniteAutomaton>(variables_.at(0)) * temp;
+    return NonCommutativePolynomialBase<LossyFiniteAutomaton>(variables_.at(0)) * temp;
   }
+
+  /*
+   * Check if this monomial is a linear one that leads to a lower component.
+   *
+   * Used in the algorithm by Courcelle, see NonCommuatativePolynomial<LossyFiniteAutomaton>::downwardClosureCourcelle.
+   */
+  void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
+      if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
+          return;
+      }
+      lowerLinearTerms.insert(varToComponent[variables_[0]]);
+  }
+
 
   /*
    * Used when finding the shortest word derivable from a CFG. This method tells us whether
@@ -443,7 +426,7 @@ public:
   }
 
   /*
-   * See NonCommutativePolynomial<LossyFiniteAutomaton>::componentIsSquarable(..) for commentary.
+   * See NonCommutativePolynomialBase<LossyFiniteAutomaton>::componentIsSquarable(..) for commentary.
    */
   bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
     int count = 0;
@@ -490,7 +473,7 @@ public:
   void calculateLowerComponentVariables(
       std::map<int, std::set<int>> &lhsLowerComponentVariables,
       std::map<int, std::set<int>> &rhsLowerComponentVariables,
-      std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>>> &components,
+      std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
       std::map<VarId, int> &varToComponent,
       int component) const {
 
@@ -513,12 +496,12 @@ public:
    *
    * Assumes that all productions have been binarized.
    *
-   * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
+   * WARNING: will break if used with anything but NonCommutativePolynomialBase<LossyFiniteAutomaton>
    */
   void calculateSameComponentLetters(
       std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
       std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
-      std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>>> &components,
+      std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
       std::map<VarId, int> &varToComponent,
       int component) const {
 
@@ -594,7 +577,7 @@ private:
    * See e.g. Nederhof & Satta, "Probabilistic Parsing" (section 3), 2008 for details on the generated nonterminals.
    *
    */
-  NonCommutativePolynomial<LossyFiniteAutomaton> generateIntersectionMonomials(std::vector<unsigned long> &states,
+  NonCommutativePolynomialBase<LossyFiniteAutomaton> generateIntersectionMonomials(std::vector<unsigned long> &states,
       std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
       unsigned long currentState,
       unsigned long targetState,
@@ -603,7 +586,7 @@ private:
       std::vector<std::vector<std::vector<VarId>>> &newVariables,
       unsigned long monomialFactorIndex) const {
 
-    NonCommutativePolynomial<LossyFiniteAutomaton> result = NonCommutativePolynomial<LossyFiniteAutomaton>::null();
+    NonCommutativePolynomialBase<LossyFiniteAutomaton> result = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
 
     // if the current position in the monomial is a semiring element, we see where the transitions using the element
     // starting at currentStartIndex can take us and recurse from there
@@ -617,7 +600,7 @@ private:
         // is if the target state is equal to the one we are currently at
         if(srs_[idx_[monomialFactorIndex].second] == LossyFiniteAutomaton::one()) {
           if(currentState == targetState) {
-            result = NonCommutativePolynomial<LossyFiniteAutomaton>::one();
+            result = NonCommutativePolynomialBase<LossyFiniteAutomaton>::one();
           }
         } else { // otherwise, see if we can reach a target state
 
@@ -650,7 +633,7 @@ private:
 
           // if we can reach the intended state with the given transitions, we allow the semiring element
           if(reachable.count(targetState) != 0) {
-            result = NonCommutativePolynomial<LossyFiniteAutomaton>(srs_[idx_[monomialFactorIndex].second]);
+            result = NonCommutativePolynomialBase<LossyFiniteAutomaton>(srs_[idx_[monomialFactorIndex].second]);
           }
         }
       } else { // if this is not the last factor of the monomial, continue the recursion
@@ -680,20 +663,20 @@ private:
           }
 
           // we proceed with generating the monomial starting at the next factor and all reachable states
-          NonCommutativePolynomial<LossyFiniteAutomaton> suffixPolynomial = NonCommutativePolynomial<LossyFiniteAutomaton>::null();
+          NonCommutativePolynomialBase<LossyFiniteAutomaton> suffixPolynomial = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
           for(auto &nextState: reachable) {
             suffixPolynomial += generateIntersectionMonomials(states, transitionTable, nextState, targetState,
                 statesToIndices, oldVariablesToIndices, newVariables, (monomialFactorIndex + 1));
           }
 
-          result = NonCommutativePolynomial<LossyFiniteAutomaton>(srs_[idx_[monomialFactorIndex].second]) * suffixPolynomial;
+          result = NonCommutativePolynomialBase<LossyFiniteAutomaton>(srs_[idx_[monomialFactorIndex].second]) * suffixPolynomial;
         }
       }
     } else { // we have a variable at the current index
 
       // check if we hit the last factor of the monomial; we stop the recursion here
       if(monomialFactorIndex == idx_.size() - 1) {
-        result = NonCommutativePolynomial<LossyFiniteAutomaton>(newVariables[statesToIndices[currentState]][statesToIndices[targetState]]
+        result = NonCommutativePolynomialBase<LossyFiniteAutomaton>(newVariables[statesToIndices[currentState]][statesToIndices[targetState]]
                                                                                            [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]);
       } else { // if this is not the last factor of the monomial, continue the recursion
         for(auto &nextState: states) {
@@ -701,7 +684,7 @@ private:
           // we want to replace some nonterminal X by <currentState, X, nextState> for all nextState;
           // after that we need to append all possible monomials generated from the suffix of this monomial
           // that starts one symbol after X and uses nextState
-          result += NonCommutativePolynomial<LossyFiniteAutomaton>(newVariables[statesToIndices[currentState]][statesToIndices[nextState]]
+          result += NonCommutativePolynomialBase<LossyFiniteAutomaton>(newVariables[statesToIndices[currentState]][statesToIndices[nextState]]
                                                                                               [oldVariablesToIndices.at(variables_[idx_[monomialFactorIndex].second])]) *
                                                                                                   generateIntersectionMonomials(states, transitionTable, nextState, targetState,
                                                                                                       statesToIndices, oldVariablesToIndices, newVariables, (monomialFactorIndex + 1));

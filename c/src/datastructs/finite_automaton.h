@@ -1,22 +1,22 @@
 #pragma once
 
-#include <iostream>
+
 #include <string>
 #include <vector>
 #include <map>
 #include <forward_list>
-#include <queue>
+
 
 extern "C" {
     #include <fa.h>
 }
+
 #include <cassert>
 
-#include "var.h"
+//#include "var.h"
 #include "hash.h"
-
 #include "regular_language.h"
-#include "../polynomials/non_commutative_polynomial.h"
+
 
 
 class FiniteAutomaton : public RegularLanguage<FiniteAutomaton> {

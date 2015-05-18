@@ -8,8 +8,8 @@
 #include "commutative_polynomial.h"
 
 
-template <typename SR>
-class NonCommutativePolynomial;
+template <typename SR> class NonCommutativePolynomialBase;
+template <typename SR> class NonCommutativeMonomial;
 
 enum elemType {Variable, SemiringType};
 
@@ -18,6 +18,9 @@ template <typename SR>
 class NonCommutativeMonomialBase {
 
 protected:
+  friend class NonCommutativeMonomial<SR>;
+  friend class NonCommutativePolynomialBase<SR>;
+
   /* a monomial is represented by three vectors
    * idx_ holds pairs of (type, index), type is either variable or sr
    *   the index gives absolute position inside the chosen type vector
@@ -29,27 +32,19 @@ protected:
 
 
   /* Private constructor to not leak the internal data structure. */
-  //NonCommutativeMonomial(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
+  //NonCommutativeMonomialBase(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
   NonCommutativeMonomialBase(std::vector<std::pair<elemType,int>> &idx,
       std::vector<VarId> &variables,
       std::vector<SR> &srs) :
         idx_(idx), variables_(variables), srs_(srs) {}
 
 
-};
-
-
-template <typename SR>
-class NonCommutativeMonomial : public NonCommutativeMonomialBase<SR> {
-private:
-  friend class NonCommutativePolynomial<SR>;
-
   /*
    * evaluate all variables except the one at the exceptional position
    * returns a monomial of the form aXb where a,b are in SR.
    * TODO: check, that all variables are present in the valuation!
    */
-  NonCommutativeMonomial<SR> eval_all_except(const int except_pos, const ValuationMap<SR>& valuation) const {
+  NonCommutativeMonomialBase<SR> eval_all_except(const int except_pos, const ValuationMap<SR>& valuation) const {
     SR a = SR::one();
     SR b = SR::one();
 
@@ -80,20 +75,30 @@ private:
     std::vector<VarId> vars{this->variables_.at(except_pos)};
     std::vector<SR> sr{a,b};
 
-    return NonCommutativeMonomial(info, vars, sr);
+    return NonCommutativeMonomialBase(info, vars, sr);
   }
 
 public:
 
-  using NonCommutativeMonomialBase<SR>::NonCommutativeMonomialBase;
+  /* Since we don't manage any resources, we can simply use the default
+   * constructors and assignment operators. */
+  NonCommutativeMonomialBase() = default;
+  NonCommutativeMonomialBase(const NonCommutativeMonomialBase &m) = default;
+  NonCommutativeMonomialBase(NonCommutativeMonomialBase &&m) = default;
 
-  NonCommutativeMonomial& operator=(const NonCommutativeMonomial &m) = default;
-  NonCommutativeMonomial& operator=(NonCommutativeMonomial &&m) = default;
+  NonCommutativeMonomialBase(std::initializer_list<std::pair<elemType,int>> idx,
+      std::initializer_list<VarId> variables,
+      std::initializer_list<SR> srs) :
+        idx_(idx), variables_(variables), srs_(srs_) {}
+
+
+  NonCommutativeMonomialBase& operator=(const NonCommutativeMonomialBase &m) = default;
+  NonCommutativeMonomialBase& operator=(NonCommutativeMonomialBase &&m) = default;
 
 
   /* Multiply two monomials and return a result in normalform if both monomials
    * already are in normal form */
-  NonCommutativeMonomial operator*(const NonCommutativeMonomial &monomial) const {
+  NonCommutativeMonomialBase operator*(const NonCommutativeMonomialBase &monomial) const {
     auto tmp_idx = this->idx_;
     auto tmp_variables = this->variables_;
     auto tmp_srs = this->srs_;
@@ -133,24 +138,24 @@ public:
         tmp_srs.push_back(*s);
       }
 
-    //return NonCommutativeMonomial(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
-    return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
+    //return NonCommutativeMonomialBase(std::move(tmp_idx), std::move(tmp_variables), std::move(tmp_srs));
+    return NonCommutativeMonomialBase(tmp_idx, tmp_variables, tmp_srs);
   }
 
 
   /* Multiply a monomial with a variable. */
-  NonCommutativeMonomial operator*(const VarId &var) const {
+  NonCommutativeMonomialBase operator*(const VarId &var) const {
     auto tmp_idx = this->idx_;
     auto tmp_variables = this->variables_;
     auto tmp_srs = this->srs_;
     tmp_idx.push_back(std::pair<elemType, int>(Variable, tmp_variables.size()));
     tmp_variables.push_back(var);
 
-    return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
+    return NonCommutativeMonomialBase(tmp_idx, tmp_variables, tmp_srs);
   }
 
   /* Multiply a monomial with a semiring element and return it in normal form. */
-  NonCommutativeMonomial operator*(const SR &sr) const {
+  NonCommutativeMonomialBase operator*(const SR &sr) const {
     auto tmp_idx = this->idx_;
     auto tmp_variables = this->variables_;
     auto tmp_srs = this->srs_;
@@ -166,7 +171,7 @@ public:
       tmp_srs.push_back(sr);
     }
 
-    return NonCommutativeMonomial(tmp_idx, tmp_variables, tmp_srs);
+    return NonCommutativeMonomialBase(tmp_idx, tmp_variables, tmp_srs);
   }
 
   /* convert this monomial into an commutative one
@@ -186,10 +191,10 @@ public:
     return result_polynomial;
   }
 
-  /* derivation function which is used in the polynomial derivative function.
-   * for the variables for the d-1-th iterand we use the given map 'substitution' */
-  NonCommutativePolynomial<SR> derivative(const SubstitutionMap &substitution) const {
-    NonCommutativePolynomial<SR> result; // empty polynomial
+  /* derivative function which is used in the polynomial derivative function.
+   * for the variables for the d-1-th iteration we use the given map 'substitution' */
+  NonCommutativePolynomialBase<SR> derivative(const SubstitutionMap &substitution) const {
+    NonCommutativePolynomialBase<SR> result; // empty polynomial
     auto subst_monomial = this->subst(substitution); // substitute all variables
     for(unsigned int position = 0; position < this->variables_.size(); position++) {
       // the variable at the position is the variable which should not be touched
@@ -204,8 +209,8 @@ public:
    * compute the linearization of the polynomial at the given point "valuation"
    * to this end, we linearize every monomial and sum them up
    */
-  NonCommutativePolynomial<SR> differential_at(const ValuationMap<SR> &valuation) const {
-    NonCommutativePolynomial<SR> result; // empty polynomial = 0 (constant monomials have differential f(x)=0)
+  NonCommutativePolynomialBase<SR> differential_at(const ValuationMap<SR> &valuation) const {
+    NonCommutativePolynomialBase<SR> result; // empty polynomial = 0 (constant monomials have differential f(x)=0)
 
     for(unsigned int position = 0; position < this->variables_.size(); position++) {
       // the variable at the position is the variable which should not be touched, all others will be evaluated
@@ -280,10 +285,10 @@ public:
   }
 
   /* Partially evaluate the monomial. */
-  NonCommutativeMonomial partial_eval(
+  NonCommutativeMonomialBase partial_eval(
       const ValuationMap<SR> &values) const {
 
-    NonCommutativeMonomial result_monomial;
+    NonCommutativeMonomialBase result_monomial;
 
     for(auto p : this->idx_)
     {
@@ -329,7 +334,7 @@ public:
   }
 
   /* Variable substitution. */
-  NonCommutativeMonomial subst(const SubstitutionMap &mapping) const {
+  NonCommutativeMonomialBase subst(const SubstitutionMap &mapping) const {
     VarDegreeMap tmp_variables;
 
     auto result_monomial = *this; // copy it to work with it
@@ -390,7 +395,7 @@ public:
     return result;
   }
 
-  bool operator<(const NonCommutativeMonomial &rhs) const {
+  bool operator<(const NonCommutativeMonomialBase &rhs) const {
     // lexicographic ordering
     if(this->idx_ != rhs.idx_) return this->idx_ < rhs.idx_;
     if(this->variables_ != rhs.variables_) return this->variables_ < rhs.variables_;
@@ -400,7 +405,7 @@ public:
     return false;
   }
 
-  bool operator==(const NonCommutativeMonomial &rhs) const {
+  bool operator==(const NonCommutativeMonomialBase &rhs) const {
     return
         this->idx_ == rhs.idx_ &&
         this->variables_ == rhs.variables_ &&
@@ -487,9 +492,24 @@ public:
 };
 
 template <typename SR>
-std::ostream& operator<<(std::ostream &out, const NonCommutativeMonomial<SR> &monomial) {
+std::ostream& operator<<(std::ostream &out, const NonCommutativeMonomialBase<SR> &monomial) {
   return out << monomial.string();
 }
+
+
+template <typename SR>
+class NonCommutativeMonomial : public NonCommutativeMonomialBase<SR> {
+public:
+  using NonCommutativeMonomialBase<SR>::NonCommutativeMonomialBase;
+
+  // constructor for implicit conversions
+  NonCommutativeMonomial(const NonCommutativeMonomialBase<SR>& p) {
+    this->idx_ = p.idx_;
+    this->srs_ = p.srs_;
+    this->variables_ = p.variables_;
+  }
+};
+
 
 
 

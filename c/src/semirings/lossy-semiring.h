@@ -9,7 +9,6 @@
 #include "../datastructs/matrix.h"
 
 #include "../datastructs/free-structure.h"
-#include "../polynomials/non_commutative_polynomial.h"
 
 #include "semiring.h"
 

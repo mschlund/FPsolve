@@ -9,9 +9,11 @@
 #include "datastructs/matrix.h"
 #include "datastructs/equations.h"
 
+
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 #include "polynomials/lossy_non_commutative_polynomial.h"
+
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
@@ -40,8 +42,8 @@
 
 
 template <typename SR, template <typename> class Poly>
-ValuationMap<SR> call_solver(std::string solver_name,  const GenericEquations<Poly, SR> &equations,
-   bool scc, bool iteration_flag, std::size_t iterations, bool graphviz_output){
+ValuationMap<SR> call_solver(const std::string solver_name,  const GenericEquations<Poly, SR> &equations,
+   const bool scc, const bool iteration_flag, const std::size_t iterations, const bool graphviz_output){
   if(0 == solver_name.compare("newtonSymb")) {
     std::cout << "Solver: Newton Symbolic" << std::endl;
     return apply_solver<Newton, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
@@ -305,7 +307,9 @@ int main(int argc, char* argv[]) {
 
     VarId S_1 = equations[0].first;
 
-    auto approximation = LossyFiniteAutomaton::downwardClosureCourcelle(equations, S_1);
+    NCEquationsBase<LossyFiniteAutomaton> eq2 = NCEquationsBase<LossyFiniteAutomaton>(equations.begin(), equations.end());
+
+    auto approximation = NonCommutativePolynomial<LossyFiniteAutomaton>::downwardClosureCourcelle(eq2, S_1);
     std::cout << "dwc:\t" << approximation.string() << std::endl;
     std::cout << "size NFA for DWC:\t" << approximation.size() << std::endl;
     std::cout << "size minimal DFA for DWC:\t" << approximation.minimize().size() << std::endl;

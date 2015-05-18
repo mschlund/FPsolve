@@ -11,5 +11,12 @@ if(NOT USE_GENEPI)
 	list(REMOVE_ITEM NEWTON_TEST_CPP ${SEMILIN_SET_NDD_CPP})
 endif(NOT USE_GENEPI)
 
+if(NOT USE_LIBFA)
+	file(GLOB_RECURSE LOSSY_H "test-lossy.h")
+	file(GLOB_RECURSE LOSSY_CPP "test-lossy.cpp")
+	list(REMOVE_ITEM NEWTON_TEST_H ${LOSSY_H})
+	list(REMOVE_ITEM NEWTON_TEST_CPP ${LOSSY_CPP})
+endif(NOT USE_LIBFA)
+
 add_executable(fpsolve_test ${NEWTON_TEST_H} ${NEWTON_TEST_CPP})
-target_link_libraries(fpsolve_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES})
+target_link_libraries(fpsolve_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES})

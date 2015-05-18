@@ -9,12 +9,14 @@
 template<template <typename> class Poly, typename SR>
 using GenericEquations = std::vector< std::pair< VarId, Poly<SR> > > ;
 
-
 template <typename A>
 using Equations = GenericEquations<CommutativePolynomial, A>;
 
 template <typename A>
 using NCEquations = GenericEquations<NonCommutativePolynomial, A>;
+
+template <typename A>
+using NCEquationsBase = GenericEquations<NonCommutativePolynomialBase, A>;
 
 
 

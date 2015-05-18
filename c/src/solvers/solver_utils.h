@@ -14,15 +14,14 @@
 
 #include "../datastructs/equations.h"
 
-#include "../polynomials/commutative_polynomial.h"
 #include "../utils/timer.h"
 
 
-template <typename SR>
+template <typename SR, template <typename> class Poly>
 struct VertexProp {
   std::string name;   // used for graphviz output
   VarId var;         // var and rex combines the equations in the vertex
-  CommutativePolynomial<SR> rex;
+  Poly<SR> rex;
 };
 
 // group the equations by SCCs
@@ -37,7 +36,7 @@ group_by_scc(const GenericEquations<Poly, SR> &equations,
   boost::adjacency_list<boost::vecS,
                         boost::vecS,
                         boost::bidirectionalS,
-                        VertexProp<SR>> graph(equations.size());
+                        VertexProp<SR, Poly>> graph(equations.size());
   // for (auto e_it = equations.begin(); e_it != equations.end(); ++e_it)
   for (const auto &eq : equations) {
     // if the variable is not yet in the map insert it together with the size of
@@ -63,7 +62,7 @@ group_by_scc(const GenericEquations<Poly, SR> &equations,
   if (graphviz_output) {
     // output the created graph to graph.dot
     boost::dynamic_properties dp;
-    dp.property("label", boost::get(&VertexProp<SR>::name, graph)); // vertex name is the name of the equation
+    dp.property("label", boost::get(&VertexProp<SR, Poly>::name, graph)); // vertex name is the name of the equation
     dp.property("node_id", get(boost::vertex_index, graph)); // this is needed
     std::ofstream outf("graph.dot");
     boost::write_graphviz_dp(outf, graph, dp);
@@ -75,7 +74,7 @@ group_by_scc(const GenericEquations<Poly, SR> &equations,
 
   // group neccessary equations together
   int num_comp = *std::max_element(component.begin(), component.end()) + 1; // find the number of components
-  std::vector< std::vector< std::pair< VarId,CommutativePolynomial<SR> > > >
+  std::vector< std::vector< std::pair< VarId,Poly<SR> > > >
     grouped_equations(num_comp);
   // grouped_equations.resize(num_comp);
 
@@ -83,7 +82,7 @@ group_by_scc(const GenericEquations<Poly, SR> &equations,
   // collect the necessary variables + equations for every component
   for (std::size_t j = 0; j != component.size(); ++j) {
     //std::cout << j << ", " << graph[j].var << " is in component " << component[j] << std::endl;
-    grouped_equations[component[j]].push_back(std::pair<VarId,CommutativePolynomial<SR>>(graph[j].var, graph[j].rex));
+    grouped_equations[component[j]].push_back(std::pair<VarId,Poly<SR>>(graph[j].var, graph[j].rex));
   }
 
   return grouped_equations;

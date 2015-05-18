@@ -15,59 +15,40 @@
 #include <string>
 #include <queue>
 #include <climits>
+#include <iostream>
 
 
 #include "non_commutative_monomial.h"
 #include "non_commutative_polynomial.h"
+#include "lossy_non_commutative_monomial.h"
 
 #include "../semirings/semiring.h"
 #include "../semirings/lossy-finite-automaton.h"
 
-#include "../datastructs/var.h"
+#include "../datastructs/equations.h"
 
 #include "../utils/string_util.h"
+#include "../solvers/solver_utils.h"
 
-class LossyFiniteAutomaton;
-class NonCommutativePolynomial<LossyFiniteAutomaton>;
-
+class VarId;
 
 template <>
-class NonCommutativePolynomialBase<LossyFiniteAutomaton> : Semiring<NonCommutativePolynomial<LossyFiniteAutomaton>,
-                                                                    Commutativity::NonCommutative,
-                                                                    LossyFiniteAutomaton::GetIdempotence()> {
-
-protected:
-
-  std::map<NonCommutativeMonomial<LossyFiniteAutomaton>,std::uint_fast16_t> monomials_;
-
-  static void InsertMonomial(
-      std::map<NonCommutativeMonomial<LossyFiniteAutomaton>, std::uint_fast16_t> &monomials,
-      NonCommutativeMonomial<LossyFiniteAutomaton> monomial,
-      std::uint_fast16_t coeff)
-  {
-    auto iter = monomials.find(monomial);
-    if(iter == monomials.end()) {
-      monomials.insert({monomial, 1});
-    } else {
-      auto tmp = *iter;
-      monomials.erase(iter);
-      monomials.insert({tmp.first, tmp.second + coeff});
-    }
-  }
-
-  static void InsertMonomial(
-      std::map<NonCommutativeMonomial<LossyFiniteAutomaton>, std::uint_fast16_t> &monomials,
-      std::vector<std::pair<elemType,int>> &idx,
-      std::vector<VarId> &variables,
-      std::vector<SR> &srs
-  )
-  {
-    auto tmp_monomial = NonCommutativeMonomial<LossyFiniteAutomaton>(idx, variables, srs);
-    InsertMonomial(monomials, tmp_monomial, 1);
-  };
-
+class NonCommutativePolynomial<LossyFiniteAutomaton> : public NonCommutativePolynomialBase<LossyFiniteAutomaton> {
 
 public:
+
+  typedef NonCommutativeMonomial<LossyFiniteAutomaton> lossyMon;
+
+  using NonCommutativePolynomialBase<LossyFiniteAutomaton>::NonCommutativePolynomialBase;
+
+  NonCommutativePolynomial() = default;
+
+
+  // constructor for implicit conversions
+  NonCommutativePolynomial(const NonCommutativePolynomialBase<LossyFiniteAutomaton>& p) {
+    this->monomials_ = p.monomials_;
+  }
+
 
   /*
    * Extracts the terminal letters used in this polynomial; only recognizes alphanumeric characters.
@@ -77,8 +58,8 @@ public:
    std::set<unsigned char> get_terminals() const {
      std::set<unsigned char> terminals;
 
-     for(auto const &monomial: monomials_) {
-       auto monomial_terminals = monomial.first.get_terminals();
+     for(const auto &monomial: this->monomials_) {
+       auto monomial_terminals = static_cast<lossyMon>(monomial.first).get_terminals();
        terminals.insert(monomial_terminals.begin(), monomial_terminals.end());
      }
 
@@ -94,7 +75,7 @@ public:
    std::set<VarId> get_variables_quadratic_monomials() const {
      std::set<VarId> vars;
 
-     for(auto const &monomial : monomials_) {
+     for(auto const &monomial : this->monomials_) {
        if(monomial.first.get_degree() == 2) {
          auto tmp = monomial.first.get_variables();
          vars.insert(tmp.begin(), tmp.end());
@@ -112,8 +93,8 @@ public:
    void findConstantsInNonterminalMonomials(std::set<LossyFiniteAutomaton> &constants, bool checkLinearTerms) const {
 
      // delegate to the monomials
-     for(auto &monomial: monomials_) {
-       monomial.first.findConstantsInNonterminalMonomials(constants, checkLinearTerms);
+     for(auto &monomial: this->monomials_) {
+       static_cast<lossyMon>(monomial.first).findConstantsInNonterminalMonomials(constants, checkLinearTerms);
      }
    }
 
@@ -121,7 +102,7 @@ public:
    LossyFiniteAutomaton sumOfConstantMonomials() const {
      LossyFiniteAutomaton sum = LossyFiniteAutomaton::null();
 
-     for(auto &monomial: monomials_) {
+     for(auto &monomial: this->monomials_) {
        if(monomial.first.get_degree() == 0) {
          sum = sum + monomial.first.getLeadingSR();
        }
@@ -136,18 +117,18 @@ public:
     *
     * Only replaces constants in linear monomials if replaceInLinearMonomials is true.
     */
-   NonCommutativePolynomial<LossyFiniteAutomaton> replaceConstants(std::map<LossyFiniteAutomaton, VarId> &constantsToVariables,
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> replaceConstants(std::map<LossyFiniteAutomaton, VarId> &constantsToVariables,
        bool replaceInLinearMonomials) const {
-     NonCommutativePolynomial<LossyFiniteAutomaton> temp = null();
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> temp = null();
 
      // delegate to the monomials
-     for(auto &monomial: monomials_) {
+     for(auto &monomial: this->monomials_) {
 
        // we only replace constants in nonterminal monomials, all terminal monomials are added to the polynomial as is
        // only replace constants in linear monomials if replaceInLinearMonomials is true
        if((monomial.first.get_degree() != 0)
            && (replaceInLinearMonomials || monomial.first.get_degree() != 1)) {
-         temp += monomial.first.replaceConstants(constantsToVariables);
+         temp += static_cast<lossyMon>(monomial.first).replaceConstants(constantsToVariables);
        } else {
          InsertMonomial(temp.monomials_, monomial.first, monomial.second);
        }
@@ -160,10 +141,10 @@ public:
     * Removes all epsilon monomials from a polynmoial.
     * An epsilon monomial is a monomial consisting only of epsilon.
     */
-   NonCommutativePolynomial<LossyFiniteAutomaton> removeEpsilonMonomials() const {
-     NonCommutativePolynomial<LossyFiniteAutomaton> temp = null();
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> removeEpsilonMonomials() const {
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> temp = null();
 
-     for(auto monomial: monomials_) {
+     for(auto monomial: this->monomials_) {
 
        // if the monomial has at least one variable or it doesn't have a variable but isn't
        // equal to epsilon, then it's not an epsilon monomial
@@ -178,21 +159,19 @@ public:
    /*
     * Removes all epsilon productions from the system.
     */
-   static void removeEpsilonProductions(std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations) {
+   static void removeEpsilonProductions(NCEquationsBase<LossyFiniteAutomaton> &equations) {
      for(auto equation : equations) {
-       equation.second = equation.second.removeEpsilonMonomials();
+       equation.second = static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).removeEpsilonMonomials();
      }
    }
-
-
 
    /*
     * Cleans the polynomial system, i.e. removes variables that are unproductive or unreachable
     * from the set of nonterminals given in the worklist; the worklist needs to contain the
     * variables we want to start derivations from, i.e. the set of initial nonterminals.
     */
-   static std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> cleanSystem
-   (const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations,
+   static NCEquationsBase<LossyFiniteAutomaton> cleanSystem
+   (const NCEquationsBase<LossyFiniteAutomaton> &equations,
        std::queue<VarId> &worklist) {
 
      std::queue<VarId> temp; // to store the variables that still need checking
@@ -202,7 +181,7 @@ public:
      // 1 means "encountered but not checked",
      // 2 means "checked at least once"
      std::map<VarId, bool> productiveVariables; // to map variables to "is this variable known to be productive?"
-     std::map<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>> productions; // to map variables to their productions
+     std::map<VarId, NonCommutativePolynomialBase<LossyFiniteAutomaton>> productions; // to map variables to their productions
 
      VarId var;
      std::set<VarId> vars;
@@ -271,7 +250,7 @@ public:
          // flag for the variable; we know a variable is productive once one of the productions
          // associated with it becomes known to be productive; since there is no need to recheck a
          // productive variable, don't put it in the worklist again
-         if(productions[var].isProductive(productiveVariables)) {
+         if(static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(productions[var]).isProductive(productiveVariables)) {
            productiveVariables[var] = true;
            update = true;
          } else { // if the variable isn't known to be productive yet, put it in the worklist
@@ -288,7 +267,7 @@ public:
 
      // build the clean system: only use variables that are both productive and reachable;
      // remove unproductive monomials
-     std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> cleanEquations;
+     NCEquationsBase<LossyFiniteAutomaton> cleanEquations;
      for(auto &equation: equations) {
        if(productiveVariables[equation.first]) {
 
@@ -296,7 +275,7 @@ public:
          // variable is not the null polynomial since at least one of its monomials was
          // found to be productive
          cleanEquations.push_back(std::make_pair(equation.first,
-             equation.second.removeUnproductiveMonomials(productiveVariables)));
+             static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).removeUnproductiveMonomials(productiveVariables)));
        }
      }
 
@@ -312,34 +291,34 @@ public:
     * iff eliminateInLinearTerms is true. This way, we can produce a quadratic normal form without  blowing up
     * linear terms, if desired.
     */
-   static std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> eliminateTerminalsInNonterminalProductions
-   (const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations,
-       std::map<VarId, LossyFiniteAutomaton> &variablesToConstants, bool eliminateInLinearTerms) {
+   static NCEquationsBase<LossyFiniteAutomaton> eliminateTerminalsInNonterminalProductions
+   (const NCEquationsBase<LossyFiniteAutomaton> &equations,
+       ValuationMap<LossyFiniteAutomaton> &variablesToConstants, bool eliminateInLinearTerms) {
 
      std::set<LossyFiniteAutomaton> constants; // will hold all terminals appearing in nonterminal productions
 
      // find all constants in nonterminal productions in the system
      for(auto &equation: equations) {
-       equation.second.findConstantsInNonterminalMonomials(constants, eliminateInLinearTerms);
+       static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).findConstantsInNonterminalMonomials(constants, eliminateInLinearTerms);
      }
 
      // return value
-     std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> variablefiedEquations;
+     NCEquationsBase<LossyFiniteAutomaton> variablefiedEquations;
 
      // introduce a new variable for each constant found, add the respective equation to the system
      VarId var;
      std::map<LossyFiniteAutomaton, VarId> constantsToVariables; // will hold a mapping from terminals to variables that produce them
      for(auto &constant: constants) {
        var = Var::GetVarId();
-       variablefiedEquations.push_back(std::make_pair(var, NonCommutativePolynomial<LossyFiniteAutomaton>(constant)));
+       variablefiedEquations.push_back(std::make_pair(var, NonCommutativePolynomialBase<LossyFiniteAutomaton>(constant)));
        constantsToVariables.insert(std::make_pair(constant, var));
        variablesToConstants.insert(std::make_pair(var,constant));
      }
 
      // replace the constants in each nonterminal production with the new constant variables
-     NonCommutativePolynomial<LossyFiniteAutomaton> allVariablesPoly;
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> allVariablesPoly;
      for(auto &equation: equations) {
-       allVariablesPoly = equation.second.replaceConstants(constantsToVariables, eliminateInLinearTerms);
+       allVariablesPoly = static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).replaceConstants(constantsToVariables, eliminateInLinearTerms);
        variablefiedEquations.push_back(std::make_pair(equation.first, allVariablesPoly));
      }
 
@@ -349,9 +328,8 @@ public:
    /*
     * Binarizes nonterminal productions the way it is done when constructing a CNF of a grammar.
     */
-   static std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> binarizeProductions
-   (const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &equations,
-       std::map<VarId, LossyFiniteAutomaton> &variablesToConstants) {
+   static NCEquationsBase<LossyFiniteAutomaton> binarizeProductions
+   (const NCEquationsBase<LossyFiniteAutomaton> &equations) {
 
      // stores mappings between suffixes of monomials and the variables that are introduced
      // during binarization to produce those suffixes
@@ -359,17 +337,17 @@ public:
 
      // stores the productions (i.e. equations) that are introduced while producing the
      // Chomsky Normal Form
-     std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> binarizationVariablesEquations;
+     NCEquationsBase<LossyFiniteAutomaton> binarizationVariablesEquations;
 
      // to store the result
-     std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> binarizedEquations;
+     NCEquationsBase<LossyFiniteAutomaton> binarizedEquations;
 
      // determine the necessary new variables to give all non-terminal productions that need binarizing
      // (i.e. monomials of degree > 2) the form "X = YZ"
-     NonCommutativePolynomial<LossyFiniteAutomaton> binarizedPoly;
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> binarizedPoly;
      for(auto &equation: equations) {
        binarizedPoly =
-           equation.second.binarize(binarizationVariables, binarizationVariablesEquations, variablesToConstants);
+           static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).binarize(binarizationVariables, binarizationVariablesEquations);
        binarizedEquations.push_back(std::make_pair(equation.first, binarizedPoly));
      }
 
@@ -389,8 +367,8 @@ public:
 
      // check if any monomial in this polynomial is productive; that will be enough
      // for the polynomial to be productive
-     for(auto &monomial: monomials_) {
-       if(monomial.first.isProductive(productiveVariables)) {
+     for(auto &monomial: this->monomials_) {
+       if(static_cast<lossyMon>(monomial.first).isProductive(productiveVariables)) {
          return true;
        }
      }
@@ -410,11 +388,11 @@ public:
    bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
      bool squarable = false;
 
-     for(auto &monomial: monomials_) {
+     for(auto &monomial: this->monomials_) {
 
        // skip monomials that don't have at least two variables
        if(monomial.first.get_degree() >= 2) {
-         squarable |= monomial.first.componentIsSquarable(varToComponent, component);
+         squarable |= static_cast<lossyMon>(monomial.first).componentIsSquarable(varToComponent, component);
 
          // don't do work we don't need
          if(squarable) {
@@ -433,8 +411,8 @@ public:
     */
    void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
        std::map<VarId, int> &varToComponent, int component) const {
-     for(auto &monomial: monomials_) {
-       monomial.first.mapQuadraticLHStoRHS(quadraticLHStoRHS, varToComponent, component);
+     for(auto &monomial: this->monomials_) {
+       static_cast<lossyMon>(monomial.first).mapQuadraticLHStoRHS(quadraticLHStoRHS, varToComponent, component);
      }
    }
 
@@ -446,12 +424,12 @@ public:
    void calculateLowerComponentVariables(
        std::map<int, std::set<int>> &lhsLowerComponentVariables,
        std::map<int, std::set<int>> &rhsLowerComponentVariables,
-       std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>>> &components,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
        std::map<VarId, int> &varToComponent,
        int component) {
 
-     for(auto &monomial: monomials_) {
-       monomial.first.calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
+     for(auto &monomial: this->monomials_) {
+       static_cast<lossyMon>(monomial.first).calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
            components, varToComponent, component);
      }
    }
@@ -461,17 +439,16 @@ public:
     *
     * Assumes grammar is in quadratic normal form.
     *
-    * WARNING: will break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
     */
    void calculateSameComponentLetters(
        std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
        std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
-       std::vector<std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>>> &components,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
        std::map<VarId, int> &varToComponent,
        int component) {
 
-     for(auto &monomial: monomials_) {
-       monomial.first.calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
+     for(auto &monomial: this->monomials_) {
+       static_cast<lossyMon>(monomial.first).calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
            components, varToComponent, component);
      }
    }
@@ -492,9 +469,9 @@ public:
     * nonterminal alphabet, so having any symbols in the grammar that don't belong to either
     * will give you trouble
     *
-    * WARNING: will currently break if used with anything but NonCommutativePolynomial<LossyFiniteAutomaton>
+    * WARNING: will currently break if used with anything but NonCommutativePolynomialBase<LossyFiniteAutomaton>
     */
-   NonCommutativePolynomial<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
        std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
        unsigned long &startState,
        unsigned long &targetState,
@@ -502,21 +479,21 @@ public:
        std::map<VarId, unsigned long> &oldVariablesToIndices,
        std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
-     NonCommutativePolynomial<LossyFiniteAutomaton> result = NonCommutativePolynomial<LossyFiniteAutomaton>::null();
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> result = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
      bool epsilonAdded = false;
 
      // delegate to the monomials
-     for(auto &monomial: monomials_) {
+     for(auto &monomial: this->monomials_) {
 
        // if the nonterminal can produce epsilon, then the new grammar can produce epsilon only without
        // the FA changing state (since the FA does not have epsilon transitions)
        if(monomial.first.isEpsilonMonomial()) {
          if(startState == targetState && !epsilonAdded) {
-           result += NonCommutativePolynomial<LossyFiniteAutomaton>::one();
+           result += NonCommutativePolynomialBase<LossyFiniteAutomaton>::one();
            epsilonAdded = true;
          }
        } else { // if this is a non-epsilon production, we calculate the new productions that derive from it
-         result += monomial.first.intersectionPolynomial
+         result += static_cast<lossyMon>(monomial.first).intersectionPolynomial
              (states, transitionTable, startState, targetState,
                  statesToIndices, oldVariablesToIndices, newVariables);
        }
@@ -531,7 +508,7 @@ public:
     * not productive in the grammar defined by productions - "productions" must define a clean grammar starting
     * from "startSymbol".
     */
-   static LossyFiniteAutomaton shortestWord(std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &productions, VarId &startSymbol) {
+   static LossyFiniteAutomaton shortestWord(NCEquationsBase<LossyFiniteAutomaton> &productions, VarId &startSymbol) {
 
      if(productions.size() == 0) {
        return LossyFiniteAutomaton::null();
@@ -564,7 +541,7 @@ public:
 
        for(auto &equation: productions) {
          for(auto &monomial: equation.second.monomials_) {
-           update |= monomial.first.findLengthOfDerivableStrings(lengthOfShortestWords, productionsForShortestWords, equation.first);
+           update |= static_cast<lossyMon>(monomial.first).findLengthOfDerivableStrings(lengthOfShortestWords, productionsForShortestWords, equation.first);
          }
        }
      } while(update);
@@ -576,7 +553,7 @@ public:
    /*
     * Finds all terminal symbols that can be the first letter of some word in the language of the grammar.
     */
-   static std::set<char> getDerivableFirstLettes(const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &productions, const VarId &startSymbol) {
+   static std::set<char> getDerivableFirstLettes(const NCEquationsBase<LossyFiniteAutomaton> &productions, const VarId &startSymbol) {
      std::map<VarId, std::set<char>> varToDerivableFirstLetters;
      std::set<VarId> varsWithEpsilon;
      if(productions.size() != 0) {
@@ -588,7 +565,7 @@ public:
 
          for(auto &equation: productions) {
            for(auto &monomial: equation.second.monomials_) {
-             update |= monomial.first.getDerivableFirstLettes(varToDerivableFirstLetters, varsWithEpsilon, equation.first);
+             update |= static_cast<lossyMon>(monomial.first).getDerivableFirstLettes(varToDerivableFirstLetters, varsWithEpsilon, equation.first);
            }
          }
        } while(update);
@@ -601,12 +578,12 @@ public:
     * Returns a cleaned version of this polynomial, i.e. a version that had all monomials with unproductive
     * variables eliminated.
     */
-   NonCommutativePolynomial<LossyFiniteAutomaton> removeUnproductiveMonomials(const std::map<VarId, bool> &productiveVariables) const {
-     NonCommutativePolynomial<LossyFiniteAutomaton> cleanPoly = null();
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> removeUnproductiveMonomials(const std::map<VarId, bool> &productiveVariables) const {
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> cleanPoly = null();
 
      // add all monomials to the clean polynomial that only contain productive variables
-     for(auto &monomial: monomials_) {
-       if(monomial.first.isProductive(productiveVariables)) {
+     for(auto &monomial: this->monomials_) {
+       if(static_cast<lossyMon>(monomial.first).isProductive(productiveVariables)) {
          InsertMonomial(cleanPoly.monomials_, monomial.first, monomial.second);
        }
      }
@@ -633,15 +610,15 @@ public:
     * WARNING: do not allow productions of the form "X -> empty set" in your oldGrammar, or this may break.
     */
 
-   static std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> intersectionWithFA
+   static NCEquationsBase<LossyFiniteAutomaton> intersectionWithFA
        (const FiniteAutomaton &fa, VarId &newS, const VarId &oldS,
-               const std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &oldGrammar) {
+               const NCEquationsBase<LossyFiniteAutomaton> &oldGrammar) {
 
        // do it with a DFA, something went wrong with NFAs
        FiniteAutomaton minDfa = fa.minimize();
 
        // for the new grammar
-       std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> resultGrammar;
+       NCEquationsBase<LossyFiniteAutomaton> resultGrammar;
 
        // we don't want to start out with useless stuff because the intersection grammar
        // will blow up anyway
@@ -651,14 +628,14 @@ public:
 
        // change the grammar to one where monomials have degree at most 2 and those monomials with degree 2
        // have the form XY
-       std::map<VarId, LossyFiniteAutomaton> variablesToConstants;
+       ValuationMap<LossyFiniteAutomaton> variablesToConstants;
        workGrammar = eliminateTerminalsInNonterminalProductions
                (workGrammar, variablesToConstants, false);
-       workGrammar = binarizeProductions(workGrammar, variablesToConstants);
+       workGrammar = binarizeProductions(workGrammar);
 
        // if the grammar doesn't produce anything, there is no need to do anything else; return an empty grammar
        // the same applies if the automaton represents the empty language
-       if(workGrammar.size() == 0 || empty()) {
+       if(workGrammar.size() == 0 || fa.empty()) {
            return resultGrammar;
        }
 
@@ -735,11 +712,11 @@ public:
        // the indices k, i, j are intended this way; we first choose some nonterminal of the grammar
        // and then generate all productions derived from that nonterminal; this mirrors the way
        // in which the algorithm is described in the paper referred to above
-       NonCommutativePolynomial<LossyFiniteAutomaton> poly;
+       NonCommutativePolynomialBase<LossyFiniteAutomaton> poly;
        for(unsigned long i = 0; i < numberOfStates; i++) {
            for(unsigned long j = 0; j < numberOfStates; j++) {
                for(unsigned long k = 0; k < workGrammar.size(); k++) {
-                   poly = workGrammar[k].second.intersectionPolynomial
+                   poly = static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(workGrammar[k].second).intersectionPolynomial
                            (states, transitionTable, states[i], states[j], statesToIndices, oldVariablesToIndices, newVariables);
                    resultGrammar.push_back(std::make_pair(newVariables[i][j][k], poly));
                }
@@ -748,7 +725,7 @@ public:
 
        // finally, use a new variable as initial variable and generate the productions; they are of the form
        // newS -> <q_0, oldS, q_f> where q_0 is the initial state of the FA and q_f is some final state of the FA
-       NonCommutativePolynomial<LossyFiniteAutomaton> startPolynomial = NonCommutativePolynomial<LossyFiniteAutomaton>::null();
+       NonCommutativePolynomialBase<LossyFiniteAutomaton> startPolynomial = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
 
        for(auto target: finalStates) {
            startPolynomial += newVariables[statesToIndices[initialState]][statesToIndices[target]][oldVariablesToIndices[oldS]];
@@ -763,13 +740,174 @@ public:
        return resultGrammar;
    }
 
+   /*
+    * Takes two grammars and refines them by intersecting them with the prefix languages of their shared downward closure.
+    */
+   static LossyFiniteAutomaton refineCourcelle(const NCEquationsBase<LossyFiniteAutomaton> &equations_1,
+           const VarId &S_1, const NCEquationsBase<LossyFiniteAutomaton> &equations_2,
+           const VarId &S_2, int maxLengthOfPrefixes) {
+
+       LossyFiniteAutomaton approx_1 = downwardClosureCourcelle(equations_1, S_1);
+       LossyFiniteAutomaton approx_2 = downwardClosureCourcelle(equations_2, S_2);
+
+       bool A1_subset_A2 = approx_2.contains(approx_1);
+       bool A2_subset_A1 = approx_1.contains(approx_2);
+
+       if(A1_subset_A2 && A2_subset_A1) {
+           LossyFiniteAutomaton difference = LossyFiniteAutomaton::null();
+
+           if(!(approx_1 == LossyFiniteAutomaton::null()) && !(approx_1 == LossyFiniteAutomaton::one())) {
+
+               // build the automaton Sigma*
+               std::string regexAlphabetStar = "[";
+               for (auto c: approx_1.alphabet()) {
+                   regexAlphabetStar.append(1, c);
+               }
+               regexAlphabetStar += "]*";
+
+               // build the map of (length, prefixes of that length)
+               std::set<char> derivableFirstLetters = getDerivableFirstLettes(equations_1, S_1);
+               std::set<char> derivableFirstLetters2 = getDerivableFirstLettes(equations_2, S_2);
+
+               for(char letter: derivableFirstLetters2) {
+                   derivableFirstLetters.insert(letter);
+               }
+
+               std::map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes, derivableFirstLetters);
+
+               // iterate over the prefixes
+               bool noDifference = true;
+               std::queue<VarId> worklist;
+               for(int i = 1; (i <= maxLengthOfPrefixes) && noDifference; i++) {
+                   std::cout << "refining " << i << "..." << std::endl;
+
+                   for(auto &prefix: prefixesPerLength[i]) {
+                       std::string prefixAlphaStar = std::string(prefix) + regexAlphabetStar;
+                       LossyFiniteAutomaton prefixAutomaton(prefixAlphaStar);
+
+                       VarId S_1_partition, S_2_partition;
+
+                       // generate the subset of language 1
+                       auto equations_1_Partition = intersectionWithFA(prefixAutomaton.getFA(), S_1_partition, S_1, equations_1);
+
+                       while(!worklist.empty()) {
+                           worklist.pop();
+                       }
+
+                       worklist.push(S_1_partition);
+                       equations_1_Partition = cleanSystem(equations_1_Partition, worklist);
+
+                       // generate the subset of language 2
+                       auto equations_2_Partition = intersectionWithFA(prefixAutomaton.getFA(), S_2_partition, S_2, equations_2);
+
+                       while(!worklist.empty()) {
+                           worklist.pop();
+                       }
+
+                       worklist.push(S_2_partition);
+                       equations_2_Partition = cleanSystem(equations_2_Partition, worklist);
+
+                       // approximate the grammars
+                       LossyFiniteAutomaton approx_1_part = downwardClosureCourcelle(equations_1_Partition, S_1_partition);
+                       LossyFiniteAutomaton approx_2_part = downwardClosureCourcelle(equations_2_Partition, S_2_partition);
+
+                       LossyFiniteAutomaton tempDiff = compareClosures(equations_1_Partition, S_1_partition, equations_2_Partition, S_2_partition, approx_1_part, approx_2_part);
+
+                       if(!(tempDiff == LossyFiniteAutomaton::null())) {
+                           difference = tempDiff;
+                           noDifference = false;
+                           std::cout << "different " << i << std::endl;
+                           break;
+                       }
+                   }
+               }
+           } else { // both languages empty
+               std::cout << "equal 0" << std::endl;
+               return difference;
+           }
+
+           if(difference == LossyFiniteAutomaton::null()) {
+               std::cout << "maybe_equal " << maxLengthOfPrefixes << std::endl;
+           }
+
+           return difference;
+       } else {
+           LossyFiniteAutomaton difference = compareClosures(equations_1, S_1, equations_2, S_2, approx_1, approx_2);
+           std::cout << "different 0" << std::endl;
+
+           return difference;
+       }
+   }
 
 
+   /*
+    * Calculates the downward closure of the grammar defined by "equations" starting at "S"; the algorithm
+    * derives from the "On Constructing Obstruction Sets of Words", B. Courcelle, Bulletin of EATCS 1991.
+    *
+    * WARNING: This function will break if you use a LossyFiniteAutomaton that does not have a constructor that takes POSIX
+    * regex string or if there are any terminals in the grammar that contain non-alphanumeric letters,
+    * see non_commutative_monomial.get_terminals().
+    */
+   static LossyFiniteAutomaton downwardClosureCourcelle(const NCEquationsBase<LossyFiniteAutomaton> &equations, const VarId &S) {
 
+       std::queue<VarId> worklist;
+       worklist.push(S);
 
+       auto cleanEquations = cleanSystem(equations, worklist);
 
+       // if the start symbol is unproductive, then it doesn't generate anything;
+       // the downward closure of the empty set is the empty set
+       if(!variableHasProduction(cleanEquations, S)) {
+           return LossyFiniteAutomaton::null();
+       }
 
+       NCEquationsBase<LossyFiniteAutomaton> cleanQNF = quadraticNormalForm(cleanEquations, true);
+       std::vector<NCEquationsBase<LossyFiniteAutomaton> > components = group_by_scc(cleanQNF, false);
 
+       // will hold the downward closure of all components
+       std::map<int, LossyFiniteAutomaton> componentToClosure;
+
+       // map variables to their components
+       std::map<VarId, int> varToComponent = mapVariablesToComponents(components);
+
+       // these components will have the star of the letters reachable from the variables
+       // of the respective component as their closure
+       std::set<int> squarableComponents = findSquarableComponents(components, varToComponent);
+
+       // we need this map for the case where we can duplicate a variable
+       std::map<int, std::set<unsigned char>> componentToReachableLetters =
+               findReachableLetters(components, varToComponent);
+
+       // we can already calculate the downward closures of squarable components
+       calculateClosuresOfSquarableComponents(componentToReachableLetters, squarableComponents, componentToClosure);
+
+       // for each component, this map holds all pairs AB where A and B are in a lower component;
+       // we use the downward closure for those pairs and concatenate accordingly to construct the
+       // "middle" part of the downward closure the way Courcelle calculates it
+       std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS = mapQuadraticLHStoRHS(components, varToComponent, squarableComponents);
+
+       // get the components of variables Y_l and Y_r such that there is a monomial in the component of any nonsquarable B
+       // that has the form Y_l*B or B*Y_r;
+       // their closures will be part of the lefthand/righthand terms of the calculation by Courcelle
+       std::map<int, std::set<int>> lhsLowerComponentVariables;
+       std::map<int, std::set<int>> rhsLowerComponentVariables;
+       calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
+               components, varToComponent, squarableComponents);
+
+       // for the middle part of each component, we also need the sum of the closures of all constant monomials
+       // appearing in that component
+       std::map<int, LossyFiniteAutomaton> closuresOfConstantMonomials;
+       calculateClosuresOfConstantMonomials(closuresOfConstantMonomials, components, squarableComponents);
+
+       // we have everything we can prepare beforehand; everything else will need to be dealt with while
+       // putting the closures together
+       calculateClosuresOfNonsquarableComponents(componentToClosure, components,
+               squarableComponents, quadraticLHStoRHS,
+               lhsLowerComponentVariables, rhsLowerComponentVariables,
+               closuresOfConstantMonomials, varToComponent, componentToReachableLetters);
+
+       return componentToClosure[varToComponent[S]];
+   }
 
 private:
 
@@ -785,15 +923,14 @@ private:
     * The variables and productions that are introduced during that process will be stored in binarizationVariables
     * and binarizationVariablesEquations, respectively.
     */
-   NonCommutativePolynomial<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
-       std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> &binarizationVariablesEquations,
-       std::map<VarId, LossyFiniteAutomaton> &variablesToConstants) const {
-     NonCommutativePolynomial<LossyFiniteAutomaton> binarizedPoly = null();
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
+       NCEquationsBase<LossyFiniteAutomaton> &binarizationVariablesEquations) const {
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> binarizedPoly = null();
 
      // delegate to the monomials
-     for(auto &monomial: monomials_) {
+     for(auto &monomial: this->monomials_) {
        if(monomial.first.get_degree() > 2) { // only binarize productions that have at least 3 variables in them
-         binarizedPoly += monomial.first.binarize(binarizationVariables, binarizationVariablesEquations, variablesToConstants);
+         binarizedPoly += static_cast<lossyMon>(monomial.first).binarize(binarizationVariables, binarizationVariablesEquations);
        } else {
          InsertMonomial(binarizedPoly.monomials_, monomial.first, monomial.second);
        }
@@ -801,15 +938,438 @@ private:
 
      return binarizedPoly;
    }
+
+   /*
+    * Brings a system into quadratic normal form.
+    */
+   static NCEquationsBase<LossyFiniteAutomaton> quadraticNormalForm
+   (const NCEquationsBase<LossyFiniteAutomaton> &equations,
+       bool eliminateTerminalsInLinearProductions) {
+     NCEquationsBase<LossyFiniteAutomaton> systemBeingProcessed;
+
+     // for all nonterminal productions, introduce new variables for the terminal factors that
+     // appear in them as one would when calculating the CNF of a CFG; do not do this for linear terms since
+     // QNF allows for linear terms
+     ValuationMap<LossyFiniteAutomaton> variablesToConstants;
+     systemBeingProcessed = eliminateTerminalsInNonterminalProductions(equations, variablesToConstants, eliminateTerminalsInLinearProductions);
+
+     // binarize all productions, i.e. nonterminal productions of length at least 3 will be split up until
+     // there are only productions of length <= 2 left
+     systemBeingProcessed = binarizeProductions(systemBeingProcessed);
+
+     return systemBeingProcessed;
+   }
+
+
+   /*
+    * Lossifies a given QNF; this means that every variable occurring in a polynomial is added to it and 1 is added
+    */
+   static void lossifyQNF(NCEquationsBase<LossyFiniteAutomaton> &equations) {
+
+     // add the monomials of degree 1; since we are in an idempotent semiring, we have a+a = a and so
+     // we don't need to worry about the number of occurrences of each variable
+     std::set<VarId> vars;
+     NonCommutativePolynomialBase<LossyFiniteAutomaton> monomialsOfDegreeOne;
+     for(auto &equation: equations) {
+       vars = static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).get_variables_quadratic_monomials();
+       monomialsOfDegreeOne = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
+
+       for(VarId var: vars) {
+         monomialsOfDegreeOne += NonCommutativePolynomialBase<LossyFiniteAutomaton>(var);
+       }
+
+       equation.second = equation.second + monomialsOfDegreeOne;
+     }
+
+     // add 1 to each equation
+     for(auto &equation: equations) {
+       equation.second = equation.second + NonCommutativePolynomialBase<LossyFiniteAutomaton>::one();
+     }
+   }
+
+
+   /*
+    * Checks if a given variable is productive in a given clean system.
+    */
+   static bool variableHasProduction(const NCEquationsBase<LossyFiniteAutomaton> &cleanEquations, const VarId &S) {
+     bool ShasProduction = false;
+
+     for(auto &equation: cleanEquations) {
+       if(equation.first == S) {
+         ShasProduction = true;
+       }
+     }
+
+     return ShasProduction;
+   }
+
+   static std::map<VarId, int> mapVariablesToComponents(
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components) {
+
+     std::map<VarId, int> varToComponent;
+
+     for(int i = 0; i < components.size(); i++) {
+       for(auto &equation: components[i]) {
+         varToComponent.insert(std::make_pair(equation.first, i));
+       }
+     }
+
+     return varToComponent;
+   }
+
+   /*
+    * Finds components where we can duplicate literals, i.e. where we have derivations
+    * of the form A ->* _A_A_; in the paper by Courcelle, those are the components where A <_2 A.
+    */
+   static std::set<int> findSquarableComponents(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+                                                std::map<VarId, int> &varToComponent) {
+
+     std::set<int> squarableComponents;
+
+     for(int i = 0; i < components.size(); i++) {
+       bool squarable = false;
+
+       for(auto &equation: components[i]) {
+         squarable |= static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).componentIsSquarable(varToComponent, i);
+
+         if(squarable) {
+           squarableComponents.insert(i);
+           break;
+         }
+       }
+     }
+
+     return squarableComponents;
+   }
+
+   /*
+    * Find out which linear monomials in this polynomial lead to a lower component and insert them into
+    * lowerLinearTerms.
+    *
+    * Used in the algorithm by Courcelle, see downwardClosureCourcelle.
+    * This is only here because we need access to monomials_.
+    */
+   void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
+       for(auto &monomial: this->monomials_) {
+           static_cast<lossyMon>(monomial.first).findLowerLinearTerms(lowerLinearTerms, varToComponent, component);
+       }
+   }
+
+   /*
+    * Find for each component the components which are reachable from it.
+    */
+   static std::map<int, std::set<int>> findReachableComponents(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+                                                               std::map<VarId, int> &varToComponent) {
+     std::map<int, std::set<int>> reachabilityMap;
+
+     // iterate over all components
+     for(int i = 0; i < components.size(); i++) {
+       std::set<int> reachableComponents;
+       reachableComponents.insert(i);
+
+       // build the set of reachable components: for each variable in the component,
+       // check which other variables it can produce and add their components to the set of
+       // reachable components
+       for(auto &equation: components[i]) {
+         auto tmp = equation.second.get_variables();
+
+         for(auto var: tmp) {
+
+           // don't re-add the stuff from within the current component
+           if(varToComponent[var] < i) {
+             auto tmpReachable = reachabilityMap[varToComponent[var]];
+             reachableComponents.insert(tmpReachable.begin(), tmpReachable.end());
+           }
+         }
+       }
+
+       reachabilityMap.insert(std::make_pair(i, reachableComponents));
+     }
+
+     return reachabilityMap;
+   }
+
+
+   /*
+    * Find the letters reachable from each component
+    *
+    * The function assumes that "components" is sorted in reverse topological order, i.e. the component
+    * that depends on no other component comes first.
+    */
+   static std::map<int, std::set<unsigned char>> findReachableLetters(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+                                                                      std::map<VarId, int> &varToComponent) {
+
+     std::map<int, std::set<unsigned char>> componentToReachableLetters;
+     std::map<int, std::set<int>> reachableComponents = findReachableComponents(components, varToComponent);
+
+     for (int i = 0; i < components.size(); i++) {
+       std::set<unsigned char> reachableLetters;
+
+       // iterate over all components reachable from component i
+       for(auto reachableComp: reachableComponents[i]) {
+
+         // for every lower component, we have already calculated the set of reachable letters;
+         // just add it to the letters reachable from i
+         if(reachableComp != i) {
+           auto letters = componentToReachableLetters[reachableComp];
+           reachableLetters.insert(letters.begin(), letters.end());
+         } else { // add the letters appearing in some production that stays within i itself
+           for(auto &equation: components[i]) {
+             std::set<unsigned char> letters = static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).get_terminals();
+
+             reachableLetters.insert(letters.begin(), letters.end());
+           }
+         }
+       }
+
+       // once we're done, remember the set of reachable letters
+       componentToReachableLetters.insert(std::make_pair(i, reachableLetters));
+     }
+
+     return componentToReachableLetters;
+   }
+
+
+   static void calculateClosuresOfConstantMonomials(
+       std::map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+       std::set<int> &squarableComponents) {
+
+     for(int i = 0; i < components.size(); i++) {
+       if(squarableComponents.count(i) == 0) {
+         LossyFiniteAutomaton closure = LossyFiniteAutomaton::null();
+
+         for(auto &equation: components[i]) {
+           closure = closure + static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).sumOfConstantMonomials();
+         }
+
+         closuresOfConstantMonomials[i] = closure.lossify().minimize();
+       }
+     }
+   }
+
+   static void calculateClosuresOfNonsquarableComponents(
+       std::map<int, LossyFiniteAutomaton> &componentToClosure,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+       std::set<int> &squarableComponents,
+       std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
+       std::map<int, std::set<int>> &lhsLowerComponentVariables,
+       std::map<int, std::set<int>> &rhsLowerComponentVariables,
+       std::map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
+       std::map<VarId, int> &varToComponent,
+       std::map<int, std::set<unsigned char>> &componentToReachableLetters) {
+
+     for(int i = 0; i < components.size(); i++) {
+
+       if(squarableComponents.count(i) == 0){
+
+         // find the reachable letters
+         std::set<unsigned char> lefthandReachableLetters;
+
+         for(auto variable: lhsLowerComponentVariables[i]) {
+           lefthandReachableLetters.insert(componentToReachableLetters[variable].begin(),
+               componentToReachableLetters[variable].end());
+         }
+
+         std::set<unsigned char> righthandReachableLetters;
+
+         for(auto variable: rhsLowerComponentVariables[i]) {
+           righthandReachableLetters.insert(componentToReachableLetters[variable].begin(),
+               componentToReachableLetters[variable].end());
+         }
+
+         // build the automata
+         LossyFiniteAutomaton lefthandAlphabetStar = LossyFiniteAutomaton::one();
+         if(lefthandReachableLetters.size() != 0) {
+           std::stringstream ssLHS;
+           ssLHS << "[";
+
+           for(auto letter: lefthandReachableLetters) {
+             if(isalnum(letter)) {
+               ssLHS << letter;
+             }
+           }
+
+           ssLHS << "]*";
+           lefthandAlphabetStar = LossyFiniteAutomaton(ssLHS.str());
+         }
+
+         LossyFiniteAutomaton righthandAlphabetStar = LossyFiniteAutomaton::one();
+         if(righthandReachableLetters.size() != 0) {
+           std::stringstream ssRHS;
+           ssRHS << "[";
+
+           for(auto letter: righthandReachableLetters) {
+             if(isalnum(letter)) {
+               ssRHS << letter;
+             }
+           }
+
+           ssRHS << "]*";
+           righthandAlphabetStar = LossyFiniteAutomaton(ssRHS.str());
+         }
+
+         /*
+          * closures of elements in the middle
+          */
+
+         // find which linear productions appear in this component that lead to a lower component
+         std::set<int> lowerLinearTerms;
+         for(auto &equation: components[i]) {
+           static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).findLowerLinearTerms(lowerLinearTerms, varToComponent, i);
+         }
+
+         LossyFiniteAutomaton closure = LossyFiniteAutomaton::courcelle_construct(lefthandAlphabetStar,righthandAlphabetStar,
+             quadraticLHStoRHS[i], closuresOfConstantMonomials[i], lowerLinearTerms, componentToClosure, i).lossify().minimize();
+
+         componentToClosure[i] = closure;
+       }
+     }
+   }
+
+   static void calculateClosuresOfSquarableComponents(
+       std::map<int, std::set<unsigned char>> &componentToReachableLetters,
+       std::set<int> &squarableComponents,
+       std::map<int, LossyFiniteAutomaton> &componentToClosure) {
+
+     // for squarable components, we only need the set of letters that appear in the strings derivable from that component
+     // and star that set; the set is always nonempty since otherwise, the variable would be unproductive and would have
+     // been eliminated while cleaning the system
+     for(auto i: squarableComponents) {
+       std::set<unsigned char> reachableLetters = componentToReachableLetters[i];
+
+       if(reachableLetters.empty()) {
+         componentToClosure.insert(std::make_pair(i, LossyFiniteAutomaton::one()));
+       } else {
+         std::stringstream ss;
+         ss << "[";
+
+         for(unsigned char letter: reachableLetters) {
+           ss << letter;
+         }
+
+         ss << "]*";
+         componentToClosure.insert(std::make_pair(i, LossyFiniteAutomaton(ss.str())));
+       }
+     }
+   }
+
+   /*
+    * Finds monomials of degree two where both variables are in a different and therefore lower
+    * scc than the axiom of the production.
+    *
+    * Assumes that "components" is sorted in reverse topological order.
+    */
+   static std::map<int, std::map<int, std::set<int>>>  mapQuadraticLHStoRHS(
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+       std::map<VarId, int> &varToComponent,
+       std::set<int> &squarableComponents) {
+
+     std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS;
+
+     for(int i = 0; i < components.size(); i++) {
+       if(squarableComponents.count(i) == 0) {
+         for(auto &equation: components[i]) {
+           static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).mapQuadraticLHStoRHS(quadraticLHStoRHS, varToComponent, i);
+         }
+       }
+     }
+
+     return quadraticLHStoRHS;
+   }
+
+   static void calculateLowerComponentVariables(
+       std::map<int, std::set<int>> &lhsLowerComponentVariables,
+       std::map<int, std::set<int>> &rhsLowerComponentVariables,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+       std::map<VarId, int> &varToComponent,
+       std::set<int> &squarableComponents) {
+
+     for(int i = 0; i < components.size(); i++) {
+       if(squarableComponents.count(i) == 0) {
+         for(auto &equation: components[i]) {
+           static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
+               components, varToComponent, i);
+         }
+       }
+     }
+   }
+
+   static void calculateSameComponentLetters(
+       std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+       std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+       std::map<VarId, int> &varToComponent,
+       std::set<int> &squarableComponents) {
+
+     for(int i = 0; i < components.size(); i++) {
+       if(squarableComponents.count(i) == 0) {
+         for(auto &equation: components[i]) {
+           static_cast<NonCommutativePolynomial<LossyFiniteAutomaton> >(equation.second).calculateSameComponentLetters(lhsSameComponentLetters, rhsSameComponentLetters,
+               components, varToComponent, i);
+         }
+       }
+     }
+   }
+
+   static LossyFiniteAutomaton compareClosures(const NCEquationsBase<LossyFiniteAutomaton> &equations_1,
+       const VarId &S_1, const NCEquationsBase<LossyFiniteAutomaton> &equations_2,
+       const VarId &S_2, const LossyFiniteAutomaton& approx_1, const LossyFiniteAutomaton& approx_2) {
+
+     bool A1_subset_A2 = approx_2.contains(approx_1);
+     bool A2_subset_A1 = approx_1.contains(approx_2);
+
+     if(A1_subset_A2 && A2_subset_A1) {
+       return LossyFiniteAutomaton::null();
+     } else {
+       LossyFiniteAutomaton L1_intersect_A2c = LossyFiniteAutomaton::null();
+       bool L1_intersect_A2c_changed = false;
+       LossyFiniteAutomaton L2_intersect_A1c = LossyFiniteAutomaton::null();
+       bool L2_intersect_A1c_changed = false;
+
+       if(!A1_subset_A2) {
+         VarId startSymbol_1_2;
+         auto A2c = approx_1.minus(approx_2);
+         auto intersectionGrammar = intersectionWithFA(A2c.getFA(), startSymbol_1_2, S_1, equations_1);
+
+         std::queue<VarId> worklist;
+         worklist.push(startSymbol_1_2);
+         intersectionGrammar = cleanSystem(intersectionGrammar, worklist);
+
+         L1_intersect_A2c = shortestWord(intersectionGrammar, startSymbol_1_2);
+         L1_intersect_A2c_changed = true;
+       }
+
+       if(!A2_subset_A1) {
+         VarId startSymbol_2_1;
+         auto A1c = approx_2.minus(approx_1);
+         auto intersectionGrammar_2 = intersectionWithFA(A1c.getFA(), startSymbol_2_1, S_2, equations_2);
+
+         std::queue<VarId> worklist;
+         worklist.push(startSymbol_2_1);
+         intersectionGrammar_2 = cleanSystem(intersectionGrammar_2, worklist);
+
+         L2_intersect_A1c = shortestWord(intersectionGrammar_2, startSymbol_2_1);
+         L2_intersect_A1c_changed = true;
+       }
+
+       if(L1_intersect_A2c_changed && L2_intersect_A1c_changed) {
+         if(L1_intersect_A2c.size() <= L2_intersect_A1c.size() && L1_intersect_A2c != LossyFiniteAutomaton::null()) {
+           return L1_intersect_A2c;
+         } else {
+           return L2_intersect_A1c;
+         }
+       } else {
+         if(L1_intersect_A2c_changed) {
+           return L1_intersect_A2c;
+         } else {
+           return L2_intersect_A1c;
+         }
+       }
+     }
+   }
+
 };
-
-
-
-
-
-
-
-
 
 
 

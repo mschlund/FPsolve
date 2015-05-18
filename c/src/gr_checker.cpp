@@ -18,6 +18,7 @@
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 
+
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
 
@@ -109,6 +110,65 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
 }
 
 
+void check_all_equal_lossy(const std::string& startsymbol, const std::vector<std::string>& inputs, int refinementDepth) {
+  int num_grammars = inputs.size();
+  Parser p;
+
+  auto eq_tmp = p.lossy_fa_parser(inputs[0]);
+  auto equations_fst = NCEquationsBase<LossyFiniteAutomaton>(eq_tmp.begin(), eq_tmp.end());
+
+  VarId S_1;
+  if(startsymbol.compare("") == 0) {
+    S_1 = equations_fst[0].first;
+  } else {
+    S_1 = Var::GetVarId(startsymbol);
+  }
+
+  Timer timer;
+  timer.Start();
+
+  bool all_equal = true;
+  for(int i=1; i<num_grammars; i++) {
+    auto eq_tmp2 = p.lossy_fa_parser(inputs[i]);
+    auto equations = NCEquationsBase<LossyFiniteAutomaton>(eq_tmp2.begin(), eq_tmp2.end());
+
+
+    VarId S_2;
+    if(startsymbol.compare("") == 0) {
+      S_2 = equations[0].first;
+    } else {
+      S_2 = Var::GetVarId(startsymbol);
+    }
+
+    auto witness = NonCommutativePolynomial<LossyFiniteAutomaton>::refineCourcelle(equations_fst, S_1, equations, S_1, refinementDepth);
+
+    if(witness != LossyFiniteAutomaton::null()) {
+      if(startsymbol.compare("") == 0) {
+        std::cout << "[DIFF] Difference found for startsymbols (" << equations_fst[0].first << "," << equations[0].first << ")" << std::endl;
+      }
+      else {
+        std::cout << "[DIFF] Difference found for startsymbols (" << S_1 << "," << S_2 << ")" << std::endl;
+      }
+        std::cout << "Witness: " << witness.string() << std::endl;
+        all_equal = false;
+        break;
+    }
+  }
+
+  if(all_equal) {
+    std::cout << "[EQUIV] All grammars equivalent modulo subword-closure" << std::endl;
+  }
+
+  timer.Stop();
+  std::cout
+  << "Total checking time:\t" << timer.GetMilliseconds().count()
+  << " ms" << " ("
+  << timer.GetMicroseconds().count()
+  << "us)" << std::endl;
+
+}
+
+
 /*
  * Tests whether two grammars generate the same language modulo commutativity.
  * We use semilinear sets in constant-period representation to represent Parikh images
@@ -122,6 +182,9 @@ int main(int argc, char* argv[]) {
         ( "help,h", "print this help message" )
         ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
         ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
+        ( "slset", po::value<std::string>(), "commutative abstraction via semilinear sets" )
+        ( "lossy", po::value<std::string>(), "abstraction via subword closure" )
+        ("refD", po::value<int>(), "refinement Depth for Lossy Approximation")
         ;
 
   po::positional_options_description pos;
@@ -149,7 +212,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Comparing startsymbols (" << startsymbol << ")" << std::endl;
   }
   else {
-    std::cout << "Comparing *all* nonterminals." << std::endl;
+    std::cout << "No startsymbol specified, using defaults." << std::endl;
   }
 
   if (vm.count("input") && num_grammars > 1) {
@@ -175,32 +238,29 @@ int main(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
+  if(!vm.count("slset") && !vm.count("lossy")) {
+    std::cout << "Please specify the abstraction used for checking equivalence!" << std::endl;
+    return EXIT_FAILURE;
+  }
 
-   std::cout << "Plain Semilinear Sets" << std::endl;
-  // no overapproximation -- just plain semilinear sets with simplification
-  // (the approximations are not sound for inequivalence-testing!)
-  check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
+  if(vm.count("slset")) {
+    std::cout << "Plain Semilinear Sets" << std::endl;
+    // no overapproximation -- just plain semilinear sets with simplification
+    // (the approximations are not sound for inequivalence-testing!)
+    check_all_equal_commutative<SemilinearSetL>(startsymbol, inputs);
+  }
 
+  if(vm.count("lossy")) {
+    std::cout << "Lossy Approximation" << std::endl;
 
-  /* TODO: incorporate lossy-check
-   *
-   *      auto equations_2 = p.lossy_fa_parser(input_2_all);
-          VarId S_2 = equations_2[0].first;
+    int refinementDepth = 0;
+    if(vm.count("refD")) {
+        refinementDepth = vm["refine"].as<int>();
+    }
 
-          int refinementDepth = 0;
-          if(vm.count("refine")) {
-              refinementDepth = vm["refine"].as<int>();
-          }
+    check_all_equal_lossy(startsymbol, inputs, refinementDepth);
+  }
 
-          auto witness = LossyFiniteAutomaton::refineCourcelle(equations, S_1, equations_2, S_2, refinementDepth);
-
-          if(witness != LossyFiniteAutomaton::null()) {
-              std::cout << "Found witness: " << witness.string() << std::endl;
-          }
-   *
-   *
-   *
-   */
 
   SemilinSetNdd::genepi_dealloc();
 
