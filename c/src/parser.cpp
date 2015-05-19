@@ -1,9 +1,12 @@
+#include <vector>
+
 #include <boost/spirit/include/qi.hpp>
 #include <boost/spirit/include/phoenix_operator.hpp>
 #include <boost/spirit/include/qi_parse.hpp>
 #include <boost/spirit/include/phoenix_function.hpp>
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/fusion/include/std_pair.hpp>
+
 
 #include "parser.h"
 
@@ -65,6 +68,7 @@ struct free_var_impl
 };
 const phx::function<free_var_impl> free_var;
 
+#ifdef USE_LIBFA
 struct lossy_fa_var_impl
 {
         template <typename T>
@@ -77,6 +81,7 @@ struct lossy_fa_var_impl
         }
 };
 const phx::function<lossy_fa_var_impl> lossy_fa_var;
+#endif
 
 struct prefix_impl
 {
@@ -192,6 +197,7 @@ struct free_elem_parser : qi::grammar<iterator_type, FreeSemiring()>
         qi::rule<iterator_type, FreeSemiring()> elem;
 };
 
+#ifdef USE_LIBFA
 // parser for a lossy semiring element
 struct lossy_fa_elem_parser : qi::grammar<iterator_type, LossyFiniteAutomaton()>
 {
@@ -201,6 +207,7 @@ struct lossy_fa_elem_parser : qi::grammar<iterator_type, LossyFiniteAutomaton()>
         }
         qi::rule<iterator_type, LossyFiniteAutomaton()> elem;
 };
+#endif
 
 // parser for a prefix semiring element
 struct prefix_elem_parser : qi::grammar<iterator_type, PrefixSemiring()>
@@ -322,11 +329,13 @@ std::vector<std::pair<VarId, NonCommutativePolynomial<FreeSemiring>>> Parser::fr
         return non_commutative_parser<free_elem_parser, FreeSemiring>(input);
 }
 
+#ifdef USE_LIBFA
 // wrapper function for lossy semiring equations
 std::vector<std::pair<VarId, NonCommutativePolynomial<LossyFiniteAutomaton>>> Parser::lossy_fa_parser(std::string input)
 {
         return non_commutative_parser<lossy_fa_elem_parser, LossyFiniteAutomaton>(input);
 }
+#endif
 
 // wrapper function for prefix semiring equations
 std::vector<std::pair<VarId, NonCommutativePolynomial<PrefixSemiring>>> Parser::prefix_parser(std::string input, unsigned int length)

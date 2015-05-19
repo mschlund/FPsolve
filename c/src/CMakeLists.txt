@@ -12,9 +12,19 @@ if(NOT USE_GENEPI)
 	list(REMOVE_ITEM NEWTON_H ${SEMILIN_SET_NDD_H})
 	list(REMOVE_ITEM NEWTON_CPP ${SEMILIN_SET_NDD_CPP})
 endif(NOT USE_GENEPI)
+
 if(USE_GENEPI)
 	set_source_files_properties(parser.cpp main.cpp PROPERTIES COMPILE_DEFINITIONS "USE_GENEPI")
 endif(USE_GENEPI)
+
+
+if(NOT USE_LIBFA)
+	file(GLOB_RECURSE LOSSY_H "lossy*.h")
+	file(GLOB_RECURSE LOSSY_CPP "lossy*.cpp")
+	list(REMOVE_ITEM NEWTON_H ${LOSSY_H})
+	list(REMOVE_ITEM NEWTON_CPP ${LOSSY_CPP})
+endif(NOT USE_LIBFA)
+
 
 set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 

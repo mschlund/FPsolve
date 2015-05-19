@@ -12,8 +12,6 @@
 
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
-#include "polynomials/lossy_non_commutative_polynomial.h"
-
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
@@ -24,8 +22,11 @@
 #include "semirings/why-set.h"
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
-#include "semirings/lossy-finite-automaton.h"
 
+#ifdef USE_LIBFA
+#include "semirings/lossy-finite-automaton.h"
+#include "polynomials/lossy_non_commutative_polynomial.h"
+#endif
 
 #ifdef USE_GENEPI
 #include "semirings/semilinSetNdd.h"

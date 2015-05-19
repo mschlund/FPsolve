@@ -18,7 +18,6 @@
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
 
-
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
 
@@ -109,7 +108,6 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
 
 }
 
-
 void check_all_equal_lossy(const std::string& startsymbol, const std::vector<std::string>& inputs, int refinementDepth) {
   int num_grammars = inputs.size();
   Parser p;
@@ -167,7 +165,6 @@ void check_all_equal_lossy(const std::string& startsymbol, const std::vector<std
   << "us)" << std::endl;
 
 }
-
 
 /*
  * Tests whether two grammars generate the same language modulo commutativity.
