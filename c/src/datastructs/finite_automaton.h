@@ -58,10 +58,10 @@ public:
      */
     static FiniteAutomaton courcelle_construct(FiniteAutomaton lefthandAlphabetStar,
             FiniteAutomaton righthandAlphabetStar,
-            std::map<int, std::set<int>> &LHStoRHS,
+            std::unordered_map<int, std::set<int>> &LHStoRHS,
             FiniteAutomaton closureOfConstantMonomials,
             std::set<int> &lowerLinearTerms,
-            std::map<int, FiniteAutomaton> &componentToClosureAutomaton,
+            std::unordered_map<int, FiniteAutomaton> &componentToClosureAutomaton,
             int comp) {
 
         /*
@@ -83,8 +83,8 @@ public:
          * epsilon transitions before we calculate the epsilon closure
          */
         std::set<state*> lhComponentsInitialState;
-        std::map<int, state*> rhComponentInitialState;
-        std::map<int, std::set<state*>> lhComponentFinalStates;
+        std::unordered_map<int, state*> rhComponentInitialState;
+        std::unordered_map<int, std::set<state*>> lhComponentFinalStates;
         std::set<state*> rhComponentsFinalStates;
 
         /*
@@ -470,10 +470,10 @@ public:
         return alphabet;
     }
 
-    std::map<int, std::set<std::string>> prefixesToMaxLength(int maxLength, std::set<char> &derivableFirstLetters) const {
-        std::map<int, std::map<unsigned long, std::set<std::string>>> prefixesViaStates;
-        std::map<unsigned long, struct state*> hashToState;
-        std::map<int, std::set<std::string>> prefixes;
+    std::unordered_map<int, std::set<std::string>> prefixesToMaxLength(int maxLength, std::set<char> &derivableFirstLetters) const {
+        std::unordered_map<int, std::unordered_map<unsigned long, std::set<std::string>>> prefixesViaStates;
+        std::unordered_map<unsigned long, struct state*> hashToState;
+        std::unordered_map<int, std::set<std::string>> prefixes;
 
         if(maxLength <= 0) {
             return prefixes;
@@ -545,7 +545,7 @@ public:
      * function, and so for each pair (state, symbol), we may have more than one target state; for that reason we're
      * using a list of target states here.
      */
-    void extractTransitionTable(std::map<unsigned long, std::map<unsigned char,
+    void extractTransitionTable(std::unordered_map<unsigned long, std::unordered_map<unsigned char,
                 std::forward_list<unsigned long>>> &transitionTable,
             std::vector<unsigned long> &states,
             std::set<unsigned long> &finalStates,
@@ -567,7 +567,7 @@ public:
 
             // we build a transition table for each state, i.e. what would be a line in the
             // transition table of the whole FA
-            std::map<unsigned char, std::forward_list<unsigned long>> stateTable;
+            std::unordered_map<unsigned char, std::forward_list<unsigned long>> stateTable;
 
             // trans is an array of transitions
             trans = s->trans;

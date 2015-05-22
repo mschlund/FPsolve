@@ -175,13 +175,13 @@ public:
        std::queue<VarId> &worklist) {
 
      std::queue<VarId> temp; // to store the variables that still need checking
-     std::map<VarId, int> encounteredVariables; // to remember whether a variable was encountered and check for
+     std::unordered_map<VarId, int> encounteredVariables; // to remember whether a variable was encountered and check for
      // for being productive yet;
      // 0 means "never encountered",
      // 1 means "encountered but not checked",
      // 2 means "checked at least once"
-     std::map<VarId, bool> productiveVariables; // to map variables to "is this variable known to be productive?"
-     std::map<VarId, NonCommutativePolynomialBase<LossyFiniteAutomaton>> productions; // to map variables to their productions
+     std::unordered_map<VarId, bool> productiveVariables; // to map variables to "is this variable known to be productive?"
+     std::unordered_map<VarId, NonCommutativePolynomialBase<LossyFiniteAutomaton>> productions; // to map variables to their productions
 
      VarId var;
      std::set<VarId> vars;
@@ -333,7 +333,7 @@ public:
 
      // stores mappings between suffixes of monomials and the variables that are introduced
      // during binarization to produce those suffixes
-     std::map<std::string, VarId> binarizationVariables;
+     std::unordered_map<std::string, VarId> binarizationVariables;
 
      // stores the productions (i.e. equations) that are introduced while producing the
      // Chomsky Normal Form
@@ -363,7 +363,7 @@ public:
     * Checks whether this polynomial is productive, depending on the set of variables
     * that are already known to be productive.
     */
-   bool isProductive(const std::map<VarId, bool> &productiveVariables) const {
+   bool isProductive(const std::unordered_map<VarId, bool> &productiveVariables) const {
 
      // check if any monomial in this polynomial is productive; that will be enough
      // for the polynomial to be productive
@@ -385,7 +385,7 @@ public:
     *
     * Used in the algorithm by Courcelle, see LossyFiniteAutomaton::downwardClosureCourcelle.
     */
-   bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
+   bool componentIsSquarable(std::unordered_map<VarId, int> &varToComponent, int component) const {
      bool squarable = false;
 
      for(auto &monomial: this->monomials_) {
@@ -409,8 +409,8 @@ public:
     *
     * Assumes that all productions have been binarized.
     */
-   void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
-       std::map<VarId, int> &varToComponent, int component) const {
+   void mapQuadraticLHStoRHS(std::unordered_map<int, std::unordered_map<int, std::set<int>>> &quadraticLHStoRHS,
+       std::unordered_map<VarId, int> &varToComponent, int component) const {
      for(auto &monomial: this->monomials_) {
        static_cast<lossyMon>(monomial.first).mapQuadraticLHStoRHS(quadraticLHStoRHS, varToComponent, component);
      }
@@ -422,10 +422,10 @@ public:
     * Assumes that all productions have been binarized.
     */
    void calculateLowerComponentVariables(
-       std::map<int, std::set<int>> &lhsLowerComponentVariables,
-       std::map<int, std::set<int>> &rhsLowerComponentVariables,
+       std::unordered_map<int, std::set<int>> &lhsLowerComponentVariables,
+       std::unordered_map<int, std::set<int>> &rhsLowerComponentVariables,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-       std::map<VarId, int> &varToComponent,
+       std::unordered_map<VarId, int> &varToComponent,
        int component) {
 
      for(auto &monomial: this->monomials_) {
@@ -441,10 +441,10 @@ public:
     *
     */
    void calculateSameComponentLetters(
-       std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
-       std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+       std::unordered_map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+       std::unordered_map<int, std::set<unsigned char>> &rhsSameComponentLetters,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-       std::map<VarId, int> &varToComponent,
+       std::unordered_map<VarId, int> &varToComponent,
        int component) {
 
      for(auto &monomial: this->monomials_) {
@@ -472,11 +472,11 @@ public:
     * WARNING: will currently break if used with anything but NonCommutativePolynomialBase<LossyFiniteAutomaton>
     */
    NonCommutativePolynomialBase<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
-       std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+       std::unordered_map<unsigned long, std::unordered_map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
        unsigned long &startState,
        unsigned long &targetState,
-       std::map<unsigned long, unsigned long> &statesToIndices,
-       std::map<VarId, unsigned long> &oldVariablesToIndices,
+       std::unordered_map<unsigned long, unsigned long> &statesToIndices,
+       std::unordered_map<VarId, unsigned long> &oldVariablesToIndices,
        std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
      NonCommutativePolynomialBase<LossyFiniteAutomaton> result = NonCommutativePolynomialBase<LossyFiniteAutomaton>::null();
@@ -526,8 +526,8 @@ public:
        return LossyFiniteAutomaton::null();
      }
 
-     std::map<VarId, unsigned long> lengthOfShortestWords;
-     std::map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> productionsForShortestWords;
+     std::unordered_map<VarId, unsigned long> lengthOfShortestWords;
+     std::unordered_map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> productionsForShortestWords;
 
      for(auto &production: productions) {
        lengthOfShortestWords.insert(std::make_pair(production.first, ULONG_MAX));
@@ -554,7 +554,7 @@ public:
     * Finds all terminal symbols that can be the first letter of some word in the language of the grammar.
     */
    static std::set<char> getDerivableFirstLettes(const NCEquationsBase<LossyFiniteAutomaton> &productions, const VarId &startSymbol) {
-     std::map<VarId, std::set<char>> varToDerivableFirstLetters;
+     std::unordered_map<VarId, std::set<char>> varToDerivableFirstLetters;
      std::set<VarId> varsWithEpsilon;
      if(productions.size() != 0) {
 
@@ -578,7 +578,7 @@ public:
     * Returns a cleaned version of this polynomial, i.e. a version that had all monomials with unproductive
     * variables eliminated.
     */
-   NonCommutativePolynomialBase<LossyFiniteAutomaton> removeUnproductiveMonomials(const std::map<VarId, bool> &productiveVariables) const {
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> removeUnproductiveMonomials(const std::unordered_map<VarId, bool> &productiveVariables) const {
      NonCommutativePolynomialBase<LossyFiniteAutomaton> cleanPoly = null();
 
      // add all monomials to the clean polynomial that only contain productive variables
@@ -649,7 +649,7 @@ public:
 
        // to map the hash of a state "q" to a map that maps each transition symbol "c" occurring at "q"
        // to the set of hashes of target states "t", i.e. t is element of Delta(q,c);
-       std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> transitionTable;
+       std::unordered_map<unsigned long, std::unordered_map<unsigned char, std::forward_list<unsigned long>>> transitionTable;
 
        // will hold the hashes of all states in the FA; we don't want to deal with with the internals of libfa
        // so all this stuff is represented by simple numbers - hooray for numbers
@@ -693,14 +693,14 @@ public:
 
        // build a map from variables to indices, where the index of a variable is the line in oldGrammar
        // that contains the productions of the variable
-       std::map<VarId, unsigned long> oldVariablesToIndices;
+       std::unordered_map<VarId, unsigned long> oldVariablesToIndices;
        for(unsigned long i = 0; i < workGrammar.size(); i++) {
            oldVariablesToIndices.insert(std::make_pair(workGrammar[i].first, i));
        }
 
        // map states to indices; this is just to avoid having to look through the states vector in linear time
        // to find out at which index it lies
-       std::map<unsigned long, unsigned long> statesToIndices;
+       std::unordered_map<unsigned long, unsigned long> statesToIndices;
        for(unsigned long i = 0; i < states.size(); i++) {
            statesToIndices.insert(std::make_pair(states[i], i));
        }
@@ -773,7 +773,7 @@ public:
                    derivableFirstLetters.insert(letter);
                }
 
-               std::map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes, derivableFirstLetters);
+               std::unordered_map<int, std::set<std::string>> prefixesPerLength = approx_1.prefixesToMaxLength(maxLengthOfPrefixes, derivableFirstLetters);
 
                // iterate over the prefixes
                bool noDifference = true;
@@ -865,17 +865,17 @@ public:
        std::vector<NCEquationsBase<LossyFiniteAutomaton> > components = group_by_scc(cleanQNF, false);
 
        // will hold the downward closure of all components
-       std::map<int, LossyFiniteAutomaton> componentToClosure;
+       std::unordered_map<int, LossyFiniteAutomaton> componentToClosure;
 
        // map variables to their components
-       std::map<VarId, int> varToComponent = mapVariablesToComponents(components);
+       std::unordered_map<VarId, int> varToComponent = mapVariablesToComponents(components);
 
        // these components will have the star of the letters reachable from the variables
        // of the respective component as their closure
        std::set<int> squarableComponents = findSquarableComponents(components, varToComponent);
 
        // we need this map for the case where we can duplicate a variable
-       std::map<int, std::set<unsigned char>> componentToReachableLetters =
+       std::unordered_map<int, std::set<unsigned char>> componentToReachableLetters =
                findReachableLetters(components, varToComponent);
 
        // we can already calculate the downward closures of squarable components
@@ -884,19 +884,19 @@ public:
        // for each component, this map holds all pairs AB where A and B are in a lower component;
        // we use the downward closure for those pairs and concatenate accordingly to construct the
        // "middle" part of the downward closure the way Courcelle calculates it
-       std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS = mapQuadraticLHStoRHS(components, varToComponent, squarableComponents);
+       std::unordered_map<int, std::unordered_map<int, std::set<int>>> quadraticLHStoRHS = mapQuadraticLHStoRHS(components, varToComponent, squarableComponents);
 
        // get the components of variables Y_l and Y_r such that there is a monomial in the component of any nonsquarable B
        // that has the form Y_l*B or B*Y_r;
        // their closures will be part of the lefthand/righthand terms of the calculation by Courcelle
-       std::map<int, std::set<int>> lhsLowerComponentVariables;
-       std::map<int, std::set<int>> rhsLowerComponentVariables;
+       std::unordered_map<int, std::set<int>> lhsLowerComponentVariables;
+       std::unordered_map<int, std::set<int>> rhsLowerComponentVariables;
        calculateLowerComponentVariables(lhsLowerComponentVariables, rhsLowerComponentVariables,
                components, varToComponent, squarableComponents);
 
        // for the middle part of each component, we also need the sum of the closures of all constant monomials
        // appearing in that component
-       std::map<int, LossyFiniteAutomaton> closuresOfConstantMonomials;
+       std::unordered_map<int, LossyFiniteAutomaton> closuresOfConstantMonomials;
        calculateClosuresOfConstantMonomials(closuresOfConstantMonomials, components, squarableComponents);
 
        // we have everything we can prepare beforehand; everything else will need to be dealt with while
@@ -923,7 +923,7 @@ private:
     * The variables and productions that are introduced during that process will be stored in binarizationVariables
     * and binarizationVariablesEquations, respectively.
     */
-   NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
+   NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::unordered_map<std::string, VarId> &binarizationVariables,
        NCEquationsBase<LossyFiniteAutomaton> &binarizationVariablesEquations) const {
      NonCommutativePolynomialBase<LossyFiniteAutomaton> binarizedPoly = null();
 
@@ -1003,10 +1003,10 @@ private:
      return ShasProduction;
    }
 
-   static std::map<VarId, int> mapVariablesToComponents(
+   static std::unordered_map<VarId, int> mapVariablesToComponents(
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components) {
 
-     std::map<VarId, int> varToComponent;
+     std::unordered_map<VarId, int> varToComponent;
 
      for(int i = 0; i < components.size(); i++) {
        for(auto &equation: components[i]) {
@@ -1022,7 +1022,7 @@ private:
     * of the form A ->* _A_A_; in the paper by Courcelle, those are the components where A <_2 A.
     */
    static std::set<int> findSquarableComponents(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-                                                std::map<VarId, int> &varToComponent) {
+                                                std::unordered_map<VarId, int> &varToComponent) {
 
      std::set<int> squarableComponents;
 
@@ -1049,7 +1049,7 @@ private:
     * Used in the algorithm by Courcelle, see downwardClosureCourcelle.
     * This is only here because we need access to monomials_.
     */
-   void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
+   void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::unordered_map<VarId, int> &varToComponent, int component) const {
        for(auto &monomial: this->monomials_) {
            static_cast<lossyMon>(monomial.first).findLowerLinearTerms(lowerLinearTerms, varToComponent, component);
        }
@@ -1058,9 +1058,9 @@ private:
    /*
     * Find for each component the components which are reachable from it.
     */
-   static std::map<int, std::set<int>> findReachableComponents(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-                                                               std::map<VarId, int> &varToComponent) {
-     std::map<int, std::set<int>> reachabilityMap;
+   static std::unordered_map<int, std::set<int>> findReachableComponents(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+                                                               std::unordered_map<VarId, int> &varToComponent) {
+     std::unordered_map<int, std::set<int>> reachabilityMap;
 
      // iterate over all components
      for(int i = 0; i < components.size(); i++) {
@@ -1096,11 +1096,11 @@ private:
     * The function assumes that "components" is sorted in reverse topological order, i.e. the component
     * that depends on no other component comes first.
     */
-   static std::map<int, std::set<unsigned char>> findReachableLetters(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-                                                                      std::map<VarId, int> &varToComponent) {
+   static std::unordered_map<int, std::set<unsigned char>> findReachableLetters(std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
+                                                                      std::unordered_map<VarId, int> &varToComponent) {
 
-     std::map<int, std::set<unsigned char>> componentToReachableLetters;
-     std::map<int, std::set<int>> reachableComponents = findReachableComponents(components, varToComponent);
+     std::unordered_map<int, std::set<unsigned char>> componentToReachableLetters;
+     std::unordered_map<int, std::set<int>> reachableComponents = findReachableComponents(components, varToComponent);
 
      for (int i = 0; i < components.size(); i++) {
        std::set<unsigned char> reachableLetters;
@@ -1131,7 +1131,7 @@ private:
 
 
    static void calculateClosuresOfConstantMonomials(
-       std::map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
+       std::unordered_map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
        std::set<int> &squarableComponents) {
 
@@ -1149,15 +1149,15 @@ private:
    }
 
    static void calculateClosuresOfNonsquarableComponents(
-       std::map<int, LossyFiniteAutomaton> &componentToClosure,
+       std::unordered_map<int, LossyFiniteAutomaton> &componentToClosure,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
        std::set<int> &squarableComponents,
-       std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
-       std::map<int, std::set<int>> &lhsLowerComponentVariables,
-       std::map<int, std::set<int>> &rhsLowerComponentVariables,
-       std::map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
-       std::map<VarId, int> &varToComponent,
-       std::map<int, std::set<unsigned char>> &componentToReachableLetters) {
+       std::unordered_map<int, std::unordered_map<int, std::set<int>>> &quadraticLHStoRHS,
+       std::unordered_map<int, std::set<int>> &lhsLowerComponentVariables,
+       std::unordered_map<int, std::set<int>> &rhsLowerComponentVariables,
+       std::unordered_map<int, LossyFiniteAutomaton> &closuresOfConstantMonomials,
+       std::unordered_map<VarId, int> &varToComponent,
+       std::unordered_map<int, std::set<unsigned char>> &componentToReachableLetters) {
 
      for(int i = 0; i < components.size(); i++) {
 
@@ -1228,9 +1228,9 @@ private:
    }
 
    static void calculateClosuresOfSquarableComponents(
-       std::map<int, std::set<unsigned char>> &componentToReachableLetters,
+       std::unordered_map<int, std::set<unsigned char>> &componentToReachableLetters,
        std::set<int> &squarableComponents,
-       std::map<int, LossyFiniteAutomaton> &componentToClosure) {
+       std::unordered_map<int, LossyFiniteAutomaton> &componentToClosure) {
 
      // for squarable components, we only need the set of letters that appear in the strings derivable from that component
      // and star that set; the set is always nonempty since otherwise, the variable would be unproductive and would have
@@ -1260,12 +1260,12 @@ private:
     *
     * Assumes that "components" is sorted in reverse topological order.
     */
-   static std::map<int, std::map<int, std::set<int>>>  mapQuadraticLHStoRHS(
+   static std::unordered_map<int, std::unordered_map<int, std::set<int>>>  mapQuadraticLHStoRHS(
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-       std::map<VarId, int> &varToComponent,
+       std::unordered_map<VarId, int> &varToComponent,
        std::set<int> &squarableComponents) {
 
-     std::map<int, std::map<int, std::set<int>>> quadraticLHStoRHS;
+     std::unordered_map<int, std::unordered_map<int, std::set<int>>> quadraticLHStoRHS;
 
      for(int i = 0; i < components.size(); i++) {
        if(squarableComponents.count(i) == 0) {
@@ -1279,10 +1279,10 @@ private:
    }
 
    static void calculateLowerComponentVariables(
-       std::map<int, std::set<int>> &lhsLowerComponentVariables,
-       std::map<int, std::set<int>> &rhsLowerComponentVariables,
+       std::unordered_map<int, std::set<int>> &lhsLowerComponentVariables,
+       std::unordered_map<int, std::set<int>> &rhsLowerComponentVariables,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-       std::map<VarId, int> &varToComponent,
+       std::unordered_map<VarId, int> &varToComponent,
        std::set<int> &squarableComponents) {
 
      for(int i = 0; i < components.size(); i++) {
@@ -1296,10 +1296,10 @@ private:
    }
 
    static void calculateSameComponentLetters(
-       std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
-       std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+       std::unordered_map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+       std::unordered_map<int, std::set<unsigned char>> &rhsSameComponentLetters,
        std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-       std::map<VarId, int> &varToComponent,
+       std::unordered_map<VarId, int> &varToComponent,
        std::set<int> &squarableComponents) {
 
      for(int i = 0; i < components.size(); i++) {

@@ -143,11 +143,11 @@ public:
    *
    */
   NonCommutativePolynomialBase<LossyFiniteAutomaton> intersectionPolynomial(std::vector<unsigned long> &states,
-      std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+      std::unordered_map<unsigned long, std::unordered_map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
       unsigned long startState,
       unsigned long targetState,
-      std::map<unsigned long, unsigned long> &statesToIndices,
-      std::map<VarId, unsigned long> &oldVariablesToIndices,
+      std::unordered_map<unsigned long, unsigned long> &statesToIndices,
+      std::unordered_map<VarId, unsigned long> &oldVariablesToIndices,
       std::vector<std::vector<std::vector<VarId>>> &newVariables) const {
 
     return (NonCommutativePolynomialBase<LossyFiniteAutomaton>::one() *
@@ -165,7 +165,7 @@ public:
    * The variables and productions that are introduced during that process will be stored in binarizationVariables
    * and binarizationVariablesEquations, respectively.
    */
-  NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::map<std::string, VarId> &binarizationVariables,
+  NonCommutativePolynomialBase<LossyFiniteAutomaton> binarize(std::unordered_map<std::string, VarId> &binarizationVariables,
       NCEquationsBase<LossyFiniteAutomaton> &binarizationVariablesEquations) const {
 
     // make sure there are no terminal factors in the monomial
@@ -227,7 +227,7 @@ public:
    *
    * Used in the algorithm by Courcelle, see NonCommuatativePolynomial<LossyFiniteAutomaton>::downwardClosureCourcelle.
    */
-  void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::map<VarId, int> &varToComponent, int component) const {
+  void findLowerLinearTerms(std::set<int> &lowerLinearTerms, std::unordered_map<VarId, int> &varToComponent, int component) const {
       if((get_degree() != 1) || (varToComponent[variables_[0]] == component)) {
           return;
       }
@@ -239,8 +239,8 @@ public:
    * Used when finding the shortest word derivable from a CFG. This method tells us whether
    * the algorithm already knows a terminal string that derives from this monomial.
    */
-  bool findLengthOfDerivableStrings(std::map<VarId, unsigned long> &lengthOfShortestTerminal,
-      std::map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> &productionsForShortestWords,
+  bool findLengthOfDerivableStrings(std::unordered_map<VarId, unsigned long> &lengthOfShortestTerminal,
+      std::unordered_map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> &productionsForShortestWords,
       VarId &lhsOfProduction) const {
 
     // if this is a terminal, remember its length if we don't already know it; otherwise, see if we already
@@ -292,7 +292,7 @@ public:
   /*
    * returns true if some information changed
    */
-  bool getDerivableFirstLettes(std::map<VarId, std::set<char>> &varToDerivableFirstLetters, std::set<VarId> &varsWithEpsilon,
+  bool getDerivableFirstLettes(std::unordered_map<VarId, std::set<char>> &varToDerivableFirstLetters, std::set<VarId> &varsWithEpsilon,
       const VarId &lhsOfProduction) const {
 
     // do not touch null-monomials
@@ -379,7 +379,7 @@ public:
    * Derives the shortest derivable terminal for this monomial, assuming the info in productionsForShortestWords
    * is correct.
    */
-  LossyFiniteAutomaton shortestDerivableTerminal(std::map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> &productionsForShortestWords) const {
+  LossyFiniteAutomaton shortestDerivableTerminal(std::unordered_map<VarId, NonCommutativeMonomial<LossyFiniteAutomaton>> &productionsForShortestWords) const {
     LossyFiniteAutomaton terminal = LossyFiniteAutomaton::one();
 
     if(get_degree() == 0) {
@@ -403,7 +403,7 @@ public:
    * Checks whether this monomial is productive, depending on the set of variables
    * that are already known to be productive.
    */
-  bool isProductive(const std::map<VarId, bool> &productiveVariables) const {
+  bool isProductive(const std::unordered_map<VarId, bool> &productiveVariables) const {
 
     // if this monomial has no variables, then it is productive since
     // it represents an element of the semiring
@@ -428,7 +428,7 @@ public:
   /*
    * See NonCommutativePolynomialBase<LossyFiniteAutomaton>::componentIsSquarable(..) for commentary.
    */
-  bool componentIsSquarable(std::map<VarId, int> &varToComponent, int component) const {
+  bool componentIsSquarable(std::unordered_map<VarId, int> &varToComponent, int component) const {
     int count = 0;
 
     // if the monomial contains any two variables from the same component,
@@ -451,8 +451,8 @@ public:
    *
    * Assumes that all productions have been binarized.
    */
-  void mapQuadraticLHStoRHS(std::map<int, std::map<int, std::set<int>>> &quadraticLHStoRHS,
-      std::map<VarId, int> &varToComponent, int component) const {
+  void mapQuadraticLHStoRHS(std::unordered_map<int, std::unordered_map<int, std::set<int>>> &quadraticLHStoRHS,
+      std::unordered_map<VarId, int> &varToComponent, int component) const {
     if(get_degree() != 2) {
       return;
     }
@@ -471,10 +471,10 @@ public:
    * Assumes that all productions have been binarized.
    */
   void calculateLowerComponentVariables(
-      std::map<int, std::set<int>> &lhsLowerComponentVariables,
-      std::map<int, std::set<int>> &rhsLowerComponentVariables,
+      std::unordered_map<int, std::set<int>> &lhsLowerComponentVariables,
+      std::unordered_map<int, std::set<int>> &rhsLowerComponentVariables,
       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-      std::map<VarId, int> &varToComponent,
+      std::unordered_map<VarId, int> &varToComponent,
       int component) const {
 
     if(get_degree() != 2) {
@@ -499,10 +499,10 @@ public:
    * WARNING: will break if used with anything but NonCommutativePolynomialBase<LossyFiniteAutomaton>
    */
   void calculateSameComponentLetters(
-      std::map<int, std::set<unsigned char>> &lhsSameComponentLetters,
-      std::map<int, std::set<unsigned char>> &rhsSameComponentLetters,
+      std::unordered_map<int, std::set<unsigned char>> &lhsSameComponentLetters,
+      std::unordered_map<int, std::set<unsigned char>> &rhsSameComponentLetters,
       std::vector<NCEquationsBase<LossyFiniteAutomaton>> &components,
-      std::map<VarId, int> &varToComponent,
+      std::unordered_map<VarId, int> &varToComponent,
       int component) const {
 
     if(get_degree() != 1) {
@@ -578,11 +578,11 @@ private:
    *
    */
   NonCommutativePolynomialBase<LossyFiniteAutomaton> generateIntersectionMonomials(std::vector<unsigned long> &states,
-      std::map<unsigned long, std::map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
+      std::unordered_map<unsigned long, std::unordered_map<unsigned char, std::forward_list<unsigned long>>> &transitionTable,
       unsigned long currentState,
       unsigned long targetState,
-      std::map<unsigned long, unsigned long> &statesToIndices,
-      std::map<VarId, unsigned long> &oldVariablesToIndices,
+      std::unordered_map<unsigned long, unsigned long> &statesToIndices,
+      std::unordered_map<VarId, unsigned long> &oldVariablesToIndices,
       std::vector<std::vector<std::vector<VarId>>> &newVariables,
       unsigned long monomialFactorIndex) const {
 
