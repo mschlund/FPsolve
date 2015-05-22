@@ -20,6 +20,7 @@ class NonCommutativeMonomialBase {
 protected:
   friend class NonCommutativeMonomial<SR>;
   friend class NonCommutativePolynomialBase<SR>;
+  template <typename S> friend class NonCommutativeMonomialBase;
 
   /* a monomial is represented by three vectors
    * idx_ holds pairs of (type, index), type is either variable or sr
@@ -32,12 +33,16 @@ protected:
 
 
   /* Private constructor to not leak the internal data structure. */
-  //NonCommutativeMonomialBase(VarDegreeMap &&vs) : variables_(std::move(vs)) {}
+
   NonCommutativeMonomialBase(std::vector<std::pair<elemType,int>> &idx,
       std::vector<VarId> &variables,
       std::vector<SR> &srs) :
         idx_(idx), variables_(variables), srs_(srs) {}
 
+  NonCommutativeMonomialBase(std::vector<std::pair<elemType,int>> &&idx,
+      std::vector<VarId> &&variables,
+      std::vector<SR> &&srs) :
+        idx_(std::move(idx)), variables_(std::move(variables)), srs_(std::move(srs)) {}
 
   /*
    * evaluate all variables except the one at the exceptional position
@@ -489,6 +494,28 @@ public:
     }
     return std::move(ss.str());
   }
+
+
+  template <typename F>
+  auto Map(F fun) const -> NonCommutativeMonomialBase<typename std::result_of<F(SR)>::type> {
+    typedef typename std::result_of<F(SR)>::type SR2;
+
+    // Variables and types of elements do not change -- just copy them
+    std::vector<VarId> result_vars = variables_;
+    auto result_idx = idx_;
+
+    std::vector<SR2> result_srs;
+
+    std::transform(
+        srs_.begin(), srs_.end(), std::inserter(result_srs, result_srs.begin()),
+        [&fun](const SR& s) {
+          return fun(s);
+        });
+
+    return NonCommutativeMonomialBase<SR2>(std::move(result_idx), std::move(result_vars), std::move(result_srs));
+  }
+
+
 };
 
 template <typename SR>

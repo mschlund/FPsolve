@@ -26,10 +26,11 @@ template <typename SR> class NonCommutativePolynomial;
 
 template <typename SR>
 class NonCommutativePolynomialBase : public Semiring<NonCommutativePolynomialBase<SR>,
-                                                     Commutativity::NonCommutative,
-                                                     SR::GetIdempotence()> {
+Commutativity::NonCommutative,
+SR::GetIdempotence()> {
 
 protected:
+  template <typename S> friend class NonCommutativePolynomialBase;
   friend class NonCommutativePolynomial<SR>;
   std::map<NonCommutativeMonomialBase<SR>,std::uint_fast16_t> monomials_;
 
@@ -58,6 +59,9 @@ protected:
     auto tmp_monomial = NonCommutativeMonomialBase<SR>(idx, variables, srs);
     InsertMonomial(monomials, tmp_monomial, 1);
   };
+
+  // protected to hide internal structure
+  NonCommutativePolynomialBase(std::map<NonCommutativeMonomialBase<SR>,std::uint_fast16_t> && mon) : monomials_(std::move(mon)) {};
 
 
 public:
@@ -261,144 +265,167 @@ public:
 
   /* Evaluate as much as possible (depending on the provided values) and
    * return the remaining (i.e., unevaluated) monomial. */
-       NonCommutativePolynomialBase<SR> partial_eval(const ValuationMap<SR> &values) const {
+  NonCommutativePolynomialBase<SR> partial_eval(const ValuationMap<SR> &values) const {
     NonCommutativePolynomialBase<SR> result = NonCommutativePolynomialBase<SR>::null();
     for(const auto &monomial : this->monomials_) {
       result.monomials_.insert(monomial.partial_eval(values));
     }
     return result;
-       }
+  }
 
-       /* Variable substitution. */
-       NonCommutativePolynomialBase<SR> subst(const SubstitutionMap &mapping) const {
-         NonCommutativePolynomialBase result_polynomial;
+  /* Variable substitution. */
+  NonCommutativePolynomialBase<SR> subst(const SubstitutionMap &mapping) const {
+    NonCommutativePolynomialBase result_polynomial;
 
-         for (const auto &monomial : this->monomials_) {
-           result_polynomial.monomials_.insert({monomial.first.subst(mapping), monomial.second});
-         }
-         return result_polynomial;
-       }
+    for (const auto &monomial : this->monomials_) {
+      result_polynomial.monomials_.insert({monomial.first.subst(mapping), monomial.second});
+    }
+    return result_polynomial;
+  }
 
-       static Matrix<SR> eval(const Matrix< NonCommutativePolynomialBase<SR> > &poly_matrix,
-           const ValuationMap<SR> &values) {
-         const std::vector<NonCommutativePolynomialBase<SR>> &tmp_polynomials = poly_matrix.getElements();
-         std::vector<SR> result;
-         for (const auto &polynomial : tmp_polynomials) {
-           result.emplace_back(polynomial.eval(values));
-         }
-         return Matrix<SR>{poly_matrix.getRows(), std::move(result)};
-       }
+  static Matrix<SR> eval(const Matrix< NonCommutativePolynomialBase<SR> > &poly_matrix,
+      const ValuationMap<SR> &values) {
+    const std::vector<NonCommutativePolynomialBase<SR>> &tmp_polynomials = poly_matrix.getElements();
+    std::vector<SR> result;
+    for (const auto &polynomial : tmp_polynomials) {
+      result.emplace_back(polynomial.eval(values));
+    }
+    return Matrix<SR>{poly_matrix.getRows(), std::move(result)};
+  }
 
-       static Matrix<NonCommutativePolynomialBase<SR> > eval(Matrix<NonCommutativePolynomialBase<SR> > poly_matrix,
-           ValuationMap<NonCommutativePolynomialBase<SR> > values) {
-         const std::vector<NonCommutativePolynomialBase<SR>> &tmp_polynomials = poly_matrix.getElements();
-         std::vector<NonCommutativePolynomialBase<SR>> result;
-         for (const auto &polynomial : tmp_polynomials) {
-           result.emplace_back(polynomial.eval(values));
-         }
-         return Matrix<NonCommutativePolynomialBase<SR>>{poly_matrix.getRows(), result};
-       }
+  static Matrix<NonCommutativePolynomialBase<SR> > eval(Matrix<NonCommutativePolynomialBase<SR> > poly_matrix,
+      ValuationMap<NonCommutativePolynomialBase<SR> > values) {
+    const std::vector<NonCommutativePolynomialBase<SR>> &tmp_polynomials = poly_matrix.getElements();
+    std::vector<NonCommutativePolynomialBase<SR>> result;
+    for (const auto &polynomial : tmp_polynomials) {
+      result.emplace_back(polynomial.eval(values));
+    }
+    return Matrix<NonCommutativePolynomialBase<SR>>{poly_matrix.getRows(), result};
+  }
 
-       /* Convert this polynomial to an element of the free semiring.  Note that
-        * the provided valuation might be modified with new elements. */
-        FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
-         assert(valuation);
+  /* Convert this polynomial to an element of the free semiring.  Note that
+   * the provided valuation might be modified with new elements. */
+  FreeSemiring make_free(std::unordered_map<SR, VarId, SR> *valuation) const {
+    assert(valuation);
 
-         auto result = FreeSemiring::null();
-         // convert this polynomial by adding all converted monomials
-         for (const auto &monomial : this->monomials_) {
-           result += monomial.first.make_free(valuation) * monomial.second;
-         }
-         return result;
-       }
+    auto result = FreeSemiring::null();
+    // convert this polynomial by adding all converted monomials
+    for (const auto &monomial : this->monomials_) {
+      result += monomial.first.make_free(valuation) * monomial.second;
+    }
+    return result;
+  }
 
-       /* Same as make_free but for matrix form. */
-       static Matrix<FreeSemiring> make_free(
-           const Matrix< NonCommutativePolynomialBase<SR> > &poly_matrix,
-           std::unordered_map<SR, VarId, SR> *valuation) {
+  /* Same as make_free but for matrix form. */
+  static Matrix<FreeSemiring> make_free(
+      const Matrix< NonCommutativePolynomialBase<SR> > &poly_matrix,
+      std::unordered_map<SR, VarId, SR> *valuation) {
 
-         assert(valuation);
+    assert(valuation);
 
-         const std::vector< NonCommutativePolynomialBase<SR> > &tmp_polynomials = poly_matrix.getElements();
-         std::vector<FreeSemiring> result;
+    const std::vector< NonCommutativePolynomialBase<SR> > &tmp_polynomials = poly_matrix.getElements();
+    std::vector<FreeSemiring> result;
 
-         for (const auto &polynomial : tmp_polynomials) {
-           result.emplace_back(polynomial.make_free(valuation));
-         }
-         return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
-       }
+    for (const auto &polynomial : tmp_polynomials) {
+      result.emplace_back(polynomial.make_free(valuation));
+    }
+    return Matrix<FreeSemiring>{poly_matrix.getRows(), std::move(result)};
+  }
 
-       Degree get_degree() {
-         Degree degree = 0;
-         for (auto &monomial : this->monomials_) {
-           degree = std::max(degree, monomial.first.get_degree());
-         }
-         return degree;
-       }
+  Degree get_degree() {
+    Degree degree = 0;
+    for (auto &monomial : this->monomials_) {
+      degree = std::max(degree, monomial.first.get_degree());
+    }
+    return degree;
+  }
 
-       // FIXME: get rid of this...
-       // if you use this, make sure, you cache it...
-       std::set<VarId> get_variables() const {
-         std::set<VarId> vars;
-         for(auto const &monomial : this->monomials_)
-         {
-           auto tmp = monomial.first.get_variables();
-           vars.insert(tmp.begin(), tmp.end());
-         }
-         return vars;
-       }
+  // FIXME: get rid of this...
+  // if you use this, make sure, you cache it...
+  std::set<VarId> get_variables() const {
+    std::set<VarId> vars;
+    for(auto const &monomial : this->monomials_)
+    {
+      auto tmp = monomial.first.get_variables();
+      vars.insert(tmp.begin(), tmp.end());
+    }
+    return vars;
+  }
 
-       /*
-        * Returns the sum of the leading constant factors of all monomials in this polynomial.
-        */
-       SR getSumOfLeadingFactors() {
-         SR sum = SR::null();
+  /*
+   * Returns the sum of the leading constant factors of all monomials in this polynomial.
+   */
+  SR getSumOfLeadingFactors() {
+    SR sum = SR::null();
 
-         for(auto &monomial: this->monomials_) {
-           sum += monomial.first.getLeadingSR();
-         }
+    for(auto &monomial: this->monomials_) {
+      sum += monomial.first.getLeadingSR();
+    }
 
-         return sum;
-       }
+    return sum;
+  }
 
-       /*
-        * Returns the sum of the trailing constant factors of all monomials in this polynomial.
-        */
-       SR getSumOfTrailingFactors() {
-         SR sum = SR::null();
+  /*
+   * Returns the sum of the trailing constant factors of all monomials in this polynomial.
+   */
+  SR getSumOfTrailingFactors() {
+    SR sum = SR::null();
 
-         for(auto &monomial: this->monomials_) {
-           sum += monomial.first.getTrailingSR();
-         }
+    for(auto &monomial: this->monomials_) {
+      sum += monomial.first.getTrailingSR();
+    }
 
-         return sum;
-       }
+    return sum;
+  }
 
-       static NonCommutativePolynomialBase<SR> null() {
-         return NonCommutativePolynomialBase<SR>{};
-       }
+  static NonCommutativePolynomialBase<SR> null() {
+    return NonCommutativePolynomialBase<SR>{};
+  }
 
-       static NonCommutativePolynomialBase<SR> one() {
-         return NonCommutativePolynomialBase<SR>{SR::one()};
-       }
+  static NonCommutativePolynomialBase<SR> one() {
+    return NonCommutativePolynomialBase<SR>{SR::one()};
+  }
 
-       static bool is_idempotent;
-       static bool is_commutative;
+  static bool is_idempotent;
+  static bool is_commutative;
 
-       std::string string() const {
-         std::stringstream ss;
-         for(auto monomial = this->monomials_.begin(); monomial != this->monomials_.end(); monomial++) {
-           if(monomial != this->monomials_.begin())
-             ss << " + ";
-           //      ss << "[degree: " << monomial->first.get_degree() << "]";
-           ss << "[";
-           ss << monomial->second << " * ";
-           ss << monomial->first;
-           ss << "]";
-         }
-         return ss.str();
-       }
+  std::string string() const {
+    std::stringstream ss;
+    for(auto monomial = this->monomials_.begin(); monomial != this->monomials_.end(); monomial++) {
+      if(monomial != this->monomials_.begin())
+        ss << " + ";
+      //      ss << "[degree: " << monomial->first.get_degree() << "]";
+      ss << "[";
+      ss << monomial->second << " * ";
+      ss << monomial->first;
+      ss << "]";
+    }
+    return ss.str();
+  }
 
+  template <typename F>
+  auto Map(F fun) const -> NonCommutativePolynomialBase<typename std::result_of<F(SR)>::type> {
+    typedef typename std::result_of<F(SR)>::type SR2;
+
+    std::map<NonCommutativeMonomialBase<SR2>,std::uint_fast16_t> result_monomials;
+
+    //TODO: map every monomial and insert it into the result
+    for(auto mon_mult : monomials_) {
+      NonCommutativePolynomialBase<SR2>::InsertMonomial(result_monomials, mon_mult.first.Map( [&fun](const SR& s){return fun(s);} ), mon_mult.second);
+    }
+
+
+    //FIXME: if fun(pair.second) == zero-element then do not add the monomial!!
+    /*std::transform(
+           monomials_.begin(), monomials_.end(),
+           std::inserter(result_monomials, result_monomials.begin()),
+           [&fun](const std::pair< CommutativeMonomial, SR > &pair) {
+             return std::make_pair(pair.first, fun(pair.second));
+           });
+     */
+
+    return NonCommutativePolynomialBase<SR2>(std::move(result_monomials));
+  }
 
 };
 

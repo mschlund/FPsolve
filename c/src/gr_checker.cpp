@@ -17,11 +17,15 @@
 
 #include "polynomials/commutative_polynomial.h"
 #include "polynomials/non_commutative_polynomial.h"
+#include "polynomials/lossy_non_commutative_polynomial.h"
+
 
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
 
 #include "semirings/semilinSetNdd.h"
+#include "semirings/semilinSetNdd.h"
+
 
 #include "parser.h"
 
@@ -111,8 +115,11 @@ void check_all_equal_commutative(const std::string& startsymbol, const std::vect
 void check_all_equal_lossy(const std::string& startsymbol, const std::vector<std::string>& inputs, int refinementDepth) {
   int num_grammars = inputs.size();
   Parser p;
+  auto eq_tmp = MapEquations(p.free_parser(inputs[0]), [](const FreeSemiring &c) -> LossyFiniteAutomaton {
+    auto srconv = SRConverter<LossyFiniteAutomaton>();
+    return c.Eval(srconv);
+  });
 
-  auto eq_tmp = p.lossy_fa_parser(inputs[0]);
   auto equations_fst = NCEquationsBase<LossyFiniteAutomaton>(eq_tmp.begin(), eq_tmp.end());
 
   VarId S_1;
@@ -127,7 +134,11 @@ void check_all_equal_lossy(const std::string& startsymbol, const std::vector<std
 
   bool all_equal = true;
   for(int i=1; i<num_grammars; i++) {
-    auto eq_tmp2 = p.lossy_fa_parser(inputs[i]);
+
+    auto eq_tmp2 = MapEquations(p.free_parser(inputs[i]), [](const FreeSemiring &c) -> LossyFiniteAutomaton {
+      auto srconv = SRConverter<LossyFiniteAutomaton>();
+      return c.Eval(srconv);
+    });
     auto equations = NCEquationsBase<LossyFiniteAutomaton>(eq_tmp2.begin(), eq_tmp2.end());
 
 

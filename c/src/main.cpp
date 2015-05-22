@@ -23,6 +23,7 @@
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
 
+
 #ifdef USE_LIBFA
 #include "semirings/lossy-finite-automaton.h"
 #include "polynomials/lossy_non_commutative_polynomial.h"
@@ -293,9 +294,8 @@ int main(int argc, char* argv[]) {
 
     // parse the input into a list of (Var → Polynomial[SR])
 	auto equations = p.free_parser(input_all);
-  auto equations2 = MakeCommEquations(equations);
-
-  if (equations2.empty()) return EXIT_FAILURE;
+  //auto equations2 = MakeCommEquations(equations);
+  //if (equations2.empty()) return EXIT_FAILURE;
 
 //    std::cout << result_string(
 //        call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
@@ -303,12 +303,18 @@ int main(int argc, char* argv[]) {
 
   } else if (vm.count("lossy")) {
 
-    auto equations = p.lossy_fa_parser(input_all);
+    auto equations = p.free_parser(input_all);
     if (equations.empty()) return EXIT_FAILURE;
 
-    VarId S_1 = equations[0].first;
+    //PrintEquations(equations);
+    auto equations2 = MapEquations(equations, [](const FreeSemiring &c) -> LossyFiniteAutomaton {
+      auto srconv = SRConverter<LossyFiniteAutomaton>();
+      return c.Eval(srconv);
+    });
 
-    NCEquationsBase<LossyFiniteAutomaton> eq2 = NCEquationsBase<LossyFiniteAutomaton>(equations.begin(), equations.end());
+    VarId S_1 = equations2[0].first;
+
+    NCEquationsBase<LossyFiniteAutomaton> eq2 = NCEquationsBase<LossyFiniteAutomaton>(equations2.begin(), equations2.end());
 
     auto approximation = NonCommutativePolynomial<LossyFiniteAutomaton>::downwardClosureCourcelle(eq2, S_1);
     std::cout << "dwc:\t" << approximation.string() << std::endl;
@@ -368,7 +374,6 @@ int main(int argc, char* argv[]) {
             ) << std::endl;
 #endif
     }
-
 
   } else if (vm.count("bool")) {
     auto equations = p.free_parser(input_all);

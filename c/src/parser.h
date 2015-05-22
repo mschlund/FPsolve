@@ -6,11 +6,6 @@
 #include "semirings/commutativeRExp.h"
 #include "semirings/prefix-semiring.h"
 
-#ifdef USE_LIBFA
-#include "semirings/lossy-finite-automaton.h"
-#include "polynomials/lossy_non_commutative_polynomial.h"
-#endif
-
 #include "datastructs/equations.h"
 
 #ifdef USE_GENEPI
@@ -37,11 +32,6 @@ public:
 
   NCEquations<FreeSemiring> free_parser(std::string input);
   NCEquations<PrefixSemiring> prefix_parser(std::string input, unsigned int length);
-
-#ifdef USE_LIBFA
-  NCEquations<LossyFiniteAutomaton> lossy_fa_parser(std::string input);
-#endif
-
 
 };
 

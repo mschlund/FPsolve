@@ -20,15 +20,15 @@ using NCEquationsBase = GenericEquations<NonCommutativePolynomialBase, A>;
 
 
 
-template <typename A, typename F>
-auto MapEquations(const Equations<A> &equations, F fun)
-    -> Equations<typename std::result_of<F(A)>::type> {
+template <template <typename> class Poly, typename SR, typename F>
+auto MapEquations(const GenericEquations<Poly, SR> &equations, F fun)
+    -> GenericEquations<Poly, typename std::result_of<F(SR)>::type> {
 
-  Equations<typename std::result_of<F(A)>::type> new_equations;
+  GenericEquations<Poly, typename std::result_of<F(SR)>::type> new_equations;
 
   for (auto &var_poly : equations) {
     new_equations.emplace_back(var_poly.first,
-      var_poly.second.Map([&fun](const A &coeff) {
+      var_poly.second.Map([&fun](const SR &coeff) {
         return fun(coeff);
       })
     );
