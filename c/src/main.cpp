@@ -23,7 +23,6 @@
 #include "semirings/viterbi-semiring.h"
 #include "semirings/maxmin-semiring.h"
 
-
 #ifdef USE_LIBFA
 #include "semirings/lossy-finite-automaton.h"
 #include "polynomials/lossy_non_commutative_polynomial.h"
@@ -300,7 +299,7 @@ int main(int argc, char* argv[]) {
 //    std::cout << result_string(
 //        call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
 //        ) << std::endl;
-
+#ifdef USE_LIBFA
   } else if (vm.count("lossy")) {
 
     auto equations = p.free_parser(input_all);
@@ -320,7 +319,7 @@ int main(int argc, char* argv[]) {
     std::cout << "dwc:\t" << approximation.string() << std::endl;
     std::cout << "size NFA for DWC:\t" << approximation.size() << std::endl;
     std::cout << "size minimal DFA for DWC:\t" << approximation.minimize().size() << std::endl;
-
+#endif
   } else if (vm.count("prefix")) {
 
     // parse the input into a list of (Var → Polynomial[SR])

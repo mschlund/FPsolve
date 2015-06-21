@@ -15,15 +15,15 @@ include_directories(${Boost_INCLUDE_DIRS})
 
 
 #default for now -- remove these definitions if you do not want the options ..
-option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
-option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" ON)
-option (USE_NUMERICNEWTON "use BLAS/LAPACK for computing Newton's method over the float-Semiring" ON)
+option (USE_GENEPI "use genepi library and support semilinSetNdd" OFF)
+option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" OFF)
+option (USE_NUMERICNEWTON "use BLAS/LAPACK for computing Newton's method over the float-Semiring" OFF)
 
 
 if(USE_GENEPI)
   add_definitions(-DUSE_GENEPI)
-	find_package(PkgConfig)
-	pkg_check_modules(GENEPI genepi)
+  find_package(PkgConfig)
+  pkg_check_modules(GENEPI genepi)
 endif(USE_GENEPI)
 
 

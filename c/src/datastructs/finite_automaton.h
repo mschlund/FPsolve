@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <string>
 #include <vector>
 #include <map>
@@ -16,7 +15,6 @@ extern "C" {
 //#include "var.h"
 #include "hash.h"
 #include "regular_language.h"
-
 
 
 class FiniteAutomaton : public RegularLanguage<FiniteAutomaton> {
@@ -586,8 +584,6 @@ public:
             transitionTable.insert(std::make_pair(s->hash, stateTable));
         }
     }
-
-
 
 
 private:

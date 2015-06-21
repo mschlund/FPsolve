@@ -126,21 +126,25 @@ void MatrixTest::testStar()
 	for (auto &seed : seeds) {
 	  srand(seed);
 
-	  // generate random matrix with values [0,10] where 0 is INFTY
+	  // generate random matrix with values [0,20] where 0 is INFTY
 	  int size = 100;
-	  float density = 0.6; // this is a percentage of how many elements are not INFTY
-	  int mod = 10 / density;
+	  float density = 0.5; // this is a percentage of how many elements are not 0 (=INFTY)
+	  int mod = (int) (20.0 / density); // mod = 40
+	  std::cout << "mod:"<< mod  << std::endl;
 	  std::vector<TS> elements;
 
 	  for(unsigned int i = 0; i < size*size; i++)
 	  {
-		int r = rand() % mod;
-	  if(r > 10 || r == 0)
-		  elements.push_back(TS(INFTY));
-		else
-		  elements.push_back(TS(r));
+      int r = rand() % mod; // in [0,39]
+      if(r > 20 || r == 0) {
+        elements.push_back(TS::null());
+      }
+      else {
+        elements.push_back(TS(r));
+      }
 	  }
 	  Matrix<TS> test_matrix(size, elements);
+
 	  //std::cout << "testmat:" << std::endl << test_matrix;
 
 	  // calculate the star with the recursive versions and a floyd-warshall implementation
@@ -149,8 +153,26 @@ void MatrixTest::testStar()
 	  auto rec_star = test_matrix.star3();
 	  auto fw_star = test_matrix.star2();
 
+    //std::cout << "starmat:" << std::endl << rec_star;
+
+
 	  CPPUNIT_ASSERT(rec_star2 == fw_star);
 	  CPPUNIT_ASSERT(rec_star2 == rec_star);
+
+
+	  std::vector<TS> elements_vec;
+    for(unsigned int i = 0; i < size; i++)
+    {
+      int r = rand() % mod;
+      if(r > 10 || r == 0)
+        elements_vec.push_back(TS(INFTY));
+      else
+        elements_vec.push_back(TS(r));
+    }
+
+    Matrix<TS> test_vec(size, elements_vec);
+    //CPPUNIT_ASSERT(test_matrix.solve_LDU(test_vec) == rec_star*test_vec);
+
 
 	}
 

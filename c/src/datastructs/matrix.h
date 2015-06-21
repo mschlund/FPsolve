@@ -153,6 +153,18 @@ class Matrix {
       return recursive_star(*this);
     }
 
+    // solves x = Ax + b using the LDU-decomposition
+    Matrix solve_LDU(const Matrix& b) const {
+      assert(b.columns_ == 1);
+      const std::size_t n = b.rows_;
+      Matrix ldu = this->LDU_decomposition();
+      Matrix result  = ldu.forward_substitution(b);
+      for(int i=0; i<n; ++i) {
+        result.At(i,0) *= ldu.At(i,i).star();
+      }
+      return ldu.backward_substitution(result);
+    }
+
     std::size_t getRows() const {
       return rows_;
     };
@@ -326,6 +338,100 @@ class Matrix {
       }
       return Matrix{nr, std::move(result)};
     }
+
+  public:
+    // solve the system x = Ax + b if A (=this) is a strictly LOWER triangular matrix
+    // NOTE: only the lower triangular part of A will be used
+    // (can be useful if the rest of the matrix is used to store other data -- e.g. in the LDU-decomposition)
+    // TODO: overwrite b
+    Matrix forward_substitution(const Matrix& b) const {
+      assert(b.columns_ == 1);
+      std::vector<SR> result;
+      result.reserve(b.rows_);
+      result.push_back(b.At(0,0));
+
+      /*
+       * x_0 = b_0
+       * x_1 = A_{1,0}*x_0 + b_1
+       * x_2 = A_{2,0}*x_1 + A_{2,1}*x_1 + b_2
+       * ...
+       */
+      for(int i=1; i < b.rows_; ++i) {
+        SR x = b.At(i,0);
+        for(int j=0; j<i; ++j) {
+          x += this->At(i,j) * result[j];
+        }
+        result.push_back(x);
+      }
+
+      return Matrix{b.rows_, std::move(result)};
+    }
+
+    // solve the system x = Ax + b if A (=this) is a strictly UPPER triangular matrix
+    // NOTE: only the upper triangular part of A will be used
+    // TODO: overwrite b
+    Matrix backward_substitution(const Matrix& b) const {
+      assert(b.columns_ == 1);
+      const std::size_t n = b.rows_;
+      std::vector<SR> result (n);
+
+      result[n-1] = b.At(n-1, 0);
+      for(int i=n-2; i>=0; --i) {
+        SR x = b.At(i,0);
+        for(int j=i+1; j<n; ++j) {
+          x += this->At(i,j) * result[j];
+        }
+        result[i] = x;
+      }
+
+      return Matrix{b.rows_, std::move(result)};
+    }
+
+    /*
+     * This is the universal analogue of the LDU-factorization from linear algebra
+     * (see: Litvinov et al.: "Universal Algorithms for Solving the Matrix Bellman Equations over Semirings")
+     * for input A (=this) this function computes a triple (L,D,U) (all packed in the return matrix)
+     * of a lower triangular matrix L, diagonal matrix D, and upper triangular matrix U
+     * such that A^* = U^* D^* L^*.
+     * -> this allows the system x = Ax + b to be solved via forward and backward substitution
+     */
+    Matrix LDU_decomposition() const {
+      assert(rows_ == columns_);
+      std::size_t n = rows_;
+
+      Matrix result = *this;
+      for(int j=0; j<n; ++j) {
+        std::vector<SR> col(j+1); // first (j+1) entries in j-th column of A
+        for(int l=0; l<=j; ++l) {
+          col[l] = result.At(l,j);
+        }
+
+        for(int k=0; k<j; ++k) {
+          for(int l=k+1; l<=j; ++l) {
+            col[l] += result.At(l,k)*col[k];
+          }
+        }
+
+        for(int i=0; i<j; ++i) {
+          result.At(i,j) = result.At(i,i).star() * col[i];
+        }
+
+        result.At(j,j) = col[j];
+
+        for(int k=0; k<j; ++k) {
+          for(int l=j+1; l<n; ++l) {
+            result.At(l,j) += result.At(l,j)*col[k];
+          }
+        }
+        SR d = col[j].star();
+        for(int l=j+1; l<n; ++l) {
+          result.At(l,j) *= d;
+        }
+      }
+
+      return result;
+    }
+
 
 };
 
