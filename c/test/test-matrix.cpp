@@ -164,19 +164,21 @@ void MatrixTest::testStar()
     for(unsigned int i = 0; i < size; i++)
     {
       int r = rand() % mod;
-      if(r > 10 || r == 0)
-        elements_vec.push_back(TS(INFTY));
+      if(r > 20 || r == 0)
+        elements_vec.push_back(TS::null());
       else
         elements_vec.push_back(TS(r));
     }
 
     Matrix<TS> test_vec(size, elements_vec);
-    //CPPUNIT_ASSERT(test_matrix.solve_LDU(test_vec) == rec_star*test_vec);
-
-
+    CPPUNIT_ASSERT(test_matrix.solve_LDU(test_vec) == rec_star*test_vec);
 	}
 
   Matrix<FS> test_matrix2(2, {FS(0.5), FS(0.5), FS(0), FS(0.5)});
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star2());
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star3());
+
+  Matrix<FS> test_vec2(2, {FS(0.5), FS(0.5)});
+  CPPUNIT_ASSERT(test_matrix2.solve_LDU(test_vec2) == test_matrix2.star()*test_vec2);
+
 }

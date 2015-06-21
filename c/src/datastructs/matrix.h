@@ -420,7 +420,7 @@ class Matrix {
 
         for(int k=0; k<j; ++k) {
           for(int l=j+1; l<n; ++l) {
-            result.At(l,j) += result.At(l,j)*col[k];
+            result.At(l,j) += result.At(l,k)*col[k];
           }
         }
         SR d = col[j].star();
