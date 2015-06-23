@@ -12,10 +12,10 @@
 # More Semirings
 #---------------
 [DONE] Product-Semiring-Construction (simple: (iterated) pair)
-- "Exotic" Semirings (tropical, arctic)
+[DONE] "Exotic" Semirings (tropical, arctic)
 [DONE] Viterbi-Semiring
 - ... (see: "Semirings for Breakfast"-presentation ---only the starable ones! additional element "infty" needed sometimes :)) use GMP for arbitrary precision ints/floats/...
-- Arbitrary-precision Real-Semiring (in fact: this is Q, elements are p/q with p,q integers)
+[DONE] Arbitrary-precision Real-Semiring (in fact: this is Q, elements are p/q with p,q integers)
 
 - Finite Semirings (e.g. finite Lattices) <--> specification (see UI)
 
@@ -23,7 +23,6 @@
   [DONE] As Presburger-Formulae --> Automata (Mona)
   [DONE] As (short!) Weighted Rational Expressions (together with some terminating (!) rewriting-system to produce "short" terms) -> Vaucanson?
   - As (short!) rational Generating Functions (same as second one???)
-
 
 #---------------------
 # Efficient Algorithms
@@ -33,7 +32,6 @@
 [DONE] decomposed Newton-Method (split into SCCs and solve bottom-up)
 
 
-
 #----------------
 # UI/Usability
 #----------------
@@ -41,13 +39,11 @@
 [DONE] Define a Format + Parser of Polynomial equations (-> Inspiration Vaucanson (they use some XML-format I think)?)
 
 
-
 #-----------------------
 # Non-commutative Newton
 #-----------------------
 - Semiring of Contexts (over some alphabet)
 [DONE] non-commutative Polynomials
-
 
 
 #-------------------------------------------------------------
@@ -59,13 +55,11 @@
 - application to average-case analysis
 
 
-
 #----------------------
 # Tools/Libs to help us
 #----------------------
 - Vaucanson (automata, wrexp, semirings, series+polynomials)
 [DONE] Mona (automata, regexp, MSO/Presburger)
-
 
 
 #---------------------------------
