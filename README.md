@@ -35,9 +35,13 @@ before running cmake, to point to the directories containing the libraries.
 
 Installing
 ----------
+see Readme.INSTALL for more details!
+
 
 1) Run cmake . in newton/c
+
 2) Run make in newton/c
+
 
 
 LICENSE
