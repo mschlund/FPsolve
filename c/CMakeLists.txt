@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 set(PROJECTNAME fpsolve)
 
@@ -12,6 +13,10 @@ endif(DEFINED ENV{BOOST_ROOT})
 
 find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 include_directories(${Boost_INCLUDE_DIRS})
+
+# GMP (multiprecision numbers)
+find_package(GMP REQUIRED)
+include_directories(${GMP_INCLUDES})
 
 
 #default for now -- remove these definitions if you do not want the options ..

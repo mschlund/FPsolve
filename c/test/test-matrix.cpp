@@ -5,6 +5,7 @@ CPPUNIT_TEST_SUITE_REGISTRATION(MatrixTest);
 
 typedef TropicalSemiring TS;
 typedef FloatSemiring FS;
+typedef PrecRatSemiring Rat;
 
 void MatrixTest::setUp()
 {
@@ -120,7 +121,7 @@ void MatrixTest::testStar()
   dotfile.close();
 */
 
-  // use a fix seed, so tests are deterministic
+  // use fix seeds, so tests are deterministic
   std::vector<unsigned int> seeds{42,23,11805,24890};
 
 	for (auto &seed : seeds) {
@@ -130,7 +131,7 @@ void MatrixTest::testStar()
 	  int size = 100;
 	  float density = 0.5; // this is a percentage of how many elements are not 0 (=INFTY)
 	  int mod = (int) (20.0 / density); // mod = 40
-	  std::cout << "mod:"<< mod  << std::endl;
+	  //std::cout << "mod:"<< mod  << std::endl;
 	  std::vector<TS> elements;
 
 	  for(unsigned int i = 0; i < size*size; i++)
@@ -174,11 +175,23 @@ void MatrixTest::testStar()
     CPPUNIT_ASSERT(test_matrix.solve_LDU(test_vec) == rec_star*test_vec);
 	}
 
-  Matrix<FS> test_matrix2(2, {FS(0.5), FS(0.5), FS(0), FS(0.5)});
+  Matrix<Rat> test_matrix2(3, {Rat("1/3"), Rat("0"), Rat("1/5"),
+                               Rat("0"), Rat("1/2"), Rat("2/3"),
+                               Rat("0"), Rat("5/78"), Rat("1/7")});
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star2());
   CPPUNIT_ASSERT(test_matrix2.star() == test_matrix2.star3());
 
-  Matrix<FS> test_vec2(2, {FS(0.5), FS(0.5)});
+  Matrix<Rat> test_vec2(3, {Rat("1/5"), Rat("13/4"),Rat("4/5")});
+/*
+  std::cout << test_matrix2 << std::endl;
+  std::cout << test_vec2 << std::endl;
+  std::cout << test_matrix2.star() << std::endl;
+  std::cout << test_matrix2.star()*test_vec2 << std::endl;
+  std::cout << test_matrix2.solve_LDU(test_vec2) << std::endl;
+*/
+
   CPPUNIT_ASSERT(test_matrix2.solve_LDU(test_vec2) == test_matrix2.star()*test_vec2);
+  CPPUNIT_ASSERT(test_matrix2.solve_LDU(test_vec2) == test_matrix2.star2()*test_vec2);
+  CPPUNIT_ASSERT(test_matrix2.solve_LDU(test_vec2) == test_matrix2.star3()*test_vec2);
 
 }

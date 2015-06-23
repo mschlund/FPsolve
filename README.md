@@ -32,12 +32,12 @@ with libc++ too.  To make it easier to use different installations of Boost and
 Cppunit, you can specify the BOOST_ROOT and CPPUNIT_ROOT environment variables,
 before running cmake, to point to the directories containing the libraries.
 
+
 Installing
 ----------
 
-1) Copy fa.h to /usr/include and libfa.so.1.4.0 to /usr/lib (or put them somewhere else make will find them)
-2) Run cmake . in newton/c
-3) Run make in newton/c
+1) Run cmake . in newton/c
+2) Run make in newton/c
 
 
 LICENSE

@@ -19,4 +19,4 @@ if(NOT USE_LIBFA)
 endif(NOT USE_LIBFA)
 
 add_executable(fpsolve_test ${NEWTON_TEST_H} ${NEWTON_TEST_CPP})
-target_link_libraries(fpsolve_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES})
+target_link_libraries(fpsolve_test NewtonLib ${Boost_LIBRARIES} ${CPPUNIT_LIBRARIES} ${LPSOLVE_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES} ${GMP_LIBRARIES})

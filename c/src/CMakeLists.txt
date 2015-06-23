@@ -25,14 +25,13 @@ if(NOT USE_LIBFA)
 	list(REMOVE_ITEM NEWTON_CPP ${LOSSY_CPP})
 endif(NOT USE_LIBFA)
 
-
 set_source_files_properties(parser.cpp PROPERTIES COMPILE_FLAGS -g0)
 
 add_library(NewtonLib ${NEWTON_H} ${NEWTON_CPP})
 add_executable(${PROJECTNAME} main.cpp)
-target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES} ${LIBFA_LIBRARIES})
+target_link_libraries(${PROJECTNAME} NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LAPACK_LIBRARIES} ${LIBFA_LIBRARIES} ${GMP_LIBRARIES})
 
 if(USE_GENEPI)
   add_executable(gr_check gr_checker.cpp)
-  target_link_libraries(gr_check NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES})
+  target_link_libraries(gr_check NewtonLib ${Boost_LIBRARIES} ${GENEPI_LIBRARIES} ${LIBFA_LIBRARIES} ${GMP_LIBRARIES})
 endif(USE_GENEPI)

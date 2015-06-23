@@ -8,7 +8,6 @@
 #include <string>
 
 #include "semiring.h"
-#include "free-semiring.h"
 #include "../utils/profiling-macros.h"
 
 #define INFTY_FLOAT (std::numeric_limits<double>::max())

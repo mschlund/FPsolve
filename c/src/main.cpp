@@ -15,6 +15,7 @@
 
 #include "semirings/commutativeRExp.h"
 #include "semirings/float-semiring.h"
+#include "semirings/prec-rat-semiring.h"
 #include "semirings/tropical-semiring.h"
 #include "semirings/pseudo_linear_set.h"
 #include "semirings/semilinear_set.h"
@@ -78,6 +79,7 @@ int main(int argc, char* argv[]) {
     ( "test", "just for testing purposes ... explicit test defined in main()" )
     ( "file,f", po::value<std::string>(), "input file" )
     ( "float", "float semiring" )
+    ( "rat", "semiring of extended rationals (arbitrary precision)" )
     ( "bool", "boolean semiring" )
     ( "why", "why semiring" )
     ( "maxmin", "MaxMin semiring" )
@@ -152,6 +154,7 @@ int main(int argc, char* argv[]) {
 
   // check if we can do something useful
   if (!vm.count("float") &&
+      !vm.count("rat") &&
       !vm.count("rexp") &&
       !vm.count("slset") &&
 #ifdef USE_GENEPI
@@ -359,7 +362,8 @@ int main(int argc, char* argv[]) {
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
-    else {
+    /*else {
+ seems still buggy
 #ifdef USE_NUMERICNEWTON
       //default if enabled: "Fast" numeric Newton
       std::cout << "Solver: Newton Numeric"<< std::endl;
@@ -367,12 +371,15 @@ int main(int argc, char* argv[]) {
           apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 #else
+
       //use default
       std::cout << result_string(
             call_solver("", equations2, scc_flag, iter_flag, iterations, graph_flag)
             ) << std::endl;
 #endif
+
     }
+    */
 
   } else if (vm.count("bool")) {
     auto equations = p.free_parser(input_all);
@@ -389,6 +396,20 @@ int main(int argc, char* argv[]) {
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
 
+  } else if (vm.count("rat")) {
+    auto equations = p.free_parser(input_all);
+    auto equations2 = MakeCommEquationsAndMap(equations, [](const FreeSemiring &c) -> PrecRatSemiring {
+      auto srconv = SRConverter<PrecRatSemiring>();
+      return c.Eval(srconv);
+    });
+
+    if (equations2.empty()) return EXIT_FAILURE;
+
+    PrintEquations(equations);
+    PrintEquations(equations2);
+      std::cout << result_string(
+          call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
   }
   else if (vm.count("why")) {
       auto equations = p.free_parser(input_all);

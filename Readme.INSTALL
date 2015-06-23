@@ -4,9 +4,10 @@ To compile you need the following tools and libraries (Tested under Ubuntu Linux
 - g++ (version >= 4.8)
 - boost (version >=1.48, libs: program-options, filesystem, system)
 - cppunit: for unit-tests
+- GMP (and boost multiprecision)
 - optional: BLAS+LAPACK together with boost-numeric-bindings for fast solving of linear equations over the float-semiring (see http://mathema.tician.de/software/boost-numeric-bindings/)
 - optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
-
+- optional: libfa (if you want to use the "lossy-semiring" implemented in lossy-finite-automaton.h -- see HOWTO below for installing!)
 
 
 Then simply clone the repository:
@@ -17,6 +18,21 @@ Then the following commands should do the job. Note that cmake will complain if 
 $ cd FPsolve/c
 $ cmake .
 $ make 
+
+
+HOWTO: Modify LIBFA for Lossy-semiring
+--------------------------------------
+Integration of libfa (http://augeas.net/libfa/) is still a bit of a pain but should work if the instructions are followed.
+We had to change the source and header files slightly since we have to access the internal structure of the finite automata.
+
+0. get augeas source code (assumed to be in augeas-1.X.0/src)
+1. unpack the "libfa_parts_modified.tar.gz" from the FPsolve root-dir
+2. copy everything in "changed_source" into augeas-1.X.0/src
+3. run "./configure; make; sudo make install" in augeas-1.X.0
+4. copy "header_to_use_after_compilation_of_libfa/fa.h" to e.g. "/usr/local/include/fa.h"
+5. copy libfa.pc to /usr/local/lib/pkgconfig
+
+
 
 Troubleshooting:
 ----------------
