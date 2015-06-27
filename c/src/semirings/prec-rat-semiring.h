@@ -67,7 +67,7 @@ class PrecRatSemiring : public StarableSemiring<PrecRatSemiring,
 
     PrecRatSemiring& operator-=(const PrecRatSemiring &elem) {
       OPADD;
-      assert(!isInf(elem));
+      assert(!isInf(elem) && elem < *this);
 
       if(!isInf(*this))
         value_ -= elem.value_;
@@ -78,6 +78,10 @@ class PrecRatSemiring : public StarableSemiring<PrecRatSemiring,
       PrecRatSemiring result = lhs;
       result -= rhs;
       return result;
+    }
+
+    bool operator<(const PrecRatSemiring& elem) const {
+      return this->value_ < elem.value_;
     }
 
     bool operator==(const PrecRatSemiring &elem) const {

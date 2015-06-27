@@ -22,7 +22,6 @@ include_directories(${GMP_INCLUDES})
 #default for now -- remove these definitions if you do not want the options ..
 option (USE_GENEPI "use genepi library and support semilinSetNdd" OFF)
 option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" OFF)
-option (USE_NUMERICNEWTON "use BLAS/LAPACK for computing Newton's method over the float-Semiring" OFF)
 
 
 if(USE_GENEPI)
@@ -37,16 +36,6 @@ if(USE_LIBFA)
 	find_package(PkgConfig)
 	pkg_check_modules(LIBFA libfa)
 endif(USE_LIBFA)
-
-
-if(USE_NUMERICNEWTON)
-  add_definitions(-DUSE_NUMERICNEWTON)
-  find_package(LAPACK)
-  include_directories(${LAPACK_INCLUDE_DIRS})
-  link_directories(${LAPACK_LIBRARY_DIRS})
-
-  include_directories("/usr/local/include/boost-numeric-bindings/")
-endif(USE_NUMERICNEWTON)
 
 
 # Cppunit; cmake configuration taken from:

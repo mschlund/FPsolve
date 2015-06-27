@@ -157,12 +157,15 @@ class Matrix {
     Matrix solve_LDU(const Matrix& b) const {
       assert(b.columns_ == 1);
       const std::size_t n = b.rows_;
-      Matrix ldu = this->LDU_decomposition();
-      Matrix result  = ldu.forward_substitution(b);
+      Matrix ldu = *this;
+      Matrix rhs = b;
+      LDU_decomposition(ldu);
+      forward_substitution(ldu, rhs);
       for(int i=0; i<n; ++i) {
-        result.At(i,0) *= ldu.At(i,i).star();
+        rhs.At(i,0) *= ldu.At(i,i).star();
       }
-      return ldu.backward_substitution(result);
+      backward_substitution(ldu, rhs);
+      return rhs;
     }
 
     std::size_t getRows() const {
@@ -343,13 +346,9 @@ class Matrix {
     // solve the system x = Ax + b if A (=this) is a strictly LOWER triangular matrix
     // NOTE: only the lower triangular part of A will be used
     // (can be useful if the rest of the matrix is used to store other data -- e.g. in the LDU-decomposition)
-    // TODO: overwrite b
-    Matrix forward_substitution(const Matrix& b) const {
+    // NOTE: this is the in-place version, i.e. b will be modified!
+    static void forward_substitution(const Matrix& A, Matrix& b) {
       assert(b.columns_ == 1);
-      std::vector<SR> result;
-      result.reserve(b.rows_);
-      result.push_back(b.At(0,0));
-
       /*
        * x_0 = b_0
        * x_1 = A_{1,0}*x_0 + b_1
@@ -357,34 +356,24 @@ class Matrix {
        * ...
        */
       for(int i=1; i < b.rows_; ++i) {
-        SR x = b.At(i,0);
         for(int j=0; j<i; ++j) {
-          x += this->At(i,j) * result[j];
+          b.At(i,0) += A.At(i,j) * b.At(j,0);
         }
-        result.push_back(x);
       }
-
-      return Matrix{b.rows_, std::move(result)};
     }
 
     // solve the system x = Ax + b if A (=this) is a strictly UPPER triangular matrix
     // NOTE: only the upper triangular part of A will be used
-    // TODO: overwrite b
-    Matrix backward_substitution(const Matrix& b) const {
+    // NOTE: this is the in-place version, i.e. b will be modified!
+    static void backward_substitution(const Matrix& A, Matrix& b) {
       assert(b.columns_ == 1);
       const std::size_t n = b.rows_;
-      std::vector<SR> result (n);
 
-      result[n-1] = b.At(n-1, 0);
       for(int i=n-2; i>=0; --i) {
-        SR x = b.At(i,0);
         for(int j=i+1; j<n; ++j) {
-          x += this->At(i,j) * result[j];
+          b.At(i,0) += A.At(i,j) * b.At(j,0);
         }
-        result[i] = x;
       }
-
-      return Matrix{b.rows_, std::move(result)};
     }
 
     /*
@@ -394,42 +383,40 @@ class Matrix {
      * of a lower triangular matrix L, diagonal matrix D, and upper triangular matrix U
      * such that A^* = U^* D^* L^*.
      * -> this allows the system x = Ax + b to be solved via forward and backward substitution
+     * NOTE: this is the in-place version, i.e. the matrix given as parameter is modified!
      */
-    Matrix LDU_decomposition() const {
-      assert(rows_ == columns_);
-      std::size_t n = rows_;
+    static void LDU_decomposition(Matrix& A) {
+      assert(A.rows_ == A.columns_);
+      std::size_t n = A.rows_;
 
-      Matrix result = *this;
       for(int j=0; j<n; ++j) {
         std::vector<SR> col(j+1); // first (j+1) entries in j-th column of A
         for(int l=0; l<=j; ++l) {
-          col[l] = result.At(l,j);
+          col[l] = A.At(l,j);
         }
 
         for(int k=0; k<j; ++k) {
           for(int l=k+1; l<=j; ++l) {
-            col[l] += result.At(l,k)*col[k];
+            col[l] += A.At(l,k)*col[k];
           }
         }
 
         for(int i=0; i<j; ++i) {
-          result.At(i,j) = result.At(i,i).star() * col[i];
+          A.At(i,j) = A.At(i,i).star() * col[i];
         }
 
-        result.At(j,j) = col[j];
+        A.At(j,j) = col[j];
 
         for(int k=0; k<j; ++k) {
           for(int l=j+1; l<n; ++l) {
-            result.At(l,j) += result.At(l,k)*col[k];
+            A.At(l,j) += A.At(l,k)*col[k];
           }
         }
         SR d = col[j].star();
         for(int l=j+1; l<n; ++l) {
-          result.At(l,j) *= d;
+          A.At(l,j) *= d;
         }
       }
-
-      return result;
     }
 
 

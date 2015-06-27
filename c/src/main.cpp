@@ -54,6 +54,10 @@ ValuationMap<SR> call_solver(const std::string solver_name,  const GenericEquati
     std::cout << "Solver: Newton Concrete"<< std::endl;
     return apply_solver<NewtonCL, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
+  else if(0 == solver_name.compare("newtonCLDU")) {
+    std::cout << "Solver: Newton Concrete (LDU)"<< std::endl;
+    return apply_solver<NewtonCLDU, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
+  }
   else if(0 == solver_name.compare("kleene")) {
     std::cout << "Solver: Kleene solver"<< std::endl;
     return apply_solver<KleeneComm, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
@@ -98,7 +102,7 @@ int main(int argc, char* argv[]) {
     ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph (NOTE: currently only with option --scc) " )
-    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\" or \"kleene\")" )
+    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\", \"newtonCLDU\", \"newtonNumeric\" (only for numeric semirings), or \"kleene\")" )
     ;
 
   po::variables_map vm;
@@ -356,30 +360,17 @@ int main(int argc, char* argv[]) {
     //PrintEquations(equations);
     //PrintEquations(equations2);
 
-    if(vm.count("solver")){
-      //std::cout << "Solver: " << solver_name << std::endl;
+    if(0 == solver_name.compare("newtonNumeric")) {
+      std::cout << "Solver: Newton Numeric (Float)"<< std::endl;
+      std::cout << result_string(
+          apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+    } else  {
       std::cout << result_string(
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
     }
-    /*else {
- seems still buggy
-#ifdef USE_NUMERICNEWTON
-      //default if enabled: "Fast" numeric Newton
-      std::cout << "Solver: Newton Numeric"<< std::endl;
-      std::cout << result_string(
-          apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
-          ) << std::endl;
-#else
 
-      //use default
-      std::cout << result_string(
-            call_solver("", equations2, scc_flag, iter_flag, iterations, graph_flag)
-            ) << std::endl;
-#endif
-
-    }
-    */
 
   } else if (vm.count("bool")) {
     auto equations = p.free_parser(input_all);
@@ -405,11 +396,19 @@ int main(int argc, char* argv[]) {
 
     if (equations2.empty()) return EXIT_FAILURE;
 
-    PrintEquations(equations);
-    PrintEquations(equations2);
+    //PrintEquations(equations);
+    //PrintEquations(equations2);
+
+    if(0 == solver_name.compare("newtonNumeric")) {
+      std::cout << "Solver: Newton Numeric (Rat)"<< std::endl;
+      std::cout << result_string(
+          apply_solver<NewtonNumeric>(equations2, scc_flag, iter_flag, iterations, graph_flag)
+          ) << std::endl;
+    } else  {
       std::cout << result_string(
           call_solver(solver_name, equations2, scc_flag, iter_flag, iterations, graph_flag)
           ) << std::endl;
+    }
   }
   else if (vm.count("why")) {
       auto equations = p.free_parser(input_all);

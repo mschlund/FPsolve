@@ -5,7 +5,6 @@ To compile you need the following tools and libraries (Tested under Ubuntu Linux
 - boost (version >=1.48, libs: program-options, filesystem, system)
 - cppunit: for unit-tests
 - GMP (and boost multiprecision)
-- optional: BLAS+LAPACK together with boost-numeric-bindings for fast solving of linear equations over the float-semiring (see http://mathema.tician.de/software/boost-numeric-bindings/)
 - optional: genepi, mona, lash + respective genepi plugins (only for semilinearsetNDD)
 - optional: libfa (if you want to use the "lossy-semiring" implemented in lossy-finite-automaton.h -- see HOWTO below for installing!)
 

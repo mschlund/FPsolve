@@ -22,18 +22,6 @@
 #include "../semirings/semiring.h"
 #include "../semirings/float-semiring.h"
 
-#include <boost/numeric/ublas/matrix.hpp>
-#include <boost/numeric/ublas/io.hpp>
-
-#ifdef USE_NUMERICNEWTON
-#include <boost/numeric/bindings/traits/ublas_matrix.hpp>
-#include <boost/numeric/bindings/lapack/gesv.hpp>
-#include <boost/numeric/bindings/traits/ublas_vector2.hpp>
-
-namespace ub = boost::numeric::ublas;
-namespace lapack = boost::numeric::bindings::lapack;
-#endif
-
 
 // Lin_Eq_Solver is parametrized by a semiring
 #define LIN_EQ_SOLVER_TYPE template <typename> class
@@ -320,21 +308,19 @@ private:
   ValuationMap<SR> zero_valuation_;
 };
 
-#ifdef USE_NUMERICNEWTON
-
 /* Numeric linear solver -- does not invert the Jacobian (numerically instable!)
  * but solves a linear system every iteration. This should be the method of choice for
- * the float-SR
+ * numeric semirings like the float-SR
   */
 template <typename SR>
-class LinSolver_Numeric {
+class LinSolver_LDU {
   public:
-  LinSolver_Numeric(
+  LinSolver_LDU(
       const std::vector< CommutativePolynomial<SR> >& F,
       const std::vector<VarId>& variables)
     : jacobian_(CommutativePolynomial<SR>::jacobian(F, variables)) {}
 
-  Matrix<FloatSemiring> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
                           const std::vector<VarId>& variables) {
     assert(values.getColumns() == 1);
 
@@ -347,47 +333,16 @@ class LinSolver_Numeric {
       valuation_[variables[i]] = values.At(i, 0);
     }
 
-    //std::cout << "jacobian: " << jacobian_ << std::endl;
-
-    std::vector<FloatSemiring> result_vec;
+    std::vector<SR> result_vec;
     for (auto &poly : jacobian_.getElements()) {
       result_vec.emplace_back(poly.eval(valuation_));
     }
 
-    unsigned int rows = jacobian_.getRows();
-    unsigned int cols = jacobian_.getColumns();
-
-    ub::matrix<double> A = ub::identity_matrix<double>(rows,cols);
-
-    auto b = ub::vector<double>(rows);
-    auto X = ub::vector<double>(rows);
-
-    // A = Identity_Matrix - Jacobian_evaluated_at_last_newton_value
-    for(int i = 0; i < rows; ++i) {
-      for(int j = 0; j < cols; ++j) {
-        A(i,j) -= result_vec[i*cols+j].getValue();
-      }
-    }
-
-    for(int i=0; i<rows; ++i){
-      b(i) = rhs.At(i,0).getValue();
-    }
-
-    //std::cout << "A: " << A << std::endl;
-    //std::cout << "b: " << b << std::endl;
-
-    //solve linear system using LAPACK (TODO: sparse systems with umfpack!)
-    lapack::gesv(A,b);
-
-    auto res = std::vector<SR>(rows);
-    for(int i = 0; i < rows; ++i) {
-        res[i] = SR(b(i));
-    }
-
-    //std::cout << "concrete mat:" << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
-
-    return Matrix<SR>(rows,std::move(res));
-
+    /*
+        std::cout << "J:" << jacobian_ << std::endl;
+        std::cout << "concrete mat:"<< std::endl << Matrix<SR>{jacobian_.getRows(), result_vec} << std::endl;
+        */
+    return Matrix<SR>{jacobian_.getRows(), std::move(result_vec)}.solve_LDU(rhs);
   }
 
   private:
@@ -397,6 +352,7 @@ class LinSolver_Numeric {
     ValuationMap<SR> valuation_;
 };
 
+// Delta Generation for "numeric" semirings, i.e. if we can define a meaningful subtraction
 template <typename SR>
 class DeltaGenerator_Numeric {
 public:
@@ -433,7 +389,6 @@ private:
    * we also make sure that we always overwrite everything before using it... */
   ValuationMap<SR> current_valuation_;
 };
-#endif
 
 /*
  * TODO: other signature for "solving" linsys ?? (with number of iterations?)
@@ -544,7 +499,7 @@ private:
 
 
 
-// compatability with old implementation
+// Several standard commutative Newton solvers
 template <typename SR>
 using Newton =
   GenericNewton<SR, CommutativeSymbolicLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
@@ -553,10 +508,12 @@ template <typename SR>
 using NewtonCL =
   GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
 
-#ifdef USE_NUMERICNEWTON
 template <typename SR>
-using NewtonNumeric = GenericNewton<SR, LinSolver_Numeric, DeltaGenerator_Numeric, CommutativePolynomial>;
-#endif
+using NewtonCLDU = GenericNewton<SR, LinSolver_LDU, CommutativeDeltaGenerator, CommutativePolynomial>;
+
+template <typename SR>
+using NewtonNumeric = GenericNewton<SR, LinSolver_LDU, DeltaGenerator_Numeric, CommutativePolynomial>;
+
 
 
 // default NonCommutative Newton implementation using naive Kleene iteration
