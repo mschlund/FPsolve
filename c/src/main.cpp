@@ -58,14 +58,18 @@ ValuationMap<SR> call_solver(const std::string solver_name,  const GenericEquati
     std::cout << "Solver: Newton Concrete (LDU)"<< std::endl;
     return apply_solver<NewtonCLDU, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
+  else if(0 == solver_name.compare("newtonSLDU")) {
+      std::cout << "Solver: Newton Symbolic (LDU)"<< std::endl;
+      return apply_solver<NewtonSLDU, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
+  }
   else if(0 == solver_name.compare("kleene")) {
     std::cout << "Solver: Kleene solver"<< std::endl;
     return apply_solver<KleeneComm, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
   else {
     // default-case
-    std::cout << "Solver: Newton Concrete"<< std::endl;
-    return apply_solver<NewtonCL, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
+    std::cout << "Solver: Newton Concrete (LDU)"<< std::endl;
+    return apply_solver<NewtonCLDU, Poly>(equations, scc, iteration_flag, iterations, graphviz_output);
   }
 }
 
@@ -102,7 +106,7 @@ int main(int argc, char* argv[]) {
     ( "lossy", "lossy semiring" )
     ( "prefix", po::value<int>(), "prefix semiring with given length")
     ( "graphviz", "create the file graph.dot with the equation graph (NOTE: currently only with option --scc) " )
-    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\", \"newtonCLDU\", \"newtonNumeric\" (only for numeric semirings), or \"kleene\")" )
+    ( "solver,s", po::value<std::string>(), "solver type (currently: \"newtonSymb\", \"newtonConc\", \"newtonCLDU\", \"newtonSLDU\", \"newtonNumeric\" (only for numeric semirings), or \"kleene\")" )
     ;
 
   po::variables_map vm;

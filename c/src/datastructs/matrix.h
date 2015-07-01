@@ -155,16 +155,28 @@ class Matrix {
 
     // solves x = Ax + b using the LDU-decomposition
     Matrix solve_LDU(const Matrix& b) const {
-      assert(b.columns_ == 1);
+      assert(b.columns_ == 1 && b.rows_ == this->rows_ && this->rows_ == this->columns_);
       const std::size_t n = b.rows_;
       Matrix ldu = *this;
       Matrix rhs = b;
-      LDU_decomposition(ldu);
+      LDU_decomposition_2(ldu);
       forward_substitution(ldu, rhs);
       for(int i=0; i<n; ++i) {
-        rhs.At(i,0) *= ldu.At(i,i).star();
+        rhs.At(i,0) = ldu.At(i,i) * rhs.At(i,0); // diagonal is already starred!
       }
       backward_substitution(ldu, rhs);
+      return rhs;
+    }
+
+    static Matrix subst_LDU(const Matrix& A_LDU, Matrix& rhs) {
+      assert(rhs.columns_ == 1 && rhs.rows_ == A_LDU.rows_ && A_LDU.rows_ == A_LDU.columns_);
+      const std::size_t n = rhs.rows_;
+
+      forward_substitution(A_LDU, rhs);
+      for(int i=0; i<n; ++i) {
+        rhs.At(i,0) = A_LDU.At(i,i) * rhs.At(i,0); // diagonal is already starred!
+      }
+      backward_substitution(A_LDU, rhs);
       return rhs;
     }
 
@@ -379,7 +391,7 @@ class Matrix {
     /*
      * This is the universal analogue of the LDU-factorization from linear algebra
      * (see: Litvinov et al.: "Universal Algorithms for Solving the Matrix Bellman Equations over Semirings")
-     * for input A (=this) this function computes a triple (L,D,U) (all packed in the return matrix)
+     * for input A (=this) this function computes a triple (L,D^*,U) (all packed in the return matrix)
      * of a lower triangular matrix L, diagonal matrix D, and upper triangular matrix U
      * such that A^* = U^* D^* L^*.
      * -> this allows the system x = Ax + b to be solved via forward and backward substitution
@@ -390,9 +402,9 @@ class Matrix {
       std::size_t n = A.rows_;
 
       for(int j=0; j<n; ++j) {
-        std::vector<SR> col(j+1); // first (j+1) entries in j-th column of A
+        std::vector<SR> col(j+1);
         for(int l=0; l<=j; ++l) {
-          col[l] = A.At(l,j);
+          col[l] = A.At(l,j); // first (j+1) entries in j-th column of A (up to and including the diagonal entry)
         }
 
         for(int k=0; k<j; ++k) {
@@ -402,23 +414,58 @@ class Matrix {
         }
 
         for(int i=0; i<j; ++i) {
-          A.At(i,j) = A.At(i,i).star() * col[i];
+          A.At(i,j) = A.At(i,i) * col[i];
         }
 
-        A.At(j,j) = col[j];
+        A.At(j,j) = col[j].star();
 
         for(int k=0; k<j; ++k) {
           for(int l=j+1; l<n; ++l) {
             A.At(l,j) += A.At(l,k)*col[k];
           }
         }
-        SR d = col[j].star();
+        //SR d = col[j].star();
         for(int l=j+1; l<n; ++l) {
-          A.At(l,j) *= d;
+          A.At(l,j) *= A.At(j,j);
         }
       }
     }
 
+    /*
+     * Optimized Row-wise version of the LDU decomposition
+     */
+    static void LDU_decomposition_2(Matrix& A) {
+      assert(A.rows_ == A.columns_);
+      std::size_t n = A.rows_;
+
+      for(int i=0; i<n; ++i) {
+        std::vector<SR> row(i+1);
+        for(int l=0; l<=i; ++l) {
+          row[l] = A.At(i,l); // first (i+1) entries in i-th row of A (up to and including the diagonal entry)
+        }
+
+        for(int k=0; k<i; ++k) {
+          for(int l=k+1; l<=i; ++l) {
+            row[l] += row[k] * A.At(k,l);
+          }
+        }
+
+        for(int j=0; j<i; ++j) {
+          A.At(i,j) = row[j] * A.At(j,j);
+        }
+
+        A.At(i,i) = row[i].star();
+
+        for(int k=0; k<i; ++k) {
+          for(int l=i+1; l<n; ++l) {
+            A.At(i,l) += row[k] * A.At(k,l);
+          }
+        }
+        for(int l=i+1; l<n; ++l) {
+          A.At(i,l) = A.At(i,i) * A.At(i,l);
+        }
+      }
+    }
 
 };
 

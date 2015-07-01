@@ -134,8 +134,7 @@ class GenericNewton {
 template <typename SR>
 class CommutativeSymbolicLinSolver {
   public:
-  // TODO: use initialization lists instead of temporaries+copying? see
-  // http://www.parashift.com/c++-faq-lite/init-lists.html
+  // TODO: use initialization lists instead of temporaries+copying?
   CommutativeSymbolicLinSolver(
       const std::vector< CommutativePolynomial<SR> >& F,
       const std::vector<VarId>& variables) {
@@ -313,9 +312,9 @@ private:
  * numeric semirings like the float-SR
   */
 template <typename SR>
-class LinSolver_LDU {
+class LinSolver_CLDU {
   public:
-  LinSolver_LDU(
+  LinSolver_CLDU(
       const std::vector< CommutativePolynomial<SR> >& F,
       const std::vector<VarId>& variables)
     : jacobian_(CommutativePolynomial<SR>::jacobian(F, variables)) {}
@@ -351,6 +350,78 @@ class LinSolver_LDU {
      * do not change... */
     ValuationMap<SR> valuation_;
 };
+
+
+// Symbolic LDU solver, compute a symbolic LDU decomposition at initialization
+// then evaluate the symbolic LDU matrix at each call
+template <typename SR>
+class LinSolver_SLDU {
+  public:
+  // TODO: use initialization lists instead of temporaries+copying?
+  LinSolver_SLDU(
+      const std::vector< CommutativePolynomial<SR> >& F,
+      const std::vector<VarId>& variables) {
+
+    Matrix< CommutativePolynomial<SR> > jacobian = CommutativePolynomial<SR>::jacobian(F, variables);
+    std::unordered_map<SR, VarId, SR> valuation_tmp;
+    Matrix<FreeSemiring> jacobian_free = CommutativePolynomial<SR>::make_free(jacobian, &valuation_tmp);
+
+    //std::cout << "J: " << jacobian_free << std::endl;
+    Matrix<FreeSemiring>::LDU_decomposition_2(jacobian_free);
+
+    jacobian_ldu_ = new Matrix<FreeSemiring>(jacobian_free);
+    // For benchmarking only ->
+    /*std::cout << "Size of Jacobian: "
+              << jacobian_star_->getRows()
+              << " x "
+              << jacobian_star_->getColumns()
+              << std::endl;*/
+    //FreeSemiring::one().PrintStats();
+
+    /*
+    std::ofstream dotfile;
+    dotfile.open("free-structure.dot");
+    FreeSemiring::one().PrintDot(dotfile);
+    dotfile.close();*/
+
+    //std::cout << "J(ldu): " << *jacobian_ldu_ << std::endl;
+
+    for (auto &pair : valuation_tmp) {
+      valuation_.insert(std::make_pair(pair.second, pair.first));
+      //std::cout << "valuation:  " << pair.second << ", " << pair.first << std::endl;
+    }
+  }
+
+  virtual ~LinSolver_SLDU(){
+    delete jacobian_ldu_;
+    jacobian_ldu_ = 0;
+  }
+
+  Matrix<SR> solve_lin_at(const Matrix<SR>& values, const Matrix<SR>& rhs,
+                          const std::vector<VarId>& variables) {
+    UpdateValuation(variables, values, valuation_);
+    Matrix<SR> b = rhs;
+    return Matrix<SR>::subst_LDU(FreeSemiringMatrixEval(*jacobian_ldu_, valuation_), b);
+  }
+
+  private:
+    ValuationMap<SR> valuation_;
+    Matrix<FreeSemiring>* jacobian_ldu_;
+
+    void UpdateValuation(const std::vector<VarId> &variables,
+                         const Matrix<SR> &newton_values,
+                         ValuationMap<SR>& valuation) {
+      //assert(!valuation.empty());
+      assert(variables.size() == newton_values.getRows());
+      assert(newton_values.getColumns() == 1);
+
+      for (std::size_t i = 0; i < variables.size(); ++i) {
+        valuation[variables[i]] = newton_values.At(i, 0);
+      }
+    }
+  };
+
+
 
 // Delta Generation for "numeric" semirings, i.e. if we can define a meaningful subtraction
 template <typename SR>
@@ -509,10 +580,13 @@ using NewtonCL =
   GenericNewton<SR, CommutativeConcreteLinSolver, CommutativeDeltaGenerator, CommutativePolynomial>;
 
 template <typename SR>
-using NewtonCLDU = GenericNewton<SR, LinSolver_LDU, CommutativeDeltaGenerator, CommutativePolynomial>;
+using NewtonCLDU = GenericNewton<SR, LinSolver_CLDU, CommutativeDeltaGenerator, CommutativePolynomial>;
 
 template <typename SR>
-using NewtonNumeric = GenericNewton<SR, LinSolver_LDU, DeltaGenerator_Numeric, CommutativePolynomial>;
+using NewtonSLDU = GenericNewton<SR, LinSolver_SLDU, CommutativeDeltaGenerator, CommutativePolynomial>;
+
+template <typename SR>
+using NewtonNumeric = GenericNewton<SR, LinSolver_CLDU, DeltaGenerator_Numeric, CommutativePolynomial>;
 
 
 

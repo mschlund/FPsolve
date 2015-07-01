@@ -4,7 +4,6 @@
 #include <unordered_map>
 
 #include "../datastructs/hash.h"
-#include "../datastructs/matrix.h"
 #include "../datastructs/var.h"
 #include "../datastructs/free-structure.h"
 
