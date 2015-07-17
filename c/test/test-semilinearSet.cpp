@@ -57,6 +57,20 @@ void SemilinSetTest::testTerms()
   CPPUNIT_ASSERT( ((c + b*a) * (a*b + c)) == ( (a*b+c)*(a*b+c) ) );
   CPPUNIT_ASSERT( ((c + b*a) + (a*b + c) ) == ( (a*b + c) ) );
   CPPUNIT_ASSERT( ((a*b + a*c) + (a * (c+b)) ) == ( (a*b + a*c) +  (a * (b+c))) );
+
+  SLSet s1 = ((SLSet("<a:1,b:2>") * SLSet("<a:1,b:1>").star() * SLSet("<b:1>").star()) +
+              (SLSet("<a:2,b:1>") * SLSet("<a:1,b:1>").star() * SLSet("<a:1>").star()) +
+              (SLSet("<a:2,b:2>") * SLSet("<a:1,b:1>").star()) );
+  SLSet s2 = ((SLSet("<a:1,b:2>") * SLSet("<b:1>").star()) +
+              (SLSet("<a:2,b:1>") * SLSet("<a:1>").star() * SLSet("<b:1>").star()) );
+
+  //std::cout << s1 << std::endl;
+  //std::cout << s2 << std::endl;
+  CPPUNIT_ASSERT( s1  == s2);
+
+  //TODO: have more "expected negatives"
+  CPPUNIT_ASSERT( s1  != (s2 + SLSet("<b:1>")));
+
 }
 
 void SemilinSetTest::testAddition()
@@ -95,6 +109,7 @@ void SemilinSetTest::testMultiplication()
 
   // commutativity with a more "complicated" expression (a+b+c)* . (c+b) = (c+b) . (a+b+c)*
   CPPUNIT_ASSERT( ((*a) + (*b) + *(c)).star() * ( (*c) + (*c) + (*b) + (*b) )== ( (*c) + (*c) + (*b) + (*b) ) * ((*a) + (*b) + *(c)).star() );
+
 }
 
 void SemilinSetTest::testStar()

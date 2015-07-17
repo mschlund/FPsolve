@@ -93,11 +93,13 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
       else if(str_val.front() == '<') {
         //split by "," , then every component by ":"
         std::vector<std::string> elems;
+        std::vector<std::pair<VarType,Value> > sparse_values;
         boost::split(elems, str_val, boost::is_any_of(",<>"), boost::algorithm::token_compress_on);
 
         for (std::string s : elems) {
-          if(s.empty())
+          if(s.empty()) {
             continue;
+          }
           //std::cout << "Token: " << s << std::endl;
           std::vector<std::string> var_val;
           boost::split(var_val, s, boost::is_any_of(":"), boost::algorithm::token_compress_on);
@@ -114,10 +116,12 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
               c = 0;
             }
             VarType v = Var::GetVarId(var_val[0]);
-            if(c != 0)
-              set_.emplace_back(LinearSetType{ OffsetType{v, c} } );
+            if(c != 0) {
+              sparse_values.push_back(std::make_pair(v,c));
+            }
           }
         }
+        set_.emplace_back(LinearSetType{ OffsetType(std::move(sparse_values)) } );
       }
       else {
         set_.emplace_back(LinearSetType{ OffsetType{Var::GetVarId(str_val), 1} } );
@@ -153,7 +157,6 @@ class SemilinearSet : public StarableSemiring< SemilinearSet<VarType, Value, Vec
       return eq;
     }
 #else
-    //TODO: implement a complete equivalence-check
     bool operator==(const SemilinearSet &rhs) const {
       return set_ == rhs.set_;
     }
