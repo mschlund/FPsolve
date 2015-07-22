@@ -45,24 +45,38 @@ std::string serialize_offsets(const std::vector<std::vector<int>>& offsets) {
 }
 
 // return all linear independent offsets
-// FIXME: this kills also the [0,…,0] vector which is needed
+// Important: we have to keep the [0,…,0] vector if it is there
 std::vector<std::vector<int>> SemilinSetNdd::getIndependentOffsets(const std::vector<std::vector<int>>& offsets) const {
-
   std::vector<SparseVec<VarId, Counter, DummyDivider>> offset_;
+  bool has_zero = false;
+
   for(auto offset:offsets) {
     std::vector<std::pair<VarId, Counter>> tmp;
     for(auto var_pos : var_map) {
       VarId varid = var_pos.first;
       Counter value = offset.at(var_pos.second);
-      if(value != 0)
+      if(value != 0) {
         tmp.push_back({varid, value});
+      }
     }
     if(tmp.size() != 0) {
       SparseVec<VarId, Counter, DummyDivider> tmp_(std::move(tmp));
       offset_.push_back(tmp_);
     }
+    else {
+      has_zero = true;
+    }
   }
-  if(offset_.size() == 0) return {};
+
+  if(offset_.size() == 0){
+    if(has_zero) {
+      return {std::vector<int>(k,0)}; // add the zero-vector back if it was there!
+    }
+    else {
+      return {};
+    }
+  }
+
   VecSet<SparseVec<VarId, Counter, DummyDivider>> offset_vec_set{std::move(offset_)};
 
   SimplifySet<SparseVecSimplifier<VarId,Counter,DummyDivider>>(offset_vec_set);
@@ -83,6 +97,11 @@ std::vector<std::vector<int>> SemilinSetNdd::getIndependentOffsets(const std::ve
     returned_result.push_back(o);
   }
 
+  // if [0,…,0] was in the set before, add it back -- otherwise incorrect (see test-semilinSetNdd.cpp)!
+  if(has_zero) {
+    std::vector<int> o(k,0);
+    returned_result.push_back(o);
+  }
   return returned_result;
 }
 
@@ -162,11 +181,11 @@ SemilinSetNdd SemilinSetNdd::operator=(const SemilinSetNdd& term) {
 
 SemilinSetNdd SemilinSetNdd::operator+=(const SemilinSetNdd& term) {
   this->set = this->set.union_op(term.set);
-  for(auto offset : term.offsets)
+  for(auto offset : term.offsets) {
     insert_offset(this->offsets, offset);
+  }
 
-  // TODO: reactivate this once the indepentent offsets are correct
-  // this->offsets = this->getIndependentOffsets(this->offsets);
+  this->offsets = this->getIndependentOffsets(this->offsets);
   return *this;
 }
 
@@ -223,8 +242,7 @@ SemilinSetNdd SemilinSetNdd::operator*=(const SemilinSetNdd& term) {
   }
   this->set = result;
   this->offsets = multiply_offsets(this->offsets, term.offsets);
-  // TODO: reactivate this once the indepentent offsets are correct
-  // this->offsets = this->getIndependentOffsets(this->offsets);
+  this->offsets = this->getIndependentOffsets(this->offsets);
   return *this;
 
 }
@@ -264,6 +282,7 @@ SemilinSetNdd SemilinSetNdd::star () const {
   //Alternative implementation based on repeated squaring (which is sound since we have idempotent addition!)
 
   //std::cout << "size (offset-star): " << offset_star.set.getSize() << std::endl;
+  //std::cout << "offsets: " << this->offsets << std::endl;
   S_i = one() + *this;
   final_result = one() + *this*offset_star;
   do {

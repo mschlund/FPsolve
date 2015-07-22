@@ -57,6 +57,21 @@ void SemilinSetNddTest::testTerms()
 	CPPUNIT_ASSERT( ((c + b*a) * (a*b + c)) == ( (a*b+c)*(a*b+c) ) );
 	CPPUNIT_ASSERT( ((c + b*a) + (a*b + c) ) == ( (a*b + c) ) );
 	CPPUNIT_ASSERT( ((a*b + a*c) + (a * (c+b)) ) == ( (a*b + a*c) +  (a * (b+c))) );
+
+	CPPUNIT_ASSERT( (a.star() + b.star()).star() == a.star() * b.star());
+
+	// very demanding testcase without optimizations
+	CPPUNIT_ASSERT( ((a.star() + b*b.star())*(a*b*c.star())).star()  ==
+	    (SemilinSetNdd::one() + a*b*(a*b).star() * a.star() * c.star())* (SemilinSetNdd::one() + (a*b*b)*(a*b*b).star()*b.star()*c.star()));
+
+  // (a+b)^* = a^*.b^* != a^* + b^*
+  CPPUNIT_ASSERT( (a+b).star() != a.star() + b.star());
+
+  // for the wrong offset-minimization this does not terminate (the outer star computation loops indefinitely)
+  CPPUNIT_ASSERT( ((a+b.star())*(b+c.star())).star() ==
+                  (SemilinSetNdd::one() + (a*b).star()) * (SemilinSetNdd::one() + b * b.star()) *
+                  (SemilinSetNdd::one() + a * a.star()*c.star()) * (SemilinSetNdd::one() + b.star() * c.star()));
+
 }
 
 void SemilinSetNddTest::testAddition()
@@ -105,7 +120,5 @@ void SemilinSetNddTest::testStar()
 
   // a.b^* != a.(a+b)^*
   CPPUNIT_ASSERT( (*a) * (*b).star() !=  (*a) * ((*a) + (*b)).star());
-
-
 
 }

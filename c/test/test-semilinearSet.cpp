@@ -58,6 +58,8 @@ void SemilinSetTest::testTerms()
   CPPUNIT_ASSERT( ((c + b*a) + (a*b + c) ) == ( (a*b + c) ) );
   CPPUNIT_ASSERT( ((a*b + a*c) + (a * (c+b)) ) == ( (a*b + a*c) +  (a * (b+c))) );
 
+  //this test only makes sense if we have a semantic equivalence checker (-> genepi)
+#ifdef USE_GENEPI
   SLSet s1 = ((SLSet("<a:1,b:2>") * SLSet("<a:1,b:1>").star() * SLSet("<b:1>").star()) +
               (SLSet("<a:2,b:1>") * SLSet("<a:1,b:1>").star() * SLSet("<a:1>").star()) +
               (SLSet("<a:2,b:2>") * SLSet("<a:1,b:1>").star()) );
@@ -67,6 +69,7 @@ void SemilinSetTest::testTerms()
   //std::cout << s1 << std::endl;
   //std::cout << s2 << std::endl;
   CPPUNIT_ASSERT( s1  == s2);
+#endif
 
   //TODO: have more "expected negatives"
   CPPUNIT_ASSERT( s1  != (s2 + SLSet("<b:1>")));
