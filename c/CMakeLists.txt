@@ -20,7 +20,7 @@ include_directories(${GMP_INCLUDES})
 
 
 #default for now -- remove these definitions if you do not want the options ..
-option (USE_GENEPI "use genepi library and support semilinSetNdd" OFF)
+option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
 option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" OFF)
 
 
@@ -40,7 +40,6 @@ endif(USE_LIBFA)
 
 # Cppunit; cmake configuration taken from:
 # http://www.cmake.org/pipermail/cmake/2006-December/012349.html
-
 
 if(DEFINED ENV{CPPUNIT_ROOT})
   set(CPPUNIT_INCLUDE_DIRS "$ENV{CPPUNIT_ROOT}/include/")

@@ -19,6 +19,28 @@ $ cmake .
 $ make 
 
 
+HOWTO: Install Genepi
+---------------------
+0. Install Mona (e.g. Ubuntu has it in the package repository)
+1. Either get genepi + genepi-mona-plugin from https://altarica.labri.fr/forge/embedded/altarica/downloads.html or used the .tar.gz in the FPsolve root
+2. Extract genepi + genepi-mona-plugin and install then (first genepi then the plugin). Install should work painlessly (./configure && make && make install).
+
+Genepi troubleshooting: the original configure script of the genepi-plugin has a tiny bug: you should replace the "else" statement in
+..
+if test "${exec_prefix}" != "NONE"; then
+    eval PKG_CONFIG_PATH=\"'$'PKG_CONFIG_PATH:${libdir}/pkgconfig\"
+    eval LDFLAGS=\"'$'LDFLAGS -L${libdir}\"
+    eval CPPFLAGS=\"'$'CPPFLAGS -I${includedir}\"
+else
+    PKG_CONFIG_PATH="$PKG_CONFIG_PATH:${prefix}/lib/pkgconfig"
+    LDFLAGS="$LDFLAGS -L${prefix}/lib"
+    CPPFLAGS="$CPPFLAGS -I${prefix}/include"
+fi
+.. 
+by "elif "${prefix}" != "NONE"; then"
+
+
+
 HOWTO: Modify LIBFA for Lossy-semiring
 --------------------------------------
 Integration of libfa (http://augeas.net/libfa/) is still a bit of a pain but should work if the instructions are followed.
@@ -30,6 +52,9 @@ We had to change the source and header files slightly since we have to access th
 3. run "./configure; make; sudo make install" in augeas-1.X.0
 4. copy "header_to_use_after_compilation_of_libfa/fa.h" to e.g. "/usr/local/include/fa.h"
 5. copy libfa.pc to /usr/local/lib/pkgconfig
+
+
+
 
 
 
