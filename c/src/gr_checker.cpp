@@ -190,8 +190,8 @@ int main(int argc, char* argv[]) {
         ( "help,h", "print this help message" )
         ( "startsymbol,s", po::value<std::string>(), "start symbol of the grammars")
         ( "input", po::value<std::vector<std::string> >(), "input grammars (at least two): g1 g2 [g3] [...]" )
-        ( "slset", po::value<std::string>(), "commutative abstraction via semilinear sets" )
-        ( "lossy", po::value<std::string>(), "abstraction via subword closure" )
+        ( "slset", "commutative abstraction via semilinear sets" )
+        ( "lossy", "abstraction via subword closure" )
         ("refD", po::value<int>(), "refinement Depth for Lossy Approximation")
         ;
 

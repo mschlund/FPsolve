@@ -21,7 +21,7 @@ include_directories(${GMP_INCLUDES})
 
 #default for now -- remove these definitions if you do not want the options ..
 option (USE_GENEPI "use genepi library and support semilinSetNdd" ON)
-option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" OFF)
+option (USE_LIBFA "use libfa library to support finite automata representations of lossy semirings" ON)
 
 
 if(USE_GENEPI)
