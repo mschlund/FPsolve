@@ -10,7 +10,7 @@ do
     outf=${f}_log_float_${i}
     echo $outf
 #    echo `timeout 5m ./c/src/newton -f $f --float -i 10 | grep "Multiplication\|Addition\|Star" | wc -l`' ms' > $outf
-    timeout 5m ./c/src/fpsolve -f $f --float -i 10 > $outf
+    timeout 5m ./c/src/fpsolve -f $f --float -i 10 -s newtonNumeric > $outf
     if [ $? -ne 0 ]; then
       #!= 0 signals a timeout or that sth else is wrong
       echo "TIMEOUT"

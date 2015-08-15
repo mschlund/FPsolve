@@ -51,7 +51,7 @@ We had to change the source and header files slightly since we have to access th
 2. copy everything in "changed_source" into augeas-1.X.0/src
 3. run "./configure; make; sudo make install" in augeas-1.X.0
 4. copy "header_to_use_after_compilation_of_libfa/fa.h" to e.g. "/usr/local/include/fa.h"
-5. copy libfa.pc to /usr/local/lib/pkgconfig
+5. copy libfa.pc from the "libfa_parts_modified.tar.gz" to /usr/local/lib/pkgconfig (adapt paths if using a different location)
 
 
 

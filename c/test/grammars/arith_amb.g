@@ -1,5 +1,3 @@
-<sentence> ::= <expression>
-<expression> ::= <expression> + <expression> |
-		 <expression> * <expression> |
-		<identifier>
-<identifier> ::= X | Y | Z
+<sentence> ::= <expression>;
+<expression> ::= <expression> + <expression> | <expression> * <expression> | <identifier>;
+<identifier> ::= X | Y ;
